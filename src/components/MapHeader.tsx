@@ -6,6 +6,7 @@ interface MapHeaderProps {
   map: DungeonMap;
   onSetName: (name: string) => void;
   onResize: (w: number, h: number) => void;
+  onSetTileSize: (size: number) => void;
   onClear: () => void;
   onNew: () => void;
   onLoad: (map: DungeonMap) => void;
@@ -15,7 +16,7 @@ interface MapHeaderProps {
 const GRID_SIZES = [8, 16, 24, 32, 48, 64];
 
 const MapHeader: React.FC<MapHeaderProps> = ({
-  map, onSetName, onResize, onClear, onNew, onLoad, getCanvas
+  map, onSetName, onResize, onSetTileSize, onClear, onNew, onLoad, getCanvas
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -92,14 +93,7 @@ const MapHeader: React.FC<MapHeaderProps> = ({
         <select
           className="grid-select"
           value={map.meta.tileSize}
-          onChange={e => {
-            const tileSize = Number(e.target.value);
-            // Update tile size via meta
-            onResize(map.meta.width, map.meta.height); // trigger re-render
-            // We'll handle tileSize through App
-            const event = new CustomEvent('tileSizeChange', { detail: tileSize });
-            window.dispatchEvent(event);
-          }}
+          onChange={e => onSetTileSize(Number(e.target.value))}
           title="Tile size (px)"
         >
           {[12, 16, 20, 24, 32].map(s => <option key={s} value={s}>{s}px</option>)}

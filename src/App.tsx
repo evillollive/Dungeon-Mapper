@@ -1,4 +1,4 @@
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useCallback } from 'react';
 import MapCanvas, { type MapCanvasHandle } from './components/MapCanvas';
 import Toolbar from './components/Toolbar';
 import NotesPanel from './components/NotesPanel';
@@ -39,22 +39,13 @@ function App() {
     setActiveTool('paint');
   }, [setActiveTile, setActiveTool]);
 
-  // Listen for tile size changes from the header select
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const tileSize = (e as CustomEvent<number>).detail;
-      setTileSize(tileSize);
-    };
-    window.addEventListener('tileSizeChange', handler);
-    return () => window.removeEventListener('tileSizeChange', handler);
-  }, [setTileSize]);
-
   return (
     <div className="app">
       <MapHeader
         map={map}
         onSetName={setMapName}
         onResize={resizeMap}
+        onSetTileSize={setTileSize}
         onClear={clearMap}
         onNew={newMap}
         onLoad={loadMapData}
