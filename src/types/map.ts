@@ -21,6 +21,7 @@ export interface MapMeta {
   width: number;
   height: number;
   tileSize: number;
+  theme?: string;
 }
 
 export interface DungeonMap {
@@ -29,7 +30,7 @@ export interface DungeonMap {
   notes: MapNote[];
 }
 
-export type ToolType = 'paint' | 'erase' | 'fill' | 'eyedropper' | 'note';
+export type ToolType = 'paint' | 'erase' | 'fill' | 'eyedropper' | 'note' | 'line' | 'rect' | 'select';
 
 export const TILE_LABELS: Record<TileType, string> = {
   empty: 'Empty',
