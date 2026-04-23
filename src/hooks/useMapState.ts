@@ -1,7 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { DungeonMap, MapNote, Tile, TileType } from '../types/map';
 import { createEmptyGrid, floodFill } from '../utils/mapUtils';
-import { saveMap, loadMap } from '../utils/storage';
+import { saveMap, loadMap, migrateFromLocalStorage } from '../utils/storage';
 
 const DEFAULT_WIDTH = 32;
 const DEFAULT_HEIGHT = 32;
@@ -16,43 +16,81 @@ function createDefaultMap(): DungeonMap {
 }
 
 export function useMapState() {
-  const [map, setMap] = useState<DungeonMap>(() => loadMap() ?? createDefaultMap());
-  const [nextNoteId, setNextNoteId] = useState(() => {
-    const loaded = loadMap();
-    if (loaded && loaded.notes.length > 0) {
-      return Math.max(...loaded.notes.map(n => n.id)) + 1;
-    }
-    return 1;
-  });
+  const [map, setMap] = useState<DungeonMap>(createDefaultMap);
+  const [nextNoteId, setNextNoteId] = useState(1);
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
 
-  const persist = useCallback((newMap: DungeonMap) => {
-    setMap(newMap);
-    saveMap(newMap);
+  const pastRef = useRef<Tile[][][]>([]);
+  const futureRef = useRef<Tile[][][]>([]);
+  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Load from IndexedDB on mount
+  useEffect(() => {
+    migrateFromLocalStorage().catch(() => {});
+    loadMap().then(loaded => {
+      if (loaded) {
+        setMap(loaded);
+        const maxId = loaded.notes.length > 0 ? Math.max(...loaded.notes.map(n => n.id)) + 1 : 1;
+        setNextNoteId(maxId);
+      }
+    }).catch(() => {});
   }, []);
+
+  const debouncedSave = useCallback((mapToSave: DungeonMap) => {
+    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+    saveTimerRef.current = setTimeout(() => {
+      saveMap(mapToSave).catch(() => {});
+    }, 500);
+  }, []);
+
+  function pushHistory(currentTiles: Tile[][]) {
+    pastRef.current = [...pastRef.current.slice(-49), currentTiles];
+    futureRef.current = [];
+    setCanUndo(true);
+    setCanRedo(false);
+  }
 
   const setTile = useCallback((x: number, y: number, type: TileType) => {
     setMap(prev => {
+      pushHistory(prev.tiles);
       const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
       if (y >= 0 && y < prev.meta.height && x >= 0 && x < prev.meta.width) {
         newTiles[y][x] = { ...newTiles[y][x], type };
       }
       const updated = { ...prev, tiles: newTiles };
-      saveMap(updated);
+      debouncedSave(updated);
       return updated;
     });
-  }, []);
+  }, [debouncedSave]);
 
   const fillTiles = useCallback((x: number, y: number, fillType: TileType) => {
     setMap(prev => {
       const targetType = prev.tiles[y]?.[x]?.type;
       if (!targetType) return prev;
+      pushHistory(prev.tiles);
       const newTiles = floodFill(prev.tiles, x, y, targetType, fillType);
       const updated = { ...prev, tiles: newTiles };
-      saveMap(updated);
+      debouncedSave(updated);
       return updated;
     });
-  }, []);
+  }, [debouncedSave]);
+
+  const setTiles = useCallback((updates: { x: number; y: number; type: TileType }[]) => {
+    setMap(prev => {
+      pushHistory(prev.tiles);
+      const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
+      for (const { x, y, type } of updates) {
+        if (y >= 0 && y < prev.meta.height && x >= 0 && x < prev.meta.width) {
+          newTiles[y][x] = { ...newTiles[y][x], type };
+        }
+      }
+      const updated = { ...prev, tiles: newTiles };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
 
   const getTileType = useCallback((x: number, y: number): TileType | null => {
     return map.tiles[y]?.[x]?.type ?? null;
@@ -61,10 +99,10 @@ export function useMapState() {
   const setMapName = useCallback((name: string) => {
     setMap(prev => {
       const updated = { ...prev, meta: { ...prev.meta, name } };
-      saveMap(updated);
+      debouncedSave(updated);
       return updated;
     });
-  }, []);
+  }, [debouncedSave]);
 
   const resizeMap = useCallback((width: number, height: number) => {
     setMap(prev => {
@@ -74,38 +112,49 @@ export function useMapState() {
         )
       );
       const updated = { ...prev, meta: { ...prev.meta, width, height }, tiles: newTiles };
-      saveMap(updated);
+      debouncedSave(updated);
       return updated;
     });
-  }, []);
+  }, [debouncedSave]);
 
   const clearMap = useCallback(() => {
     setMap(prev => {
+      pushHistory(prev.tiles);
       const updated = {
         ...prev,
         tiles: createEmptyGrid(prev.meta.width, prev.meta.height),
         notes: [],
       };
-      saveMap(updated);
+      debouncedSave(updated);
       return updated;
     });
     setNextNoteId(1);
     setSelectedNoteId(null);
-  }, []);
+  }, [debouncedSave]);
 
   const newMap = useCallback(() => {
     const fresh = createDefaultMap();
-    persist(fresh);
+    pastRef.current = [];
+    futureRef.current = [];
+    setCanUndo(false);
+    setCanRedo(false);
+    setMap(fresh);
+    debouncedSave(fresh);
     setNextNoteId(1);
     setSelectedNoteId(null);
-  }, [persist]);
+  }, [debouncedSave]);
 
   const loadMapData = useCallback((loaded: DungeonMap) => {
-    persist(loaded);
+    pastRef.current = [];
+    futureRef.current = [];
+    setCanUndo(false);
+    setCanRedo(false);
+    setMap(loaded);
+    debouncedSave(loaded);
     const maxId = loaded.notes.length > 0 ? Math.max(...loaded.notes.map(n => n.id)) + 1 : 1;
     setNextNoteId(maxId);
     setSelectedNoteId(null);
-  }, [persist]);
+  }, [debouncedSave]);
 
   const addNote = useCallback((x: number, y: number) => {
     setMap(prev => {
@@ -120,20 +169,20 @@ export function useMapState() {
         newTiles[y][x] = { ...newTiles[y][x], noteId: nextNoteId };
       }
       const updated = { ...prev, tiles: newTiles, notes: [...prev.notes, newNote] };
-      saveMap(updated);
+      debouncedSave(updated);
       return updated;
     });
     setNextNoteId(id => id + 1);
-  }, [nextNoteId]);
+  }, [nextNoteId, debouncedSave]);
 
   const updateNote = useCallback((id: number, label: string, description: string) => {
     setMap(prev => {
       const notes = prev.notes.map(n => n.id === id ? { ...n, label, description } : n);
       const updated = { ...prev, notes };
-      saveMap(updated);
+      debouncedSave(updated);
       return updated;
     });
-  }, []);
+  }, [debouncedSave]);
 
   const deleteNote = useCallback((id: number) => {
     setMap(prev => {
@@ -142,19 +191,53 @@ export function useMapState() {
         row.map(t => t.noteId === id ? { ...t, noteId: undefined } : t)
       );
       const updated = { ...prev, tiles: newTiles, notes };
-      saveMap(updated);
+      debouncedSave(updated);
       return updated;
     });
     setSelectedNoteId(sel => sel === id ? null : sel);
-  }, []);
+  }, [debouncedSave]);
 
   const setTileSize = useCallback((tileSize: number) => {
     setMap(prev => {
       const updated = { ...prev, meta: { ...prev.meta, tileSize } };
-      saveMap(updated);
+      debouncedSave(updated);
       return updated;
     });
-  }, []);
+  }, [debouncedSave]);
+
+  const setTheme = useCallback((theme: string) => {
+    setMap(prev => {
+      const updated = { ...prev, meta: { ...prev.meta, theme } };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const undo = useCallback(() => {
+    if (pastRef.current.length === 0) return;
+    setMap(prev => {
+      const previous = pastRef.current.pop()!;
+      futureRef.current.push(prev.tiles);
+      const updated = { ...prev, tiles: previous };
+      debouncedSave(updated);
+      setCanUndo(pastRef.current.length > 0);
+      setCanRedo(true);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const redo = useCallback(() => {
+    if (futureRef.current.length === 0) return;
+    setMap(prev => {
+      const next = futureRef.current.pop()!;
+      pastRef.current.push(prev.tiles);
+      const updated = { ...prev, tiles: next };
+      debouncedSave(updated);
+      setCanUndo(true);
+      setCanRedo(futureRef.current.length > 0);
+      return updated;
+    });
+  }, [debouncedSave]);
 
   return {
     map,
@@ -162,6 +245,7 @@ export function useMapState() {
     setSelectedNoteId,
     setTile,
     fillTiles,
+    setTiles,
     getTileType,
     setMapName,
     resizeMap,
@@ -172,5 +256,10 @@ export function useMapState() {
     updateNote,
     deleteNote,
     setTileSize,
+    setTheme,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
   };
 }

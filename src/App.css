@@ -468,3 +468,42 @@
   background: #16213e;
   color: #e0d5c1;
 }
+
+/* ── Coord Display ─────────────────────────────────────── */
+.coord-display {
+  position: absolute;
+  bottom: 40px;
+  left: 8px;
+  background: rgba(10, 10, 30, 0.85);
+  color: #e0d5c1;
+  font-family: 'Courier New', monospace;
+  font-size: 11px;
+  padding: 3px 8px;
+  border: 1px solid #0f3460;
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ── Minimap ─────────────────────────────────────────────── */
+.minimap-canvas {
+  position: absolute;
+  bottom: 40px;
+  right: 8px;
+  border: 1px solid #0f3460;
+  cursor: pointer;
+  z-index: 10;
+  background: #1a1a2e;
+  image-rendering: pixelated;
+}
+
+/* ── Disabled header buttons ─────────────────────────────── */
+.header-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.header-btn:disabled:hover {
+  background: #16213e;
+  border-color: #0f3460;
+  color: #e0d5c1;
+}

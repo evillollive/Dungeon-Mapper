@@ -1,240 +1,89 @@
 import React, { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import type { DungeonMap, TileType, ToolType } from '../types/map';
-import { TILE_COLORS } from '../utils/mapUtils';
+import { getTheme } from '../themes/index';
 
 interface MapCanvasProps {
   map: DungeonMap;
   activeTool: ToolType;
   activeTile: TileType;
+  themeId: string;
   selectedNoteId: number | null;
   onSetTile: (x: number, y: number, type: TileType) => void;
+  onSetTiles: (tiles: { x: number; y: number; type: TileType }[]) => void;
   onFillTile: (x: number, y: number, type: TileType) => void;
   onPickTile: (type: TileType) => void;
   onAddNote: (x: number, y: number) => void;
   onSelectNote: (id: number | null) => void;
+  onEraseTiles: (tiles: { x: number; y: number }[]) => void;
 }
 
 export interface MapCanvasHandle {
   getCanvas: () => HTMLCanvasElement | null;
 }
 
-function drawTile(
-  ctx: CanvasRenderingContext2D,
-  type: TileType,
-  x: number,
-  y: number,
-  size: number
-) {
-  const px = x * size;
-  const py = y * size;
-  const color = TILE_COLORS[type];
-
-  ctx.fillStyle = color;
-  ctx.fillRect(px, py, size, size);
-
-  ctx.strokeStyle = '#2d3561';
-  ctx.lineWidth = 0.5;
-  ctx.strokeRect(px, py, size, size);
-
-  const cx = px + size / 2;
-  const cy = py + size / 2;
-  const s = size;
-
-  ctx.lineWidth = 1.5;
-
-  switch (type) {
-    case 'empty':
-      break;
-
-    case 'floor': {
-      ctx.fillStyle = '#3a3020';
-      ctx.fillRect(cx - 1, cy - 1, 2, 2);
-      break;
-    }
-
-    case 'wall': {
-      ctx.fillStyle = '#333333';
-      ctx.fillRect(px + 2, py + 2, s - 4, s - 4);
-      ctx.fillStyle = '#5a5a5a';
-      ctx.fillRect(px + 2, py + 2, s - 4, 2);
-      ctx.fillRect(px + 2, py + 2, 2, s - 4);
-      break;
-    }
-
-    case 'door-h': {
-      ctx.fillStyle = '#c8a84b';
-      ctx.fillRect(px + 2, cy - 2, s - 4, 4);
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fillRect(cx - 3, cy - 2, 6, 4);
-      ctx.strokeStyle = '#c8a84b';
-      ctx.beginPath();
-      ctx.moveTo(px + 2, cy);
-      ctx.lineTo(cx - 4, cy);
-      ctx.moveTo(cx + 4, cy);
-      ctx.lineTo(px + s - 2, cy);
-      ctx.stroke();
-      break;
-    }
-
-    case 'door-v': {
-      ctx.fillStyle = '#c8a84b';
-      ctx.fillRect(cx - 2, py + 2, 4, s - 4);
-      ctx.fillStyle = '#1a1a2e';
-      ctx.fillRect(cx - 2, cy - 3, 4, 6);
-      ctx.strokeStyle = '#c8a84b';
-      ctx.beginPath();
-      ctx.moveTo(cx, py + 2);
-      ctx.lineTo(cx, cy - 4);
-      ctx.moveTo(cx, cy + 4);
-      ctx.lineTo(cx, py + s - 2);
-      ctx.stroke();
-      break;
-    }
-
-    case 'stairs-up': {
-      ctx.strokeStyle = '#e0d5c1';
-      ctx.lineWidth = 1;
-      const steps = 4;
-      for (let i = 0; i < steps; i++) {
-        const sy = py + 2 + i * ((s - 4) / steps);
-        const ex = px + 2 + (i + 1) * ((s - 4) / steps);
-        ctx.beginPath();
-        ctx.moveTo(px + 2, sy);
-        ctx.lineTo(ex, sy);
-        ctx.lineTo(ex, sy + (s - 4) / steps);
-        ctx.stroke();
-      }
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(cx + 2, cy - 3);
-      ctx.lineTo(cx + 5, cy);
-      ctx.lineTo(cx + 2, cy + 3);
-      ctx.stroke();
-      break;
-    }
-
-    case 'stairs-down': {
-      ctx.strokeStyle = '#b0c8b0';
-      ctx.lineWidth = 1;
-      const steps = 4;
-      for (let i = 0; i < steps; i++) {
-        const sy = py + s - 2 - i * ((s - 4) / steps);
-        const ex = px + 2 + (i + 1) * ((s - 4) / steps);
-        ctx.beginPath();
-        ctx.moveTo(px + 2, sy);
-        ctx.lineTo(ex, sy);
-        ctx.lineTo(ex, sy - (s - 4) / steps);
-        ctx.stroke();
-      }
-      ctx.strokeStyle = '#fff';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(cx + 2, cy - 3);
-      ctx.lineTo(cx + 5, cy);
-      ctx.lineTo(cx + 2, cy + 3);
-      ctx.stroke();
-      break;
-    }
-
-    case 'water': {
-      ctx.strokeStyle = '#4ab4e8';
-      ctx.lineWidth = 1;
-      for (let wy = 0; wy < 3; wy++) {
-        const waveY = py + 4 + wy * (s / 3.5);
-        ctx.beginPath();
-        ctx.moveTo(px + 2, waveY);
-        for (let wx = 0; wx < s - 4; wx += 4) {
-          ctx.quadraticCurveTo(px + 2 + wx + 1, waveY - 2, px + 2 + wx + 2, waveY);
-          ctx.quadraticCurveTo(px + 2 + wx + 3, waveY + 2, px + 2 + wx + 4, waveY);
-        }
-        ctx.stroke();
-      }
-      break;
-    }
-
-    case 'pillar': {
-      ctx.fillStyle = '#888';
-      ctx.beginPath();
-      ctx.arc(cx, cy, s / 4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#ccc';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(cx, cy, s / 4, 0, Math.PI * 2);
-      ctx.stroke();
-      break;
-    }
-
-    case 'trap': {
-      ctx.strokeStyle = '#ff4444';
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(px + 3, py + 3);
-      ctx.lineTo(px + s - 3, py + s - 3);
-      ctx.moveTo(px + s - 3, py + 3);
-      ctx.lineTo(px + 3, py + s - 3);
-      ctx.stroke();
-      break;
-    }
-
-    case 'treasure': {
-      const tw = s * 0.5;
-      const th = s * 0.35;
-      const tx = cx - tw / 2;
-      const ty = cy - th / 2;
-      ctx.fillStyle = '#8b6914';
-      ctx.fillRect(tx, ty + th * 0.4, tw, th * 0.6);
-      ctx.fillStyle = '#d4af37';
-      ctx.fillRect(tx, ty, tw, th * 0.5);
-      ctx.beginPath();
-      ctx.arc(cx, ty + th * 0.25, tw * 0.15, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = '#fff8dc';
-      ctx.lineWidth = 0.5;
-      ctx.strokeRect(tx, ty + th * 0.4, tw, th * 0.6);
-      ctx.strokeRect(tx, ty, tw, th * 0.5);
-      break;
-    }
-
-    case 'start': {
-      ctx.fillStyle = '#50fa7b';
-      ctx.beginPath();
-      ctx.moveTo(cx, py + 3);
-      ctx.lineTo(cx + 4, cy);
-      ctx.lineTo(cx + 2, cy);
-      ctx.lineTo(cx + 2, py + s - 3);
-      ctx.lineTo(cx - 2, py + s - 3);
-      ctx.lineTo(cx - 2, cy);
-      ctx.lineTo(cx - 4, cy);
-      ctx.closePath();
-      ctx.fill();
-      ctx.strokeStyle = '#2e8b57';
-      ctx.lineWidth = 0.5;
-      ctx.stroke();
-      break;
-    }
+function bresenhamLine(x0: number, y0: number, x1: number, y1: number): { x: number; y: number }[] {
+  const points: { x: number; y: number }[] = [];
+  const dx = Math.abs(x1 - x0);
+  const dy = Math.abs(y1 - y0);
+  const sx = x0 < x1 ? 1 : -1;
+  const sy = y0 < y1 ? 1 : -1;
+  let err = dx - dy;
+  let cx = x0;
+  let cy = y0;
+  while (true) {
+    points.push({ x: cx, y: cy });
+    if (cx === x1 && cy === y1) break;
+    const e2 = 2 * err;
+    if (e2 > -dy) { err -= dy; cx += sx; }
+    if (e2 < dx) { err += dx; cy += sy; }
   }
+  return points;
+}
+
+function rectOutline(x0: number, y0: number, x1: number, y1: number): { x: number; y: number }[] {
+  const minX = Math.min(x0, x1);
+  const maxX = Math.max(x0, x1);
+  const minY = Math.min(y0, y1);
+  const maxY = Math.max(y0, y1);
+  const points: { x: number; y: number }[] = [];
+  for (let x = minX; x <= maxX; x++) {
+    points.push({ x, y: minY });
+    if (minY !== maxY) points.push({ x, y: maxY });
+  }
+  for (let y = minY + 1; y < maxY; y++) {
+    points.push({ x: minX, y });
+    if (minX !== maxX) points.push({ x: maxX, y });
+  }
+  return points;
 }
 
 const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   map,
   activeTool,
   activeTile,
+  themeId,
   selectedNoteId,
   onSetTile,
+  onSetTiles,
   onFillTile,
   onPickTile,
   onAddNote,
   onSelectNote,
+  onEraseTiles,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const isMouseDownRef = useRef(false);
   const isPanningRef = useRef(false);
   const lastPanPos = useRef({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
+  const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
+  const [dragEnd, setDragEnd] = useState<{ x: number; y: number } | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [selection, setSelection] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
 
   useImperativeHandle(ref, () => ({
     getCanvas: () => canvasRef.current,
@@ -243,33 +92,31 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const { meta, tiles, notes } = map;
   const { tileSize } = meta;
 
-  // Render map
+  // Main render
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+    const theme = getTheme(themeId);
 
     const w = meta.width * tileSize;
     const h = meta.height * tileSize;
     canvas.width = w;
     canvas.height = h;
 
-    // Background
-    ctx.fillStyle = '#1a1a2e';
+    ctx.fillStyle = theme.tileColors['empty'];
     ctx.fillRect(0, 0, w, h);
 
-    // Draw tiles
     for (let y = 0; y < meta.height; y++) {
       for (let x = 0; x < meta.width; x++) {
         const tile = tiles[y]?.[x];
         if (tile) {
-          drawTile(ctx, tile.type, x, y, tileSize);
+          theme.drawTile(ctx, tile.type, x, y, tileSize);
         }
       }
     }
 
-    // Draw grid overlay for empty cells
     ctx.strokeStyle = '#2d3561';
     ctx.lineWidth = 0.5;
     for (let y = 0; y <= meta.height; y++) {
@@ -285,29 +132,123 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.stroke();
     }
 
-    // Draw notes
     notes.forEach(note => {
       const px = note.x * tileSize + tileSize / 2;
       const py = note.y * tileSize + tileSize / 2;
       const radius = tileSize * 0.38;
-
       const isSelected = note.id === selectedNoteId;
       ctx.fillStyle = isSelected ? '#e94560' : '#f0c040';
       ctx.beginPath();
       ctx.arc(px, py, radius, 0, Math.PI * 2);
       ctx.fill();
-
       ctx.strokeStyle = isSelected ? '#fff' : '#8b6914';
       ctx.lineWidth = 1;
       ctx.stroke();
-
       ctx.fillStyle = '#1a1a2e';
       ctx.font = `bold ${Math.max(8, tileSize * 0.45)}px "Courier New", monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(String(note.id), px, py + 0.5);
     });
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId]);
+
+    // Ghost preview for line/rect
+    if (isDragging && dragStart && dragEnd && (activeTool === 'line' || activeTool === 'rect')) {
+      const ghostPoints = activeTool === 'line'
+        ? bresenhamLine(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y)
+        : rectOutline(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      for (const p of ghostPoints) {
+        if (p.x >= 0 && p.x < meta.width && p.y >= 0 && p.y < meta.height) {
+          ctx.fillStyle = theme.tileColors[activeTile] ?? '#888';
+          ctx.fillRect(p.x * tileSize, p.y * tileSize, tileSize, tileSize);
+        }
+      }
+      ctx.restore();
+    }
+
+    // Selection box
+    if (selection) {
+      ctx.save();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(
+        selection.x * tileSize,
+        selection.y * tileSize,
+        selection.w * tileSize,
+        selection.h * tileSize
+      );
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, themeId, isDragging, dragStart, dragEnd, activeTool, activeTile, selection]);
+
+  // Minimap render
+  useEffect(() => {
+    const canvas = minimapRef.current;
+    if (!canvas) return;
+    const theme = getTheme(themeId);
+
+    const MINIMAP_MAX_W = 160;
+    const MINIMAP_MAX_H = 120;
+    const mTile = Math.max(1, Math.min(Math.floor(MINIMAP_MAX_W / meta.width), Math.floor(MINIMAP_MAX_H / meta.height)));
+    const mW = meta.width * mTile;
+    const mH = meta.height * mTile;
+
+    canvas.width = mW;
+    canvas.height = mH;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    ctx.fillStyle = theme.tileColors['empty'];
+    ctx.fillRect(0, 0, mW, mH);
+
+    for (let y = 0; y < meta.height; y++) {
+      for (let x = 0; x < meta.width; x++) {
+        const tile = tiles[y]?.[x];
+        if (tile && tile.type !== 'empty') {
+          ctx.fillStyle = theme.tileColors[tile.type];
+          ctx.fillRect(x * mTile, y * mTile, mTile, mTile);
+        }
+      }
+    }
+
+    const containerEl = containerRef.current;
+    if (containerEl) {
+      const vw = containerEl.clientWidth / zoom / tileSize;
+      const vh = containerEl.clientHeight / zoom / tileSize;
+      const vcx = meta.width / 2 - pan.x / (zoom * tileSize);
+      const vcy = meta.height / 2 - pan.y / (zoom * tileSize);
+      const vx = (vcx - vw / 2) * mTile;
+      const vy = (vcy - vh / 2) * mTile;
+      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(vx, vy, vw * mTile, vh * mTile);
+    }
+  }, [map, tiles, meta, tileSize, themeId, zoom, pan]);
+
+  // Selection keyboard handler
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (activeTool === 'select' && selection) {
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+          const eraseList: { x: number; y: number }[] = [];
+          for (let y = selection.y; y < selection.y + selection.h; y++) {
+            for (let x = selection.x; x < selection.x + selection.w; x++) {
+              eraseList.push({ x, y });
+            }
+          }
+          onEraseTiles(eraseList);
+        } else if (e.key === 'Escape') {
+          setSelection(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [activeTool, selection, onEraseTiles]);
 
   const getTileCoords = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -336,7 +277,6 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       const tileType = tiles[y]?.[x]?.type;
       if (tileType) onPickTile(tileType);
     } else if (activeTool === 'note') {
-      // Check if clicking existing note
       const existingNote = notes.find(n => n.x === x && n.y === y);
       if (existingNote) {
         onSelectNote(existingNote.id === selectedNoteId ? null : existingNote.id);
@@ -354,12 +294,25 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       return;
     }
     isMouseDownRef.current = true;
-    if (activeTool === 'fill' || activeTool === 'eyedropper' || activeTool === 'note') {
-      handleCanvasAction(e);
+    const coords = getTileCoords(e);
+
+    if (activeTool === 'line' || activeTool === 'rect') {
+      if (coords) {
+        setDragStart(coords);
+        setDragEnd(coords);
+        setIsDragging(true);
+      }
+    } else if (activeTool === 'select') {
+      if (coords) {
+        setDragStart(coords);
+        setDragEnd(coords);
+        setIsDragging(true);
+        setSelection({ x: coords.x, y: coords.y, w: 1, h: 1 });
+      }
     } else {
       handleCanvasAction(e);
     }
-  }, [activeTool, handleCanvasAction]);
+  }, [activeTool, getTileCoords, handleCanvasAction]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isPanningRef.current) {
@@ -369,16 +322,68 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
       return;
     }
+
+    const coords = getTileCoords(e);
+    if (coords) setMousePos(coords);
+
     if (!isMouseDownRef.current) return;
-    if (activeTool === 'paint' || activeTool === 'erase') {
+
+    if ((activeTool === 'line' || activeTool === 'rect') && isDragging && coords) {
+      setDragEnd(coords);
+    } else if (activeTool === 'select' && isDragging && coords && dragStart) {
+      setDragEnd(coords);
+      setSelection({
+        x: Math.min(dragStart.x, coords.x),
+        y: Math.min(dragStart.y, coords.y),
+        w: Math.abs(coords.x - dragStart.x) + 1,
+        h: Math.abs(coords.y - dragStart.y) + 1,
+      });
+    } else if (activeTool === 'paint' || activeTool === 'erase') {
       handleCanvasAction(e);
     }
-  }, [activeTool, handleCanvasAction]);
+  }, [activeTool, isDragging, dragStart, getTileCoords, handleCanvasAction]);
 
-  const handleMouseUp = useCallback(() => {
+  const handleMouseUp = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    isPanningRef.current = false;
+
+    if (isMouseDownRef.current) {
+      if ((activeTool === 'line' || activeTool === 'rect') && isDragging && dragStart && dragEnd) {
+        const points = activeTool === 'line'
+          ? bresenhamLine(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y)
+          : rectOutline(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
+        onSetTiles(points.map(p => ({ ...p, type: activeTile })));
+      } else if (activeTool === 'select' && isDragging && dragStart && dragEnd) {
+        setSelection({
+          x: Math.min(dragStart.x, dragEnd.x),
+          y: Math.min(dragStart.y, dragEnd.y),
+          w: Math.abs(dragEnd.x - dragStart.x) + 1,
+          h: Math.abs(dragEnd.y - dragStart.y) + 1,
+        });
+      }
+    }
+
+    isMouseDownRef.current = false;
+    setIsDragging(false);
+    setDragStart(null);
+    setDragEnd(null);
+
+    // Handle single-click actions for fill/eyedropper/note
+    if (!isDragging && (activeTool === 'fill' || activeTool === 'eyedropper' || activeTool === 'note')) {
+      // these are handled in mousedown
+    }
+    void e;
+  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles]);
+
+  const handleMouseLeave = useCallback(() => {
     isMouseDownRef.current = false;
     isPanningRef.current = false;
-  }, []);
+    setMousePos(null);
+    if (isDragging) {
+      setIsDragging(false);
+      setDragStart(null);
+      setDragEnd(null);
+    }
+  }, [isDragging]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     e.preventDefault();
@@ -388,24 +393,45 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     });
   }, []);
 
+  const handleMinimapClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = minimapRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mTile = Math.max(1, Math.min(Math.floor(160 / meta.width), Math.floor(120 / meta.height)));
+    const tileX = (e.clientX - rect.left) / mTile;
+    const tileY = (e.clientY - rect.top) / mTile;
+    const newPanX = (meta.width / 2 - tileX) * zoom * tileSize;
+    const newPanY = (meta.height / 2 - tileY) * zoom * tileSize;
+    setPan({ x: newPanX, y: newPanY });
+  }, [meta, zoom, tileSize]);
+
+  const cursorStyle = activeTool === 'eyedropper' ? 'crosshair'
+    : activeTool === 'fill' ? 'cell'
+    : activeTool === 'note' ? 'copy'
+    : activeTool === 'select' ? 'default'
+    : 'crosshair';
+
   return (
     <div className="canvas-wrapper" ref={containerRef}>
       <div className="canvas-viewport">
-        <div className="canvas-transform-container" style={{ transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`, transformOrigin: 'center center' }}>
+        <div
+          className="canvas-transform-container"
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: 'center center',
+          }}
+        >
           <canvas
             ref={canvasRef}
             style={{
-              cursor: activeTool === 'eyedropper' ? 'crosshair'
-                    : activeTool === 'fill' ? 'cell'
-                    : activeTool === 'note' ? 'copy'
-                    : 'crosshair',
+              cursor: cursorStyle,
               imageRendering: 'pixelated',
               display: 'block',
             }}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            onMouseLeave={handleMouseLeave}
             onContextMenu={e => e.preventDefault()}
             onWheel={handleWheel}
           />
@@ -417,6 +443,17 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         <button onClick={() => setZoom(z => Math.max(0.25, z - 0.25))}>-</button>
         <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}>Reset</button>
       </div>
+      {mousePos && (
+        <div className="coord-display">
+          X: {mousePos.x} &nbsp; Y: {mousePos.y}
+        </div>
+      )}
+      <canvas
+        ref={minimapRef}
+        className="minimap-canvas"
+        onClick={handleMinimapClick}
+        title="Minimap - click to pan"
+      />
     </div>
   );
 });

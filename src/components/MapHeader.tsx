@@ -1,22 +1,30 @@
 import React, { useRef } from 'react';
 import type { DungeonMap } from '../types/map';
 import { exportMapJSON, importMapJSON, exportMapPNG } from '../utils/export';
+import { THEME_LIST } from '../themes/index';
 
 interface MapHeaderProps {
   map: DungeonMap;
   onSetName: (name: string) => void;
   onResize: (w: number, h: number) => void;
   onSetTileSize: (size: number) => void;
+  onSetTheme: (theme: string) => void;
   onClear: () => void;
   onNew: () => void;
   onLoad: (map: DungeonMap) => void;
+  onExportSVG: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
   getCanvas: () => HTMLCanvasElement | null;
 }
 
-const GRID_SIZES = [8, 16, 24, 32, 48, 64];
+const GRID_SIZES = [8, 16, 24, 32, 48, 64, 96, 128];
 
 const MapHeader: React.FC<MapHeaderProps> = ({
-  map, onSetName, onResize, onSetTileSize, onClear, onNew, onLoad, getCanvas
+  map, onSetName, onResize, onSetTileSize, onSetTheme, onClear, onNew, onLoad,
+  onExportSVG, onUndo, onRedo, canUndo, canRedo, getCanvas
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -98,13 +106,26 @@ const MapHeader: React.FC<MapHeaderProps> = ({
         >
           {[12, 16, 20, 24, 32].map(s => <option key={s} value={s}>{s}px</option>)}
         </select>
+
+        <label className="header-label" style={{ marginLeft: 8 }}>THEME:</label>
+        <select
+          className="grid-select"
+          value={map.meta.theme ?? 'fantasy'}
+          onChange={e => onSetTheme(e.target.value)}
+          title="Map theme"
+        >
+          {THEME_LIST.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
       </div>
 
       <div className="header-right">
+        <button className="header-btn" onClick={onUndo} disabled={!canUndo} title="Undo [Ctrl+Z]">↩ Undo</button>
+        <button className="header-btn" onClick={onRedo} disabled={!canRedo} title="Redo [Ctrl+Y]">↪ Redo</button>
         <button className="header-btn" onClick={handleNew} title="New Map">New</button>
         <button className="header-btn danger" onClick={handleClear} title="Clear Map">Clear</button>
         <button className="header-btn" onClick={() => exportMapJSON(map)} title="Export JSON">↓ JSON</button>
         <button className="header-btn" onClick={handleExportPNG} title="Export PNG">↓ PNG</button>
+        <button className="header-btn" onClick={onExportSVG} title="Export SVG">↓ SVG</button>
         <button className="header-btn" onClick={() => fileInputRef.current?.click()} title="Import JSON">↑ Import</button>
         <input
           ref={fileInputRef}
