@@ -216,8 +216,9 @@ export function useMapState() {
   const undo = useCallback(() => {
     if (pastRef.current.length === 0) return;
     setMap(prev => {
-      const previous = pastRef.current.pop()!;
-      futureRef.current.push(prev.tiles);
+      const previous = pastRef.current[pastRef.current.length - 1];
+      pastRef.current = pastRef.current.slice(0, -1);
+      futureRef.current = [...futureRef.current, prev.tiles];
       const updated = { ...prev, tiles: previous };
       debouncedSave(updated);
       setCanUndo(pastRef.current.length > 0);
@@ -229,8 +230,9 @@ export function useMapState() {
   const redo = useCallback(() => {
     if (futureRef.current.length === 0) return;
     setMap(prev => {
-      const next = futureRef.current.pop()!;
-      pastRef.current.push(prev.tiles);
+      const next = futureRef.current[futureRef.current.length - 1];
+      futureRef.current = futureRef.current.slice(0, -1);
+      pastRef.current = [...pastRef.current, prev.tiles];
       const updated = { ...prev, tiles: next };
       debouncedSave(updated);
       setCanUndo(true);

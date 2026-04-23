@@ -343,7 +343,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
   }, [activeTool, isDragging, dragStart, getTileCoords, handleCanvasAction]);
 
-  const handleMouseUp = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleMouseUp = useCallback(() => {
     isPanningRef.current = false;
 
     if (isMouseDownRef.current) {
@@ -366,12 +366,6 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setIsDragging(false);
     setDragStart(null);
     setDragEnd(null);
-
-    // Handle single-click actions for fill/eyedropper/note
-    if (!isDragging && (activeTool === 'fill' || activeTool === 'eyedropper' || activeTool === 'note')) {
-      // these are handled in mousedown
-    }
-    void e;
   }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles]);
 
   const handleMouseLeave = useCallback(() => {
