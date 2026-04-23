@@ -1,0 +1,470 @@
+/* ── Layout ─────────────────────────────────────────────── */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  background: #1a1a2e;
+}
+
+.app-body {
+  display: grid;
+  grid-template-columns: 180px 1fr 200px;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.map-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  background: #0f1924;
+  border-bottom: 2px solid #0f3460;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex: 1;
+  min-width: 220px;
+}
+
+.header-center {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.app-title {
+  color: #e94560;
+  font-weight: bold;
+  font-size: 15px;
+  letter-spacing: 2px;
+  white-space: nowrap;
+  text-shadow: 0 0 8px #e9456088;
+}
+
+.map-name-input {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  color: #e0d5c1;
+  padding: 4px 8px;
+  font-size: 13px;
+  min-width: 140px;
+  outline: none;
+}
+.map-name-input:focus {
+  border-color: #e94560;
+}
+
+.header-label {
+  color: #7a8caa;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+.grid-select {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  color: #e0d5c1;
+  padding: 3px 6px;
+  font-size: 12px;
+  outline: none;
+}
+.grid-select:focus {
+  border-color: #e94560;
+}
+
+.header-btn {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  color: #e0d5c1;
+  padding: 4px 10px;
+  font-size: 12px;
+  transition: background 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+.header-btn:hover {
+  background: #0f3460;
+  border-color: #e94560;
+  color: #fff;
+}
+.header-btn.danger:hover {
+  background: #5a1010;
+  border-color: #e94560;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  flex-direction: column;
+  background: #16213e;
+  border-right: 2px solid #0f3460;
+  padding: 8px 6px;
+  overflow-y: auto;
+  gap: 8px;
+}
+
+.toolbar-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.toolbar-label {
+  font-size: 10px;
+  letter-spacing: 2px;
+  color: #e94560;
+  padding: 2px 4px;
+  border-bottom: 1px solid #0f3460;
+  margin-bottom: 4px;
+}
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #0f1924;
+  border: 1px solid #0f3460;
+  color: #e0d5c1;
+  padding: 5px 8px;
+  font-size: 12px;
+  text-align: left;
+  transition: background 0.15s, border-color 0.15s;
+  width: 100%;
+}
+.tool-btn:hover {
+  background: #1a3050;
+  border-color: #e94560;
+}
+.tool-btn.active {
+  background: #0f3460;
+  border-color: #e94560;
+  color: #e94560;
+}
+
+.tool-icon { font-size: 14px; }
+.tool-name { flex: 1; }
+.tool-shortcut { color: #7a8caa; font-size: 10px; }
+
+/* Tile palette */
+.tile-palette {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.tile-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #0f1924;
+  border: 1px solid #0f3460;
+  color: #e0d5c1;
+  padding: 4px 6px;
+  font-size: 11px;
+  text-align: left;
+  width: 100%;
+  transition: background 0.12s, border-color 0.12s;
+}
+.tile-btn:hover {
+  background: #1a3050;
+  border-color: #e94560;
+}
+.tile-btn.active {
+  background: #0f3460;
+  border-color: #e94560;
+  color: #fff;
+}
+.tile-btn-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Canvas Area ─────────────────────────────────────────── */
+.canvas-area {
+  background: #12121f;
+  overflow: hidden;
+  display: flex;
+  align-items: stretch;
+  position: relative;
+}
+
+.canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.canvas-viewport {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.canvas-transform-container {
+  transition: none;
+}
+
+.canvas-transform-container canvas {
+  box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+}
+
+.zoom-controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #0f1924cc;
+  border: 1px solid #0f3460;
+  padding: 4px 8px;
+  z-index: 10;
+}
+.zoom-controls button {
+  background: #16213e;
+  border: 1px solid #0f3460;
+  color: #e0d5c1;
+  width: 24px;
+  height: 24px;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.15s;
+}
+.zoom-controls button:hover {
+  background: #0f3460;
+  color: #e94560;
+}
+.zoom-controls span {
+  color: #e0d5c1;
+  font-size: 12px;
+  min-width: 40px;
+  text-align: center;
+}
+
+/* ── Notes Panel ─────────────────────────────────────────── */
+.notes-panel {
+  display: flex;
+  flex-direction: column;
+  background: #16213e;
+  border-left: 2px solid #0f3460;
+  overflow: hidden;
+}
+
+.notes-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px 6px;
+  border-bottom: 1px solid #0f3460;
+  flex-shrink: 0;
+}
+
+.add-note-btn {
+  background: #0f3460;
+  border: 1px solid #e94560;
+  color: #e0d5c1;
+  padding: 3px 8px;
+  font-size: 11px;
+  transition: background 0.15s;
+}
+.add-note-btn:hover {
+  background: #e94560;
+  color: #fff;
+}
+
+.notes-empty {
+  color: #7a8caa;
+  font-size: 11px;
+  padding: 12px;
+  text-align: center;
+  line-height: 1.7;
+}
+
+.notes-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.note-item {
+  border: 1px solid #0f3460;
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+  background: #0f1924;
+}
+.note-item:hover {
+  border-color: #e94560;
+}
+.note-item.selected {
+  border-color: #e94560;
+  background: #1a0a20;
+}
+
+.note-view {
+  padding: 6px;
+}
+
+.note-header-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 2px;
+}
+
+.note-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: #f0c040;
+  color: #1a1a2e;
+  font-size: 10px;
+  font-weight: bold;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.note-label {
+  font-size: 12px;
+  font-weight: bold;
+  color: #e0d5c1;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note-actions {
+  display: flex;
+  gap: 3px;
+}
+
+.note-edit-btn, .note-delete-btn {
+  background: none;
+  border: 1px solid #0f3460;
+  color: #7a8caa;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.12s, color 0.12s;
+}
+.note-edit-btn:hover {
+  background: #0f3460;
+  color: #e0d5c1;
+}
+.note-delete-btn:hover {
+  background: #5a1010;
+  color: #e94560;
+  border-color: #e94560;
+}
+
+.note-coords {
+  font-size: 10px;
+  color: #7a8caa;
+}
+
+.note-desc {
+  font-size: 11px;
+  color: #b0a890;
+  margin-top: 3px;
+  line-height: 1.4;
+  word-break: break-word;
+}
+
+/* Note editing form */
+.note-edit {
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.note-input {
+  background: #0f1924;
+  border: 1px solid #0f3460;
+  color: #e0d5c1;
+  padding: 3px 6px;
+  font-size: 12px;
+  width: 100%;
+  outline: none;
+}
+.note-input:focus {
+  border-color: #e94560;
+}
+
+.note-textarea {
+  background: #0f1924;
+  border: 1px solid #0f3460;
+  color: #e0d5c1;
+  padding: 3px 6px;
+  font-size: 11px;
+  width: 100%;
+  resize: vertical;
+  outline: none;
+  min-height: 50px;
+}
+.note-textarea:focus {
+  border-color: #e94560;
+}
+
+.note-edit-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.note-save-btn {
+  flex: 1;
+  background: #0f3460;
+  border: 1px solid #e94560;
+  color: #e0d5c1;
+  padding: 3px 0;
+  font-size: 11px;
+}
+.note-save-btn:hover {
+  background: #e94560;
+}
+
+.note-cancel-btn {
+  background: #1a1a2e;
+  border: 1px solid #0f3460;
+  color: #7a8caa;
+  padding: 3px 8px;
+  font-size: 11px;
+}
+.note-cancel-btn:hover {
+  background: #16213e;
+  color: #e0d5c1;
+}
