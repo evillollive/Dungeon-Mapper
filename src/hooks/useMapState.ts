@@ -45,8 +45,10 @@ export function useMapState() {
     }, 500);
   }, []);
 
+  const MAX_HISTORY_SIZE = 50;
+
   function pushHistory(currentTiles: Tile[][]) {
-    pastRef.current = [...pastRef.current.slice(-49), currentTiles];
+    pastRef.current = [...pastRef.current.slice(-(MAX_HISTORY_SIZE - 1)), currentTiles];
     futureRef.current = [];
     setCanUndo(true);
     setCanRedo(false);

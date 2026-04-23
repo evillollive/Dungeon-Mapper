@@ -21,6 +21,9 @@ export interface MapCanvasHandle {
   getCanvas: () => HTMLCanvasElement | null;
 }
 
+const MINIMAP_MAX_W = 160;
+const MINIMAP_MAX_H = 120;
+
 function bresenhamLine(x0: number, y0: number, x1: number, y1: number): { x: number; y: number }[] {
   const points: { x: number; y: number }[] = [];
   const dx = Math.abs(x1 - x0);
@@ -190,8 +193,6 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     if (!canvas) return;
     const theme = getTheme(themeId);
 
-    const MINIMAP_MAX_W = 160;
-    const MINIMAP_MAX_H = 120;
     const mTile = Math.max(1, Math.min(Math.floor(MINIMAP_MAX_W / meta.width), Math.floor(MINIMAP_MAX_H / meta.height)));
     const mW = meta.width * mTile;
     const mH = meta.height * mTile;
@@ -216,7 +217,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
 
     const containerEl = containerRef.current;
-    if (containerEl) {
+    if (containerEl && zoom > 0) {
       const vw = containerEl.clientWidth / zoom / tileSize;
       const vh = containerEl.clientHeight / zoom / tileSize;
       const vcx = meta.width / 2 - pan.x / (zoom * tileSize);
@@ -391,7 +392,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     const canvas = minimapRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const mTile = Math.max(1, Math.min(Math.floor(160 / meta.width), Math.floor(120 / meta.height)));
+    const mTile = Math.max(1, Math.min(Math.floor(MINIMAP_MAX_W / meta.width), Math.floor(MINIMAP_MAX_H / meta.height)));
     const tileX = (e.clientX - rect.left) / mTile;
     const tileY = (e.clientY - rect.top) / mTile;
     const newPanX = (meta.width / 2 - tileX) * zoom * tileSize;

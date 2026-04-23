@@ -25,7 +25,9 @@ export async function saveMap(map: DungeonMap): Promise<void> {
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
     });
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.warn('[dungeon-mapper] Failed to save map:', err);
+  }
 }
 
 export async function loadMap(): Promise<DungeonMap | null> {
@@ -56,5 +58,7 @@ export function clearSavedMap(): void {
   openDB().then(db => {
     const tx = db.transaction(STORE_NAME, 'readwrite');
     tx.objectStore(STORE_NAME).delete(AUTOSAVE_KEY);
-  }).catch(() => {});
+  }).catch(err => {
+    console.warn('[dungeon-mapper] Failed to clear saved map:', err);
+  });
 }
