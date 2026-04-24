@@ -10,7 +10,8 @@ export interface TileTheme {
   drawTile(ctx: CanvasRenderingContext2D, id: TileType, x: number, y: number, size: number): void;
 }
 
-import { fantasyTheme } from './fantasy';
+import { dungeonTheme } from './dungeon';
+import { castleTheme } from './castle';
 import { scifiTheme } from './scifi';
 import { oldwestTheme } from './oldwest';
 import { steampunkTheme } from './steampunk';
@@ -20,7 +21,8 @@ import { postapocalypseTheme } from './postapocalypse';
 import { moderncityTheme } from './moderncity';
 
 export const THEME_REGISTRY: Record<string, TileTheme> = {
-  fantasy: fantasyTheme,
+  dungeon: dungeonTheme,
+  castle: castleTheme,
   scifi: scifiTheme,
   oldwest: oldwestTheme,
   steampunk: steampunkTheme,
@@ -32,6 +34,14 @@ export const THEME_REGISTRY: Record<string, TileTheme> = {
 
 export const THEME_LIST = Object.values(THEME_REGISTRY);
 
+// Legacy theme-id aliases. Older saved maps reference the previous combined
+// "fantasy" theme; resolve those to the new "dungeon" theme so existing
+// content keeps rendering after the split into Castle and Dungeon.
+const THEME_ALIASES: Record<string, string> = {
+  fantasy: 'dungeon',
+};
+
 export function getTheme(id: string): TileTheme {
-  return THEME_REGISTRY[id] ?? fantasyTheme;
+  const resolved = THEME_ALIASES[id] ?? id;
+  return THEME_REGISTRY[resolved] ?? dungeonTheme;
 }
