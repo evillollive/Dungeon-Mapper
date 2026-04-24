@@ -76,7 +76,7 @@ function App() {
   } = useDrawingTool();
 
   const canvasRef = useRef<MapCanvasHandle>(null);
-  const themeId = map.meta.theme ?? 'fantasy';
+  const themeId = map.meta.theme ?? 'dungeon';
   const [printMode, setPrintMode] = useState(false);
   const [uiScale, setUIScale] = useState<number>(loadInitialUIScale);
   const [preserveOnThemeSwitch, setPreserveOnThemeSwitch] = useState<boolean>(

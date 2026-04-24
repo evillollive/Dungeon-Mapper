@@ -1,25 +1,28 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
 
-export const fantasyTheme: TileTheme = {
-  id: 'fantasy',
-  name: 'Fantasy',
+// Dungeon theme: a gritty subterranean crawl — damp stone walls, rough flagged
+// floors, iron-bound timber doors, and torchlit gold accents. This carries the
+// classic underground dungeon feel that the original "Fantasy" theme depicted.
+export const dungeonTheme: TileTheme = {
+  id: 'dungeon',
+  name: 'Dungeon',
   tiles: [
-    { id: 'empty', label: 'Empty' }, { id: 'floor', label: 'Floor' }, { id: 'wall', label: 'Wall' },
-    { id: 'door-h', label: 'Door (H)' }, { id: 'door-v', label: 'Door (V)' },
+    { id: 'empty', label: 'Void' }, { id: 'floor', label: 'Flagstone' }, { id: 'wall', label: 'Stone Wall' },
+    { id: 'door-h', label: 'Iron Door (H)' }, { id: 'door-v', label: 'Iron Door (V)' },
     { id: 'secret-door', label: 'Secret Door' },
     { id: 'stairs-up', label: 'Stairs Up' }, { id: 'stairs-down', label: 'Stairs Down' },
-    { id: 'water', label: 'Water' }, { id: 'pillar', label: 'Pillar' },
-    { id: 'trap', label: 'Trap' }, { id: 'treasure', label: 'Treasure' }, { id: 'start', label: 'Start' },
+    { id: 'water', label: 'Underground Pool' }, { id: 'pillar', label: 'Pillar' },
+    { id: 'trap', label: 'Trap' }, { id: 'treasure', label: 'Treasure' }, { id: 'start', label: 'Entrance' },
   ],
   emptyTileId: 'empty',
   cssVars: {},
   tileColors: {
-    empty: '#1a1a2e', floor: '#c8b89a', wall: '#4a4a4a',
-    'door-h': '#8b6914', 'door-v': '#8b6914',
-    'secret-door': '#4a4a4a',
+    empty: '#0f0f1c', floor: '#8a7a60', wall: '#3a3a3a',
+    'door-h': '#6b4f1d', 'door-v': '#6b4f1d',
+    'secret-door': '#3a3a3a',
     'stairs-up': '#7a9e7e', 'stairs-down': '#5a7a5e',
-    water: '#1e5f8e', pillar: '#6a6a6a', trap: '#8e1e1e',
+    water: '#1a4f7a', pillar: '#5a5a5a', trap: '#8e1e1e',
     treasure: '#d4af37', start: '#2e8b57',
   },
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
@@ -45,15 +48,16 @@ export const fantasyTheme: TileTheme = {
         break;
 
       case 'floor': {
-        ctx.fillStyle = '#3a3020';
+        // Subtle mortar fleck to suggest rough flagstones.
+        ctx.fillStyle = '#2a2418';
         ctx.fillRect(cx - 1, cy - 1, 2, 2);
         break;
       }
 
       case 'wall': {
-        ctx.fillStyle = '#333333';
+        ctx.fillStyle = '#262626';
         ctx.fillRect(px + 2, py + 2, s - 4, s - 4);
-        ctx.fillStyle = '#5a5a5a';
+        ctx.fillStyle = '#4a4a4a';
         ctx.fillRect(px + 2, py + 2, s - 4, 2);
         ctx.fillRect(px + 2, py + 2, 2, s - 4);
         break;
@@ -61,9 +65,9 @@ export const fantasyTheme: TileTheme = {
 
       case 'secret-door': {
         // Render as a wall, with a faint 'S' overlay for the mapper.
-        ctx.fillStyle = '#333333';
+        ctx.fillStyle = '#262626';
         ctx.fillRect(px + 2, py + 2, s - 4, s - 4);
-        ctx.fillStyle = '#5a5a5a';
+        ctx.fillStyle = '#4a4a4a';
         ctx.fillRect(px + 2, py + 2, s - 4, 2);
         ctx.fillRect(px + 2, py + 2, 2, s - 4);
         const fontSize = Math.max(7, Math.floor(s * 0.6));
@@ -78,7 +82,7 @@ export const fantasyTheme: TileTheme = {
       case 'door-h': {
         ctx.fillStyle = '#c8a84b';
         ctx.fillRect(px + 2, cy - 2, s - 4, 4);
-        ctx.fillStyle = '#1a1a2e';
+        ctx.fillStyle = '#0f0f1c';
         ctx.fillRect(cx - 3, cy - 2, 6, 4);
         ctx.strokeStyle = '#c8a84b';
         ctx.beginPath();
@@ -93,7 +97,7 @@ export const fantasyTheme: TileTheme = {
       case 'door-v': {
         ctx.fillStyle = '#c8a84b';
         ctx.fillRect(cx - 2, py + 2, 4, s - 4);
-        ctx.fillStyle = '#1a1a2e';
+        ctx.fillStyle = '#0f0f1c';
         ctx.fillRect(cx - 2, cy - 3, 4, 6);
         ctx.strokeStyle = '#c8a84b';
         ctx.beginPath();
@@ -168,11 +172,11 @@ export const fantasyTheme: TileTheme = {
       }
 
       case 'pillar': {
-        ctx.fillStyle = '#888';
+        ctx.fillStyle = '#777';
         ctx.beginPath();
         ctx.arc(cx, cy, s / 4, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#ccc';
+        ctx.strokeStyle = '#bbb';
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.arc(cx, cy, s / 4, 0, Math.PI * 2);

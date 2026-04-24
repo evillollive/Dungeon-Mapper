@@ -219,7 +219,7 @@ export function useMapState() {
 
   const setTheme = useCallback((theme: string, preserveExisting = false) => {
     setMap(prev => {
-      const previousTheme = prev.meta.theme ?? 'fantasy';
+      const previousTheme = prev.meta.theme ?? 'dungeon';
       // Bail out if nothing would change so we don't push spurious history.
       if (theme === previousTheme) return prev;
 
