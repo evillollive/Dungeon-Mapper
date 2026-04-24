@@ -16,6 +16,7 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **Room notes** — numbered annotations placed on the map with labels and descriptions
 - **Auto-save** — map state persisted to IndexedDB on every change (migrates legacy localStorage data automatically)
 - **Export / Import** — JSON round-trip, PNG canvas export, and SVG vector export
+- **Adjustable UI scale** — header **UI** dropdown rescales chrome text and controls (50%, 75%, 100%, 125%, 150%) and remembers your choice across sessions
 - **Retro aesthetic** — dark navy background, parchment text, pixel-sharp canvas rendering
 
 ## Preset Modes

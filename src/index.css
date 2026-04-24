@@ -1,18 +1,26 @@
 :root {
   /* User-adjustable UI scale. 1 = default. Set at runtime on
-     document.documentElement (e.g. 0.75, 1, 1.25, 1.5, 1.75, 2). */
+     document.documentElement (e.g. 0.5, 0.75, 1, 1.25, 1.5). */
   --ui-scale: 1;
+
+  /* Baseline multiplier applied on top of --ui-scale. The chrome was
+     historically designed around small px values (10–16px) and the
+     "150%" preset was the most readable default, so we bake that 1.5×
+     factor in here. That way --ui-scale: 1 = the comfortable default
+     and the menu percentages line up with what users actually see. */
+  --ui-base-scale: 1.5;
 
   /* Scaled font-size tokens. These scale linearly with --ui-scale so
      that the entire chrome can be made larger/easier to read without
-     touching per-component CSS. */
-  --fs-10: calc(10px * var(--ui-scale));
-  --fs-11: calc(11px * var(--ui-scale));
-  --fs-12: calc(12px * var(--ui-scale));
-  --fs-13: calc(13px * var(--ui-scale));
-  --fs-14: calc(14px * var(--ui-scale));
-  --fs-15: calc(15px * var(--ui-scale));
-  --fs-16: calc(16px * var(--ui-scale));
+     touching per-component CSS. The numeric suffix refers to the
+     historical logical px size, not the rendered size. */
+  --fs-10: calc(10px * var(--ui-base-scale) * var(--ui-scale));
+  --fs-11: calc(11px * var(--ui-base-scale) * var(--ui-scale));
+  --fs-12: calc(12px * var(--ui-base-scale) * var(--ui-scale));
+  --fs-13: calc(13px * var(--ui-base-scale) * var(--ui-scale));
+  --fs-14: calc(14px * var(--ui-base-scale) * var(--ui-scale));
+  --fs-15: calc(15px * var(--ui-base-scale) * var(--ui-scale));
+  --fs-16: calc(16px * var(--ui-base-scale) * var(--ui-scale));
 }
 
 *, *::before, *::after {

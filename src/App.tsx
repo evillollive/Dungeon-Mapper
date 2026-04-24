@@ -10,8 +10,10 @@ import { getTheme } from './themes/index';
 import './App.css';
 
 const UI_SCALE_STORAGE_KEY = 'dungeon-mapper:ui-scale';
-const UI_SCALE_OPTIONS = [0.75, 1, 1.25, 1.5, 1.75, 2] as const;
+const UI_SCALE_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5] as const;
 const DEFAULT_UI_SCALE = 1;
+const MIN_UI_SCALE = UI_SCALE_OPTIONS[0];
+const MAX_UI_SCALE = UI_SCALE_OPTIONS[UI_SCALE_OPTIONS.length - 1];
 
 function loadInitialUIScale(): number {
   if (typeof window === 'undefined') return DEFAULT_UI_SCALE;
@@ -21,8 +23,11 @@ function loadInitialUIScale(): number {
     const parsed = Number(raw);
     if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_UI_SCALE;
     // Clamp to the supported range to avoid extreme values from older
-    // versions or hand-edited storage breaking the layout.
-    return Math.min(Math.max(parsed, 0.5), 3);
+    // versions or hand-edited storage breaking the layout. Older
+    // versions used a different baseline where the user's "150%" was
+    // today's "100%", so values outside the new range collapse to the
+    // nearest supported option.
+    return Math.min(Math.max(parsed, MIN_UI_SCALE), MAX_UI_SCALE);
   } catch {
     return DEFAULT_UI_SCALE;
   }
