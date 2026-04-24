@@ -51,7 +51,7 @@ export function exportMapPNG(canvas: HTMLCanvasElement, name: string, printFrien
   a.click();
 }
 
-export function exportMapSVG(map: DungeonMap, theme: TileTheme): void {
+export function exportMapSVG(map: DungeonMap, theme: TileTheme, resolveTheme?: (id: string) => TileTheme): void {
   const { width, height, tileSize, name } = map.meta;
   const svgW = width * tileSize;
   const svgH = height * tileSize;
@@ -63,7 +63,11 @@ export function exportMapSVG(map: DungeonMap, theme: TileTheme): void {
     for (let x = 0; x < width; x++) {
       const tile = map.tiles[y]?.[x];
       if (!tile || tile.type === 'empty') continue;
-      const fill = theme.tileColors[tile.type];
+      // Honor per-tile theme overrides (from "preserve tiles when switching
+      // themes") so mixed-style maps export with each tile in its original
+      // theme color. Falls back to the map theme when no override / resolver.
+      const tileTheme = tile.theme && resolveTheme ? resolveTheme(tile.theme) : theme;
+      const fill = tileTheme.tileColors[tile.type];
       svg += `<rect x="${x * tileSize}" y="${y * tileSize}" width="${tileSize}" height="${tileSize}" fill="${fill}" stroke="#2d3561" stroke-width="0.5"/>`;
     }
   }

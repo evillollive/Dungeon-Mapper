@@ -29,7 +29,11 @@ export function floodFill(
     if (newTiles[y][x].type !== targetType) continue;
 
     visited.add(key);
-    newTiles[y][x] = { ...newTiles[y][x], type: fillType };
+    // Clear any per-tile theme override on filled cells so they adopt the
+    // current map theme, matching the behavior of setTile/setTiles.
+    const next = { ...newTiles[y][x], type: fillType };
+    delete next.theme;
+    newTiles[y][x] = next;
 
     stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
   }

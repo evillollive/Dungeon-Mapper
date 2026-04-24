@@ -59,7 +59,13 @@ export function useMapState() {
       pushHistory(prev.tiles);
       const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
       if (y >= 0 && y < prev.meta.height && x >= 0 && x < prev.meta.width) {
-        newTiles[y][x] = { ...newTiles[y][x], type };
+        // Painting/erasing clears any per-tile theme override so the tile
+        // follows the current map theme. This is what makes "preserve on
+        // theme switch" non-destructive but still let new edits adopt the
+        // newly selected theme.
+        const next = { ...newTiles[y][x], type };
+        delete next.theme;
+        newTiles[y][x] = next;
       }
       const updated = { ...prev, tiles: newTiles };
       debouncedSave(updated);
@@ -85,7 +91,11 @@ export function useMapState() {
       const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
       for (const { x, y, type } of updates) {
         if (y >= 0 && y < prev.meta.height && x >= 0 && x < prev.meta.width) {
-          newTiles[y][x] = { ...newTiles[y][x], type };
+          // Same rationale as setTile: clear any per-tile theme override so
+          // the new edit follows the current map theme.
+          const next = { ...newTiles[y][x], type };
+          delete next.theme;
+          newTiles[y][x] = next;
         }
       }
       const updated = { ...prev, tiles: newTiles };
@@ -207,9 +217,39 @@ export function useMapState() {
     });
   }, [debouncedSave]);
 
-  const setTheme = useCallback((theme: string) => {
+  const setTheme = useCallback((theme: string, preserveExisting = false) => {
     setMap(prev => {
-      const updated = { ...prev, meta: { ...prev.meta, theme } };
+      const previousTheme = prev.meta.theme ?? 'fantasy';
+      // Bail out if nothing would change so we don't push spurious history.
+      if (theme === previousTheme) return prev;
+
+      let newTiles = prev.tiles;
+      if (preserveExisting) {
+        // Stamp the *outgoing* theme onto every non-empty tile that does not
+        // already carry an explicit per-tile theme. This freezes the visual
+        // style of the user's existing work so it survives the switch, while
+        // tiles painted afterward (which clear `theme`) follow the new map
+        // theme. Empty tiles are skipped because they don't render and
+        // tagging them would just bloat saved files.
+        let mutated = false;
+        const stamped = prev.tiles.map(row =>
+          row.map(t => {
+            if (t.type === 'empty' || t.theme) return t;
+            mutated = true;
+            return { ...t, theme: previousTheme };
+          })
+        );
+        if (mutated) {
+          pushHistory(prev.tiles);
+          newTiles = stamped;
+        }
+      }
+
+      const updated = {
+        ...prev,
+        tiles: newTiles,
+        meta: { ...prev.meta, theme },
+      };
       debouncedSave(updated);
       return updated;
     });
