@@ -57,8 +57,13 @@ export const TILE_LABELS: Record<TileType, string> = {
   start: 'Start',
 };
 
+// Tile types shown in the toolbar palette. The 'empty' tile is intentionally
+// omitted: it represents an unpainted / cleared cell (the graph-paper
+// background shows through it in screen mode, and SVG/print export treat it
+// as background), so a "paint empty" button would appear to do nothing on
+// the map. Use the Erase tool to clear a tile back to empty.
 export const ALL_TILE_TYPES: TileType[] = [
-  'empty', 'floor', 'wall', 'door-h', 'door-v', 'secret-door',
+  'floor', 'wall', 'door-h', 'door-v', 'secret-door',
   'stairs-up', 'stairs-down', 'water', 'pillar',
   'trap', 'treasure', 'start',
 ];

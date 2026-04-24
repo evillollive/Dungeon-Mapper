@@ -18,7 +18,8 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] =
   { id: 'paint',      label: 'Paint',       shortcut: 'P', icon: '✏️' },
   { id: 'erase',      label: 'Erase',       shortcut: 'E', icon: '🧹' },
   { id: 'fill',       label: 'Fill',        shortcut: 'F', icon: '🪣' },
-  { id: 'eyedropper', label: 'Eyedropper',  shortcut: 'I', icon: '💧' },
+  // Eyedropper temporarily disabled — kept here for easy re-enable in the future.
+  // { id: 'eyedropper', label: 'Eyedropper',  shortcut: 'I', icon: '💧' },
   { id: 'note',       label: 'Add Note',    shortcut: 'N', icon: '📍' },
   { id: 'line',       label: 'Line',        shortcut: 'L', icon: '📏' },
   { id: 'rect',       label: 'Rectangle',   shortcut: 'R', icon: '⬛' },
