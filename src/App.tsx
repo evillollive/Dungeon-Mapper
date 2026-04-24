@@ -1,12 +1,14 @@
 import { useRef, useCallback, useEffect, useState } from 'react';
 import MapCanvas, { type MapCanvasHandle } from './components/MapCanvas';
 import Toolbar from './components/Toolbar';
+import PlayerToolbar from './components/PlayerToolbar';
 import NotesPanel from './components/NotesPanel';
 import MapHeader from './components/MapHeader';
 import { useMapState } from './hooks/useMapState';
 import { useDrawingTool } from './hooks/useDrawingTool';
 import { exportMapSVG } from './utils/export';
 import { getTheme } from './themes/index';
+import type { ViewMode } from './types/map';
 import './App.css';
 
 const UI_SCALE_STORAGE_KEY = 'dungeon-mapper:ui-scale';
@@ -16,6 +18,7 @@ const MIN_UI_SCALE = UI_SCALE_OPTIONS[0];
 const MAX_UI_SCALE = UI_SCALE_OPTIONS[UI_SCALE_OPTIONS.length - 1];
 
 const PRESERVE_THEME_STORAGE_KEY = 'dungeon-mapper:preserve-on-theme-switch';
+const VIEW_MODE_STORAGE_KEY = 'dungeon-mapper:view-mode';
 
 function loadInitialPreserveOnThemeSwitch(): boolean {
   if (typeof window === 'undefined') return false;
@@ -23,6 +26,15 @@ function loadInitialPreserveOnThemeSwitch(): boolean {
     return window.localStorage.getItem(PRESERVE_THEME_STORAGE_KEY) === '1';
   } catch {
     return false;
+  }
+}
+
+function loadInitialViewMode(): ViewMode {
+  if (typeof window === 'undefined') return 'gm';
+  try {
+    return window.localStorage.getItem(VIEW_MODE_STORAGE_KEY) === 'player' ? 'player' : 'gm';
+  } catch {
+    return 'gm';
   }
 }
 
@@ -66,6 +78,15 @@ function App() {
     redo,
     canUndo,
     canRedo,
+    setFogCells,
+    fillAllFog,
+    setFogEnabled,
+    addToken,
+    moveToken,
+    removeToken,
+    addAnnotation,
+    removeAnnotation,
+    clearAnnotations,
   } = useMapState();
 
   const {
@@ -78,10 +99,39 @@ function App() {
   const canvasRef = useRef<MapCanvasHandle>(null);
   const themeId = map.meta.theme ?? 'dungeon';
   const [printMode, setPrintMode] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>(loadInitialViewMode);
   const [uiScale, setUIScale] = useState<number>(loadInitialUIScale);
   const [preserveOnThemeSwitch, setPreserveOnThemeSwitch] = useState<boolean>(
     loadInitialPreserveOnThemeSwitch
   );
+  // Player drawing pen state — color and brush width are UI-only and not
+  // persisted on the map; they're a per-session preference.
+  const [drawColor, setDrawColor] = useState<string>('#dc2626');
+  const [drawWidth, setDrawWidth] = useState<number>(0.25);
+
+  // When switching view modes, snap the active tool to a sensible default
+  // for that mode so the user isn't left holding a tool the new toolbar
+  // doesn't expose.
+  const switchViewMode = useCallback(() => {
+    setViewMode(prev => {
+      const next: ViewMode = prev === 'gm' ? 'player' : 'gm';
+      setActiveTool(next === 'player' ? 'pdraw' : 'paint');
+      try {
+        window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, next);
+      } catch {
+        // Ignore storage failures; the toggle still applies for the session.
+      }
+      return next;
+    });
+  }, [setActiveTool]);
+
+  const fogEnabled = map.fogEnabled ?? false;
+  const handleToggleFogEnabled = useCallback(() => {
+    setFogEnabled(!fogEnabled);
+  }, [fogEnabled, setFogEnabled]);
+  const handleResetFog = useCallback(() => fillAllFog(true), [fillAllFog]);
+  const handleClearFog = useCallback(() => fillAllFog(false), [fillAllFog]);
+  const handleClearPlayerDrawings = useCallback(() => clearAnnotations('player'), [clearAnnotations]);
 
   // Persist the preserve-on-theme-switch preference across sessions.
   useEffect(() => {
@@ -118,8 +168,8 @@ function App() {
 
   const handleExportSVG = useCallback(() => {
     const theme = getTheme(themeId);
-    exportMapSVG(map, theme, getTheme);
-  }, [map, themeId]);
+    exportMapSVG(map, theme, getTheme, { viewMode });
+  }, [map, themeId, viewMode]);
 
   // Undo/Redo keyboard shortcuts
   useEffect(() => {
@@ -156,18 +206,36 @@ function App() {
         uiScaleOptions={UI_SCALE_OPTIONS}
         onSetUIScale={setUIScale}
         getCanvas={() => canvasRef.current?.getCanvas() ?? null}
+        viewMode={viewMode}
+        onToggleViewMode={switchViewMode}
       />
       <div className="app-body">
-        <Toolbar
-          activeTool={activeTool}
-          activeTile={activeTile}
-          themeId={themeId}
-          onSetTool={setActiveTool}
-          onSetTile={setActiveTile}
-          onSetTheme={setTheme}
-          preserveOnThemeSwitch={preserveOnThemeSwitch}
-          onTogglePreserveOnThemeSwitch={() => setPreserveOnThemeSwitch(p => !p)}
-        />
+        {viewMode === 'gm' ? (
+          <Toolbar
+            activeTool={activeTool}
+            activeTile={activeTile}
+            themeId={themeId}
+            onSetTool={setActiveTool}
+            onSetTile={setActiveTile}
+            onSetTheme={setTheme}
+            preserveOnThemeSwitch={preserveOnThemeSwitch}
+            onTogglePreserveOnThemeSwitch={() => setPreserveOnThemeSwitch(p => !p)}
+            fogEnabled={fogEnabled}
+            onToggleFogEnabled={handleToggleFogEnabled}
+            onResetFog={handleResetFog}
+            onClearFog={handleClearFog}
+          />
+        ) : (
+          <PlayerToolbar
+            activeTool={activeTool}
+            onSetTool={setActiveTool}
+            drawColor={drawColor}
+            onSetDrawColor={setDrawColor}
+            drawWidth={drawWidth}
+            onSetDrawWidth={setDrawWidth}
+            onClearPlayerDrawings={handleClearPlayerDrawings}
+          />
+        )}
         <main className="canvas-area">
           <MapCanvas
             ref={canvasRef}
@@ -176,7 +244,10 @@ function App() {
             activeTile={activeTile}
             themeId={themeId}
             printMode={printMode}
+            viewMode={viewMode}
             selectedNoteId={selectedNoteId}
+            drawColor={drawColor}
+            drawWidth={drawWidth}
             onSetTile={setTile}
             onSetTiles={setTiles}
             onFillTile={fillTiles}
@@ -184,16 +255,41 @@ function App() {
             onAddNote={addNote}
             onSelectNote={setSelectedNoteId}
             onEraseTiles={handleEraseTiles}
+            onSetFogCells={setFogCells}
+            onAddToken={addToken}
+            onMoveToken={moveToken}
+            onRemoveToken={removeToken}
+            onAddAnnotation={addAnnotation}
+            onRemoveAnnotation={removeAnnotation}
           />
         </main>
-        <NotesPanel
-          notes={map.notes}
-          selectedNoteId={selectedNoteId}
-          onSelectNote={setSelectedNoteId}
-          onUpdateNote={updateNote}
-          onDeleteNote={deleteNote}
-          onActivateNoteTool={() => setActiveTool('note')}
-        />
+        {viewMode === 'gm' && (
+          <NotesPanel
+            notes={map.notes}
+            selectedNoteId={selectedNoteId}
+            onSelectNote={setSelectedNoteId}
+            onUpdateNote={updateNote}
+            onDeleteNote={deleteNote}
+            onActivateNoteTool={() => setActiveTool('note')}
+          />
+        )}
+        {viewMode === 'player' && (
+          <NotesPanel
+            // In player mode, hide notes that sit under fog so the panel
+            // doesn't leak the existence of hidden rooms. Editing/deleting
+            // is also disabled by routing through no-op callbacks.
+            notes={
+              fogEnabled
+                ? map.notes.filter(n => !(map.fog?.[n.y]?.[n.x]))
+                : map.notes
+            }
+            selectedNoteId={selectedNoteId}
+            onSelectNote={setSelectedNoteId}
+            onUpdateNote={() => { /* read-only in player view */ }}
+            onDeleteNote={() => { /* read-only in player view */ }}
+            onActivateNoteTool={() => { /* note tool is GM-only */ }}
+          />
+        )}
       </div>
     </div>
   );

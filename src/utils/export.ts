@@ -1,4 +1,5 @@
-import type { DungeonMap } from '../types/map';
+import type { DungeonMap, ViewMode } from '../types/map';
+import { TOKEN_KIND_COLORS } from '../types/map';
 import type { TileTheme } from '../themes/index';
 
 export function exportMapJSON(map: DungeonMap): void {
@@ -51,10 +52,27 @@ export function exportMapPNG(canvas: HTMLCanvasElement, name: string, printFrien
   a.click();
 }
 
-export function exportMapSVG(map: DungeonMap, theme: TileTheme, resolveTheme?: (id: string) => TileTheme): void {
+/**
+ * Render the map to an SVG file. The optional `opts.viewMode` controls
+ * whether GM-only content (notes/tokens under fog, GM annotations) is
+ * included. In `'player'` mode, fogged cells are painted solid black so
+ * the export doubles as a "player handout". Defaults to GM rendering.
+ */
+export function exportMapSVG(
+  map: DungeonMap,
+  theme: TileTheme,
+  resolveTheme?: (id: string) => TileTheme,
+  opts: { viewMode?: ViewMode } = {}
+): void {
+  const viewMode: ViewMode = opts.viewMode ?? 'gm';
+  const isPlayerView = viewMode === 'player';
+  const fogActive = (map.fogEnabled ?? false);
+  const fog = map.fog;
   const { width, height, tileSize, name } = map.meta;
   const svgW = width * tileSize;
   const svgH = height * tileSize;
+
+  const isFogged = (x: number, y: number) => fogActive && !!fog?.[y]?.[x];
 
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">`;
   svg += `<rect width="${svgW}" height="${svgH}" fill="${theme.tileColors['empty']}"/>`;
@@ -77,13 +95,60 @@ export function exportMapSVG(map: DungeonMap, theme: TileTheme, resolveTheme?: (
   for (let y = 0; y <= height; y++) svg += `<line x1="0" y1="${y * tileSize}" x2="${svgW}" y2="${y * tileSize}"/>`;
   svg += `</g>`;
 
+  // Notes: hide notes under fog in player exports.
   map.notes.forEach(note => {
+    if (isPlayerView && isFogged(note.x, note.y)) return;
     const ncx = note.x * tileSize + tileSize / 2;
     const ncy = note.y * tileSize + tileSize / 2;
     const r = tileSize * 0.38;
     svg += `<circle cx="${ncx}" cy="${ncy}" r="${r}" fill="#f0c040" stroke="#8b6914" stroke-width="1"/>`;
     svg += `<text x="${ncx}" y="${ncy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * 0.45)}" font-family="monospace" fill="#1a1a2e" font-weight="bold">${note.id}</text>`;
   });
+
+  // Annotations: GM strokes are excluded from player exports.
+  for (const stroke of map.annotations ?? []) {
+    if (isPlayerView && stroke.kind === 'gm') continue;
+    if (stroke.points.length === 0) continue;
+    const w = Math.max(1, stroke.width * tileSize);
+    if (stroke.points.length === 1) {
+      const p = stroke.points[0];
+      svg += `<circle cx="${p.x * tileSize}" cy="${p.y * tileSize}" r="${w / 2}" fill="${stroke.color}"/>`;
+    } else {
+      const d = stroke.points
+        .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x * tileSize} ${p.y * tileSize}`)
+        .join(' ');
+      svg += `<path d="${d}" stroke="${stroke.color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+    }
+  }
+
+  // Tokens: hidden under fog in player exports (mirrors on-screen behavior).
+  for (const token of map.tokens ?? []) {
+    if (isPlayerView && isFogged(token.x, token.y)) continue;
+    const tcx = token.x * tileSize + tileSize / 2;
+    const tcy = token.y * tileSize + tileSize / 2;
+    const r = tileSize * 0.42;
+    const fill = token.color ?? TOKEN_KIND_COLORS[token.kind];
+    const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0]).toUpperCase();
+    svg += `<circle cx="${tcx}" cy="${tcy}" r="${r}" fill="${fill}" stroke="#1a1a2e" stroke-width="${Math.max(1, tileSize * 0.08)}"/>`;
+    svg += `<text x="${tcx}" y="${tcy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * 0.5)}" font-family="monospace" fill="#ffffff" font-weight="bold">${escapeXML(glyph)}</text>`;
+  }
+
+  // Fog overlay. In player exports paint solid black; in GM exports paint
+  // a translucent wash so the GM still sees the underlying tiles.
+  if (fogActive && fog) {
+    const fogFill = isPlayerView ? '#0a0a12' : 'rgba(20,22,40,0.55)';
+    let fogPath = '';
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        if (fog[y]?.[x]) {
+          fogPath += `M${x * tileSize} ${y * tileSize}h${tileSize}v${tileSize}h${-tileSize}z`;
+        }
+      }
+    }
+    if (fogPath) {
+      svg += `<path d="${fogPath}" fill="${fogFill}"/>`;
+    }
+  }
 
   svg += `</svg>`;
 
@@ -94,4 +159,14 @@ export function exportMapSVG(map: DungeonMap, theme: TileTheme, resolveTheme?: (
   a.download = `${name.replace(/\s+/g, '_') || 'dungeon'}.svg`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+/** Escape characters that have special meaning inside an SVG/XML text node. */
+function escapeXML(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
 }
