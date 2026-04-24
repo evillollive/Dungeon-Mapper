@@ -35,6 +35,15 @@ function withDefaults(map: DungeonMap): DungeonMap {
   };
 }
 
+/**
+ * Compute the next id to assign for a list of items keyed by `id`. Returns
+ * one greater than the largest existing id, or 1 if the list is empty/absent.
+ */
+function nextIdAfter(items: { id: number }[] | undefined): number {
+  if (!items || items.length === 0) return 1;
+  return Math.max(...items.map(i => i.id)) + 1;
+}
+
 interface HistorySnapshot {
   tiles: Tile[][];
   fog: boolean[][];
@@ -60,12 +69,9 @@ export function useMapState() {
       if (loaded) {
         const ready = withDefaults(loaded);
         setMap(ready);
-        const maxNoteId = ready.notes.length > 0 ? Math.max(...ready.notes.map(n => n.id)) + 1 : 1;
-        setNextNoteId(maxNoteId);
-        const maxTokenId = (ready.tokens?.length ?? 0) > 0 ? Math.max(...ready.tokens!.map(t => t.id)) + 1 : 1;
-        nextTokenIdRef.current = maxTokenId;
-        const maxStrokeId = (ready.annotations?.length ?? 0) > 0 ? Math.max(...ready.annotations!.map(a => a.id)) + 1 : 1;
-        nextStrokeIdRef.current = maxStrokeId;
+        setNextNoteId(nextIdAfter(ready.notes));
+        nextTokenIdRef.current = nextIdAfter(ready.tokens);
+        nextStrokeIdRef.current = nextIdAfter(ready.annotations);
       }
     }).catch(() => {});
   }, []);
@@ -222,12 +228,9 @@ export function useMapState() {
     setCanRedo(false);
     setMap(ready);
     debouncedSave(ready);
-    const maxNoteId = ready.notes.length > 0 ? Math.max(...ready.notes.map(n => n.id)) + 1 : 1;
-    setNextNoteId(maxNoteId);
-    const maxTokenId = (ready.tokens?.length ?? 0) > 0 ? Math.max(...ready.tokens!.map(t => t.id)) + 1 : 1;
-    nextTokenIdRef.current = maxTokenId;
-    const maxStrokeId = (ready.annotations?.length ?? 0) > 0 ? Math.max(...ready.annotations!.map(a => a.id)) + 1 : 1;
-    nextStrokeIdRef.current = maxStrokeId;
+    setNextNoteId(nextIdAfter(ready.notes));
+    nextTokenIdRef.current = nextIdAfter(ready.tokens);
+    nextStrokeIdRef.current = nextIdAfter(ready.annotations);
     setSelectedNoteId(null);
   }, [debouncedSave]);
 

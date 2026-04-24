@@ -128,7 +128,7 @@ export function exportMapSVG(
     const tcy = token.y * tileSize + tileSize / 2;
     const r = tileSize * 0.42;
     const fill = token.color ?? TOKEN_KIND_COLORS[token.kind];
-    const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0]).toUpperCase();
+    const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
     svg += `<circle cx="${tcx}" cy="${tcy}" r="${r}" fill="${fill}" stroke="#1a1a2e" stroke-width="${Math.max(1, tileSize * 0.08)}"/>`;
     svg += `<text x="${tcx}" y="${tcy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * 0.5)}" font-family="monospace" fill="#ffffff" font-weight="bold">${escapeXML(glyph)}</text>`;
   }

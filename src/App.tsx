@@ -20,6 +20,12 @@ const MAX_UI_SCALE = UI_SCALE_OPTIONS[UI_SCALE_OPTIONS.length - 1];
 const PRESERVE_THEME_STORAGE_KEY = 'dungeon-mapper:preserve-on-theme-switch';
 const VIEW_MODE_STORAGE_KEY = 'dungeon-mapper:view-mode';
 
+// Stable no-op handlers for the player-view notes panel — defined at module
+// scope so we don't allocate fresh callbacks on every render.
+const NOOP_UPDATE_NOTE = () => { /* read-only in player view */ };
+const NOOP_DELETE_NOTE = () => { /* read-only in player view */ };
+const NOOP_ACTIVATE_NOTE_TOOL = () => { /* note tool is GM-only */ };
+
 function loadInitialPreserveOnThemeSwitch(): boolean {
   if (typeof window === 'undefined') return false;
   try {
@@ -285,9 +291,9 @@ function App() {
             }
             selectedNoteId={selectedNoteId}
             onSelectNote={setSelectedNoteId}
-            onUpdateNote={() => { /* read-only in player view */ }}
-            onDeleteNote={() => { /* read-only in player view */ }}
-            onActivateNoteTool={() => { /* note tool is GM-only */ }}
+            onUpdateNote={NOOP_UPDATE_NOTE}
+            onDeleteNote={NOOP_DELETE_NOTE}
+            onActivateNoteTool={NOOP_ACTIVATE_NOTE_TOOL}
           />
         )}
       </div>

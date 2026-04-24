@@ -120,7 +120,7 @@ function drawToken(
 
   // Foreground glyph: emoji icon if provided, otherwise the first letter
   // of the label (or the token kind).
-  const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0]).toUpperCase();
+  const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
   ctx.fillStyle = '#ffffff';
   ctx.font = `bold ${Math.max(8, tileSize * 0.5)}px "Courier New", monospace`;
   ctx.textAlign = 'center';
@@ -637,7 +637,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         setActiveStroke(prev => {
           if (!prev) return [fc];
           const last = prev[prev.length - 1];
-          // Subsample so we don't spam thousands of points for short distances.
+          // Subsample so we don't spam thousands of points for short
+          // distances. Threshold ~0.07 tiles (sqrt(0.005)) — finer than
+          // pixel-level for typical tile sizes but coarse enough to keep
+          // strokes lightweight when serialized.
           const dx = fc.x - last.x;
           const dy = fc.y - last.y;
           if (dx * dx + dy * dy < 0.005) return prev;
