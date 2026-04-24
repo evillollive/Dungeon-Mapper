@@ -47,6 +47,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
   activeTool, activeTile, themeId, onSetTool, onSetTile,
   onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
 }) => {
+  const theme = getTheme(themeId);
+  const tileLabels = React.useMemo(() => {
+    const map = new Map<TileType, string>();
+    for (const t of theme.tiles) map.set(t.id, t.label);
+    return map;
+  }, [theme]);
+  const tileLabel = (tileType: TileType): string =>
+    tileLabels.get(tileType) ?? TILE_LABELS[tileType];
   return (
     <div className="toolbar">
       <div className="toolbar-section">
@@ -104,10 +112,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
               key={tileType}
               className={`tile-btn ${activeTile === tileType ? 'active' : ''}`}
               onClick={() => onSetTile(tileType)}
-              title={TILE_LABELS[tileType]}
+              title={tileLabel(tileType)}
             >
               <TilePreview type={tileType} size={22} themeId={themeId} />
-              <span className="tile-btn-label">{TILE_LABELS[tileType]}</span>
+              <span className="tile-btn-label">{tileLabel(tileType)}</span>
             </button>
           ))}
         </div>
