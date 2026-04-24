@@ -7,7 +7,8 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **Grid editor** — configurable map from 8×8 up to 128×128, default 32×32
 - **Tile size** — selectable tile size (12, 16, 20, 24, 32 px), default 20 px
 - **12 tile types** — Empty, Floor, Wall, Door (H/V), Stairs Up/Down, Water, Pillar, Trap, Treasure, Start
-- **7 preset theme modes** — Fantasy, Sci-Fi, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse (see [Preset Modes](#preset-modes) below)
+- **8 preset theme modes** — Fantasy, Sci-Fi, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City (see [Preset Modes](#preset-modes) below)
+- **Graph-paper canvas** — light parchment background with cyan grid lines, evoking traditional engineering / quad-ruled graph paper
 - **Print mode** — toggle a high-contrast black-and-white renderer for printer-friendly output
 - **Drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Eyedropper `I`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`
 - **Zoom & pan** — mouse wheel zoom, right-click drag to pan
@@ -34,6 +35,7 @@ Each theme keeps the same 12 underlying tile types but renames them and re-rende
 | **Wilderness** | Outdoor overland maps | Grass / Trees / Gate / River / Boulder / Snare / Cache / Camp |
 | **Cyberpunk** | Neon-lit street grids | Street / Barrier / Shutter / Acid Pool / Terminal / Turret / Chip Cache / Spawn |
 | **Post-Apocalypse** | Ruined wastelands | Rubble / Ruins / Barricade / Toxic Pool / Rubble Pile / Landmine / Supplies / Shelter |
+| **Modern City** | Contemporary urban streets | Sidewalk / Building / Doorway / Fountain / Lamp Post / Manhole / ATM / Bus Stop |
 
 ### Print mode
 
