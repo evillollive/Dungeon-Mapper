@@ -111,6 +111,20 @@ export function drawPrintTile(
       break;
     }
 
+    case 'secret-door': {
+      // Solid black wall (so it visually hides), with a white "S" punched
+      // into the middle — the conventional symbol for a secret door.
+      ctx.fillStyle = PRINT_FG;
+      ctx.fillRect(px, py, s, s);
+      const fontSize = Math.max(8, Math.floor(s * 0.7));
+      ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = PRINT_BG;
+      ctx.fillText('S', cx, cy + 1);
+      break;
+    }
+
     case 'stairs-up': {
       // Letter "U" with an up-arrow above it.
       const fontSize = Math.max(7, Math.floor(s * 0.55));

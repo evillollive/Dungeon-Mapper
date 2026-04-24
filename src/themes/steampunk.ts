@@ -7,6 +7,7 @@ export const steampunkTheme: TileTheme = {
   tiles: [
     { id: 'empty', label: 'Soot' }, { id: 'floor', label: 'Iron Plate' }, { id: 'wall', label: 'Gear Wall' },
     { id: 'door-h', label: 'Valve Door (H)' }, { id: 'door-v', label: 'Valve Door (V)' },
+    { id: 'secret-door', label: 'Concealed Hatch' },
     { id: 'stairs-up', label: 'Gantry Up' }, { id: 'stairs-down', label: 'Gantry Down' },
     { id: 'water', label: 'Steam Pipe' }, { id: 'pillar', label: 'Piston' },
     { id: 'trap', label: 'Pressure Plate' }, { id: 'treasure', label: 'Contraption' }, { id: 'start', label: 'Engine' },
@@ -16,6 +17,7 @@ export const steampunkTheme: TileTheme = {
   tileColors: {
     empty: '#1a0e00', floor: '#6b4d2a', wall: '#4a3010',
     'door-h': '#b87333', 'door-v': '#b87333',
+    'secret-door': '#4a3010',
     'stairs-up': '#8a7040', 'stairs-down': '#6a5030',
     water: '#1a4a3a', pillar: '#8b6914', trap: '#cc4400',
     treasure: '#d4af37', start: '#5a9040',
@@ -64,6 +66,31 @@ export const steampunkTheme: TileTheme = {
           ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
           ctx.stroke();
         }
+        break;
+      }
+
+      case 'secret-door': {
+        // Looks like a gear-wall but with a faint 'S' marker.
+        ctx.strokeStyle = '#b87333';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.3, 0, Math.PI * 2);
+        ctx.stroke();
+        for (let i = 0; i < 6; i++) {
+          const angle = (i * Math.PI) / 3;
+          const r1 = s * 0.3;
+          const r2 = s * 0.4;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
+          ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
+          ctx.stroke();
+        }
+        const fontSize = Math.max(7, Math.floor(s * 0.5));
+        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#b87333';
+        ctx.fillText('S', cx, cy + 1);
         break;
       }
 

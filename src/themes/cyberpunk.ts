@@ -7,6 +7,7 @@ export const cyberpunkTheme: TileTheme = {
   tiles: [
     { id: 'empty', label: 'Dead Zone' }, { id: 'floor', label: 'Street' }, { id: 'wall', label: 'Barrier' },
     { id: 'door-h', label: 'Shutter (H)' }, { id: 'door-v', label: 'Shutter (V)' },
+    { id: 'secret-door', label: 'Cloaked Panel' },
     { id: 'stairs-up', label: 'Ramp Up' }, { id: 'stairs-down', label: 'Ramp Down' },
     { id: 'water', label: 'Acid Pool' }, { id: 'pillar', label: 'Terminal' },
     { id: 'trap', label: 'Turret' }, { id: 'treasure', label: 'Chip Cache' }, { id: 'start', label: 'Spawn' },
@@ -16,6 +17,7 @@ export const cyberpunkTheme: TileTheme = {
   tileColors: {
     empty: '#000005', floor: '#0a0a1a', wall: '#0d0d1e',
     'door-h': '#ff00ff', 'door-v': '#ff00ff',
+    'secret-door': '#0d0d1e',
     'stairs-up': '#00ffff', 'stairs-down': '#00cccc',
     water: '#002244', pillar: '#1a001a', trap: '#ff0000',
     treasure: '#ffff00', start: '#00ff00',
@@ -56,6 +58,23 @@ export const cyberpunkTheme: TileTheme = {
         ctx.strokeStyle = '#ff00ff44';
         ctx.lineWidth = 3;
         ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
+        break;
+      }
+
+      case 'secret-door': {
+        // Same neon barrier outline, with a faint 'S' overlay.
+        ctx.strokeStyle = '#ff00ff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
+        ctx.strokeStyle = '#ff00ff44';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
+        const fontSize = Math.max(7, Math.floor(s * 0.6));
+        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#ff00ff';
+        ctx.fillText('S', cx, cy + 1);
         break;
       }
 

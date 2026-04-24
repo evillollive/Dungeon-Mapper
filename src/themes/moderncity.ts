@@ -7,6 +7,7 @@ export const moderncityTheme: TileTheme = {
   tiles: [
     { id: 'empty', label: 'Lot' }, { id: 'floor', label: 'Sidewalk' }, { id: 'wall', label: 'Building' },
     { id: 'door-h', label: 'Doorway (H)' }, { id: 'door-v', label: 'Doorway (V)' },
+    { id: 'secret-door', label: 'Hidden Door' },
     { id: 'stairs-up', label: 'Stairs Up' }, { id: 'stairs-down', label: 'Stairs Down' },
     { id: 'water', label: 'Fountain' }, { id: 'pillar', label: 'Lamp Post' },
     { id: 'trap', label: 'Manhole' }, { id: 'treasure', label: 'ATM' }, { id: 'start', label: 'Bus Stop' },
@@ -16,6 +17,7 @@ export const moderncityTheme: TileTheme = {
   tileColors: {
     empty: '#3a3a3a', floor: '#b8b8b8', wall: '#6c6c6c',
     'door-h': '#4a90c2', 'door-v': '#4a90c2',
+    'secret-door': '#6c6c6c',
     'stairs-up': '#cfcfcf', 'stairs-down': '#9a9a9a',
     water: '#4ea7d8', pillar: '#2a2a2a', trap: '#3a3a3a',
     treasure: '#1f7a3a', start: '#d24545',
@@ -72,6 +74,23 @@ export const moderncityTheme: TileTheme = {
         ctx.strokeStyle = '#2a2a2a';
         ctx.lineWidth = 0.5;
         ctx.strokeRect(px + 1, py + 1, s - 2, s - 2);
+        break;
+      }
+
+      case 'secret-door': {
+        // Plain building facade with a faint 'S' overlay (no windows hint
+        // at a hidden interior).
+        ctx.fillStyle = '#4a4a4a';
+        ctx.fillRect(px + 1, py + 1, s - 2, s - 2);
+        ctx.strokeStyle = '#2a2a2a';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(px + 1, py + 1, s - 2, s - 2);
+        const fontSize = Math.max(7, Math.floor(s * 0.6));
+        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#4a90c2';
+        ctx.fillText('S', cx, cy + 1);
         break;
       }
 

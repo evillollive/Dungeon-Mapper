@@ -7,6 +7,7 @@ export const scifiTheme: TileTheme = {
   tiles: [
     { id: 'empty', label: 'Void' }, { id: 'floor', label: 'Deck' }, { id: 'wall', label: 'Bulkhead' },
     { id: 'door-h', label: 'Blast Door (H)' }, { id: 'door-v', label: 'Blast Door (V)' },
+    { id: 'secret-door', label: 'Hidden Hatch' },
     { id: 'stairs-up', label: 'Ladder Up' }, { id: 'stairs-down', label: 'Ladder Down' },
     { id: 'water', label: 'Coolant' }, { id: 'pillar', label: 'Support' },
     { id: 'trap', label: 'Laser Grid' }, { id: 'treasure', label: 'Data Core' }, { id: 'start', label: 'Airlock' },
@@ -16,6 +17,7 @@ export const scifiTheme: TileTheme = {
   tileColors: {
     empty: '#050a0f', floor: '#1a2b3c', wall: '#0d2233',
     'door-h': '#00c8ff', 'door-v': '#00c8ff',
+    'secret-door': '#0d2233',
     'stairs-up': '#00ff9f', 'stairs-down': '#00cc7a',
     water: '#0066aa', pillar: '#334466', trap: '#ff0066',
     treasure: '#ff9900', start: '#00ffcc',
@@ -60,6 +62,22 @@ export const scifiTheme: TileTheme = {
         ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
         ctx.fillStyle = '#0a1520';
         ctx.fillRect(px + 3, py + 3, s - 6, s - 6);
+        break;
+      }
+
+      case 'secret-door': {
+        // Bulkhead with a subtle 'S' marker.
+        ctx.strokeStyle = '#00c8ff';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
+        ctx.fillStyle = '#0a1520';
+        ctx.fillRect(px + 3, py + 3, s - 6, s - 6);
+        const fontSize = Math.max(7, Math.floor(s * 0.6));
+        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#00c8ff';
+        ctx.fillText('S', cx, cy + 1);
         break;
       }
 
