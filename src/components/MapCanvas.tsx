@@ -3,6 +3,11 @@ import type { DungeonMap, TileType, ToolType } from '../types/map';
 import { getTheme } from '../themes/index';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 
+// Screen-mode canvas styling: light graph-paper background with cyan grid lines,
+// evoking traditional engineering / quad-ruled graph paper regardless of theme.
+const SCREEN_BG = '#f4f1e4';
+const SCREEN_GRID = '#5fb8c9';
+
 interface MapCanvasProps {
   map: DungeonMap;
   activeTool: ToolType;
@@ -111,7 +116,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     canvas.width = w;
     canvas.height = h;
 
-    ctx.fillStyle = printMode ? PRINT_BG : theme.tileColors['empty'];
+    ctx.fillStyle = printMode ? PRINT_BG : SCREEN_BG;
     ctx.fillRect(0, 0, w, h);
 
     for (let y = 0; y < meta.height; y++) {
@@ -120,14 +125,17 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         if (tile) {
           if (printMode) {
             drawPrintTile(ctx, tile.type, x, y, tileSize);
-          } else {
+          } else if (tile.type !== 'empty') {
+            // Skip 'empty' tiles in screen mode so the light graph-paper
+            // background (SCREEN_BG) shows through instead of the theme's
+            // dark "empty" color.
             theme.drawTile(ctx, tile.type, x, y, tileSize);
           }
         }
       }
     }
 
-    ctx.strokeStyle = printMode ? PRINT_GRID : '#2d3561';
+    ctx.strokeStyle = printMode ? PRINT_GRID : SCREEN_GRID;
     ctx.lineWidth = 0.5;
     for (let y = 0; y <= meta.height; y++) {
       ctx.beginPath();
@@ -222,7 +230,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.fillStyle = printMode ? PRINT_BG : theme.tileColors['empty'];
+    ctx.fillStyle = printMode ? PRINT_BG : SCREEN_BG;
     ctx.fillRect(0, 0, mW, mH);
 
     for (let y = 0; y < meta.height; y++) {
