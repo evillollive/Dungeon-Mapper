@@ -43,6 +43,28 @@ Each theme keeps the same underlying tile types but renames them and re-renders 
 
 Print mode swaps the colored theme renderer for a high-contrast black-on-parchment monochrome view. Tiles are drawn as bold pixel glyphs and the grid is darkened so exported PNG/SVG files (or a browser print) read clearly on a black-and-white printer. Toggle it on or off at any time without affecting your map data.
 
+## Saving, Exporting & Importing
+
+Your work is auto-saved to the browser's IndexedDB on every change, but the header buttons let you move maps in and out of Dungeon Mapper as files.
+
+### Export
+
+- **💾 Export JSON** — writes the full map (tiles, notes, grid size, theme, name, and other metadata) to a `.json` file. This is the only format that round-trips back into the editor.
+- **🖼 Export PNG** — saves a rasterized snapshot of the current canvas as a `.png` image. Great for sharing or printing, but it cannot be re-imported.
+- **🧾 Export SVG** — saves a vector rendering of the map as an `.svg` file, with each tile and numbered note drawn as scalable shapes. Like PNG, this is for sharing/printing only — it cannot be re-imported.
+
+If **🖨 Print** mode is active, PNG/SVG exports use the high-contrast black-and-white renderer.
+
+### Import
+
+The **📂 Import** button in the header opens a file picker and loads a previously exported map back into the editor, replacing the current map.
+
+- **Supported file type:** `.json` files produced by Dungeon Mapper's **Export JSON** action. The file picker is restricted to `.json`, and the file is parsed as a `DungeonMap` object (tiles, notes, theme, grid size, map name, etc.).
+- **Not supported:** PNG and SVG exports cannot be imported — they are image-only renders, not editable map data. No third-party formats (Dungeondraft, Universal VTT, images, CSV, etc.) are accepted.
+- **On error:** if the selected file isn't valid JSON, an alert is shown ("Failed to import map: Invalid JSON file") and your current map is left untouched.
+
+Because importing replaces the current map, export your work first if you want to keep it.
+
 ## Development
 
 ```bash
