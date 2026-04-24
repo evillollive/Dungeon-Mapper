@@ -9,6 +9,25 @@ import { exportMapSVG } from './utils/export';
 import { getTheme } from './themes/index';
 import './App.css';
 
+const UI_SCALE_STORAGE_KEY = 'dungeon-mapper:ui-scale';
+const UI_SCALE_OPTIONS = [0.75, 1, 1.25, 1.5, 1.75, 2] as const;
+const DEFAULT_UI_SCALE = 1;
+
+function loadInitialUIScale(): number {
+  if (typeof window === 'undefined') return DEFAULT_UI_SCALE;
+  try {
+    const raw = window.localStorage.getItem(UI_SCALE_STORAGE_KEY);
+    if (!raw) return DEFAULT_UI_SCALE;
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) return DEFAULT_UI_SCALE;
+    // Clamp to the supported range to avoid extreme values from older
+    // versions or hand-edited storage breaking the layout.
+    return Math.min(Math.max(parsed, 0.5), 3);
+  } catch {
+    return DEFAULT_UI_SCALE;
+  }
+}
+
 function App() {
   const {
     map,
@@ -43,6 +62,19 @@ function App() {
   const canvasRef = useRef<MapCanvasHandle>(null);
   const themeId = map.meta.theme ?? 'fantasy';
   const [printMode, setPrintMode] = useState(false);
+  const [uiScale, setUIScale] = useState<number>(loadInitialUIScale);
+
+  // Apply the UI scale to :root so every CSS rule using --ui-scale picks
+  // it up, and persist the preference across sessions.
+  useEffect(() => {
+    document.documentElement.style.setProperty('--ui-scale', String(uiScale));
+    try {
+      window.localStorage.setItem(UI_SCALE_STORAGE_KEY, String(uiScale));
+    } catch {
+      // Ignore storage failures (e.g. private mode); scale still applies
+      // for the current session.
+    }
+  }, [uiScale]);
 
   const handlePickTile = useCallback((tileType: typeof activeTile) => {
     setActiveTile(tileType);
@@ -90,6 +122,9 @@ function App() {
         canRedo={canRedo}
         printMode={printMode}
         onTogglePrintMode={() => setPrintMode(p => !p)}
+        uiScale={uiScale}
+        uiScaleOptions={UI_SCALE_OPTIONS}
+        onSetUIScale={setUIScale}
         getCanvas={() => canvasRef.current?.getCanvas() ?? null}
       />
       <div className="app-body">

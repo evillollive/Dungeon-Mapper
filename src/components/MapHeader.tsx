@@ -19,6 +19,9 @@ interface MapHeaderProps {
   canRedo: boolean;
   printMode: boolean;
   onTogglePrintMode: () => void;
+  uiScale: number;
+  uiScaleOptions: readonly number[];
+  onSetUIScale: (scale: number) => void;
   getCanvas: () => HTMLCanvasElement | null;
 }
 
@@ -26,7 +29,8 @@ const GRID_SIZES = [8, 16, 24, 32, 48, 64, 96, 128];
 
 const MapHeader: React.FC<MapHeaderProps> = ({
   map, onSetName, onResize, onSetTileSize, onSetTheme, onClear, onNew, onLoad,
-  onExportSVG, onUndo, onRedo, canUndo, canRedo, printMode, onTogglePrintMode, getCanvas
+  onExportSVG, onUndo, onRedo, canUndo, canRedo, printMode, onTogglePrintMode,
+  uiScale, uiScaleOptions, onSetUIScale, getCanvas
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -117,6 +121,18 @@ const MapHeader: React.FC<MapHeaderProps> = ({
           title="Map theme"
         >
           {THEME_LIST.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
+
+        <label className="header-label" style={{ marginLeft: 8 }}>UI:</label>
+        <select
+          className="grid-select"
+          value={uiScale}
+          onChange={e => onSetUIScale(Number(e.target.value))}
+          title="UI scale — make buttons and text larger or smaller"
+        >
+          {uiScaleOptions.map(s => (
+            <option key={s} value={s}>{Math.round(s * 100)}%</option>
+          ))}
         </select>
       </div>
 
