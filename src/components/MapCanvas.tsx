@@ -444,15 +444,22 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     const mapW = meta.width * tileSize;
     const mapH = meta.height * tileSize;
     if (mapW <= 0 || mapH <= 0) return;
+    // The zoom-controls bar is absolutely positioned over the bottom of the
+    // viewport, so it covers part of the map area. Subtract its height from
+    // the available space and shift the map up by half that amount so the
+    // visible space above and below the map is equal.
+    const wrapper = containerRef.current;
+    const controlsEl = wrapper?.querySelector('.zoom-controls') as HTMLElement | null;
+    const controlsH = controlsEl?.offsetHeight ?? 0;
     // Leave a small padding so the map doesn't sit flush against the edges.
     const padding = 16;
     const availW = Math.max(1, viewport.clientWidth - padding * 2);
-    const availH = Math.max(1, viewport.clientHeight - padding * 2);
+    const availH = Math.max(1, viewport.clientHeight - controlsH - padding * 2);
     const fit = Math.min(availW / mapW, availH / mapH);
     // Clamp to the same range as the +/- buttons so the value stays valid.
     const clamped = Math.max(0.25, Math.min(4, fit));
     setZoom(clamped);
-    setPan({ x: 0, y: 0 });
+    setPan({ x: 0, y: -controlsH / 2 });
   }, [meta.width, meta.height, tileSize]);
 
   const cursorStyle = activeTool === 'eyedropper' ? 'crosshair'
