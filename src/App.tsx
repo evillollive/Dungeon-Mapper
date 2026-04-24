@@ -154,7 +154,6 @@ function App() {
         printMode={printMode}
         onTogglePrintMode={() => setPrintMode(p => !p)}
         preserveOnThemeSwitch={preserveOnThemeSwitch}
-        onTogglePreserveOnThemeSwitch={() => setPreserveOnThemeSwitch(p => !p)}
         uiScale={uiScale}
         uiScaleOptions={UI_SCALE_OPTIONS}
         onSetUIScale={setUIScale}
@@ -167,6 +166,8 @@ function App() {
           themeId={themeId}
           onSetTool={setActiveTool}
           onSetTile={setActiveTile}
+          preserveOnThemeSwitch={preserveOnThemeSwitch}
+          onTogglePreserveOnThemeSwitch={() => setPreserveOnThemeSwitch(p => !p)}
         />
         <main className="canvas-area">
           <MapCanvas

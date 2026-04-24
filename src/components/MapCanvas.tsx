@@ -85,6 +85,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewportRef = useRef<HTMLDivElement>(null);
   const isMouseDownRef = useRef(false);
   const isPanningRef = useRef(false);
   const lastPanPos = useRef({ x: 0, y: 0 });
@@ -437,6 +438,23 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setPan({ x: newPanX, y: newPanY });
   }, [meta, zoom, tileSize]);
 
+  const handleFitToScreen = useCallback(() => {
+    const viewport = viewportRef.current;
+    if (!viewport) return;
+    const mapW = meta.width * tileSize;
+    const mapH = meta.height * tileSize;
+    if (mapW <= 0 || mapH <= 0) return;
+    // Leave a small padding so the map doesn't sit flush against the edges.
+    const padding = 16;
+    const availW = Math.max(1, viewport.clientWidth - padding * 2);
+    const availH = Math.max(1, viewport.clientHeight - padding * 2);
+    const fit = Math.min(availW / mapW, availH / mapH);
+    // Clamp to the same range as the +/- buttons so the value stays valid.
+    const clamped = Math.max(0.25, Math.min(4, fit));
+    setZoom(clamped);
+    setPan({ x: 0, y: 0 });
+  }, [meta.width, meta.height, tileSize]);
+
   const cursorStyle = activeTool === 'eyedropper' ? 'crosshair'
     : activeTool === 'fill' ? 'cell'
     : activeTool === 'note' ? 'copy'
@@ -445,7 +463,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
   return (
     <div className="canvas-wrapper" ref={containerRef}>
-      <div className="canvas-viewport">
+      <div className="canvas-viewport" ref={viewportRef}>
         <div
           className="canvas-transform-container"
           style={{
@@ -474,6 +492,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         <span>{Math.round(zoom * 100)}%</span>
         <button onClick={() => setZoom(z => Math.max(0.25, z - 0.25))}>-</button>
         <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}>Reset</button>
+        <button onClick={handleFitToScreen} title="Fit map to screen">Fit</button>
         <span className="zoom-hint">⇧ / ⇪ + wheel</span>
       </div>
       {mousePos && (

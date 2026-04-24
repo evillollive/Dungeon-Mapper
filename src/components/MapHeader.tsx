@@ -20,7 +20,6 @@ interface MapHeaderProps {
   printMode: boolean;
   onTogglePrintMode: () => void;
   preserveOnThemeSwitch: boolean;
-  onTogglePreserveOnThemeSwitch: () => void;
   uiScale: number;
   uiScaleOptions: readonly number[];
   onSetUIScale: (scale: number) => void;
@@ -32,7 +31,7 @@ const GRID_SIZES = [8, 16, 24, 32, 48, 64, 96, 128];
 const MapHeader: React.FC<MapHeaderProps> = ({
   map, onSetName, onResize, onSetTileSize, onSetTheme, onClear, onNew, onLoad,
   onExportSVG, onUndo, onRedo, canUndo, canRedo, printMode, onTogglePrintMode,
-  preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
+  preserveOnThemeSwitch,
   uiScale, uiScaleOptions, onSetUIScale, getCanvas
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,18 +124,6 @@ const MapHeader: React.FC<MapHeaderProps> = ({
         >
           {THEME_LIST.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
-        <label
-          className="header-label"
-          style={{ marginLeft: 6, display: 'inline-flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}
-          title="When on, switching themes keeps any tiles you've already painted in their original style instead of restyling them. Lets you combine terrain styles on one map. Off by default — newly painted tiles always use the currently selected theme."
-        >
-          <input
-            type="checkbox"
-            checked={preserveOnThemeSwitch}
-            onChange={onTogglePreserveOnThemeSwitch}
-          />
-          PRESERVE
-        </label>
 
         <label className="header-label" style={{ marginLeft: 8 }}>UI:</label>
         <select

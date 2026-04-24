@@ -9,6 +9,8 @@ interface ToolbarProps {
   themeId: string;
   onSetTool: (tool: ToolType) => void;
   onSetTile: (tile: TileType) => void;
+  preserveOnThemeSwitch: boolean;
+  onTogglePreserveOnThemeSwitch: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -40,7 +42,10 @@ function TilePreview({ type, size = 28, themeId }: { type: TileType; size?: numb
   );
 }
 
-const Toolbar: React.FC<ToolbarProps> = ({ activeTool, activeTile, themeId, onSetTool, onSetTile }) => {
+const Toolbar: React.FC<ToolbarProps> = ({
+  activeTool, activeTile, themeId, onSetTool, onSetTile,
+  preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
+}) => {
   return (
     <div className="toolbar">
       <div className="toolbar-section">
@@ -57,6 +62,20 @@ const Toolbar: React.FC<ToolbarProps> = ({ activeTool, activeTile, themeId, onSe
             <span className="tool-shortcut">[{tool.shortcut}]</span>
           </button>
         ))}
+        <label
+          className={`tool-btn ${preserveOnThemeSwitch ? 'active' : ''}`}
+          style={{ cursor: 'pointer' }}
+          title="When on, switching themes keeps any tiles you've already painted in their original style instead of restyling them. Lets you combine terrain styles on one map. Off by default — newly painted tiles always use the currently selected theme."
+        >
+          <span className="tool-icon">🎨</span>
+          <span className="tool-name">Preserve</span>
+          <input
+            type="checkbox"
+            checked={preserveOnThemeSwitch}
+            onChange={onTogglePreserveOnThemeSwitch}
+            style={{ margin: 0 }}
+          />
+        </label>
       </div>
 
       <div className="toolbar-section">
