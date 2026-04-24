@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from 'react';
+import { useRef, useCallback, useEffect, useState } from 'react';
 import MapCanvas, { type MapCanvasHandle } from './components/MapCanvas';
 import Toolbar from './components/Toolbar';
 import NotesPanel from './components/NotesPanel';
@@ -42,6 +42,7 @@ function App() {
 
   const canvasRef = useRef<MapCanvasHandle>(null);
   const themeId = map.meta.theme ?? 'fantasy';
+  const [printMode, setPrintMode] = useState(false);
 
   const handlePickTile = useCallback((tileType: typeof activeTile) => {
     setActiveTile(tileType);
@@ -87,6 +88,8 @@ function App() {
         onRedo={redo}
         canUndo={canUndo}
         canRedo={canRedo}
+        printMode={printMode}
+        onTogglePrintMode={() => setPrintMode(p => !p)}
         getCanvas={() => canvasRef.current?.getCanvas() ?? null}
       />
       <div className="app-body">
@@ -104,6 +107,7 @@ function App() {
             activeTool={activeTool}
             activeTile={activeTile}
             themeId={themeId}
+            printMode={printMode}
             selectedNoteId={selectedNoteId}
             onSetTile={setTile}
             onSetTiles={setTiles}

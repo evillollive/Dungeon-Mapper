@@ -1,12 +1,14 @@
 import React, { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import type { DungeonMap, TileType, ToolType } from '../types/map';
 import { getTheme } from '../themes/index';
+import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 
 interface MapCanvasProps {
   map: DungeonMap;
   activeTool: ToolType;
   activeTile: TileType;
   themeId: string;
+  printMode: boolean;
   selectedNoteId: number | null;
   onSetTile: (x: number, y: number, type: TileType) => void;
   onSetTiles: (tiles: { x: number; y: number; type: TileType }[]) => void;
@@ -65,6 +67,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   activeTool,
   activeTile,
   themeId,
+  printMode,
   selectedNoteId,
   onSetTile,
   onSetTiles,
@@ -108,19 +111,23 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     canvas.width = w;
     canvas.height = h;
 
-    ctx.fillStyle = theme.tileColors['empty'];
+    ctx.fillStyle = printMode ? PRINT_BG : theme.tileColors['empty'];
     ctx.fillRect(0, 0, w, h);
 
     for (let y = 0; y < meta.height; y++) {
       for (let x = 0; x < meta.width; x++) {
         const tile = tiles[y]?.[x];
         if (tile) {
-          theme.drawTile(ctx, tile.type, x, y, tileSize);
+          if (printMode) {
+            drawPrintTile(ctx, tile.type, x, y, tileSize);
+          } else {
+            theme.drawTile(ctx, tile.type, x, y, tileSize);
+          }
         }
       }
     }
 
-    ctx.strokeStyle = '#2d3561';
+    ctx.strokeStyle = printMode ? PRINT_GRID : '#2d3561';
     ctx.lineWidth = 0.5;
     for (let y = 0; y <= meta.height; y++) {
       ctx.beginPath();
@@ -140,14 +147,26 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       const py = note.y * tileSize + tileSize / 2;
       const radius = tileSize * 0.38;
       const isSelected = note.id === selectedNoteId;
-      ctx.fillStyle = isSelected ? '#e94560' : '#f0c040';
-      ctx.beginPath();
-      ctx.arc(px, py, radius, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.strokeStyle = isSelected ? '#fff' : '#8b6914';
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.fillStyle = '#1a1a2e';
+      if (printMode) {
+        // Outlined circle with a black number — works equally well in B&W print.
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(px, py, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = isSelected ? 2 : 1.25;
+        ctx.stroke();
+        ctx.fillStyle = '#000000';
+      } else {
+        ctx.fillStyle = isSelected ? '#e94560' : '#f0c040';
+        ctx.beginPath();
+        ctx.arc(px, py, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = isSelected ? '#fff' : '#8b6914';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.fillStyle = '#1a1a2e';
+      }
       ctx.font = `bold ${Math.max(8, tileSize * 0.45)}px "Courier New", monospace`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
@@ -163,7 +182,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.globalAlpha = 0.5;
       for (const p of ghostPoints) {
         if (p.x >= 0 && p.x < meta.width && p.y >= 0 && p.y < meta.height) {
-          ctx.fillStyle = theme.tileColors[activeTile] ?? '#888';
+          ctx.fillStyle = printMode ? '#000000' : (theme.tileColors[activeTile] ?? '#888');
           ctx.fillRect(p.x * tileSize, p.y * tileSize, tileSize, tileSize);
         }
       }
@@ -173,7 +192,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // Selection box
     if (selection) {
       ctx.save();
-      ctx.strokeStyle = '#ffffff';
+      ctx.strokeStyle = printMode ? '#000000' : '#ffffff';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([4, 4]);
       ctx.strokeRect(
@@ -185,7 +204,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, themeId, isDragging, dragStart, dragEnd, activeTool, activeTile, selection]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection]);
 
   // Minimap render
   useEffect(() => {
@@ -203,14 +222,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.fillStyle = theme.tileColors['empty'];
+    ctx.fillStyle = printMode ? PRINT_BG : theme.tileColors['empty'];
     ctx.fillRect(0, 0, mW, mH);
 
     for (let y = 0; y < meta.height; y++) {
       for (let x = 0; x < meta.width; x++) {
         const tile = tiles[y]?.[x];
         if (tile && tile.type !== 'empty') {
-          ctx.fillStyle = theme.tileColors[tile.type];
+          ctx.fillStyle = printMode ? '#000000' : theme.tileColors[tile.type];
           ctx.fillRect(x * mTile, y * mTile, mTile, mTile);
         }
       }
@@ -224,11 +243,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       const vcy = meta.height / 2 - pan.y / (zoom * tileSize);
       const vx = (vcx - vw / 2) * mTile;
       const vy = (vcy - vh / 2) * mTile;
-      ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+      ctx.strokeStyle = printMode ? 'rgba(0,0,0,0.85)' : 'rgba(255,255,255,0.8)';
       ctx.lineWidth = 1;
       ctx.strokeRect(vx, vy, vw * mTile, vh * mTile);
     }
-  }, [map, tiles, meta, tileSize, themeId, zoom, pan]);
+  }, [map, tiles, meta, tileSize, themeId, printMode, zoom, pan]);
 
   // Selection keyboard handler
   useEffect(() => {
@@ -381,6 +400,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   }, [isDragging]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
+    // Zooming with the mouse wheel was found to be far too easy to trigger
+    // by accident. Require an explicit modifier — Shift held, or Caps Lock
+    // toggled on — before treating wheel events as zoom input. Without a
+    // modifier, the wheel is a no-op (and we let it bubble naturally).
+    const capsOn = typeof e.getModifierState === 'function' && e.getModifierState('CapsLock');
+    if (!e.shiftKey && !capsOn) return;
     e.preventDefault();
     setZoom(prev => {
       const delta = e.deltaY > 0 ? -0.1 : 0.1;
@@ -432,11 +457,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
           />
         </div>
       </div>
-      <div className="zoom-controls">
+      <div className="zoom-controls" title="Mouse-wheel zoom requires Shift or Caps Lock">
         <button onClick={() => setZoom(z => Math.min(4, z + 0.25))}>+</button>
         <span>{Math.round(zoom * 100)}%</span>
         <button onClick={() => setZoom(z => Math.max(0.25, z - 0.25))}>-</button>
         <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}>Reset</button>
+        <span className="zoom-hint">⇧ / ⇪ + wheel</span>
       </div>
       {mousePos && (
         <div className="coord-display">

@@ -17,6 +17,8 @@ interface MapHeaderProps {
   onRedo: () => void;
   canUndo: boolean;
   canRedo: boolean;
+  printMode: boolean;
+  onTogglePrintMode: () => void;
   getCanvas: () => HTMLCanvasElement | null;
 }
 
@@ -24,7 +26,7 @@ const GRID_SIZES = [8, 16, 24, 32, 48, 64, 96, 128];
 
 const MapHeader: React.FC<MapHeaderProps> = ({
   map, onSetName, onResize, onSetTileSize, onSetTheme, onClear, onNew, onLoad,
-  onExportSVG, onUndo, onRedo, canUndo, canRedo, getCanvas
+  onExportSVG, onUndo, onRedo, canUndo, canRedo, printMode, onTogglePrintMode, getCanvas
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -119,6 +121,13 @@ const MapHeader: React.FC<MapHeaderProps> = ({
       </div>
 
       <div className="header-right">
+        <button
+          className={`header-btn ${printMode ? 'active' : ''}`}
+          onClick={onTogglePrintMode}
+          title="Toggle Print / B&W mode — renders tiles as high-contrast monochrome glyphs suitable for printing"
+        >
+          🖨 Print
+        </button>
         <button className="header-btn" onClick={onUndo} disabled={!canUndo} title="Undo [Ctrl+Z]">↩ Undo</button>
         <button className="header-btn" onClick={onRedo} disabled={!canRedo} title="Redo [Ctrl+Y]">↪ Redo</button>
         <button className="header-btn" onClick={handleNew} title="New Map">New</button>
