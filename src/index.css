@@ -1,3 +1,20 @@
+:root {
+  /* User-adjustable UI scale. 1 = default. Set at runtime on
+     document.documentElement (e.g. 0.75, 1, 1.25, 1.5, 1.75, 2). */
+  --ui-scale: 1;
+
+  /* Scaled font-size tokens. These scale linearly with --ui-scale so
+     that the entire chrome can be made larger/easier to read without
+     touching per-component CSS. */
+  --fs-10: calc(10px * var(--ui-scale));
+  --fs-11: calc(11px * var(--ui-scale));
+  --fs-12: calc(12px * var(--ui-scale));
+  --fs-13: calc(13px * var(--ui-scale));
+  --fs-14: calc(14px * var(--ui-scale));
+  --fs-15: calc(15px * var(--ui-scale));
+  --fs-16: calc(16px * var(--ui-scale));
+}
+
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -14,7 +31,7 @@ body {
   background: #f4f1ea;
   color: #2a2620;
   font-family: 'Courier New', Courier, monospace;
-  font-size: 13px;
+  font-size: var(--fs-13);
 }
 
 ::-webkit-scrollbar {
