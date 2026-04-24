@@ -15,6 +15,17 @@ const DEFAULT_UI_SCALE = 1;
 const MIN_UI_SCALE = UI_SCALE_OPTIONS[0];
 const MAX_UI_SCALE = UI_SCALE_OPTIONS[UI_SCALE_OPTIONS.length - 1];
 
+const PRESERVE_THEME_STORAGE_KEY = 'dungeon-mapper:preserve-on-theme-switch';
+
+function loadInitialPreserveOnThemeSwitch(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(PRESERVE_THEME_STORAGE_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
 function loadInitialUIScale(): number {
   if (typeof window === 'undefined') return DEFAULT_UI_SCALE;
   try {
@@ -68,6 +79,21 @@ function App() {
   const themeId = map.meta.theme ?? 'fantasy';
   const [printMode, setPrintMode] = useState(false);
   const [uiScale, setUIScale] = useState<number>(loadInitialUIScale);
+  const [preserveOnThemeSwitch, setPreserveOnThemeSwitch] = useState<boolean>(
+    loadInitialPreserveOnThemeSwitch
+  );
+
+  // Persist the preserve-on-theme-switch preference across sessions.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        PRESERVE_THEME_STORAGE_KEY,
+        preserveOnThemeSwitch ? '1' : '0'
+      );
+    } catch {
+      // Ignore storage failures (e.g. private mode).
+    }
+  }, [preserveOnThemeSwitch]);
 
   // Apply the UI scale to :root so every CSS rule using --ui-scale picks
   // it up, and persist the preference across sessions.
@@ -92,7 +118,7 @@ function App() {
 
   const handleExportSVG = useCallback(() => {
     const theme = getTheme(themeId);
-    exportMapSVG(map, theme);
+    exportMapSVG(map, theme, getTheme);
   }, [map, themeId]);
 
   // Undo/Redo keyboard shortcuts
@@ -127,6 +153,8 @@ function App() {
         canRedo={canRedo}
         printMode={printMode}
         onTogglePrintMode={() => setPrintMode(p => !p)}
+        preserveOnThemeSwitch={preserveOnThemeSwitch}
+        onTogglePreserveOnThemeSwitch={() => setPreserveOnThemeSwitch(p => !p)}
         uiScale={uiScale}
         uiScaleOptions={UI_SCALE_OPTIONS}
         onSetUIScale={setUIScale}

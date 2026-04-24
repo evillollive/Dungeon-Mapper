@@ -6,6 +6,15 @@ export type TileType =
 export interface Tile {
   type: TileType;
   noteId?: number;
+  /**
+   * Optional per-tile theme override. When set, this tile is rendered using
+   * the named theme instead of the map's current `meta.theme`. This is used
+   * to preserve the visual style of tiles that were painted under a previous
+   * theme when the user opts in to the "preserve tiles when switching
+   * themes" mode, so terrain styles from multiple themes can coexist on a
+   * single map. When unset, the tile follows the current map theme.
+   */
+  theme?: string;
 }
 
 export interface MapNote {

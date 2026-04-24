@@ -129,7 +129,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
             // Skip 'empty' tiles in screen mode so the light graph-paper
             // background (SCREEN_BG) shows through instead of the theme's
             // dark "empty" color.
-            theme.drawTile(ctx, tile.type, x, y, tileSize);
+            // Honor the per-tile theme override (set by the optional
+            // "preserve tiles when switching themes" mode) so mixed-style
+            // maps render each tile in its original theme.
+            const tileTheme = tile.theme ? getTheme(tile.theme) : theme;
+            tileTheme.drawTile(ctx, tile.type, x, y, tileSize);
           }
         }
       }
