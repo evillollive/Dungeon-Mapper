@@ -10,7 +10,7 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **8 preset theme modes** — Fantasy, Sci-Fi, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City (see [Preset Modes](#preset-modes) below)
 - **Graph-paper canvas** — light parchment background with cyan grid lines, evoking traditional engineering / quad-ruled graph paper
 - **Print mode** — toggle a high-contrast black-and-white renderer for printer-friendly output
-- **Drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Eyedropper `I`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`
+- **Drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`
 - **Zoom & pan** — `+` / `-` / `Reset` / `Fit` controls along the bottom of the map; right-click drag to pan; mouse-wheel zoom while holding `Shift` (or with Caps Lock on)
 - **Undo / Redo** — up to 50 steps (`Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z`)
 - **Room notes** — numbered annotations placed on the map with labels and descriptions

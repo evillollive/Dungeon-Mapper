@@ -13,7 +13,8 @@ export function useDrawingTool() {
       case 'p': setActiveTool('paint'); break;
       case 'e': setActiveTool('erase'); break;
       case 'f': setActiveTool('fill'); break;
-      case 'i': setActiveTool('eyedropper'); break;
+      // Eyedropper temporarily disabled — kept here for easy re-enable in the future.
+      // case 'i': setActiveTool('eyedropper'); break;
       case 'n': setActiveTool('note'); break;
       case 'l': setActiveTool('line'); break;
       case 'r': setActiveTool('rect'); break;
