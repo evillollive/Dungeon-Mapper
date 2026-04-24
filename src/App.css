@@ -23,8 +23,16 @@
 
 .app-body {
   display: grid;
+  /* Side panel widths scale with the same factor as the chrome font
+     tokens (--ui-base-scale * --ui-scale) so that buttons and labels
+     don't get clipped when the chrome is rendered at its 1.5× default
+     baseline. They are also clamped to a viewport-relative upper bound
+     so the panels shrink gracefully on narrow windows instead of
+     dominating the canvas. */
   grid-template-columns:
-    calc(180px * var(--ui-scale)) 1fr calc(200px * var(--ui-scale));
+    clamp(160px, calc(180px * var(--ui-base-scale) * var(--ui-scale)), 32vw)
+    1fr
+    clamp(170px, calc(200px * var(--ui-base-scale) * var(--ui-scale)), 34vw);
   flex: 1;
   overflow: hidden;
   min-height: 0;
@@ -171,6 +179,11 @@
   text-align: left;
   transition: background 0.15s, border-color 0.15s;
   width: 100%;
+  /* Allow the button to participate in flex/grid shrinking so its
+     contents (name, shortcut, embedded select/checkbox) can be
+     constrained instead of overflowing the sidebar. */
+  min-width: 0;
+  overflow: hidden;
 }
 .tool-btn:hover {
   background: #ece6d6;
@@ -182,9 +195,32 @@
   color: #8a3a3a;
 }
 
-.tool-icon { font-size: var(--fs-14); }
-.tool-name { flex: 1; }
-.tool-shortcut { color: #8a7f66; font-size: var(--fs-10); }
+.tool-icon { font-size: var(--fs-14); flex-shrink: 0; }
+.tool-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.tool-shortcut {
+  color: #8a7f66;
+  font-size: var(--fs-10);
+  flex-shrink: 0;
+}
+
+/* The Theme row embeds a <select> inside a .tool-btn label; allow it
+   to shrink to fit the available space rather than forcing the row to
+   overflow the sidebar. */
+.tool-btn .grid-select {
+  min-width: 0;
+  flex: 1 1 auto;
+  max-width: 100%;
+}
+
+/* Tile palette swatch should never collapse below its requested size,
+   even when the surrounding tile-btn is shrunk inside a narrow sidebar. */
+.tile-preview { flex-shrink: 0; }
 
 /* Tile palette */
 .tile-palette {
@@ -204,6 +240,8 @@
   font-size: var(--fs-11);
   text-align: left;
   width: 100%;
+  min-width: 0;
+  overflow: hidden;
   transition: background 0.12s, border-color 0.12s;
 }
 .tile-btn:hover {
@@ -216,6 +254,8 @@
   color: #8a3a3a;
 }
 .tile-btn-label {
+  flex: 1;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

@@ -17,11 +17,12 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **Auto-save** — map state persisted to IndexedDB on every change (migrates legacy localStorage data automatically)
 - **Export / Import** — JSON round-trip, PNG canvas export, and SVG vector export
 - **Adjustable UI scale** — header **UI** dropdown rescales chrome text and controls (50%, 75%, 100%, 125%, 150%) and remembers your choice across sessions
-- **Retro aesthetic** — dark navy background, parchment text, pixel-sharp canvas rendering
+- **Preserve-tiles toggle** — when enabled (toolbar **🎨 Preserve**), switching themes keeps already-painted tiles in their original style so you can mix terrain styles from multiple themes on a single map
+- **Light parchment aesthetic** — warm off-white background, deep brick-red accents, and pixel-sharp canvas rendering for a graph-paper feel
 
 ## Preset Modes
 
-Dungeon Mapper ships with two kinds of presets: **theme modes** that re-skin the entire tile palette to match a setting, and a **print mode** for monochrome output. Switch themes from the **THEME** dropdown in the header; toggle print mode with the **🖨 Print** button.
+Dungeon Mapper ships with two kinds of presets: **theme modes** that re-skin the entire tile palette to match a setting, and a **print mode** for monochrome output. Switch themes from the **🗺 Theme** dropdown in the left toolbar; toggle print mode with the **🖨 Print** button in the header.
 
 ### Theme modes
 
