@@ -137,25 +137,25 @@ export function drawPrintTile(
     }
 
     case 'water': {
-      // Three stacked wave (~) glyphs.
+      // Three stacked sine-like wave (~) rows.
       ctx.strokeStyle = PRINT_FG;
       ctx.lineWidth = Math.max(1, s * 0.06);
       const rows = 3;
+      const startX = px + s * 0.15;
+      const endX = px + s * 0.85;
+      const span = endX - startX;
+      const segs = 4; // half-wavelengths across the tile
+      const segW = span / segs;
+      const amp = s * 0.07;
       for (let i = 0; i < rows; i++) {
         const wy = py + s * (0.25 + i * 0.25);
         ctx.beginPath();
-        ctx.moveTo(px + s * 0.15, wy);
-        const segs = 3;
+        ctx.moveTo(startX, wy);
         for (let j = 0; j < segs; j++) {
-          const x0 = px + s * 0.15 + (j * (s * 0.7)) / segs;
-          const x1 = px + s * 0.15 + ((j + 0.5) * (s * 0.7)) / segs;
-          const x2 = px + s * 0.15 + ((j + 1) * (s * 0.7)) / segs;
-          ctx.quadraticCurveTo(x1, wy - s * 0.07, x2, wy);
-          ctx.moveTo(x2, wy);
-          // Mirror is implicit in the next segment's quadraticCurveTo dipping below.
-          // For visible up/down waves, alternate direction:
-          ctx.quadraticCurveTo(x1, wy + s * 0.07, x0, wy);
-          ctx.moveTo(x2, wy);
+          const cpX = startX + (j + 0.5) * segW;
+          const nextX = startX + (j + 1) * segW;
+          const cpY = wy + (j % 2 === 0 ? -amp : amp);
+          ctx.quadraticCurveTo(cpX, cpY, nextX, wy);
         }
         ctx.stroke();
       }
