@@ -1,7 +1,7 @@
 import React from 'react';
 import type { ToolType, TileType } from '../types/map';
 import { ALL_TILE_TYPES, TILE_LABELS } from '../types/map';
-import { getTheme } from '../themes/index';
+import { getTheme, THEME_LIST } from '../themes/index';
 
 interface ToolbarProps {
   activeTool: ToolType;
@@ -9,6 +9,7 @@ interface ToolbarProps {
   themeId: string;
   onSetTool: (tool: ToolType) => void;
   onSetTile: (tile: TileType) => void;
+  onSetTheme: (theme: string, preserveExisting?: boolean) => void;
   preserveOnThemeSwitch: boolean;
   onTogglePreserveOnThemeSwitch: () => void;
 }
@@ -44,7 +45,7 @@ function TilePreview({ type, size = 28, themeId }: { type: TileType; size?: numb
 
 const Toolbar: React.FC<ToolbarProps> = ({
   activeTool, activeTile, themeId, onSetTool, onSetTile,
-  preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
+  onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
 }) => {
   return (
     <div className="toolbar">
@@ -62,6 +63,23 @@ const Toolbar: React.FC<ToolbarProps> = ({
             <span className="tool-shortcut">[{tool.shortcut}]</span>
           </button>
         ))}
+        <label
+          className="tool-btn"
+          style={{ cursor: 'pointer' }}
+          title="Map theme — choose the visual style used to render tiles"
+        >
+          <span className="tool-icon">🗺</span>
+          <span className="tool-name">Theme</span>
+          <select
+            className="grid-select"
+            value={themeId}
+            onChange={e => onSetTheme(e.target.value, preserveOnThemeSwitch)}
+            onClick={e => e.stopPropagation()}
+            title="Map theme"
+          >
+            {THEME_LIST.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        </label>
         <label
           className={`tool-btn ${preserveOnThemeSwitch ? 'active' : ''}`}
           style={{ cursor: 'pointer' }}
