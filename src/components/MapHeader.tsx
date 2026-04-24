@@ -1,14 +1,12 @@
 import React, { useRef } from 'react';
 import type { DungeonMap } from '../types/map';
 import { exportMapJSON, importMapJSON, exportMapPNG } from '../utils/export';
-import { THEME_LIST } from '../themes/index';
 
 interface MapHeaderProps {
   map: DungeonMap;
   onSetName: (name: string) => void;
   onResize: (w: number, h: number) => void;
   onSetTileSize: (size: number) => void;
-  onSetTheme: (theme: string, preserveExisting?: boolean) => void;
   onClear: () => void;
   onNew: () => void;
   onLoad: (map: DungeonMap) => void;
@@ -19,7 +17,6 @@ interface MapHeaderProps {
   canRedo: boolean;
   printMode: boolean;
   onTogglePrintMode: () => void;
-  preserveOnThemeSwitch: boolean;
   uiScale: number;
   uiScaleOptions: readonly number[];
   onSetUIScale: (scale: number) => void;
@@ -29,9 +26,8 @@ interface MapHeaderProps {
 const GRID_SIZES = [8, 16, 24, 32, 48, 64, 96, 128];
 
 const MapHeader: React.FC<MapHeaderProps> = ({
-  map, onSetName, onResize, onSetTileSize, onSetTheme, onClear, onNew, onLoad,
+  map, onSetName, onResize, onSetTileSize, onClear, onNew, onLoad,
   onExportSVG, onUndo, onRedo, canUndo, canRedo, printMode, onTogglePrintMode,
-  preserveOnThemeSwitch,
   uiScale, uiScaleOptions, onSetUIScale, getCanvas
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -113,16 +109,6 @@ const MapHeader: React.FC<MapHeaderProps> = ({
           title="Tile size (px)"
         >
           {[12, 16, 20, 24, 32].map(s => <option key={s} value={s}>{s}px</option>)}
-        </select>
-
-        <label className="header-label" style={{ marginLeft: 8 }}>THEME:</label>
-        <select
-          className="grid-select"
-          value={map.meta.theme ?? 'fantasy'}
-          onChange={e => onSetTheme(e.target.value, preserveOnThemeSwitch)}
-          title="Map theme"
-        >
-          {THEME_LIST.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
         </select>
 
         <label className="header-label" style={{ marginLeft: 8 }}>UI:</label>

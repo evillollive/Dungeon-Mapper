@@ -142,7 +142,6 @@ function App() {
         onSetName={setMapName}
         onResize={resizeMap}
         onSetTileSize={setTileSize}
-        onSetTheme={setTheme}
         onClear={clearMap}
         onNew={newMap}
         onLoad={loadMapData}
@@ -153,7 +152,6 @@ function App() {
         canRedo={canRedo}
         printMode={printMode}
         onTogglePrintMode={() => setPrintMode(p => !p)}
-        preserveOnThemeSwitch={preserveOnThemeSwitch}
         uiScale={uiScale}
         uiScaleOptions={UI_SCALE_OPTIONS}
         onSetUIScale={setUIScale}
@@ -166,6 +164,7 @@ function App() {
           themeId={themeId}
           onSetTool={setActiveTool}
           onSetTile={setActiveTile}
+          onSetTheme={setTheme}
           preserveOnThemeSwitch={preserveOnThemeSwitch}
           onTogglePreserveOnThemeSwitch={() => setPreserveOnThemeSwitch(p => !p)}
         />
