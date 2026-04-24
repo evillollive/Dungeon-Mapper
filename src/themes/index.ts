@@ -34,7 +34,12 @@ export const THEME_REGISTRY: Record<string, TileTheme> = {
   moderncity: moderncityTheme,
 };
 
-export const THEME_LIST = Object.values(THEME_REGISTRY);
+// Themes are exposed to the UI sorted alphabetically by display name so the
+// theme dropdown is easy to scan. The registry above keeps insertion order
+// for any code that relies on it.
+export const THEME_LIST = Object.values(THEME_REGISTRY).sort((a, b) =>
+  a.name.localeCompare(b.name)
+);
 
 // Legacy theme-id aliases. Older saved maps reference previous combined
 // themes; resolve those to one of the new split themes so existing content

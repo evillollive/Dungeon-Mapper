@@ -2,6 +2,8 @@
 
 A retro-styled, interactive grid-based dungeon map editor built with Vite + React + TypeScript.
 
+> _Screenshots: drop captures of the editor into a `docs/screenshots/` folder and reference them here, e.g. `![Editor](docs/screenshots/editor.png)`. Suggested shots: the empty editor at default zoom, a painted map in the Dungeon theme, the same map switched to Wilderness, and Print mode active._
+
 ## Features
 
 - **Grid editor** — configurable map from 8×8 up to 128×128, default 32×32
@@ -26,20 +28,20 @@ Dungeon Mapper ships with two kinds of presets: **theme modes** that re-skin the
 
 ### Theme modes
 
-Each theme keeps the same underlying tile types but renames them and re-renders them with setting-appropriate glyphs and colors. Maps stay portable across themes — swapping themes restyles the whole map without losing any tile data. Enable the toolbar **🎨 Preserve** toggle if you want already-painted tiles to keep their original theme style when you switch themes (so you can blend, say, Wilderness terrain with a Dungeon crawl on a single map).
+Each theme keeps the same underlying tile types but renames them and re-renders them with setting-appropriate glyphs and colors. Maps stay portable across themes — swapping themes restyles the whole map without losing any tile data. Enable the toolbar **🎨 Preserve** toggle if you want already-painted tiles to keep their original theme style when you switch themes (so you can blend, say, Wilderness terrain with a Dungeon crawl on a single map). The themes are listed alphabetically in the **🗺 Theme** dropdown.
 
 | Theme | Setting | Tile flavor (Floor / Wall / Door / Secret Door / Water / Pillar / Trap / Treasure / Start) |
 | --- | --- | --- |
-| **Dungeon** *(default)* | Subterranean crawl | Flagstone / Stone Wall / Iron Door / Secret Door / Underground Pool / Pillar / Trap / Treasure / Entrance |
-| **Castle** | Aboveground stone keep | Stone Tile / Battlement / Oak Door / Hidden Passage / Moat / Column / Murder Hole / Royal Hoard / Great Hall |
-| **Starship** | Deep-space vessel interiors | Deck / Bulkhead / Blast Door / Hidden Hatch / Coolant / Support / Laser Grid / Data Core / Airlock |
 | **Alien World** | Otherworldly biological landscape | Spore Bed / Fungal Wall / Membrane / Hidden Burrow / Acid Pool / Crystal Spire / Spore Burst / Crystal Cluster / Landing Site |
+| **Castle** | Aboveground stone keep | Stone Tile / Battlement / Oak Door / Hidden Passage / Moat / Column / Murder Hole / Royal Hoard / Great Hall |
+| **Cyberpunk** | Neon-lit street grids | Street / Barrier / Shutter / Cloaked Panel / Acid Pool / Terminal / Turret / Chip Cache / Spawn |
+| **Dungeon** *(default)* | Subterranean crawl | Flagstone / Stone Wall / Iron Door / Secret Door / Underground Pool / Pillar / Trap / Treasure / Entrance |
+| **Modern City** | Contemporary urban streets | Sidewalk / Building / Doorway / Hidden Door / Fountain / Lamp Post / Manhole / ATM / Bus Stop |
 | **Old West** | Frontier towns and saloons | Dirt / Plank Wall / Saloon Door / Hidden Passage / Water Trough / Post / Bear Trap / Gold / Entrance |
+| **Post-Apocalypse** | Ruined wastelands | Rubble / Ruins / Barricade / Hidden Stash / Toxic Pool / Rubble Pile / Landmine / Supplies / Shelter |
+| **Starship** | Deep-space vessel interiors | Deck / Bulkhead / Blast Door / Hidden Hatch / Coolant / Support / Laser Grid / Data Core / Airlock |
 | **Steampunk** | Industrial gear-and-steam works | Iron Plate / Gear Wall / Valve Door / Concealed Hatch / Steam Pipe / Piston / Pressure Plate / Contraption / Engine |
 | **Wilderness** | Outdoor overland maps | Grass / Trees / Gate / Hidden Path / River / Boulder / Snare / Cache / Camp |
-| **Cyberpunk** | Neon-lit street grids | Street / Barrier / Shutter / Cloaked Panel / Acid Pool / Terminal / Turret / Chip Cache / Spawn |
-| **Post-Apocalypse** | Ruined wastelands | Rubble / Ruins / Barricade / Hidden Stash / Toxic Pool / Rubble Pile / Landmine / Supplies / Shelter |
-| **Modern City** | Contemporary urban streets | Sidewalk / Building / Doorway / Hidden Door / Fountain / Lamp Post / Manhole / ATM / Bus Stop |
 
 ### Print mode
 
@@ -51,17 +53,17 @@ Your work is auto-saved to the browser's IndexedDB on every change, but the head
 
 ### Export
 
-- **💾 Export JSON** — writes the full map (tiles, notes, grid size, theme, name, and other metadata) to a `.json` file. This is the only format that round-trips back into the editor.
-- **🖼 Export PNG** — saves a rasterized snapshot of the current canvas as a `.png` image. Great for sharing or printing, but it cannot be re-imported.
-- **🧾 Export SVG** — saves a vector rendering of the map as an `.svg` file, with each tile and numbered note drawn as scalable shapes. Like PNG, this is for sharing/printing only — it cannot be re-imported.
+- **↓ JSON** — writes the full map (tiles, notes, grid size, theme, name, and other metadata) to a `.json` file. This is the only format that round-trips back into the editor.
+- **↓ PNG** — saves a rasterized snapshot of the current canvas as a `.png` image. Great for sharing or printing, but it cannot be re-imported.
+- **↓ SVG** — saves a vector rendering of the map as an `.svg` file, with each tile and numbered note drawn as scalable shapes. Like PNG, this is for sharing/printing only — it cannot be re-imported.
 
 If **🖨 Print** mode is active, PNG/SVG exports use the high-contrast black-and-white renderer.
 
 ### Import
 
-The **📂 Import** button in the header opens a file picker and loads a previously exported map back into the editor, replacing the current map.
+The **↑ Import** button in the header opens a file picker and loads a previously exported map back into the editor, replacing the current map.
 
-- **Supported file type:** `.json` files produced by Dungeon Mapper's **Export JSON** action. The file picker is restricted to `.json`, and the file is parsed as a `DungeonMap` object (tiles, notes, theme, grid size, map name, etc.).
+- **Supported file type:** `.json` files produced by Dungeon Mapper's **↓ JSON** export. The file picker is restricted to `.json`, and the file is parsed as a `DungeonMap` object (tiles, notes, theme, grid size, map name, etc.).
 - **Not supported:** PNG and SVG exports cannot be imported — they are image-only renders, not editable map data. No third-party formats (Dungeondraft, Universal VTT, images, CSV, etc.) are accepted.
 - **On error:** if the selected file isn't valid JSON, an alert is shown ("Failed to import map: Invalid JSON file") and your current map is left untouched.
 
