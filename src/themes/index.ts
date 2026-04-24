@@ -17,6 +17,7 @@ import { steampunkTheme } from './steampunk';
 import { wildernessTheme } from './wilderness';
 import { cyberpunkTheme } from './cyberpunk';
 import { postapocalypseTheme } from './postapocalypse';
+import { moderncityTheme } from './moderncity';
 
 export const THEME_REGISTRY: Record<string, TileTheme> = {
   fantasy: fantasyTheme,
@@ -26,6 +27,7 @@ export const THEME_REGISTRY: Record<string, TileTheme> = {
   wilderness: wildernessTheme,
   cyberpunk: cyberpunkTheme,
   postapocalypse: postapocalypseTheme,
+  moderncity: moderncityTheme,
 };
 
 export const THEME_LIST = Object.values(THEME_REGISTRY);
