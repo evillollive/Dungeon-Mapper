@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { DungeonMap, MapNote, Tile, TileType } from '../types/map';
-import { createEmptyGrid, floodFill } from '../utils/mapUtils';
+import type { DungeonMap, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke } from '../types/map';
+import { createEmptyGrid, createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
 import { saveMap, loadMap, migrateFromLocalStorage } from '../utils/storage';
 
 const DEFAULT_WIDTH = 32;
@@ -12,18 +12,54 @@ function createDefaultMap(): DungeonMap {
     meta: { name: 'New Dungeon', width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT, tileSize: DEFAULT_TILE_SIZE },
     tiles: createEmptyGrid(DEFAULT_WIDTH, DEFAULT_HEIGHT),
     notes: [],
+    fog: createFogGrid(DEFAULT_WIDTH, DEFAULT_HEIGHT, false),
+    fogEnabled: false,
+    tokens: [],
+    annotations: [],
   };
+}
+
+/**
+ * Backfill optional fields on maps loaded from older saves so the rest of
+ * the app can rely on them being present. Mirrors the defaults from
+ * createDefaultMap and is applied on every load path (IndexedDB autosave
+ * and JSON import).
+ */
+function withDefaults(map: DungeonMap): DungeonMap {
+  return {
+    ...map,
+    fog: map.fog ?? createFogGrid(map.meta.width, map.meta.height, false),
+    fogEnabled: map.fogEnabled ?? false,
+    tokens: map.tokens ?? [],
+    annotations: map.annotations ?? [],
+  };
+}
+
+/**
+ * Compute the next id to assign for a list of items keyed by `id`. Returns
+ * one greater than the largest existing id, or 1 if the list is empty/absent.
+ */
+function nextIdAfter(items: { id: number }[] | undefined): number {
+  if (!items || items.length === 0) return 1;
+  return Math.max(...items.map(i => i.id)) + 1;
+}
+
+interface HistorySnapshot {
+  tiles: Tile[][];
+  fog: boolean[][];
 }
 
 export function useMapState() {
   const [map, setMap] = useState<DungeonMap>(createDefaultMap);
   const [nextNoteId, setNextNoteId] = useState(1);
+  const nextTokenIdRef = useRef(1);
+  const nextStrokeIdRef = useRef(1);
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
-  const pastRef = useRef<Tile[][][]>([]);
-  const futureRef = useRef<Tile[][][]>([]);
+  const pastRef = useRef<HistorySnapshot[]>([]);
+  const futureRef = useRef<HistorySnapshot[]>([]);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load from IndexedDB on mount
@@ -31,9 +67,11 @@ export function useMapState() {
     migrateFromLocalStorage().catch(() => {});
     loadMap().then(loaded => {
       if (loaded) {
-        setMap(loaded);
-        const maxId = loaded.notes.length > 0 ? Math.max(...loaded.notes.map(n => n.id)) + 1 : 1;
-        setNextNoteId(maxId);
+        const ready = withDefaults(loaded);
+        setMap(ready);
+        setNextNoteId(nextIdAfter(ready.notes));
+        nextTokenIdRef.current = nextIdAfter(ready.tokens);
+        nextStrokeIdRef.current = nextIdAfter(ready.annotations);
       }
     }).catch(() => {});
   }, []);
@@ -47,8 +85,16 @@ export function useMapState() {
 
   const MAX_HISTORY_SIZE = 50;
 
-  function pushHistory(currentTiles: Tile[][]) {
-    pastRef.current = [...pastRef.current.slice(-(MAX_HISTORY_SIZE - 1)), currentTiles];
+  function pushHistory(currentTiles: Tile[][], currentFog: boolean[][] | undefined) {
+    const snap: HistorySnapshot = {
+      tiles: currentTiles,
+      fog: currentFog ?? createFogGrid(
+        currentTiles[0]?.length ?? 0,
+        currentTiles.length,
+        false
+      ),
+    };
+    pastRef.current = [...pastRef.current.slice(-(MAX_HISTORY_SIZE - 1)), snap];
     futureRef.current = [];
     setCanUndo(true);
     setCanRedo(false);
@@ -56,7 +102,7 @@ export function useMapState() {
 
   const setTile = useCallback((x: number, y: number, type: TileType) => {
     setMap(prev => {
-      pushHistory(prev.tiles);
+      pushHistory(prev.tiles, prev.fog);
       const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
       if (y >= 0 && y < prev.meta.height && x >= 0 && x < prev.meta.width) {
         // Painting/erasing clears any per-tile theme override so the tile
@@ -77,7 +123,7 @@ export function useMapState() {
     setMap(prev => {
       const targetType = prev.tiles[y]?.[x]?.type;
       if (!targetType) return prev;
-      pushHistory(prev.tiles);
+      pushHistory(prev.tiles, prev.fog);
       const newTiles = floodFill(prev.tiles, x, y, targetType, fillType);
       const updated = { ...prev, tiles: newTiles };
       debouncedSave(updated);
@@ -87,7 +133,7 @@ export function useMapState() {
 
   const setTiles = useCallback((updates: { x: number; y: number; type: TileType }[]) => {
     setMap(prev => {
-      pushHistory(prev.tiles);
+      pushHistory(prev.tiles, prev.fog);
       const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
       for (const { x, y, type } of updates) {
         if (y >= 0 && y < prev.meta.height && x >= 0 && x < prev.meta.width) {
@@ -123,7 +169,18 @@ export function useMapState() {
           prev.tiles[y]?.[x] ?? { type: 'empty' as TileType }
         )
       );
-      const updated = { ...prev, meta: { ...prev.meta, width, height }, tiles: newTiles };
+      const newFog = resizeFogGrid(prev.fog, width, height, false);
+      // Drop tokens that fell outside the new bounds.
+      const newTokens = (prev.tokens ?? []).filter(
+        t => t.x >= 0 && t.x < width && t.y >= 0 && t.y < height
+      );
+      const updated = {
+        ...prev,
+        meta: { ...prev.meta, width, height },
+        tiles: newTiles,
+        fog: newFog,
+        tokens: newTokens,
+      };
       debouncedSave(updated);
       return updated;
     });
@@ -131,16 +188,21 @@ export function useMapState() {
 
   const clearMap = useCallback(() => {
     setMap(prev => {
-      pushHistory(prev.tiles);
+      pushHistory(prev.tiles, prev.fog);
       const updated = {
         ...prev,
         tiles: createEmptyGrid(prev.meta.width, prev.meta.height),
         notes: [],
+        fog: createFogGrid(prev.meta.width, prev.meta.height, false),
+        tokens: [],
+        annotations: [],
       };
       debouncedSave(updated);
       return updated;
     });
     setNextNoteId(1);
+    nextTokenIdRef.current = 1;
+    nextStrokeIdRef.current = 1;
     setSelectedNoteId(null);
   }, [debouncedSave]);
 
@@ -153,18 +215,22 @@ export function useMapState() {
     setMap(fresh);
     debouncedSave(fresh);
     setNextNoteId(1);
+    nextTokenIdRef.current = 1;
+    nextStrokeIdRef.current = 1;
     setSelectedNoteId(null);
   }, [debouncedSave]);
 
   const loadMapData = useCallback((loaded: DungeonMap) => {
+    const ready = withDefaults(loaded);
     pastRef.current = [];
     futureRef.current = [];
     setCanUndo(false);
     setCanRedo(false);
-    setMap(loaded);
-    debouncedSave(loaded);
-    const maxId = loaded.notes.length > 0 ? Math.max(...loaded.notes.map(n => n.id)) + 1 : 1;
-    setNextNoteId(maxId);
+    setMap(ready);
+    debouncedSave(ready);
+    setNextNoteId(nextIdAfter(ready.notes));
+    nextTokenIdRef.current = nextIdAfter(ready.tokens);
+    nextStrokeIdRef.current = nextIdAfter(ready.annotations);
     setSelectedNoteId(null);
   }, [debouncedSave]);
 
@@ -240,7 +306,7 @@ export function useMapState() {
           })
         );
         if (mutated) {
-          pushHistory(prev.tiles);
+          pushHistory(prev.tiles, prev.fog);
           newTiles = stamped;
         }
       }
@@ -260,8 +326,14 @@ export function useMapState() {
     setMap(prev => {
       const previous = pastRef.current[pastRef.current.length - 1];
       pastRef.current = pastRef.current.slice(0, -1);
-      futureRef.current = [...futureRef.current, prev.tiles];
-      const updated = { ...prev, tiles: previous };
+      futureRef.current = [
+        ...futureRef.current,
+        {
+          tiles: prev.tiles,
+          fog: prev.fog ?? createFogGrid(prev.meta.width, prev.meta.height, false),
+        },
+      ];
+      const updated = { ...prev, tiles: previous.tiles, fog: previous.fog };
       debouncedSave(updated);
       setCanUndo(pastRef.current.length > 0);
       setCanRedo(true);
@@ -274,11 +346,157 @@ export function useMapState() {
     setMap(prev => {
       const next = futureRef.current[futureRef.current.length - 1];
       futureRef.current = futureRef.current.slice(0, -1);
-      pastRef.current = [...pastRef.current, prev.tiles];
-      const updated = { ...prev, tiles: next };
+      pastRef.current = [
+        ...pastRef.current,
+        {
+          tiles: prev.tiles,
+          fog: prev.fog ?? createFogGrid(prev.meta.width, prev.meta.height, false),
+        },
+      ];
+      const updated = { ...prev, tiles: next.tiles, fog: next.fog };
       debouncedSave(updated);
       setCanUndo(true);
       setCanRedo(futureRef.current.length > 0);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  // ── Fog of war ────────────────────────────────────────────────────────
+  // All fog mutations share the tile/fog history stack so reveal/hide drag
+  // operations can be undone alongside tile edits.
+
+  const setFogCells = useCallback((cells: { x: number; y: number }[], hidden: boolean) => {
+    setMap(prev => {
+      const w = prev.meta.width;
+      const h = prev.meta.height;
+      const current = prev.fog ?? createFogGrid(w, h, false);
+      // Skip the snapshot if nothing would change to avoid empty undo steps.
+      let mutated = false;
+      const newFog = current.map(row => row.slice());
+      for (const { x, y } of cells) {
+        if (x < 0 || x >= w || y < 0 || y >= h) continue;
+        if (newFog[y][x] !== hidden) {
+          newFog[y][x] = hidden;
+          mutated = true;
+        }
+      }
+      if (!mutated) return prev;
+      pushHistory(prev.tiles, current);
+      const updated = { ...prev, fog: newFog };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const fillAllFog = useCallback((hidden: boolean) => {
+    setMap(prev => {
+      const w = prev.meta.width;
+      const h = prev.meta.height;
+      const current = prev.fog ?? createFogGrid(w, h, false);
+      pushHistory(prev.tiles, current);
+      const updated = { ...prev, fog: createFogGrid(w, h, hidden) };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const setFogEnabled = useCallback((enabled: boolean) => {
+    setMap(prev => {
+      if ((prev.fogEnabled ?? false) === enabled) return prev;
+      const updated = { ...prev, fogEnabled: enabled };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  // ── Tokens ────────────────────────────────────────────────────────────
+  // Tokens are not part of the tile/fog undo stack — they're treated as
+  // lightweight overlays that can be added/moved/removed freely.
+
+  const addToken = useCallback((kind: TokenKind, x: number, y: number, label?: string) => {
+    const newId = nextTokenIdRef.current;
+    nextTokenIdRef.current = newId + 1;
+    setMap(prev => {
+      const w = prev.meta.width;
+      const h = prev.meta.height;
+      if (x < 0 || x >= w || y < 0 || y >= h) return prev;
+      const token: Token = {
+        id: newId,
+        x, y,
+        kind,
+        label: label ?? `${kind[0].toUpperCase()}${newId}`,
+      };
+      const updated = { ...prev, tokens: [...(prev.tokens ?? []), token] };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const moveToken = useCallback((id: number, x: number, y: number) => {
+    setMap(prev => {
+      const w = prev.meta.width;
+      const h = prev.meta.height;
+      if (x < 0 || x >= w || y < 0 || y >= h) return prev;
+      const tokens = (prev.tokens ?? []).map(t =>
+        t.id === id ? { ...t, x, y } : t
+      );
+      const updated = { ...prev, tokens };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const removeToken = useCallback((id: number) => {
+    setMap(prev => {
+      const tokens = (prev.tokens ?? []).filter(t => t.id !== id);
+      const updated = { ...prev, tokens };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const updateToken = useCallback((id: number, patch: Partial<Omit<Token, 'id'>>) => {
+    setMap(prev => {
+      const tokens = (prev.tokens ?? []).map(t =>
+        t.id === id ? { ...t, ...patch } : t
+      );
+      const updated = { ...prev, tokens };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  // ── Annotations (free-form pen) ───────────────────────────────────────
+
+  const addAnnotation = useCallback((stroke: Omit<AnnotationStroke, 'id'>) => {
+    const newId = nextStrokeIdRef.current;
+    nextStrokeIdRef.current = newId + 1;
+    setMap(prev => {
+      const updated = {
+        ...prev,
+        annotations: [...(prev.annotations ?? []), { ...stroke, id: newId }],
+      };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const removeAnnotation = useCallback((id: number) => {
+    setMap(prev => {
+      const annotations = (prev.annotations ?? []).filter(a => a.id !== id);
+      const updated = { ...prev, annotations };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const clearAnnotations = useCallback((kind?: 'player' | 'gm') => {
+    setMap(prev => {
+      const annotations = kind
+        ? (prev.annotations ?? []).filter(a => a.kind !== kind)
+        : [];
+      const updated = { ...prev, annotations };
+      debouncedSave(updated);
       return updated;
     });
   }, [debouncedSave]);
@@ -305,5 +523,18 @@ export function useMapState() {
     redo,
     canUndo,
     canRedo,
+    // Fog of war
+    setFogCells,
+    fillAllFog,
+    setFogEnabled,
+    // Tokens
+    addToken,
+    moveToken,
+    removeToken,
+    updateToken,
+    // Annotations
+    addAnnotation,
+    removeAnnotation,
+    clearAnnotations,
   };
 }

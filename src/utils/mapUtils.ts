@@ -6,6 +6,34 @@ export function createEmptyGrid(width: number, height: number): Tile[][] {
   );
 }
 
+/**
+ * Build a fresh fog grid sized to (width × height). The `filled` flag picks
+ * between fully-fogged (true — useful for "Reset fog") and fully-revealed
+ * (false — the default for new maps). Result is independent of any input
+ * grid so callers can replace state outright.
+ */
+export function createFogGrid(width: number, height: number, filled = false): boolean[][] {
+  return Array.from({ length: height }, () =>
+    Array.from({ length: width }, () => filled)
+  );
+}
+
+/**
+ * Resize an existing fog grid to (width × height), preserving overlapping
+ * cells and filling new cells with `fillNew` (defaults to revealed). Used
+ * when the user resizes the map so the fog mask stays aligned with tiles.
+ */
+export function resizeFogGrid(
+  fog: boolean[][] | undefined,
+  width: number,
+  height: number,
+  fillNew = false
+): boolean[][] {
+  return Array.from({ length: height }, (_, y) =>
+    Array.from({ length: width }, (_, x) => fog?.[y]?.[x] ?? fillNew)
+  );
+}
+
 export function floodFill(
   tiles: Tile[][],
   startX: number,

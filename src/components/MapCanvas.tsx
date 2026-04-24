@@ -1,5 +1,6 @@
-import React, { useRef, useEffect, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
-import type { DungeonMap, TileType, ToolType } from '../types/map';
+import React, { useRef, useEffect, useMemo, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
+import type { DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke } from '../types/map';
+import { TOKEN_KIND_COLORS } from '../types/map';
 import { getTheme } from '../themes/index';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 
@@ -8,13 +9,22 @@ import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 const SCREEN_BG = '#f4f1e4';
 const SCREEN_GRID = '#5fb8c9';
 
+// Fog overlay colors. Player mode uses a fully opaque near-black so hidden
+// content is genuinely hidden; GM mode uses a translucent dark wash so the
+// GM can still see what's been hidden but knows it's fogged (Roll20-style).
+const FOG_PLAYER_FILL = '#0a0a12';
+const FOG_GM_FILL = 'rgba(20, 22, 40, 0.55)';
+
 interface MapCanvasProps {
   map: DungeonMap;
   activeTool: ToolType;
   activeTile: TileType;
   themeId: string;
   printMode: boolean;
+  viewMode: ViewMode;
   selectedNoteId: number | null;
+  drawColor: string;
+  drawWidth: number;
   onSetTile: (x: number, y: number, type: TileType) => void;
   onSetTiles: (tiles: { x: number; y: number; type: TileType }[]) => void;
   onFillTile: (x: number, y: number, type: TileType) => void;
@@ -22,6 +32,12 @@ interface MapCanvasProps {
   onAddNote: (x: number, y: number) => void;
   onSelectNote: (id: number | null) => void;
   onEraseTiles: (tiles: { x: number; y: number }[]) => void;
+  onSetFogCells: (cells: { x: number; y: number }[], hidden: boolean) => void;
+  onAddToken: (kind: TokenKind, x: number, y: number) => void;
+  onMoveToken: (id: number, x: number, y: number) => void;
+  onRemoveToken: (id: number) => void;
+  onAddAnnotation: (stroke: Omit<AnnotationStroke, 'id'>) => void;
+  onRemoveAnnotation: (id: number) => void;
 }
 
 export interface MapCanvasHandle {
@@ -67,13 +83,108 @@ function rectOutline(x0: number, y0: number, x1: number, y1: number): { x: numbe
   return points;
 }
 
+/** Fill (not just outline) every cell in the inclusive rectangle. Used by
+ * the Reveal/Hide fog tools so a drag selects a solid block of cells. */
+function rectCells(x0: number, y0: number, x1: number, y1: number): { x: number; y: number }[] {
+  const minX = Math.min(x0, x1);
+  const maxX = Math.max(x0, x1);
+  const minY = Math.min(y0, y1);
+  const maxY = Math.max(y0, y1);
+  const points: { x: number; y: number }[] = [];
+  for (let y = minY; y <= maxY; y++) {
+    for (let x = minX; x <= maxX; x++) {
+      points.push({ x, y });
+    }
+  }
+  return points;
+}
+
+function drawToken(
+  ctx: CanvasRenderingContext2D,
+  token: Token,
+  tileSize: number
+) {
+  const px = token.x * tileSize + tileSize / 2;
+  const py = token.y * tileSize + tileSize / 2;
+  const radius = tileSize * 0.42;
+  const fill = token.color ?? TOKEN_KIND_COLORS[token.kind];
+
+  ctx.save();
+  ctx.fillStyle = fill;
+  ctx.beginPath();
+  ctx.arc(px, py, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.lineWidth = Math.max(1, tileSize * 0.08);
+  ctx.strokeStyle = '#1a1a2e';
+  ctx.stroke();
+
+  // Foreground glyph: emoji icon if provided, otherwise the first letter
+  // of the label (or the token kind).
+  const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
+  ctx.fillStyle = '#ffffff';
+  ctx.font = `bold ${Math.max(8, tileSize * 0.5)}px "Courier New", monospace`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(glyph, px, py + 0.5);
+  ctx.restore();
+}
+
+function drawAnnotation(
+  ctx: CanvasRenderingContext2D,
+  stroke: AnnotationStroke,
+  tileSize: number
+) {
+  if (stroke.points.length === 0) return;
+  ctx.save();
+  ctx.strokeStyle = stroke.color;
+  ctx.lineWidth = Math.max(1, stroke.width * tileSize);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  for (let i = 0; i < stroke.points.length; i++) {
+    const px = stroke.points[i].x * tileSize;
+    const py = stroke.points[i].y * tileSize;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  // Single-point strokes (a click without dragging) draw as a filled dot
+  // so the user gets visible feedback.
+  if (stroke.points.length === 1) {
+    const p = stroke.points[0];
+    ctx.fillStyle = stroke.color;
+    ctx.beginPath();
+    ctx.arc(p.x * tileSize, p.y * tileSize, Math.max(1, stroke.width * tileSize / 2), 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** Hit-test tokens at the given fractional tile coordinate. Returns the
+ * top-most matching token (last in z-order = drawn last). */
+function findTokenAt(tokens: Token[] | undefined, fx: number, fy: number): Token | null {
+  if (!tokens) return null;
+  // Tokens are tile-aligned and rendered as a circle of radius ~0.42 tile,
+  // but accept any click within the cell so casual clicks land.
+  const tx = Math.floor(fx);
+  const ty = Math.floor(fy);
+  for (let i = tokens.length - 1; i >= 0; i--) {
+    if (tokens[i].x === tx && tokens[i].y === ty) return tokens[i];
+  }
+  return null;
+}
+
 const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   map,
   activeTool,
   activeTile,
   themeId,
   printMode,
+  viewMode,
   selectedNoteId,
+  drawColor,
+  drawWidth,
   onSetTile,
   onSetTiles,
   onFillTile,
@@ -81,6 +192,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   onAddNote,
   onSelectNote,
   onEraseTiles,
+  onSetFogCells,
+  onAddToken,
+  onMoveToken,
+  onRemoveToken,
+  onAddAnnotation,
+  onRemoveAnnotation,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -96,13 +213,38 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const [dragEnd, setDragEnd] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [selection, setSelection] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  // Live freehand stroke being drawn — committed to the map on mouseup.
+  const [activeStroke, setActiveStroke] = useState<{ x: number; y: number }[] | null>(null);
+  // Token currently being dragged via the move-token tool.
+  const draggingTokenRef = useRef<{ id: number; lastX: number; lastY: number } | null>(null);
 
   useImperativeHandle(ref, () => ({
     getCanvas: () => canvasRef.current,
   }));
 
-  const { meta, tiles, notes } = map;
+  const { meta, tiles } = map;
   const { tileSize } = meta;
+  const notes = map.notes;
+  // Memoize so the array identity is stable when the underlying field is
+  // unset on the map (otherwise `?? []` returns a fresh array every render
+  // and trips react-hooks/exhaustive-deps).
+  const tokens = useMemo(() => map.tokens ?? [], [map.tokens]);
+  const annotations = useMemo(() => map.annotations ?? [], [map.annotations]);
+  const fog = map.fog;
+  const fogActive = (map.fogEnabled ?? false);
+  const isPlayerView = viewMode === 'player';
+
+  // Notes positioned on a fogged cell are hidden from the player view so a
+  // visible note number doesn't leak the existence of a hidden room.
+  const visibleNotes = (fogActive && isPlayerView)
+    ? notes.filter(n => !(fog?.[n.y]?.[n.x]))
+    : notes;
+
+  // Tokens on fogged cells are also hidden from players (so the GM can place
+  // a hidden monster ahead of time without revealing it).
+  const visibleTokens = (fogActive && isPlayerView)
+    ? tokens.filter(t => !(fog?.[t.y]?.[t.x]))
+    : tokens;
 
   // Main render
   useEffect(() => {
@@ -155,7 +297,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.stroke();
     }
 
-    notes.forEach(note => {
+    visibleNotes.forEach(note => {
       const px = note.x * tileSize + tileSize / 2;
       const py = note.y * tileSize + tileSize / 2;
       const radius = tileSize * 0.38;
@@ -186,6 +328,47 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.fillText(String(note.id), px, py + 0.5);
     });
 
+    // Annotations are drawn under tokens but over notes so token glyphs
+    // remain readable. GM-only annotations are suppressed in player mode.
+    for (const stroke of annotations) {
+      if (isPlayerView && stroke.kind === 'gm') continue;
+      drawAnnotation(ctx, stroke, tileSize);
+    }
+
+    // Render tokens before fog so fogged cells in player mode genuinely
+    // hide the tokens beneath them.
+    for (const token of visibleTokens) {
+      drawToken(ctx, token, tileSize);
+    }
+
+    // Live (in-progress) freehand stroke, drawn on top so the player sees
+    // immediate feedback while dragging.
+    if (activeStroke && activeStroke.length > 0) {
+      drawAnnotation(ctx, {
+        id: -1,
+        kind: 'player',
+        points: activeStroke,
+        color: drawColor,
+        width: drawWidth,
+      }, tileSize);
+    }
+
+    // Fog overlay. In player view, paint fully opaque dark cells. In GM
+    // view (when fog is enabled), paint a translucent wash so the GM still
+    // sees the underlying map but knows the cell is hidden.
+    if (fogActive && fog) {
+      ctx.save();
+      ctx.fillStyle = isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
+      for (let y = 0; y < meta.height; y++) {
+        for (let x = 0; x < meta.width; x++) {
+          if (fog[y]?.[x]) {
+            ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+          }
+        }
+      }
+      ctx.restore();
+    }
+
     // Ghost preview for line/rect
     if (isDragging && dragStart && dragEnd && (activeTool === 'line' || activeTool === 'rect')) {
       const ghostPoints = activeTool === 'line'
@@ -199,6 +382,27 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
           ctx.fillRect(p.x * tileSize, p.y * tileSize, tileSize, tileSize);
         }
       }
+      ctx.restore();
+    }
+
+    // Ghost preview for fog reveal/hide drag — show the in-progress
+    // rectangle the user is about to commit.
+    if (isDragging && dragStart && dragEnd && (activeTool === 'reveal' || activeTool === 'hide')) {
+      const minX = Math.min(dragStart.x, dragEnd.x);
+      const maxX = Math.max(dragStart.x, dragEnd.x);
+      const minY = Math.min(dragStart.y, dragEnd.y);
+      const maxY = Math.max(dragStart.y, dragEnd.y);
+      ctx.save();
+      ctx.globalAlpha = 0.4;
+      ctx.fillStyle = activeTool === 'reveal' ? '#fbbf24' : '#1e293b';
+      ctx.fillRect(minX * tileSize, minY * tileSize, (maxX - minX + 1) * tileSize, (maxY - minY + 1) * tileSize);
+      ctx.restore();
+      ctx.save();
+      ctx.strokeStyle = activeTool === 'reveal' ? '#b45309' : '#0f172a';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
+      ctx.strokeRect(minX * tileSize, minY * tileSize, (maxX - minX + 1) * tileSize, (maxY - minY + 1) * tileSize);
+      ctx.setLineDash([]);
       ctx.restore();
     }
 
@@ -217,7 +421,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, fog, fogActive, isPlayerView, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth]);
 
   // Minimap render
   useEffect(() => {
@@ -295,10 +499,56 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     return { x, y };
   }, [tileSize, meta.width, meta.height]);
 
+  /** Like getTileCoords, but returns sub-tile fractional coordinates (in
+   * tile units) so freehand drawing follows the cursor smoothly instead of
+   * snapping to cell boundaries. Returns null when outside the map. */
+  const getFractionalCoords = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    const fx = ((e.clientX - rect.left) * scaleX) / tileSize;
+    const fy = ((e.clientY - rect.top) * scaleY) / tileSize;
+    if (fx < 0 || fx > meta.width || fy < 0 || fy > meta.height) return null;
+    return { x: fx, y: fy };
+  }, [tileSize, meta.width, meta.height]);
+
+  /** Tools whose semantics are "drag a rectangle of cells" (fog reveal/hide).
+   * Behave like the existing rect tool but commit to fog instead of tiles. */
+  const isFogDragTool = activeTool === 'reveal' || activeTool === 'hide';
+
   const handleCanvasAction = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const coords = getTileCoords(e);
     if (!coords) return;
     const { x, y } = coords;
+
+    // Player-mode tools take precedence — and tile-paint tools are a no-op
+    // in player mode regardless.
+    if (isPlayerView) {
+      if (activeTool === 'token-player' || activeTool === 'token-npc' || activeTool === 'token-monster') {
+        const kind: TokenKind = activeTool === 'token-player' ? 'player'
+          : activeTool === 'token-npc' ? 'npc' : 'monster';
+        // Don't drop tokens onto fogged cells in player view — players
+        // shouldn't be able to interact with hidden geography.
+        if (fogActive && fog?.[y]?.[x]) return;
+        onAddToken(kind, x, y);
+      } else if (activeTool === 'remove-token') {
+        const t = findTokenAt(tokens, x + 0.5, y + 0.5);
+        // Players may only remove player-kind tokens. NPCs/monsters are GM-managed.
+        if (t && t.kind === 'player') onRemoveToken(t.id);
+      } else if (activeTool === 'perase') {
+        // Click a stroke's bounding cell to remove it. Only player strokes
+        // are removable from the player view.
+        for (let i = annotations.length - 1; i >= 0; i--) {
+          const s = annotations[i];
+          if (s.kind !== 'player') continue;
+          const hit = s.points.some(p => Math.floor(p.x) === x && Math.floor(p.y) === y);
+          if (hit) { onRemoveAnnotation(s.id); break; }
+        }
+      }
+      return;
+    }
 
     if (activeTool === 'paint') {
       onSetTile(x, y, activeTile);
@@ -317,7 +567,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         onAddNote(x, y);
       }
     }
-  }, [activeTool, activeTile, getTileCoords, onSetTile, onFillTile, onPickTile, onAddNote, onSelectNote, tiles, notes, selectedNoteId]);
+  }, [
+    activeTool, activeTile, getTileCoords, onSetTile, onFillTile, onPickTile, onAddNote, onSelectNote,
+    tiles, notes, selectedNoteId, isPlayerView, fogActive, fog, tokens, annotations,
+    onAddToken, onRemoveToken, onRemoveAnnotation,
+  ]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (e.button === 2) {
@@ -329,7 +583,22 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     isMouseDownRef.current = true;
     const coords = getTileCoords(e);
 
-    if (activeTool === 'line' || activeTool === 'rect') {
+    // Player-mode interactive tools that need drag tracking.
+    if (isPlayerView && activeTool === 'pdraw') {
+      const fc = getFractionalCoords(e);
+      if (fc) setActiveStroke([fc]);
+      return;
+    }
+    if (isPlayerView && activeTool === 'move-token' && coords) {
+      const t = findTokenAt(tokens, coords.x + 0.5, coords.y + 0.5);
+      // Players may only move player-kind tokens.
+      if (t && t.kind === 'player') {
+        draggingTokenRef.current = { id: t.id, lastX: t.x, lastY: t.y };
+      }
+      return;
+    }
+
+    if (activeTool === 'line' || activeTool === 'rect' || isFogDragTool) {
       if (coords) {
         setDragStart(coords);
         setDragEnd(coords);
@@ -345,7 +614,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     } else {
       handleCanvasAction(e);
     }
-  }, [activeTool, getTileCoords, handleCanvasAction]);
+  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isPanningRef.current) {
@@ -361,7 +630,38 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
     if (!isMouseDownRef.current) return;
 
-    if ((activeTool === 'line' || activeTool === 'rect') && isDragging && coords) {
+    // Player-mode drawing: append a point per move event.
+    if (isPlayerView && activeTool === 'pdraw') {
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        setActiveStroke(prev => {
+          if (!prev) return [fc];
+          const last = prev[prev.length - 1];
+          // Subsample so we don't spam thousands of points for short
+          // distances. Threshold ~0.07 tiles (sqrt(0.005)) — finer than
+          // pixel-level for typical tile sizes but coarse enough to keep
+          // strokes lightweight when serialized.
+          const dx = fc.x - last.x;
+          const dy = fc.y - last.y;
+          if (dx * dx + dy * dy < 0.005) return prev;
+          return [...prev, fc];
+        });
+      }
+      return;
+    }
+
+    // Player-mode token drag.
+    if (isPlayerView && activeTool === 'move-token' && draggingTokenRef.current && coords) {
+      const drag = draggingTokenRef.current;
+      if (coords.x !== drag.lastX || coords.y !== drag.lastY) {
+        drag.lastX = coords.x;
+        drag.lastY = coords.y;
+        onMoveToken(drag.id, coords.x, coords.y);
+      }
+      return;
+    }
+
+    if ((activeTool === 'line' || activeTool === 'rect' || isFogDragTool) && isDragging && coords) {
       setDragEnd(coords);
     } else if (activeTool === 'select' && isDragging && coords && dragStart) {
       setDragEnd(coords);
@@ -374,10 +674,25 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     } else if (activeTool === 'paint' || activeTool === 'erase') {
       handleCanvasAction(e);
     }
-  }, [activeTool, isDragging, dragStart, getTileCoords, handleCanvasAction]);
+  }, [activeTool, isDragging, dragStart, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, onMoveToken]);
 
   const handleMouseUp = useCallback(() => {
     isPanningRef.current = false;
+
+    // Commit player-mode freehand stroke.
+    if (isPlayerView && activeTool === 'pdraw' && activeStroke && activeStroke.length > 0) {
+      onAddAnnotation({
+        kind: 'player',
+        points: activeStroke,
+        color: drawColor,
+        width: drawWidth,
+      });
+      setActiveStroke(null);
+    }
+
+    if (draggingTokenRef.current) {
+      draggingTokenRef.current = null;
+    }
 
     if (isMouseDownRef.current) {
       if ((activeTool === 'line' || activeTool === 'rect') && isDragging && dragStart && dragEnd) {
@@ -385,6 +700,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
           ? bresenhamLine(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y)
           : rectOutline(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
         onSetTiles(points.map(p => ({ ...p, type: activeTile })));
+      } else if (isFogDragTool && isDragging && dragStart && dragEnd) {
+        const cells = rectCells(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
+        onSetFogCells(cells, activeTool === 'hide');
       } else if (activeTool === 'select' && isDragging && dragStart && dragEnd) {
         setSelection({
           x: Math.min(dragStart.x, dragEnd.x),
@@ -399,18 +717,20 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setIsDragging(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles]);
+  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, onAddAnnotation, drawColor, drawWidth]);
 
   const handleMouseLeave = useCallback(() => {
     isMouseDownRef.current = false;
     isPanningRef.current = false;
     setMousePos(null);
+    if (activeStroke) setActiveStroke(null);
+    if (draggingTokenRef.current) draggingTokenRef.current = null;
     if (isDragging) {
       setIsDragging(false);
       setDragStart(null);
       setDragEnd(null);
     }
-  }, [isDragging]);
+  }, [isDragging, activeStroke]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     // Zooming with the mouse wheel was found to be far too easy to trigger
@@ -466,6 +786,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     : activeTool === 'fill' ? 'cell'
     : activeTool === 'note' ? 'copy'
     : activeTool === 'select' ? 'default'
+    : activeTool === 'reveal' || activeTool === 'hide' ? 'cell'
+    : activeTool === 'pdraw' ? 'crosshair'
+    : activeTool === 'perase' ? 'cell'
+    : activeTool === 'move-token' ? 'grab'
+    : activeTool === 'remove-token' ? 'not-allowed'
+    : activeTool === 'token-player' || activeTool === 'token-npc' || activeTool === 'token-monster' ? 'copy'
     : 'crosshair';
 
   return (

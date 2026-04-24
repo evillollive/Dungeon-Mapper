@@ -21,6 +21,8 @@ interface MapHeaderProps {
   uiScaleOptions: readonly number[];
   onSetUIScale: (scale: number) => void;
   getCanvas: () => HTMLCanvasElement | null;
+  viewMode: 'gm' | 'player';
+  onToggleViewMode: () => void;
 }
 
 const GRID_SIZES = [8, 16, 24, 32, 48, 64, 96, 128];
@@ -28,7 +30,8 @@ const GRID_SIZES = [8, 16, 24, 32, 48, 64, 96, 128];
 const MapHeader: React.FC<MapHeaderProps> = ({
   map, onSetName, onResize, onSetTileSize, onClear, onNew, onLoad,
   onExportSVG, onUndo, onRedo, canUndo, canRedo, printMode, onTogglePrintMode,
-  uiScale, uiScaleOptions, onSetUIScale, getCanvas
+  uiScale, uiScaleOptions, onSetUIScale, getCanvas,
+  viewMode, onToggleViewMode,
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -125,6 +128,13 @@ const MapHeader: React.FC<MapHeaderProps> = ({
       </div>
 
       <div className="header-right">
+        <button
+          className={`header-btn ${viewMode === 'player' ? 'active' : ''}`}
+          onClick={onToggleViewMode}
+          title="Toggle Player View — switches to a fog-of-war-aware, player-safe UI with limited tools (drawing + tokens). Toggle off to return to the GM view."
+        >
+          {viewMode === 'player' ? '👁 Player View' : '🛡 GM View'}
+        </button>
         <button
           className={`header-btn ${printMode ? 'active' : ''}`}
           onClick={onTogglePrintMode}

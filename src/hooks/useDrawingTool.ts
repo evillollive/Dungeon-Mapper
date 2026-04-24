@@ -19,6 +19,8 @@ export function useDrawingTool() {
       case 'l': setActiveTool('line'); break;
       case 'r': setActiveTool('rect'); break;
       case 's': setActiveTool('select'); break;
+      case 'v': setActiveTool('reveal'); break;
+      case 'h': setActiveTool('hide'); break;
     }
   }, []);
 
