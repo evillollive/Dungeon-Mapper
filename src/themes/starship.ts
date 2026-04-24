@@ -1,9 +1,12 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
 
-export const scifiTheme: TileTheme = {
-  id: 'scifi',
-  name: 'Sci-Fi',
+// Starship theme: the interior of a deep-space vessel — riveted bulkheads,
+// metal deck plating, neon blast doors, and humming data cores. This carries
+// the classic ship-corridor feel that the original "Sci-Fi" theme depicted.
+export const starshipTheme: TileTheme = {
+  id: 'starship',
+  name: 'Starship',
   tiles: [
     { id: 'empty', label: 'Void' }, { id: 'floor', label: 'Deck' }, { id: 'wall', label: 'Bulkhead' },
     { id: 'door-h', label: 'Blast Door (H)' }, { id: 'door-v', label: 'Blast Door (V)' },
