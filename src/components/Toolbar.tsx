@@ -72,6 +72,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
             <span className="tool-shortcut">[{tool.shortcut}]</span>
           </button>
         ))}
+      </div>
+
+      <div className="toolbar-section">
+        <div className="toolbar-label">THEME</div>
         <label
           className="tool-btn"
           style={{ cursor: 'pointer' }}
