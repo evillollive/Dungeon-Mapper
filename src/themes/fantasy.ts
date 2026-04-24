@@ -7,6 +7,7 @@ export const fantasyTheme: TileTheme = {
   tiles: [
     { id: 'empty', label: 'Empty' }, { id: 'floor', label: 'Floor' }, { id: 'wall', label: 'Wall' },
     { id: 'door-h', label: 'Door (H)' }, { id: 'door-v', label: 'Door (V)' },
+    { id: 'secret-door', label: 'Secret Door' },
     { id: 'stairs-up', label: 'Stairs Up' }, { id: 'stairs-down', label: 'Stairs Down' },
     { id: 'water', label: 'Water' }, { id: 'pillar', label: 'Pillar' },
     { id: 'trap', label: 'Trap' }, { id: 'treasure', label: 'Treasure' }, { id: 'start', label: 'Start' },
@@ -16,6 +17,7 @@ export const fantasyTheme: TileTheme = {
   tileColors: {
     empty: '#1a1a2e', floor: '#c8b89a', wall: '#4a4a4a',
     'door-h': '#8b6914', 'door-v': '#8b6914',
+    'secret-door': '#4a4a4a',
     'stairs-up': '#7a9e7e', 'stairs-down': '#5a7a5e',
     water: '#1e5f8e', pillar: '#6a6a6a', trap: '#8e1e1e',
     treasure: '#d4af37', start: '#2e8b57',
@@ -54,6 +56,22 @@ export const fantasyTheme: TileTheme = {
         ctx.fillStyle = '#5a5a5a';
         ctx.fillRect(px + 2, py + 2, s - 4, 2);
         ctx.fillRect(px + 2, py + 2, 2, s - 4);
+        break;
+      }
+
+      case 'secret-door': {
+        // Render as a wall, with a faint 'S' overlay for the mapper.
+        ctx.fillStyle = '#333333';
+        ctx.fillRect(px + 2, py + 2, s - 4, s - 4);
+        ctx.fillStyle = '#5a5a5a';
+        ctx.fillRect(px + 2, py + 2, s - 4, 2);
+        ctx.fillRect(px + 2, py + 2, 2, s - 4);
+        const fontSize = Math.max(7, Math.floor(s * 0.6));
+        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#c8a84b';
+        ctx.fillText('S', cx, cy + 1);
         break;
       }
 

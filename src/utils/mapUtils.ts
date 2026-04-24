@@ -47,6 +47,7 @@ export const TILE_COLORS: Record<TileType, string> = {
   wall: '#4a4a4a',
   'door-h': '#8b6914',
   'door-v': '#8b6914',
+  'secret-door': '#4a4a4a',
   'stairs-up': '#7a9e7e',
   'stairs-down': '#5a7a5e',
   water: '#1e5f8e',

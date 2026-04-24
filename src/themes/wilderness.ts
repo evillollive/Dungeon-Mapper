@@ -7,6 +7,7 @@ export const wildernessTheme: TileTheme = {
   tiles: [
     { id: 'empty', label: 'Void' }, { id: 'floor', label: 'Grass' }, { id: 'wall', label: 'Trees' },
     { id: 'door-h', label: 'Gate (H)' }, { id: 'door-v', label: 'Gate (V)' },
+    { id: 'secret-door', label: 'Hidden Path' },
     { id: 'stairs-up', label: 'Hill Up' }, { id: 'stairs-down', label: 'Hill Down' },
     { id: 'water', label: 'River' }, { id: 'pillar', label: 'Boulder' },
     { id: 'trap', label: 'Snare' }, { id: 'treasure', label: 'Cache' }, { id: 'start', label: 'Camp' },
@@ -16,6 +17,7 @@ export const wildernessTheme: TileTheme = {
   tileColors: {
     empty: '#0a1a05', floor: '#3a7a2a', wall: '#1a3a0a',
     'door-h': '#8b6914', 'door-v': '#8b6914',
+    'secret-door': '#1a3a0a',
     'stairs-up': '#7a9e7e', 'stairs-down': '#5a7a5e',
     water: '#1e5f8e', pillar: '#6a4a2a', trap: '#8e1e1e',
     treasure: '#d4af37', start: '#50fa7b',
@@ -56,6 +58,25 @@ export const wildernessTheme: TileTheme = {
         ctx.beginPath();
         ctx.arc(cx, cy - s * 0.1, s * 0.35, 0, Math.PI * 2);
         ctx.fill();
+        break;
+      }
+
+      case 'secret-door': {
+        // Same tree shape as a wall, with a faint 'S' overlay.
+        ctx.fillStyle = '#4a2a10';
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.28, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#1a5a0a';
+        ctx.beginPath();
+        ctx.arc(cx, cy - s * 0.1, s * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+        const fontSize = Math.max(7, Math.floor(s * 0.5));
+        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#c8a84b';
+        ctx.fillText('S', cx, cy + 1);
         break;
       }
 

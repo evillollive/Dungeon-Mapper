@@ -1,5 +1,5 @@
 export type TileType =
-  | 'empty' | 'floor' | 'wall' | 'door-h' | 'door-v'
+  | 'empty' | 'floor' | 'wall' | 'door-h' | 'door-v' | 'secret-door'
   | 'stairs-up' | 'stairs-down' | 'water' | 'pillar'
   | 'trap' | 'treasure' | 'start';
 
@@ -47,6 +47,7 @@ export const TILE_LABELS: Record<TileType, string> = {
   wall: 'Wall',
   'door-h': 'Door (H)',
   'door-v': 'Door (V)',
+  'secret-door': 'Secret Door',
   'stairs-up': 'Stairs Up',
   'stairs-down': 'Stairs Down',
   water: 'Water',
@@ -57,7 +58,7 @@ export const TILE_LABELS: Record<TileType, string> = {
 };
 
 export const ALL_TILE_TYPES: TileType[] = [
-  'empty', 'floor', 'wall', 'door-h', 'door-v',
+  'empty', 'floor', 'wall', 'door-h', 'door-v', 'secret-door',
   'stairs-up', 'stairs-down', 'water', 'pillar',
   'trap', 'treasure', 'start',
 ];

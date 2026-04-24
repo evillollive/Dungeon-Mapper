@@ -7,6 +7,7 @@ export const postapocalypseTheme: TileTheme = {
   tiles: [
     { id: 'empty', label: 'Wasteland' }, { id: 'floor', label: 'Rubble' }, { id: 'wall', label: 'Ruins' },
     { id: 'door-h', label: 'Barricade (H)' }, { id: 'door-v', label: 'Barricade (V)' },
+    { id: 'secret-door', label: 'Hidden Stash' },
     { id: 'stairs-up', label: 'Debris Up' }, { id: 'stairs-down', label: 'Debris Down' },
     { id: 'water', label: 'Toxic Pool' }, { id: 'pillar', label: 'Rubble Pile' },
     { id: 'trap', label: 'Landmine' }, { id: 'treasure', label: 'Supplies' }, { id: 'start', label: 'Shelter' },
@@ -16,6 +17,7 @@ export const postapocalypseTheme: TileTheme = {
   tileColors: {
     empty: '#1a1208', floor: '#6b5a3a', wall: '#4a3a28',
     'door-h': '#8b6020', 'door-v': '#8b6020',
+    'secret-door': '#4a3a28',
     'stairs-up': '#7a6a4a', 'stairs-down': '#5a4a3a',
     water: '#2a4a1a', pillar: '#5a4a38', trap: '#8e3e1e',
     treasure: '#c09820', start: '#4a7a2a',
@@ -75,6 +77,29 @@ export const postapocalypseTheme: TileTheme = {
         ctx.moveTo(px + 3, py + 3);
         ctx.lineTo(px + s - 3, py + s - 3);
         ctx.stroke();
+        break;
+      }
+
+      case 'secret-door': {
+        // Render as ruined wall with a faint 'S' overlay.
+        ctx.strokeStyle = '#6a5030';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(px + 2, py + s / 3);
+        ctx.lineTo(px + s - 2, py + s / 3);
+        ctx.moveTo(px + 3, py + 2 * s / 3);
+        ctx.lineTo(px + s - 3, py + 2 * s / 3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(px + 3, py + 3);
+        ctx.lineTo(px + s - 3, py + s - 3);
+        ctx.stroke();
+        const fontSize = Math.max(7, Math.floor(s * 0.55));
+        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#c09820';
+        ctx.fillText('S', cx, cy + 1);
         break;
       }
 

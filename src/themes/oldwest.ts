@@ -7,6 +7,7 @@ export const oldwestTheme: TileTheme = {
   tiles: [
     { id: 'empty', label: 'Dust' }, { id: 'floor', label: 'Dirt' }, { id: 'wall', label: 'Plank Wall' },
     { id: 'door-h', label: 'Saloon Door (H)' }, { id: 'door-v', label: 'Saloon Door (V)' },
+    { id: 'secret-door', label: 'Hidden Passage' },
     { id: 'stairs-up', label: 'Stairs Up' }, { id: 'stairs-down', label: 'Stairs Down' },
     { id: 'water', label: 'Water Trough' }, { id: 'pillar', label: 'Post' },
     { id: 'trap', label: 'Bear Trap' }, { id: 'treasure', label: 'Gold' }, { id: 'start', label: 'Entrance' },
@@ -16,6 +17,7 @@ export const oldwestTheme: TileTheme = {
   tileColors: {
     empty: '#2b1a0a', floor: '#c8a878', wall: '#6b3d1e',
     'door-h': '#8b5a2b', 'door-v': '#8b5a2b',
+    'secret-door': '#6b3d1e',
     'stairs-up': '#a0956a', 'stairs-down': '#857a55',
     water: '#3a7a9e', pillar: '#8b6914', trap: '#8b0000',
     treasure: '#d4af37', start: '#4a7a2a',
@@ -65,6 +67,27 @@ export const oldwestTheme: TileTheme = {
           ctx.lineTo(px + s - 1, wy);
           ctx.stroke();
         }
+        break;
+      }
+
+      case 'secret-door': {
+        // Plank wall with a faint 'S' for the mapper.
+        ctx.strokeStyle = '#4a2a10';
+        ctx.lineWidth = 1;
+        const planks = 3;
+        for (let i = 1; i < planks; i++) {
+          const wy = py + i * (s / planks);
+          ctx.beginPath();
+          ctx.moveTo(px + 1, wy);
+          ctx.lineTo(px + s - 1, wy);
+          ctx.stroke();
+        }
+        const fontSize = Math.max(7, Math.floor(s * 0.6));
+        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#c8a84b';
+        ctx.fillText('S', cx, cy + 1);
         break;
       }
 
