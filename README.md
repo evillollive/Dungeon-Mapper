@@ -7,7 +7,7 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **Grid editor** — configurable map from 8×8 up to 128×128, default 32×32
 - **Tile size** — selectable tile size (12, 16, 20, 24, 32 px), default 20 px
 - **12 paintable tile types** — Floor, Wall, Door (H/V), Secret Door, Stairs Up/Down, Water, Pillar, Trap, Treasure, Start (use the Erase tool to clear a tile back to empty)
-- **9 preset theme modes** — Castle, Dungeon, Sci-Fi, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City (see [Preset Modes](#preset-modes) below)
+- **10 preset theme modes** — Castle, Dungeon, Starship, Alien World, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City (see [Preset Modes](#preset-modes) below)
 - **Graph-paper canvas** — light parchment background with cyan grid lines, evoking traditional engineering / quad-ruled graph paper
 - **Print mode** — toggle a high-contrast black-and-white renderer for printer-friendly output
 - **Drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`
@@ -32,7 +32,8 @@ Each theme keeps the same underlying tile types but renames them and re-renders 
 | --- | --- | --- |
 | **Dungeon** *(default)* | Subterranean crawl | Flagstone / Stone Wall / Iron Door / Secret Door / Underground Pool / Pillar / Trap / Treasure / Entrance |
 | **Castle** | Aboveground stone keep | Stone Tile / Battlement / Oak Door / Hidden Passage / Moat / Column / Murder Hole / Royal Hoard / Great Hall |
-| **Sci-Fi** | Starship interiors | Deck / Bulkhead / Blast Door / Hidden Hatch / Coolant / Support / Laser Grid / Data Core / Airlock |
+| **Starship** | Deep-space vessel interiors | Deck / Bulkhead / Blast Door / Hidden Hatch / Coolant / Support / Laser Grid / Data Core / Airlock |
+| **Alien World** | Otherworldly biological landscape | Spore Bed / Fungal Wall / Membrane / Hidden Burrow / Acid Pool / Crystal Spire / Spore Burst / Crystal Cluster / Landing Site |
 | **Old West** | Frontier towns and saloons | Dirt / Plank Wall / Saloon Door / Hidden Passage / Water Trough / Post / Bear Trap / Gold / Entrance |
 | **Steampunk** | Industrial gear-and-steam works | Iron Plate / Gear Wall / Valve Door / Concealed Hatch / Steam Pipe / Piston / Pressure Plate / Contraption / Engine |
 | **Wilderness** | Outdoor overland maps | Grass / Trees / Gate / Hidden Path / River / Boulder / Snare / Cache / Camp |
