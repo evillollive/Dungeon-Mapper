@@ -417,6 +417,7 @@ export function useMapState() {
       if (theme === previousTheme) return prev;
 
       let newTiles = prev.tiles;
+      let newNotes = prev.notes;
       if (preserveExisting) {
         // Stamp the *outgoing* theme onto every non-empty tile that does not
         // already carry an explicit per-tile theme. This freezes the visual
@@ -436,11 +437,30 @@ export function useMapState() {
           pushHistory(prev.tiles, prev.fog);
           newTiles = stamped;
         }
+      } else {
+        // When *not* preserving, drop auto-generated notes (room labels and
+        // POIs) whose text is theme-specific. User-created notes (no `kind`)
+        // are kept. The corresponding `noteId` links on tiles are cleared so
+        // the canvas doesn't reference stale notes.
+        const generatedIds = new Set(
+          prev.notes.filter(n => n.kind === 'room' || n.kind === 'poi').map(n => n.id),
+        );
+        if (generatedIds.size > 0) {
+          newNotes = prev.notes.filter(n => !generatedIds.has(n.id));
+          newTiles = prev.tiles.map(row =>
+            row.map(t =>
+              t.noteId !== undefined && generatedIds.has(t.noteId)
+                ? { ...t, noteId: undefined }
+                : t,
+            ),
+          );
+        }
       }
 
       const updated = {
         ...prev,
         tiles: newTiles,
+        notes: newNotes,
         meta: { ...prev.meta, theme },
       };
       debouncedSave(updated);
