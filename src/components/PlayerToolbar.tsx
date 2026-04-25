@@ -87,6 +87,64 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
       </div>
 
       <div className="toolbar-section">
+        <div className="toolbar-label">FOG OF WAR</div>
+        <label
+          className={`tool-btn ${fogEnabled ? 'active' : ''}`}
+          style={{ cursor: 'pointer' }}
+          title="Toggle fog-of-war for this map. When on, fogged cells are hidden under an opaque grey overlay in the player view."
+        >
+          <span className="tool-icon">🌫</span>
+          <span className="tool-name">Enabled</span>
+          <input
+            type="checkbox"
+            checked={fogEnabled}
+            onChange={onToggleFogEnabled}
+            style={{ margin: 0 }}
+          />
+        </label>
+        {fogEnabled && (
+          <>
+            <button
+              className={`tool-btn ${activeTool === 'defog' ? 'active' : ''}`}
+              onClick={() => onSetTool('defog')}
+              title="Defog brush — drag across the map to wipe fog away cell-by-cell."
+            >
+              <span className="tool-icon">🧹</span>
+              <span className="tool-name">Defog</span>
+            </button>
+            {FOG_TOOLS.map(tool => (
+              <button
+                key={tool.id}
+                className={`tool-btn ${activeTool === tool.id ? 'active' : ''}`}
+                onClick={() => onSetTool(tool.id)}
+                title={`${tool.label} — drag a rectangle of cells to ${tool.id === 'reveal' ? 'reveal' : 'hide'} [${tool.shortcut}]`}
+              >
+                <span className="tool-icon">{tool.icon}</span>
+                <span className="tool-name">{tool.label}</span>
+                <span className="tool-shortcut">[{tool.shortcut}]</span>
+              </button>
+            ))}
+            <button
+              className="tool-btn"
+              onClick={onResetFog}
+              title="Re-fog the entire map (hide every cell)."
+            >
+              <span className="tool-icon">⟲</span>
+              <span className="tool-name">Reset Fog</span>
+            </button>
+            <button
+              className="tool-btn"
+              onClick={onClearFog}
+              title="Reveal the entire map (clear all fog)."
+            >
+              <span className="tool-icon">☀</span>
+              <span className="tool-name">Clear Fog</span>
+            </button>
+          </>
+        )}
+      </div>
+
+      <div className="toolbar-section">
         <div className="toolbar-label">PEN</div>
         <div
           className="tile-palette"
@@ -98,7 +156,9 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
               className={`tile-btn ${drawColor === c ? 'active' : ''}`}
               onClick={() => onSetDrawColor(c)}
               title={`Color: ${c}`}
-              style={{ padding: 2 }}
+              // Override the default .tile-btn width:100% so the swatches
+              // tile into a compact grid instead of stacking one per row.
+              style={{ padding: 2, width: 'auto', flex: '0 0 auto' }}
             >
               <span
                 style={{
@@ -177,64 +237,6 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
           <span className="tool-icon">✕</span>
           <span className="tool-name">Remove</span>
         </button>
-      </div>
-
-      <div className="toolbar-section">
-        <div className="toolbar-label">FOG OF WAR</div>
-        <label
-          className={`tool-btn ${fogEnabled ? 'active' : ''}`}
-          style={{ cursor: 'pointer' }}
-          title="Toggle fog-of-war for this map. When on, fogged cells are hidden under an opaque grey overlay in the player view."
-        >
-          <span className="tool-icon">🌫</span>
-          <span className="tool-name">Enabled</span>
-          <input
-            type="checkbox"
-            checked={fogEnabled}
-            onChange={onToggleFogEnabled}
-            style={{ margin: 0 }}
-          />
-        </label>
-        {fogEnabled && (
-          <>
-            <button
-              className={`tool-btn ${activeTool === 'defog' ? 'active' : ''}`}
-              onClick={() => onSetTool('defog')}
-              title="Defog brush — drag across the map to wipe fog away cell-by-cell."
-            >
-              <span className="tool-icon">🧹</span>
-              <span className="tool-name">Defog</span>
-            </button>
-            {FOG_TOOLS.map(tool => (
-              <button
-                key={tool.id}
-                className={`tool-btn ${activeTool === tool.id ? 'active' : ''}`}
-                onClick={() => onSetTool(tool.id)}
-                title={`${tool.label} — drag a rectangle of cells to ${tool.id === 'reveal' ? 'reveal' : 'hide'} [${tool.shortcut}]`}
-              >
-                <span className="tool-icon">{tool.icon}</span>
-                <span className="tool-name">{tool.label}</span>
-                <span className="tool-shortcut">[{tool.shortcut}]</span>
-              </button>
-            ))}
-            <button
-              className="tool-btn"
-              onClick={onResetFog}
-              title="Re-fog the entire map (hide every cell)."
-            >
-              <span className="tool-icon">⟲</span>
-              <span className="tool-name">Reset Fog</span>
-            </button>
-            <button
-              className="tool-btn"
-              onClick={onClearFog}
-              title="Reveal the entire map (clear all fog)."
-            >
-              <span className="tool-icon">☀</span>
-              <span className="tool-name">Clear Fog</span>
-            </button>
-          </>
-        )}
       </div>
     </div>
   );
