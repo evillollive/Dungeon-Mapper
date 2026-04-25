@@ -12,8 +12,10 @@ function createDefaultMap(): DungeonMap {
     meta: { name: 'New Dungeon', width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT, tileSize: DEFAULT_TILE_SIZE },
     tiles: createEmptyGrid(DEFAULT_WIDTH, DEFAULT_HEIGHT),
     notes: [],
-    fog: createFogGrid(DEFAULT_WIDTH, DEFAULT_HEIGHT, false),
-    fogEnabled: false,
+    // Maps start fully fogged with fog-of-war enabled. Players see a fully
+    // hidden map until the GM uses the Reveal tool to expose explored areas.
+    fog: createFogGrid(DEFAULT_WIDTH, DEFAULT_HEIGHT, true),
+    fogEnabled: true,
     tokens: [],
     annotations: [],
   };
@@ -169,7 +171,9 @@ export function useMapState() {
           prev.tiles[y]?.[x] ?? { type: 'empty' as TileType }
         )
       );
-      const newFog = resizeFogGrid(prev.fog, width, height, false);
+      // Newly-added cells from a grow-resize default to fogged so unexplored
+      // area added to the map stays hidden until the GM reveals it.
+      const newFog = resizeFogGrid(prev.fog, width, height, true);
       // Drop tokens that fell outside the new bounds.
       const newTokens = (prev.tokens ?? []).filter(
         t => t.x >= 0 && t.x < width && t.y >= 0 && t.y < height
@@ -193,7 +197,9 @@ export function useMapState() {
         ...prev,
         tiles: createEmptyGrid(prev.meta.width, prev.meta.height),
         notes: [],
-        fog: createFogGrid(prev.meta.width, prev.meta.height, false),
+        // Clearing the map resets to a fully-fogged state, matching the
+        // behavior of a fresh map.
+        fog: createFogGrid(prev.meta.width, prev.meta.height, true),
         tokens: [],
         annotations: [],
       };
