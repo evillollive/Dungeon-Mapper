@@ -227,6 +227,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const [selection, setSelection] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   // Live freehand stroke being drawn — committed to the map on mouseup.
   const [activeStroke, setActiveStroke] = useState<{ x: number; y: number }[] | null>(null);
+  // Cells visited by the in-progress freehand defog brush. Held locally so
+  // the player gets immediate visual feedback (the fog overlay is skipped
+  // for these cells) without spamming history; the whole batch is committed
+  // to the map on mouseup as a single fog edit.
+  const [defogStroke, setDefogStroke] = useState<{ x: number; y: number }[] | null>(null);
+  const lastDefogCellRef = useRef<{ x: number; y: number } | null>(null);
   // Token currently being dragged via the move-token tool.
   const draggingTokenRef = useRef<{ id: number; lastX: number; lastY: number } | null>(null);
 
@@ -372,11 +378,18 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // wash so they can see at a glance what is fogged.
     const renderFog = fogActive && fog && (isPlayerView || gmShowFog);
     if (renderFog) {
+      // Cells the player is currently brushing with the Defog tool — skip
+      // their fog overlay so the wipe is visible in real time before the
+      // change is committed on mouseup.
+      const defogSkip = defogStroke
+        ? new Set(defogStroke.map(c => `${c.x},${c.y}`))
+        : null;
       ctx.save();
       ctx.fillStyle = isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
       for (let y = 0; y < meta.height; y++) {
         for (let x = 0; x < meta.width; x++) {
           if (fog[y]?.[x]) {
+            if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
             ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
           }
         }
@@ -436,7 +449,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke]);
 
   // Minimap render
   useEffect(() => {
@@ -604,6 +617,13 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       if (fc) setActiveStroke([fc]);
       return;
     }
+    if (isPlayerView && activeTool === 'defog' && coords) {
+      // Start a freehand defog stroke. Cells are accumulated locally and
+      // committed in a single fog edit on mouseup.
+      lastDefogCellRef.current = coords;
+      setDefogStroke([coords]);
+      return;
+    }
     if (isPlayerView && activeTool === 'move-token' && coords) {
       const t = findTokenAt(tokens, coords.x + 0.5, coords.y + 0.5);
       // Players may only move player-kind tokens.
@@ -665,6 +685,34 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       return;
     }
 
+    // Player-mode defog brush: extend the in-progress stroke with every
+    // new cell the cursor crosses, using bresenham to fill in cells the
+    // cursor jumped over between events.
+    if (isPlayerView && activeTool === 'defog' && coords) {
+      const last = lastDefogCellRef.current;
+      if (!last || last.x !== coords.x || last.y !== coords.y) {
+        const filler = last
+          ? bresenhamLine(last.x, last.y, coords.x, coords.y).slice(1)
+          : [coords];
+        if (filler.length > 0) {
+          lastDefogCellRef.current = coords;
+          setDefogStroke(prev => {
+            const seen = new Set(prev?.map(c => `${c.x},${c.y}`) ?? []);
+            const next = prev ? [...prev] : [];
+            for (const c of filler) {
+              const key = `${c.x},${c.y}`;
+              if (!seen.has(key)) {
+                seen.add(key);
+                next.push(c);
+              }
+            }
+            return next;
+          });
+        }
+      }
+      return;
+    }
+
     // Player-mode token drag.
     if (isPlayerView && activeTool === 'move-token' && draggingTokenRef.current && coords) {
       const drag = draggingTokenRef.current;
@@ -705,6 +753,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       setActiveStroke(null);
     }
 
+    // Commit player-mode defog brush — clear fog for every cell the
+    // brush touched as a single fog edit (one undo step).
+    if (isPlayerView && activeTool === 'defog' && defogStroke && defogStroke.length > 0) {
+      onSetFogCells(defogStroke, false);
+      setDefogStroke(null);
+      lastDefogCellRef.current = null;
+    }
+
     if (draggingTokenRef.current) {
       draggingTokenRef.current = null;
     }
@@ -732,20 +788,27 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setIsDragging(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, onAddAnnotation, drawColor, drawWidth]);
+  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, onAddAnnotation, drawColor, drawWidth]);
 
   const handleMouseLeave = useCallback(() => {
     isMouseDownRef.current = false;
     isPanningRef.current = false;
     setMousePos(null);
     if (activeStroke) setActiveStroke(null);
+    // Commit any in-progress defog brush so the player doesn't lose work
+    // if their cursor briefly leaves the canvas while dragging.
+    if (defogStroke && defogStroke.length > 0) {
+      onSetFogCells(defogStroke, false);
+      setDefogStroke(null);
+      lastDefogCellRef.current = null;
+    }
     if (draggingTokenRef.current) draggingTokenRef.current = null;
     if (isDragging) {
       setIsDragging(false);
       setDragStart(null);
       setDragEnd(null);
     }
-  }, [isDragging, activeStroke]);
+  }, [isDragging, activeStroke, defogStroke, onSetFogCells]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     // Zooming with the mouse wheel was found to be far too easy to trigger
@@ -802,6 +865,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     : activeTool === 'note' ? 'copy'
     : activeTool === 'select' ? 'default'
     : activeTool === 'reveal' || activeTool === 'hide' ? 'cell'
+    : activeTool === 'defog' ? 'cell'
     : activeTool === 'pdraw' ? 'crosshair'
     : activeTool === 'perase' ? 'cell'
     : activeTool === 'move-token' ? 'grab'
