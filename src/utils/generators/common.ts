@@ -1,5 +1,21 @@
 import type { Tile, TileType } from '../../types/map';
 
+/**
+ * Bounds applied by every generator to the `density` knob exposed in the
+ * dialog. The value is roughly centered at 1.0; the 0.1 floor exists so a
+ * user dragging the slider all the way to the left still gets a populated
+ * map rather than an empty grid. Generators that need a tighter floor
+ * (e.g. cavern, where too-low fill produces incoherent caves) clamp again
+ * internally.
+ */
+export const MIN_DENSITY = 0.1;
+export const MAX_DENSITY = 1.5;
+
+/** Clamp a density value to the supported range. */
+export function clampDensity(d: number): number {
+  return Math.max(MIN_DENSITY, Math.min(MAX_DENSITY, d));
+}
+
 /** Mutable working grid of `TileType`s used by the generators. */
 export type TypeGrid = TileType[][];
 

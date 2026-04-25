@@ -8,6 +8,7 @@ import {
   seedToString,
   type GeneratedMap,
 } from '../utils/generators';
+import { MAX_DENSITY, MIN_DENSITY } from '../utils/generators/common';
 
 interface GenerateMapDialogProps {
   /** Theme id of the current map — used to pick the default algorithm. */
@@ -138,8 +139,8 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
           <span>Density ({density.toFixed(2)})</span>
           <input
             type="range"
-            min={0.25}
-            max={1.5}
+            min={MIN_DENSITY}
+            max={MAX_DENSITY}
             step={0.05}
             value={density}
             onChange={e => setDensity(Number(e.target.value))}

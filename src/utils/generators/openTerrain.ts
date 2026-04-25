@@ -1,6 +1,7 @@
 import type { MapNote, Tile } from '../../types/map';
 import {
   collectCells,
+  clampDensity,
   DIRS_4,
   getCell,
   makeTypeGrid,
@@ -47,7 +48,7 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
   const grid = makeTypeGrid(width, height, 'floor');
 
   const area = width * height;
-  const d = Math.max(0.1, Math.min(1.5, density));
+  const d = clampDensity(density);
 
   // Scatter rocky / wooded clusters.
   const wallBlobs = Math.round((area / 80) * d);

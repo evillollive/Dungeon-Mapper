@@ -1,6 +1,7 @@
 import type { MapNote, Tile } from '../../types/map';
 import {
   bfsDistances,
+  clampDensity,
   collectCells,
   getCell,
   makeTypeGrid,
@@ -75,8 +76,12 @@ function placeDoors(grid: TypeGrid): void {
       const wTile = getCell(grid, x - 1, y);
       const horizontal = n === 'floor' && s === 'floor' && e === 'wall' && wTile === 'wall';
       const vertical = e === 'floor' && wTile === 'floor' && n === 'wall' && s === 'wall';
-      if (horizontal) updates.push({ x, y, type: 'door-v' });
-      else if (vertical) updates.push({ x, y, type: 'door-h' });
+      // Naming follows the rest of the app: 'door-h' is rendered as a
+      // horizontal bar (a door embedded in an east-west wall, traversed
+      // north-south), and 'door-v' as a vertical bar (door in a north-south
+      // wall, traversed east-west).
+      if (horizontal) updates.push({ x, y, type: 'door-h' });
+      else if (vertical) updates.push({ x, y, type: 'door-v' });
     }
   }
   for (const u of updates) grid[u.y][u.x] = u.type;
@@ -99,8 +104,8 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   // bigger maps.
   const minSide = 3;
   const maxSide = Math.max(minSide + 2, Math.min(8, Math.floor(Math.min(width, height) / 4)));
-  // Number of attempts scales with map area and density (0.25..1.5).
-  const d = Math.max(0.1, Math.min(1.5, density));
+  // Number of attempts scales with map area and density (clamped).
+  const d = clampDensity(density);
   const targetRooms = Math.max(3, Math.round((width * height) / 60 * d));
   const maxAttempts = targetRooms * 6;
 

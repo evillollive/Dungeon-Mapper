@@ -1,6 +1,7 @@
 import type { MapNote, Tile } from '../../types/map';
 import {
   bfsDistances,
+  clampDensity,
   DIRS_8,
   getCell,
   makeTypeGrid,
@@ -34,7 +35,12 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
   const rng = makeRng(seed);
   const grid = makeTypeGrid(width, height, 'wall');
 
-  const d = Math.max(0.2, Math.min(1.5, density));
+  // Apply the shared density bounds, then take an extra max with 0.2:
+  // below ~0.2 the random fill is too sparse for the smoothing pass to
+  // form coherent cave walls and the result is mostly open floor with
+  // little structure, so we floor cavern-specific density there even if
+  // the global slider goes lower.
+  const d = Math.max(0.2, clampDensity(density));
   // Map density 1.0 → 0.45 wall fill (classic value). Less density = more
   // open caves; more density = tighter passages.
   const fillRatio = Math.max(0.3, Math.min(0.6, 0.45 + (d - 1) * 0.05));
