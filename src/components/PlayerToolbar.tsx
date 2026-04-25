@@ -64,29 +64,6 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
   return (
     <div className="toolbar">
       <div className="toolbar-section">
-        <div className="toolbar-label">DRAW</div>
-        {DRAW_TOOLS.map(tool => (
-          <button
-            key={tool.id}
-            className={`tool-btn ${activeTool === tool.id ? 'active' : ''}`}
-            onClick={() => onSetTool(tool.id)}
-            title={tool.title}
-          >
-            <span className="tool-icon">{tool.icon}</span>
-            <span className="tool-name">{tool.label}</span>
-          </button>
-        ))}
-        <button
-          className="tool-btn"
-          onClick={onClearPlayerDrawings}
-          title="Remove all player drawings from the map."
-        >
-          <span className="tool-icon">🗑</span>
-          <span className="tool-name">Clear All</span>
-        </button>
-      </div>
-
-      <div className="toolbar-section">
         <div className="toolbar-label">FOG OF WAR</div>
         <label
           className={`tool-btn ${fogEnabled ? 'active' : ''}`}
@@ -142,6 +119,29 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
             </button>
           </>
         )}
+      </div>
+
+      <div className="toolbar-section">
+        <div className="toolbar-label">DRAW</div>
+        {DRAW_TOOLS.map(tool => (
+          <button
+            key={tool.id}
+            className={`tool-btn ${activeTool === tool.id ? 'active' : ''}`}
+            onClick={() => onSetTool(tool.id)}
+            title={tool.title}
+          >
+            <span className="tool-icon">{tool.icon}</span>
+            <span className="tool-name">{tool.label}</span>
+          </button>
+        ))}
+        <button
+          className="tool-btn"
+          onClick={onClearPlayerDrawings}
+          title="Remove all player drawings from the map."
+        >
+          <span className="tool-icon">🗑</span>
+          <span className="tool-name">Clear All</span>
+        </button>
       </div>
 
       <div className="toolbar-section">
