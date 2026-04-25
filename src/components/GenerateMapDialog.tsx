@@ -10,8 +10,8 @@ import {
 } from '../utils/generators';
 import { MAX_DENSITY, MIN_DENSITY } from '../utils/generators/common';
 import {
-  GENERATOR_TILE_MIX,
   getDefaultTileMix,
+  getTileMixSliders,
   type TileMixSliderSpec,
 } from '../utils/generators/tileMix';
 import { themeSupportsRoomLabels } from '../utils/generators/roomKinds';
@@ -81,7 +81,10 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
   // to the generator's theme-aware defaults at read time, so the UI
   // always opens in a non-surprising state.
   const [mixOverrides, setMixOverrides] = useState<Record<string, number>>({});
-  const sliderSpecs: TileMixSliderSpec[] = GENERATOR_TILE_MIX[generatorId] ?? [];
+  const sliderSpecs: TileMixSliderSpec[] = useMemo(
+    () => getTileMixSliders(generatorId, themeId),
+    [generatorId, themeId]
+  );
   const tileMixDefaults = useMemo(
     () => getDefaultTileMix(generatorId, themeId),
     [generatorId, themeId]
