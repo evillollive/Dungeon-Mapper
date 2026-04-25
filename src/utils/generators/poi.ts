@@ -114,6 +114,15 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, PoiLabel>>> = {
     treasure: 'Cache',
     trap: 'Sand Pit',
   },
+  ancient: {
+    // "Antechamber" is also an ANCIENT room-kind label, so flag the start
+    // POI as a room so the generators don't end up nesting two
+    // room-tagged notes at the same spot.
+    start: { label: 'Antechamber', isRoom: true },
+    'stairs-down': 'Descent',
+    treasure: 'Hoard',
+    trap: 'Cursed Glyph',
+  },
 };
 
 /**
@@ -154,6 +163,9 @@ const ROOMS_FLAVORS: Record<string, Partial<RoomsCorridorsFlavor>> = {
   steampunk: {},
   // The dungeon theme is the baseline.
   dungeon: {},
+  // Ancient temples lean treasure-heavy (tomb hoards) with a touch more
+  // traps than baseline (cursed glyphs and ritual hazards).
+  ancient: { trapMultiplier: 1.25, treasureMultiplier: 1.25 },
 };
 
 export function getRoomsCorridorsFlavor(themeId?: string): RoomsCorridorsFlavor {

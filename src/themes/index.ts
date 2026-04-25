@@ -22,6 +22,7 @@ import { postapocalypseTheme } from './postapocalypse';
 import { moderncityTheme } from './moderncity';
 import { pirateTheme } from './pirate';
 import { desertTheme } from './desert';
+import { ancientTheme } from './ancient';
 
 export const THEME_REGISTRY: Record<string, TileTheme> = {
   dungeon: dungeonTheme,
@@ -36,6 +37,7 @@ export const THEME_REGISTRY: Record<string, TileTheme> = {
   moderncity: moderncityTheme,
   pirate: pirateTheme,
   desert: desertTheme,
+  ancient: ancientTheme,
 };
 
 // Themes are exposed to the UI sorted alphabetically by display name so the
