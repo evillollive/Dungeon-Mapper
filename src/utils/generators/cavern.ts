@@ -10,6 +10,7 @@ import {
   type TypeGrid,
   typeGridToTiles,
 } from './common';
+import { poiLabelFor } from './poi';
 import { makeRng } from './random';
 import type { GenerateContext, GeneratedMap } from './types';
 
@@ -31,7 +32,7 @@ function wallNeighbors(grid: TypeGrid, x: number, y: number): number {
  * (0.55 default) — higher density = tighter caves, lower = more open.
  */
 export function generateCavern(ctx: GenerateContext): GeneratedMap {
-  const { width, height, seed, density } = ctx;
+  const { width, height, seed, density, themeId } = ctx;
   const rng = makeRng(seed);
   const grid = makeTypeGrid(width, height, 'wall');
 
@@ -105,17 +106,34 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
 
   // Place the start at the first cell of the largest region and the
   // stairs-down at the farthest reachable floor. If the region is too
-  // small to host both, just drop the start.
+  // small to host both, just drop the start. Each placed POI gets an
+  // auto-named MapNote (theme-flavored where applicable) so the cavern
+  // shows up in the notes panel right away.
+  const pois: { x: number; y: number; type: 'start' | 'stairs-down' }[] = [];
   if (bestRegion.length > 0) {
     const start = bestRegion[0];
     setCell(grid, start.x, start.y, 'start');
+    pois.push({ x: start.x, y: start.y, type: 'start' });
     const { farthest } = bfsDistances(grid, start.x, start.y, t => t === 'floor' || t === 'start');
     if (farthest.d > 0 && getCell(grid, farthest.x, farthest.y) === 'floor') {
       setCell(grid, farthest.x, farthest.y, 'stairs-down');
+      pois.push({ x: farthest.x, y: farthest.y, type: 'stairs-down' });
     }
   }
 
   const tiles: Tile[][] = typeGridToTiles(grid);
   const notes: MapNote[] = [];
+  for (let i = 0; i < pois.length; i++) {
+    const p = pois[i];
+    const id = i + 1;
+    notes.push({
+      id,
+      x: p.x,
+      y: p.y,
+      label: poiLabelFor(themeId, p.type),
+      description: '',
+    });
+    if (tiles[p.y]?.[p.x]) tiles[p.y][p.x] = { ...tiles[p.y][p.x], noteId: id };
+  }
   return { tiles, notes, width, height };
 }
