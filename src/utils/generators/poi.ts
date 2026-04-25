@@ -29,7 +29,11 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, string>>> = {
   castle: {
     start: 'Gatehouse',
     'stairs-down': 'Cellar Stair',
-    treasure: 'Strongroom',
+    // POI labels stay distinct from CASTLE room-kind names in
+    // `roomKinds.ts` (which include "Strongroom") so a treasure tile
+    // dropped inside a labeled room doesn't read as a second overlapping
+    // room in the notes panel.
+    treasure: 'Coffer',
     trap: 'Snare',
   },
   starship: {
@@ -76,7 +80,9 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, string>>> = {
   moderncity: {
     start: 'Lobby',
     'stairs-down': 'Basement',
-    treasure: 'Vault',
+    // Distinct from the MODERNCITY room-kind "Vault" so a treasure tile
+    // in a labeled room doesn't look like a second overlapping room.
+    treasure: 'Safe',
     trap: 'Alarm',
   },
   pirate: {
