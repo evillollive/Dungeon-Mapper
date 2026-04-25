@@ -1,7 +1,8 @@
-import type { MapNote, Tile } from '../../types/map';
+import type { MapNote, Tile, TileType } from '../../types/map';
 import {
   bfsDistances,
   clampDensity,
+  collectCells,
   DIRS_8,
   getCell,
   makeTypeGrid,
@@ -11,8 +12,9 @@ import {
   type TypeGrid,
   typeGridToTiles,
 } from './common';
-import { poiLabelFor, poiLabelIsRoom } from './poi';
-import { makeRng } from './random';
+import { assignAreaKinds, detectAreas, getCavernAreaPalette, type DetectedArea, type NaturalAreaKind } from './naturalAreas';
+import { getCavernFlavor, poiLabelFor, poiLabelIsRoom } from './poi';
+import { makeRng, type Rng } from './random';
 import type { GenerateContext, GeneratedMap } from './types';
 
 /** Count the number of `wall` neighbors (8-connected) around `(x, y)`. */
@@ -27,19 +29,104 @@ function wallNeighbors(grid: TypeGrid, x: number, y: number): number {
 }
 
 /**
+ * Carve a small puddle of `water` onto floor cells with a random walk,
+ * preserving any non-floor tile already on the grid (start, stairs,
+ * walls). Used by `paintWaterPools`.
+ */
+function carveWaterPool(grid: TypeGrid, rng: Rng, cx: number, cy: number, size: number): void {
+  let x = cx;
+  let y = cy;
+  for (let i = 0; i < size; i++) {
+    if (getCell(grid, x, y) === 'floor') setCell(grid, x, y, 'water');
+    const [dx, dy] = rng.pick([[1, 0], [-1, 0], [0, 1], [0, -1]] as const);
+    x += dx;
+    y += dy;
+  }
+}
+
+/**
+ * Sprinkle a few water pools across the cavern's floor. Centers are
+ * picked from the existing floor pool so puddles always start in
+ * reachable space; the random walk may bleed onto adjacent walls but
+ * the in-bounds check in `carveWaterPool` skips non-floor cells, so the
+ * cave outline stays intact.
+ */
+function paintWaterPools(grid: TypeGrid, rng: Rng, count: number, avgSize: number): void {
+  if (count <= 0) return;
+  const floors = collectCells(grid, 'floor');
+  if (floors.length === 0) return;
+  for (let i = 0; i < count; i++) {
+    const c = floors[rng.int(0, floors.length - 1)];
+    const size = Math.max(1, Math.round(avgSize * (0.6 + rng.next() * 0.8)));
+    carveWaterPool(grid, rng, c.x, c.y, size);
+  }
+}
+
+/**
+ * Choose a floor cell from `floors` weighted by per-area trap/treasure
+ * bias. Cells inside a chamber assigned an archetype with a matching
+ * bias are more likely to be picked. Falls back to a uniform pick when
+ * no chambers are labeled.
+ */
+function pickBiasedFloor(
+  cells: { x: number; y: number }[],
+  areaIdByCell: Map<number, number>,
+  areaKinds: (NaturalAreaKind | undefined)[],
+  bias: 'treasure' | 'trap',
+  width: number,
+  rng: Rng
+): { idx: number; cell: { x: number; y: number } } {
+  if (cells.length === 0) throw new Error('pickBiasedFloor: empty list');
+  const weights = cells.map(c => {
+    const key = c.y * width + c.x;
+    const ai = areaIdByCell.get(key);
+    if (ai === undefined) return 1;
+    const k = areaKinds[ai];
+    return k?.bias?.[bias] ?? 1;
+  });
+  const total = weights.reduce((a, b) => a + b, 0);
+  if (total <= 0) {
+    const idx = rng.int(0, cells.length - 1);
+    return { idx, cell: cells[idx] };
+  }
+  let r = rng.next() * total;
+  for (let i = 0; i < cells.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return { idx: i, cell: cells[i] };
+  }
+  const idx = cells.length - 1;
+  return { idx, cell: cells[idx] };
+}
+
+/**
  * Generate a cavern using the standard cellular-automata smoothing
  * algorithm: random fill → 4 smoothing passes → keep the largest connected
- * floor region. Density (0..1) controls the initial wall fill ratio
- * (0.55 default) — higher density = tighter caves, lower = more open.
+ * floor region. Density (0..1.5) controls the initial wall fill ratio
+ * (0.45 default) and scales the count of placed traps, treasure caches,
+ * water pools, and labeled chambers — at low density the map stays
+ * sparse (matching the original empty-cavern look), at default/high
+ * density it fills with hazards, caches, water, and named designated
+ * areas so the cave system reads as a real, lived-in place.
+ *
+ * Optional per-tile-type overrides come in via `ctx.tileMix` (see
+ * `tileMix.ts`):
+ *  - `wall`: initial wall fill ratio (overrides the density-derived one).
+ *  - `treasure`: number of treasure caches scattered on the floor.
+ *  - `trap`: fraction of floor cells holding a trap / hazard.
+ *  - `water`: fraction of floor cells converted to water pools.
+ *  - `areas`: target count of labeled chambers (0 = unlabeled).
+ *  - `stairsDown`: 0 / 1 toggle for the stairs-down POI.
  */
 export function generateCavern(ctx: GenerateContext): GeneratedMap {
   const { width, height, seed, density, themeId, tileMix } = ctx;
   const rng = makeRng(seed);
   const grid = makeTypeGrid(width, height, 'wall');
+  const flavor = getCavernFlavor(themeId);
 
   // Slider-driven overrides come in via `ctx.tileMix`; when a key is
-  // absent we use the legacy formula so unchanged sliders reproduce the
-  // previous output identically.
+  // absent we fall back to density-scaled defaults so the map fills
+  // with hazards/treasure/water/areas at default density and thins out
+  // when the user dials density (or the individual sliders) down.
   const ov = tileMix ?? {};
 
   // Apply the shared density bounds, then take an extra max with 0.2:
@@ -116,43 +203,109 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
 
   // Place the start at the first cell of the largest region and the
   // stairs-down at the farthest reachable floor. If the region is too
-  // small to host both, just drop the start. Each placed POI gets an
-  // auto-named MapNote (theme-flavored where applicable) so the cavern
-  // shows up in the notes panel right away. The "Stairs Down" toggle and
-  // "Treasure caches" slider gate optional POIs from the dialog.
-  const placeStairs = ov.stairsDown !== undefined ? ov.stairsDown >= 0.5 : true;
-  const treasureCaches = ov.treasure !== undefined
-    ? Math.max(0, Math.round(ov.treasure))
-    : 0;
-  const pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'treasure' }[] = [];
-  if (bestRegion.length > 0) {
-    const start = bestRegion[0];
-    setCell(grid, start.x, start.y, 'start');
-    pois.push({ x: start.x, y: start.y, type: 'start' });
-    if (placeStairs) {
-      const { farthest } = bfsDistances(grid, start.x, start.y, t => t === 'floor' || t === 'start');
-      if (farthest.d > 0 && getCell(grid, farthest.x, farthest.y) === 'floor') {
-        setCell(grid, farthest.x, farthest.y, 'stairs-down');
-        pois.push({ x: farthest.x, y: farthest.y, type: 'stairs-down' });
-      }
-    }
-    // Optional cache scatter — picks from remaining floor cells.
-    if (treasureCaches > 0) {
-      const floors: { x: number; y: number }[] = [];
-      for (let y = 0; y < height; y++) {
-        for (let x = 0; x < width; x++) {
-          if (grid[y][x] === 'floor') floors.push({ x, y });
-        }
-      }
-      const target = Math.min(floors.length, treasureCaches);
-      for (let i = 0; i < target && floors.length > 0; i++) {
-        const idx = rng.int(0, floors.length - 1);
-        const c = floors.splice(idx, 1)[0];
-        setCell(grid, c.x, c.y, 'treasure');
-        pois.push({ x: c.x, y: c.y, type: 'treasure' });
-      }
+  // small to host both, just drop the start.
+  const placeStairs = ov.stairsDown !== undefined ? ov.stairsDown >= 0.5 : flavor.placeStairsDown;
+  const pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'treasure' | 'trap' }[] = [];
+  if (bestRegion.length === 0) {
+    // Degenerate cave (the smoothing wiped everything) — return an
+    // empty map so the caller still has a valid grid + notes shape.
+    const tilesEmpty: Tile[][] = typeGridToTiles(grid);
+    return { tiles: tilesEmpty, notes: [], width, height };
+  }
+  const start = bestRegion[0];
+  setCell(grid, start.x, start.y, 'start');
+  pois.push({ x: start.x, y: start.y, type: 'start' });
+  if (placeStairs) {
+    const { farthest } = bfsDistances(grid, start.x, start.y, t =>
+      t === 'floor' || t === 'start' || t === 'water'
+    );
+    if (farthest.d > 0 && getCell(grid, farthest.x, farthest.y) === 'floor') {
+      setCell(grid, farthest.x, farthest.y, 'stairs-down');
+      pois.push({ x: farthest.x, y: farthest.y, type: 'stairs-down' });
     }
   }
+
+  // Carve water pools before chamber detection so the "Underground
+  // Pool" archetype can match chambers that contain water. Pool count
+  // / size scale with density × the theme's water multiplier; the user
+  // can take it to 0 with the slider for a dry cave.
+  const totalFloorArea = Math.max(1, bestRegion.length);
+  const defaultWaterFraction = 0.025 * d * flavor.waterMultiplier;
+  const waterFraction = ov.water !== undefined ? Math.max(0, ov.water) : defaultWaterFraction;
+  const waterTargetCells = Math.round(totalFloorArea * waterFraction);
+  // Each pool averages ~8 cells; clamp pool count so we don't try to
+  // spawn dozens of micro-puddles on a small map.
+  const avgPoolSize = 8;
+  const waterPoolCount = Math.max(0, Math.min(12, Math.round(waterTargetCells / avgPoolSize)));
+  paintWaterPools(grid, rng, waterPoolCount, avgPoolSize);
+
+  // Detect labeled chambers. The "areas" slider is a target count: we
+  // first detect every interior pocket that satisfies the radius +
+  // area thresholds, then keep the N largest. The default at density 1
+  // is "as many as we can find" (capped), so default density gives a
+  // properly-named cave system.
+  const isOpenForArea = (t: TileType) =>
+    t === 'floor' || t === 'water' || t === 'start' || t === 'stairs-down' ||
+    t === 'treasure' || t === 'trap' || t === 'pillar';
+  const detected = detectAreas(grid, isOpenForArea, 2, 8);
+  const defaultAreaCount = Math.max(0, Math.round(3 * d));
+  const areaCountTarget = ov.areas !== undefined
+    ? Math.max(0, Math.round(ov.areas))
+    : defaultAreaCount;
+  const sortedAreas: DetectedArea[] = [...detected].sort((a, b) => b.area - a.area);
+  const keptAreas: DetectedArea[] = areaCountTarget > 0
+    ? sortedAreas.slice(0, Math.min(areaCountTarget, sortedAreas.length))
+    : [];
+  const palette = getCavernAreaPalette(themeId);
+  const areaKinds = keptAreas.length > 0 ? assignAreaKinds(keptAreas, palette, grid, rng) : [];
+
+  // Build a (cell key → area index) map so trap/treasure placement can
+  // bias toward chambers with the matching archetype hint.
+  const areaIdByCell = new Map<number, number>();
+  for (let i = 0; i < keptAreas.length; i++) {
+    for (const c of keptAreas[i].cells) {
+      areaIdByCell.set(c.y * width + c.x, i);
+    }
+  }
+
+  // Treasure caches: when the slider isn't touched, scale a default
+  // count by density × theme treasure multiplier × floor area. Old
+  // behavior at slider==0 reproduces the empty cavern.
+  const defaultTreasureFloat = (totalFloorArea / 220) * d * flavor.treasureMultiplier;
+  const treasureCount = ov.treasure !== undefined
+    ? Math.max(0, Math.round(ov.treasure))
+    : Math.max(1, Math.round(defaultTreasureFloat));
+
+  // Traps: fraction of floor cells. Default ≈ 1.5% × density × theme
+  // multiplier, capped so even small caves see at least one trap when
+  // the slider isn't 0.
+  const defaultTrapFraction = 0.015 * d * flavor.trapMultiplier;
+  const trapFraction = ov.trap !== undefined ? Math.max(0, ov.trap) : defaultTrapFraction;
+  const trapCount = Math.round(totalFloorArea * trapFraction);
+
+  // Place treasure first, then traps, drawing from the live pool of
+  // floor cells so a single tile never gets stamped twice. Bias both
+  // toward chambers with matching archetype bias (Reliquary / Bone Pit
+  // / etc.) when chamber labels are on; uniform random otherwise.
+  const floors = collectCells(grid, 'floor');
+  const placePois = (
+    count: number,
+    type: 'treasure' | 'trap'
+  ) => {
+    for (let i = 0; i < count && floors.length > 0; i++) {
+      const picked = areaIdByCell.size > 0
+        ? pickBiasedFloor(floors, areaIdByCell, areaKinds, type, width, rng)
+        : (() => {
+            const idx = rng.int(0, floors.length - 1);
+            return { idx, cell: floors[idx] };
+          })();
+      floors.splice(picked.idx, 1);
+      setCell(grid, picked.cell.x, picked.cell.y, type);
+      pois.push({ x: picked.cell.x, y: picked.cell.y, type });
+    }
+  };
+  placePois(Math.min(treasureCount, floors.length), 'treasure');
+  placePois(Math.min(trapCount, floors.length), 'trap');
 
   const tiles: Tile[][] = typeGridToTiles(grid);
   const notes: MapNote[] = [];
@@ -167,17 +320,71 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
     const ord = (seen.get(p.type) ?? 0) + 1;
     seen.set(p.type, ord);
     const id = i + 1;
+    // POI labels in cavern variants don't claim `isRoom`, so kind here
+    // resolves to 'poi'; the chamber notes appended below are the
+    // room-tagged ones for caverns. We still call poiLabelIsRoom for
+    // forward-compat with future generator label tables.
+    const insideLabeledArea = areaIdByCell.has(p.y * width + p.x);
+    const labelIsRoom = poiLabelIsRoom(themeId, p.type, 'cavern');
+    const kind: 'room' | 'poi' = labelIsRoom && !insideLabeledArea ? 'room' : 'poi';
     notes.push({
       id,
       x: p.x,
       y: p.y,
-      label: poiLabelFor(themeId, p.type, total > 1 ? ord : undefined),
+      label: poiLabelFor(themeId, p.type, total > 1 ? ord : undefined, 'cavern'),
       description: '',
-      // Caverns don't carve discrete rooms, so a POI whose label names a
-      // room (e.g. "Lobby", "Gatehouse") is the room — no nesting risk.
-      kind: poiLabelIsRoom(themeId, p.type) ? 'room' : 'poi',
+      kind,
     });
     if (tiles[p.y]?.[p.x]) tiles[p.y][p.x] = { ...tiles[p.y][p.x], noteId: id };
   }
+
+  // Append one MapNote per detected chamber, anchored on its centroid
+  // (which is guaranteed to be one of the chamber's interior cells).
+  // If the centroid already carries a POI noteId we leave the tile
+  // alone (the note still appears in the panel, just without a
+  // tile-side link) so the POI's own note stays the primary anchor.
+  if (keptAreas.length > 0) {
+    const kindCounts = new Map<string, number>();
+    for (const k of areaKinds) {
+      if (!k) continue;
+      kindCounts.set(k.label, (kindCounts.get(k.label) ?? 0) + 1);
+    }
+    const kindSeen = new Map<string, number>();
+    let nextId = notes.reduce((m, n) => Math.max(m, n.id), 0) + 1;
+    for (let i = 0; i < keptAreas.length; i++) {
+      const kind = areaKinds[i];
+      if (!kind) continue;
+      const total = kindCounts.get(kind.label) ?? 1;
+      const ord = (kindSeen.get(kind.label) ?? 0) + 1;
+      kindSeen.set(kind.label, ord);
+      const label = total > 1 ? `${kind.label} ${ord}` : kind.label;
+      // Prefer the centroid; fall back to any chamber cell that isn't
+      // already an anchored POI tile so a labeled tile is always
+      // available for the note → tile link.
+      const area = keptAreas[i];
+      let ax = area.centroid.x;
+      let ay = area.centroid.y;
+      if (tiles[ay]?.[ax]?.noteId !== undefined) {
+        const free = area.cells.find(c => tiles[c.y]?.[c.x]?.noteId === undefined);
+        if (free) {
+          ax = free.x;
+          ay = free.y;
+        }
+      }
+      const id = nextId++;
+      notes.push({
+        id,
+        x: ax,
+        y: ay,
+        label,
+        description: '',
+        kind: 'room',
+      });
+      if (tiles[ay]?.[ax] && tiles[ay][ax].noteId === undefined) {
+        tiles[ay][ax] = { ...tiles[ay][ax], noteId: id };
+      }
+    }
+  }
+
   return { tiles, notes: reorderNotesReadingOrder(tiles, notes), width, height };
 }

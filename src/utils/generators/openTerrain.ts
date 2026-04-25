@@ -1,4 +1,4 @@
-import type { MapNote, Tile } from '../../types/map';
+import type { MapNote, Tile, TileType } from '../../types/map';
 import {
   collectCells,
   clampDensity,
@@ -10,6 +10,7 @@ import {
   type TypeGrid,
   typeGridToTiles,
 } from './common';
+import { assignAreaKinds, detectAreas, getOpenAreaPalette, type DetectedArea, type NaturalAreaKind } from './naturalAreas';
 import { getOpenTerrainFlavor, poiLabelFor, poiLabelIsRoom } from './poi';
 import { makeRng, type Rng } from './random';
 import type { GenerateContext, GeneratedMap } from './types';
@@ -91,7 +92,7 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
   // near a corner so there's room to explore outward. Track POI cells so
   // we can attach auto-named MapNote entries (theme-flavored) below.
   const corner = { x: rng.int(1, Math.max(1, Math.floor(width / 4))), y: rng.int(1, Math.max(1, Math.floor(height / 4))) };
-  const pois: { x: number; y: number; type: 'start' | 'treasure' }[] = [];
+  const pois: { x: number; y: number; type: 'start' | 'treasure' | 'trap' }[] = [];
   let placedStart = false;
   for (let r = 0; r < 6 && !placedStart; r++) {
     for (let dy = -r; dy <= r && !placedStart; dy++) {
@@ -121,6 +122,54 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
     pois.push({ x: c.x, y: c.y, type: 'treasure' });
   }
 
+  // Traps: scattered hazards on remaining floor cells. Default count
+  // scales with map area × density × the theme's trap multiplier so a
+  // wilderness map at default density gets a handful of pit traps /
+  // briar tangles / sand pits, while flipping the slider to 0 gives a
+  // hazard-free map.
+  const mapArea = width * height;
+  const defaultTrapCount = Math.max(
+    0,
+    Math.round((mapArea / 400) * d * flavor.trapMultiplier)
+  );
+  const trapCount = Math.min(
+    floors.length,
+    ov.trap !== undefined
+      ? Math.max(0, Math.round(mapArea * Math.max(0, ov.trap)))
+      : defaultTrapCount
+  );
+  const trapPois: { x: number; y: number; type: 'trap' }[] = [];
+  for (let i = 0; i < trapCount && floors.length > 0; i++) {
+    const idx = rng.int(0, floors.length - 1);
+    const c = floors.splice(idx, 1)[0];
+    setCell(grid, c.x, c.y, 'trap');
+    trapPois.push({ x: c.x, y: c.y, type: 'trap' });
+  }
+  for (const p of trapPois) pois.push(p);
+
+  // Detect "natural area" pockets — broad open stretches of floor
+  // surrounded by obstacle / water clusters or the map edge — and
+  // label them with theme-appropriate names (Clearing, Glade, Watering
+  // Hole, …). Same algorithm as the cavern chambers; non-floor tiles
+  // (rocks, water, pillars) and POIs all read as "interior" so a
+  // labeled clearing can include a watering hole or a stash.
+  const isOpenForArea = (t: TileType) =>
+    t === 'floor' || t === 'water' || t === 'pillar' ||
+    t === 'start' || t === 'treasure' || t === 'trap';
+  const detected = detectAreas(grid, isOpenForArea, 2, 16);
+  const defaultAreaCount = Math.max(0, Math.round(3 * d));
+  const areaCountTarget = ov.areas !== undefined
+    ? Math.max(0, Math.round(ov.areas))
+    : defaultAreaCount;
+  const sortedAreas: DetectedArea[] = [...detected].sort((a, b) => b.area - a.area);
+  const keptAreas: DetectedArea[] = areaCountTarget > 0
+    ? sortedAreas.slice(0, Math.min(areaCountTarget, sortedAreas.length))
+    : [];
+  const palette = getOpenAreaPalette(themeId);
+  const areaKinds: (NaturalAreaKind | undefined)[] = keptAreas.length > 0
+    ? assignAreaKinds(keptAreas, palette, grid, rng)
+    : [];
+
   const tiles: Tile[][] = typeGridToTiles(grid);
   const notes: MapNote[] = [];
   const counts = new Map<string, number>();
@@ -132,18 +181,63 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
     const idx = (seen.get(p.type) ?? 0) + 1;
     seen.set(p.type, idx);
     const id = i + 1;
+    // Open-terrain labeled areas own the room-tag (analogous to carved
+    // rooms in the dungeon generator), so a POI sitting inside a
+    // labeled area keeps `kind: 'poi'` even if its theme label happens
+    // to name a room. The cell-set lookup below handles that.
+    const insideLabeledArea = keptAreas.some(a =>
+      a.cells.some(c => c.x === p.x && c.y === p.y)
+    );
+    const labelIsRoom = poiLabelIsRoom(themeId, p.type, 'open-terrain');
+    const kind: 'room' | 'poi' = labelIsRoom && !insideLabeledArea ? 'room' : 'poi';
     notes.push({
       id,
       x: p.x,
       y: p.y,
-      label: poiLabelFor(themeId, p.type, total > 1 ? idx : undefined),
+      label: poiLabelFor(themeId, p.type, total > 1 ? idx : undefined, 'open-terrain'),
       description: '',
-      // Open-terrain maps don't carve rooms, so a room-named POI label
-      // (e.g. "Bunker") is the room itself, with no containing room to
-      // nest inside.
-      kind: poiLabelIsRoom(themeId, p.type) ? 'room' : 'poi',
+      kind,
     });
     if (tiles[p.y]?.[p.x]) tiles[p.y][p.x] = { ...tiles[p.y][p.x], noteId: id };
   }
+
+  // Append one MapNote per detected natural area (kind: 'room') so the
+  // notes panel lists "Clearing", "Watering Hole", etc. Anchored on
+  // the centroid (always an interior cell) and falling back to any
+  // unannotated cell in the area when the centroid already carries a
+  // POI noteId — same pattern as the cavern generator.
+  if (keptAreas.length > 0) {
+    const kindCounts = new Map<string, number>();
+    for (const k of areaKinds) {
+      if (!k) continue;
+      kindCounts.set(k.label, (kindCounts.get(k.label) ?? 0) + 1);
+    }
+    const kindSeen = new Map<string, number>();
+    let nextId = notes.reduce((m, n) => Math.max(m, n.id), 0) + 1;
+    for (let i = 0; i < keptAreas.length; i++) {
+      const k = areaKinds[i];
+      if (!k) continue;
+      const total = kindCounts.get(k.label) ?? 1;
+      const ord = (kindSeen.get(k.label) ?? 0) + 1;
+      kindSeen.set(k.label, ord);
+      const label = total > 1 ? `${k.label} ${ord}` : k.label;
+      const a = keptAreas[i];
+      let ax = a.centroid.x;
+      let ay = a.centroid.y;
+      if (tiles[ay]?.[ax]?.noteId !== undefined) {
+        const free = a.cells.find(c => tiles[c.y]?.[c.x]?.noteId === undefined);
+        if (free) {
+          ax = free.x;
+          ay = free.y;
+        }
+      }
+      const id = nextId++;
+      notes.push({ id, x: ax, y: ay, label, description: '', kind: 'room' });
+      if (tiles[ay]?.[ax] && tiles[ay][ax].noteId === undefined) {
+        tiles[ay][ax] = { ...tiles[ay][ax], noteId: id };
+      }
+    }
+  }
+
   return { tiles, notes: reorderNotesReadingOrder(tiles, notes), width, height };
 }

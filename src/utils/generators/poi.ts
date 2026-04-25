@@ -176,20 +176,67 @@ export function getRoomsCorridorsFlavor(themeId?: string): RoomsCorridorsFlavor 
 }
 
 /**
+ * Per-theme tweaks for the cavern generator. Caverns always have
+ * `start` and (optionally) `stairs-down`; flavor multipliers nudge
+ * the count of traps, treasure, and water pools to match the theme's
+ * setting (sci-fi locales lean cargo + hazard, ancient temples lean
+ * trap-heavy, etc.). Themes not listed get the default flavoring.
+ */
+export interface CavernFlavor {
+  trapMultiplier: number;
+  treasureMultiplier: number;
+  waterMultiplier: number;
+  /** Whether `stairs-down` should be placed when the slider is on. */
+  placeStairsDown: boolean;
+}
+
+const DEFAULT_CAVERN_FLAVOR: CavernFlavor = {
+  trapMultiplier: 1,
+  treasureMultiplier: 1,
+  waterMultiplier: 1,
+  placeStairsDown: true,
+};
+
+const CAVERN_FLAVORS: Record<string, Partial<CavernFlavor>> = {
+  alien: { trapMultiplier: 1.25, waterMultiplier: 1.25 },
+  ancient: { trapMultiplier: 1.5, treasureMultiplier: 1.25, waterMultiplier: 0.5 },
+  cyberpunk: { trapMultiplier: 1.25, treasureMultiplier: 1.25, waterMultiplier: 0.75 },
+  desert: { waterMultiplier: 0.25, trapMultiplier: 0.75 },
+  dungeon: {},
+  moderncity: { trapMultiplier: 0.5, waterMultiplier: 1.25 },
+  oldwest: { trapMultiplier: 0.75 },
+  pirate: { treasureMultiplier: 1.5, waterMultiplier: 1.5 },
+  postapocalypse: { trapMultiplier: 1.25 },
+  starship: { trapMultiplier: 1.25, treasureMultiplier: 1.25, waterMultiplier: 0.5 },
+  steampunk: { trapMultiplier: 1.25 },
+  wilderness: { waterMultiplier: 1.5 },
+  castle: { trapMultiplier: 0.75, treasureMultiplier: 1.25 },
+};
+
+export function getCavernFlavor(themeId?: string): CavernFlavor {
+  if (!themeId) return DEFAULT_CAVERN_FLAVOR;
+  const overrides = CAVERN_FLAVORS[themeId];
+  if (!overrides) return DEFAULT_CAVERN_FLAVOR;
+  return { ...DEFAULT_CAVERN_FLAVOR, ...overrides };
+}
+
+/**
  * Per-theme tweaks for the open-terrain generator. Outdoor / open themes
  * skip the indoor POIs (no `stairs-down`).
  */
 export interface OpenTerrainFlavor {
   treasureCount: number;
+  /** Multiplier applied to the trap count. */
+  trapMultiplier: number;
 }
 
 const OPEN_TERRAIN_FLAVORS: Record<string, OpenTerrainFlavor> = {
-  wilderness: { treasureCount: 2 },
-  desert: { treasureCount: 1 },
-  postapocalypse: { treasureCount: 3 },
+  wilderness: { treasureCount: 2, trapMultiplier: 1 },
+  desert: { treasureCount: 1, trapMultiplier: 1.25 },
+  postapocalypse: { treasureCount: 3, trapMultiplier: 1.25 },
 };
 
-const DEFAULT_OPEN_FLAVOR: OpenTerrainFlavor = { treasureCount: 1 };
+const DEFAULT_OPEN_FLAVOR: OpenTerrainFlavor = { treasureCount: 1, trapMultiplier: 1 };
 
 export function getOpenTerrainFlavor(themeId?: string): OpenTerrainFlavor {
   if (!themeId) return DEFAULT_OPEN_FLAVOR;
@@ -197,18 +244,174 @@ export function getOpenTerrainFlavor(themeId?: string): OpenTerrainFlavor {
 }
 
 /**
+ * Per-generator POI label overrides. The cavern and open-terrain
+ * generators carve natural / outdoor spaces rather than built rooms, so
+ * the same POI tile reads better with a different name in those
+ * contexts ("Cave Mouth" vs. "Entrance", "Trailhead" vs. "Doorway",
+ * etc.). Each entry layers on top of `THEME_POI_LABELS`: if a generator
+ * variant exists for the active theme + tile we use it; otherwise we
+ * fall back to the theme's standard POI label, then to the neutral
+ * default.
+ *
+ * Generator variants intentionally never carry `isRoom: true` — natural
+ * caverns / outdoor maps don't have carved rooms, so the chamber /
+ * area notes built by `naturalAreas.ts` are the room-tagged labels for
+ * those generators.
+ */
+const GENERATOR_THEME_POI_LABELS: Record<string, Record<string, Partial<Record<TileType, PoiLabel>>>> = {
+  cavern: {
+    dungeon: {
+      start: 'Cave Mouth',
+      'stairs-down': 'Deep Passage',
+      treasure: 'Hoard',
+      trap: 'Pit Trap',
+    },
+    castle: {
+      start: 'Cellar Entry',
+      'stairs-down': 'Lower Tunnel',
+      treasure: 'Coffer',
+      trap: 'Snare',
+    },
+    starship: {
+      start: 'Hull Breach',
+      'stairs-down': 'Lower Deck',
+      treasure: 'Cargo Cache',
+      trap: 'Hazard',
+    },
+    alien: {
+      start: 'Hatch',
+      'stairs-down': 'Tunnel Down',
+      treasure: 'Relic',
+      trap: 'Spore Trap',
+    },
+    oldwest: {
+      start: 'Mine Entrance',
+      'stairs-down': 'Lower Shaft',
+      treasure: 'Strongbox',
+      trap: 'Cave-In',
+    },
+    steampunk: {
+      start: 'Sub-tunnel',
+      'stairs-down': 'Lower Works',
+      treasure: 'Gear Cache',
+      trap: 'Steam Vent',
+    },
+    wilderness: {
+      start: 'Cave Mouth',
+      'stairs-down': 'Deep Passage',
+      treasure: 'Cache',
+      trap: 'Pit Trap',
+    },
+    cyberpunk: {
+      start: 'Service Tunnel',
+      'stairs-down': 'Sub-basement',
+      treasure: 'Data Cache',
+      trap: 'ICE',
+    },
+    postapocalypse: {
+      start: 'Cave Mouth',
+      'stairs-down': 'Deep Passage',
+      treasure: 'Scrap Cache',
+      trap: 'Snare',
+    },
+    moderncity: {
+      start: 'Maintenance Hatch',
+      'stairs-down': 'Sub-basement',
+      treasure: 'Stash',
+      trap: 'Alarm',
+    },
+    pirate: {
+      start: 'Smuggler\u2019s Cave',
+      'stairs-down': 'Lower Hold',
+      treasure: 'Treasure Chest',
+      trap: 'Snare',
+    },
+    desert: {
+      start: 'Cave Mouth',
+      'stairs-down': 'Deep Passage',
+      treasure: 'Cache',
+      trap: 'Sand Pit',
+    },
+    ancient: {
+      start: 'Tomb Mouth',
+      'stairs-down': 'Inner Sanctum',
+      treasure: 'Hoard',
+      trap: 'Cursed Glyph',
+    },
+  },
+  'open-terrain': {
+    dungeon: {
+      start: 'Trailhead',
+      treasure: 'Cache',
+      trap: 'Pit Trap',
+    },
+    wilderness: {
+      start: 'Trailhead',
+      treasure: 'Cache',
+      trap: 'Pit Trap',
+    },
+    desert: {
+      start: 'Oasis',
+      treasure: 'Cache',
+      trap: 'Sand Pit',
+    },
+    postapocalypse: {
+      start: 'Outpost',
+      treasure: 'Scrap Cache',
+      trap: 'Snare',
+    },
+    oldwest: {
+      start: 'Trail',
+      treasure: 'Strongbox',
+      trap: 'Tripwire',
+    },
+    pirate: {
+      start: 'Landing',
+      treasure: 'Buried Treasure',
+      trap: 'Snare',
+    },
+    alien: {
+      start: 'Landing Site',
+      treasure: 'Relic',
+      trap: 'Spore Trap',
+    },
+    ancient: {
+      start: 'Trailhead',
+      treasure: 'Hoard',
+      trap: 'Cursed Glyph',
+    },
+  },
+};
+
+function resolveLabelEntry(
+  themeId: string | undefined,
+  tile: TileType,
+  generatorId?: string
+): PoiLabel | undefined {
+  if (generatorId && themeId) {
+    const gen = GENERATOR_THEME_POI_LABELS[generatorId]?.[themeId]?.[tile];
+    if (gen !== undefined) return gen;
+  }
+  const themed = themeId ? THEME_POI_LABELS[themeId]?.[tile] : undefined;
+  return themed ?? DEFAULT_POI_LABELS[tile];
+}
+
+/**
  * Resolve the theme-flavored label for a POI tile. The optional `index`
  * is used to disambiguate multiple POIs of the same type (e.g.
  * `Treasure 1`, `Treasure 2`). When only one of a kind is placed, the
- * caller can pass `index = undefined` to skip the suffix.
+ * caller can pass `index = undefined` to skip the suffix. The optional
+ * `generatorId` lets cavern / open-terrain swap in natural-setting
+ * names ("Cave Mouth", "Trailhead") instead of the built-space
+ * defaults.
  */
 export function poiLabelFor(
   themeId: string | undefined,
   tile: TileType,
-  index?: number
+  index?: number,
+  generatorId?: string
 ): string {
-  const themed = themeId ? THEME_POI_LABELS[themeId]?.[tile] : undefined;
-  const entry = themed ?? DEFAULT_POI_LABELS[tile];
+  const entry = resolveLabelEntry(themeId, tile, generatorId);
   const base = entry === undefined ? tile : typeof entry === 'string' ? entry : entry.label;
   if (typeof index === 'number' && index > 0) return `${base} ${index}`;
   return base;
@@ -221,8 +424,11 @@ export function poiLabelFor(
  * be tagged `kind: 'room'` (when it isn't already inside another carved
  * room with its own room-kind label).
  */
-export function poiLabelIsRoom(themeId: string | undefined, tile: TileType): boolean {
-  const themed = themeId ? THEME_POI_LABELS[themeId]?.[tile] : undefined;
-  const entry = themed ?? DEFAULT_POI_LABELS[tile];
+export function poiLabelIsRoom(
+  themeId: string | undefined,
+  tile: TileType,
+  generatorId?: string
+): boolean {
+  const entry = resolveLabelEntry(themeId, tile, generatorId);
   return !!(entry && typeof entry !== 'string' && entry.isRoom);
 }
