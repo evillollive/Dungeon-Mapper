@@ -148,7 +148,13 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
         <div className="toolbar-label">PEN</div>
         <div
           className="tile-palette"
-          style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}
+          // Override .tile-palette's default flex-direction:column so the
+          // swatches tile into a compact grid instead of stacking one per row.
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 4,
+          }}
         >
           {COLOR_SWATCHES.map(c => (
             <button
@@ -157,8 +163,8 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
               onClick={() => onSetDrawColor(c)}
               title={`Color: ${c}`}
               // Override the default .tile-btn width:100% so the swatches
-              // tile into a compact grid instead of stacking one per row.
-              style={{ padding: 2, width: 'auto', flex: '0 0 auto' }}
+              // size to the grid cell instead of forcing one per row.
+              style={{ padding: 2, width: 'auto', justifyContent: 'center' }}
             >
               <span
                 style={{
@@ -172,13 +178,31 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
             </button>
           ))}
         </div>
-        <div style={{ marginTop: 6 }}>
+        <div
+          // Lay the brush-size buttons out in a horizontal grid so they
+          // share a row instead of each occupying a full line.
+          style={{
+            marginTop: 6,
+            display: 'grid',
+            gridTemplateColumns: `repeat(${BRUSH_WIDTHS.length}, 1fr)`,
+            gap: 4,
+          }}
+        >
           {BRUSH_WIDTHS.map(b => (
             <button
               key={b.value}
               className={`tool-btn ${Math.abs(drawWidth - b.value) < 1e-6 ? 'active' : ''}`}
               onClick={() => onSetDrawWidth(b.value)}
               title={`${b.label} brush`}
+              // Override .tool-btn's width:100% so the buttons fit in the
+              // grid columns rather than forcing one button per row.
+              style={{
+                width: 'auto',
+                flexDirection: 'column',
+                gap: 2,
+                padding: '4px 4px',
+                textAlign: 'center',
+              }}
             >
               <span
                 className="tool-icon"
@@ -191,7 +215,7 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
                   borderRadius: '50%',
                 }}
               />
-              <span className="tool-name">{b.label}</span>
+              <span className="tool-name" style={{ flex: 'none' }}>{b.label}</span>
             </button>
           ))}
         </div>
