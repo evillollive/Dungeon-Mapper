@@ -44,7 +44,7 @@ interface MapCanvasProps {
   onSelectNote: (id: number | null) => void;
   onEraseTiles: (tiles: { x: number; y: number }[]) => void;
   onSetFogCells: (cells: { x: number; y: number }[], hidden: boolean) => void;
-  onAddToken: (kind: TokenKind, x: number, y: number) => void;
+  onAddToken: (kind: TokenKind, x: number, y: number, label?: string, size?: number) => void;
   onMoveToken: (id: number, x: number, y: number) => void;
   onRemoveToken: (id: number) => void;
   onAddAnnotation: (stroke: Omit<AnnotationStroke, 'id'>) => void;
@@ -115,9 +115,10 @@ function drawToken(
   token: Token,
   tileSize: number
 ) {
-  const px = token.x * tileSize + tileSize / 2;
-  const py = token.y * tileSize + tileSize / 2;
-  const radius = tileSize * 0.42;
+  const size = Math.max(1, Math.floor(token.size ?? 1));
+  const px = token.x * tileSize + (tileSize * size) / 2;
+  const py = token.y * tileSize + (tileSize * size) / 2;
+  const radius = tileSize * size * 0.42;
   const fill = token.color ?? TOKEN_KIND_COLORS[token.kind];
 
   ctx.save();
@@ -125,7 +126,7 @@ function drawToken(
   ctx.beginPath();
   ctx.arc(px, py, radius, 0, Math.PI * 2);
   ctx.fill();
-  ctx.lineWidth = Math.max(1, tileSize * 0.08);
+  ctx.lineWidth = Math.max(1, tileSize * size * 0.08);
   ctx.strokeStyle = '#1a1a2e';
   ctx.stroke();
 
@@ -133,7 +134,7 @@ function drawToken(
   // of the label (or the token kind).
   const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
   ctx.fillStyle = '#ffffff';
-  ctx.font = `bold ${Math.max(8, tileSize * 0.5)}px "Courier New", monospace`;
+  ctx.font = `bold ${Math.max(8, tileSize * size * 0.5)}px "Courier New", monospace`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(glyph, px, py + 0.5);
@@ -173,15 +174,17 @@ function drawAnnotation(
 }
 
 /** Hit-test tokens at the given fractional tile coordinate. Returns the
- * top-most matching token (last in z-order = drawn last). */
+ * top-most matching token (last in z-order = drawn last). Multi-cell
+ * tokens (size > 1) are hit when the cursor lands on any cell of their
+ * footprint. */
 function findTokenAt(tokens: Token[] | undefined, fx: number, fy: number): Token | null {
   if (!tokens) return null;
-  // Tokens are tile-aligned and rendered as a circle of radius ~0.42 tile,
-  // but accept any click within the cell so casual clicks land.
   const tx = Math.floor(fx);
   const ty = Math.floor(fy);
   for (let i = tokens.length - 1; i >= 0; i--) {
-    if (tokens[i].x === tx && tokens[i].y === ty) return tokens[i];
+    const t = tokens[i];
+    const sz = Math.max(1, Math.floor(t.size ?? 1));
+    if (tx >= t.x && tx < t.x + sz && ty >= t.y && ty < t.y + sz) return t;
   }
   return null;
 }
@@ -233,8 +236,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   // to the map on mouseup as a single fog edit.
   const [defogStroke, setDefogStroke] = useState<{ x: number; y: number }[] | null>(null);
   const lastDefogCellRef = useRef<{ x: number; y: number } | null>(null);
-  // Token currently being dragged via the move-token tool.
-  const draggingTokenRef = useRef<{ id: number; lastX: number; lastY: number } | null>(null);
+  // Token currently being dragged via the move-token tool. `offsetX/Y`
+  // captures where inside the (possibly multi-cell) footprint the user
+  // grabbed, so the token follows the cursor without snapping its
+  // top-left to the cursor cell.
+  const draggingTokenRef = useRef<{ id: number; lastX: number; lastY: number; offsetX: number; offsetY: number } | null>(null);
 
   useImperativeHandle(ref, () => ({
     getCanvas: () => canvasRef.current,
@@ -554,13 +560,24 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // Player-mode tools take precedence — and tile-paint tools are a no-op
     // in player mode regardless.
     if (isPlayerView) {
-      if (activeTool === 'token-player' || activeTool === 'token-npc' || activeTool === 'token-monster') {
+      if (activeTool === 'token-player' || activeTool === 'token-npc'
+          || activeTool === 'token-monster' || activeTool === 'token-monster-md'
+          || activeTool === 'token-monster-lg') {
         const kind: TokenKind = activeTool === 'token-player' ? 'player'
           : activeTool === 'token-npc' ? 'npc' : 'monster';
+        const size = activeTool === 'token-monster-lg' ? 3
+          : activeTool === 'token-monster-md' ? 2
+          : 1;
         // Don't drop tokens onto fogged cells in player view — players
         // shouldn't be able to interact with hidden geography.
         if (fogActive && fog?.[y]?.[x]) return;
-        onAddToken(kind, x, y);
+        // Reject if the map is too small to fit the footprint at all.
+        if (size > meta.width || size > meta.height) return;
+        // Clamp the top-left so a multi-cell footprint stays on the map
+        // when the user clicks near the right/bottom edge.
+        const px = Math.min(x, meta.width - size);
+        const py = Math.min(y, meta.height - size);
+        onAddToken(kind, px, py, undefined, size);
       } else if (activeTool === 'remove-token') {
         const t = findTokenAt(tokens, x + 0.5, y + 0.5);
         // Players may only remove player-kind tokens. NPCs/monsters are GM-managed.
@@ -598,7 +615,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   }, [
     activeTool, activeTile, getTileCoords, onSetTile, onFillTile, onPickTile, onAddNote, onSelectNote,
     tiles, notes, selectedNoteId, isPlayerView, fogActive, fog, tokens, annotations,
-    onAddToken, onRemoveToken, onRemoveAnnotation,
+    onAddToken, onRemoveToken, onRemoveAnnotation, meta.width, meta.height,
   ]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -626,9 +643,15 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
     if (isPlayerView && activeTool === 'move-token' && coords) {
       const t = findTokenAt(tokens, coords.x + 0.5, coords.y + 0.5);
-      // Players may only move player-kind tokens.
-      if (t && t.kind === 'player') {
-        draggingTokenRef.current = { id: t.id, lastX: t.x, lastY: t.y };
+      // The Move Token tool can relocate any token kind.
+      if (t) {
+        draggingTokenRef.current = {
+          id: t.id,
+          lastX: t.x,
+          lastY: t.y,
+          offsetX: coords.x - t.x,
+          offsetY: coords.y - t.y,
+        };
       }
       return;
     }
@@ -716,10 +739,15 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // Player-mode token drag.
     if (isPlayerView && activeTool === 'move-token' && draggingTokenRef.current && coords) {
       const drag = draggingTokenRef.current;
-      if (coords.x !== drag.lastX || coords.y !== drag.lastY) {
-        drag.lastX = coords.x;
-        drag.lastY = coords.y;
-        onMoveToken(drag.id, coords.x, coords.y);
+      // Apply the grab offset so the token's top-left tracks where the
+      // user originally clicked inside the footprint instead of snapping
+      // to the cursor cell. moveToken clamps to the map bounds.
+      const targetX = coords.x - drag.offsetX;
+      const targetY = coords.y - drag.offsetY;
+      if (targetX !== drag.lastX || targetY !== drag.lastY) {
+        drag.lastX = targetX;
+        drag.lastY = targetY;
+        onMoveToken(drag.id, targetX, targetY);
       }
       return;
     }
@@ -870,7 +898,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     : activeTool === 'perase' ? 'cell'
     : activeTool === 'move-token' ? 'grab'
     : activeTool === 'remove-token' ? 'not-allowed'
-    : activeTool === 'token-player' || activeTool === 'token-npc' || activeTool === 'token-monster' ? 'copy'
+    : activeTool === 'token-player' || activeTool === 'token-npc'
+        || activeTool === 'token-monster' || activeTool === 'token-monster-md'
+        || activeTool === 'token-monster-lg' ? 'copy'
     : 'crosshair';
 
   return (

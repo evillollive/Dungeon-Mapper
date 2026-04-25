@@ -124,13 +124,14 @@ export function exportMapSVG(
   // Tokens: hidden under fog in player exports (mirrors on-screen behavior).
   for (const token of map.tokens ?? []) {
     if (isPlayerView && isFogged(token.x, token.y)) continue;
-    const tcx = token.x * tileSize + tileSize / 2;
-    const tcy = token.y * tileSize + tileSize / 2;
-    const r = tileSize * 0.42;
+    const sz = Math.max(1, Math.floor(token.size ?? 1));
+    const tcx = token.x * tileSize + (tileSize * sz) / 2;
+    const tcy = token.y * tileSize + (tileSize * sz) / 2;
+    const r = tileSize * sz * 0.42;
     const fill = token.color ?? TOKEN_KIND_COLORS[token.kind];
     const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
-    svg += `<circle cx="${tcx}" cy="${tcy}" r="${r}" fill="${fill}" stroke="#1a1a2e" stroke-width="${Math.max(1, tileSize * 0.08)}"/>`;
-    svg += `<text x="${tcx}" y="${tcy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * 0.5)}" font-family="monospace" fill="#ffffff" font-weight="bold">${escapeXML(glyph)}</text>`;
+    svg += `<circle cx="${tcx}" cy="${tcy}" r="${r}" fill="${fill}" stroke="#1a1a2e" stroke-width="${Math.max(1, tileSize * sz * 0.08)}"/>`;
+    svg += `<text x="${tcx}" y="${tcy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * sz * 0.5)}" font-family="monospace" fill="#ffffff" font-weight="bold">${escapeXML(glyph)}</text>`;
   }
 
   // Fog overlay. Player exports paint opaque grey so hidden content is

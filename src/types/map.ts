@@ -37,9 +37,9 @@ export type TokenKind = 'player' | 'npc' | 'monster';
 
 export interface Token {
   id: number;
-  /** Tile-aligned X coordinate (0 .. meta.width - 1). */
+  /** Tile-aligned X coordinate of the token's top-left cell. */
   x: number;
-  /** Tile-aligned Y coordinate (0 .. meta.height - 1). */
+  /** Tile-aligned Y coordinate of the token's top-left cell. */
   y: number;
   kind: TokenKind;
   label: string;
@@ -47,6 +47,13 @@ export interface Token {
   color?: string;
   /** Optional emoji/icon; falls back to first letter of `label`. */
   icon?: string;
+  /**
+   * Footprint size in tiles (size × size). Defaults to 1 (single cell).
+   * Currently only used by monster tokens (1 = small, 2 = medium,
+   * 3 = large). The token's `(x, y)` is the top-left cell of the
+   * footprint and the token occupies `[x, x + size) × [y, y + size)`.
+   */
+  size?: number;
 }
 
 export interface AnnotationStroke {
@@ -94,7 +101,8 @@ export type ToolType =
   | 'defog'
   // Player tools — visible only when viewMode === 'player'.
   | 'pdraw' | 'perase'
-  | 'token-player' | 'token-npc' | 'token-monster'
+  | 'token-player' | 'token-npc'
+  | 'token-monster' | 'token-monster-md' | 'token-monster-lg'
   | 'move-token' | 'remove-token';
 
 export type ViewMode = 'gm' | 'player';

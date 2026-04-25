@@ -34,10 +34,15 @@ const DRAW_TOOLS: { id: ToolType; label: string; icon: string; title: string }[]
   { id: 'perase', label: 'Erase', icon: '🧽', title: 'Erase player drawings — click a stroke to remove it.' },
 ];
 
-const TOKEN_TOOLS: { id: ToolType; label: string; icon: string; kind: keyof typeof TOKEN_KIND_COLORS }[] = [
-  { id: 'token-player',  label: 'Player',  icon: '🧝', kind: 'player' },
-  { id: 'token-npc',     label: 'NPC',     icon: '🧙', kind: 'npc' },
-  { id: 'token-monster', label: 'Monster', icon: '👹', kind: 'monster' },
+const TOKEN_TOOLS: { id: ToolType; label: string; icon: string; kind: keyof typeof TOKEN_KIND_COLORS; title?: string }[] = [
+  { id: 'token-player',      label: 'Player',     icon: '🧝', kind: 'player' },
+  { id: 'token-npc',         label: 'NPC',        icon: '🧙', kind: 'npc' },
+  { id: 'token-monster',     label: 'Monster S',  icon: '👹', kind: 'monster',
+    title: 'Place a small (1×1) Monster token — click on a cell to drop it.' },
+  { id: 'token-monster-md',  label: 'Monster M',  icon: '👹', kind: 'monster',
+    title: 'Place a medium (2×2) Monster token — click on a cell to drop it.' },
+  { id: 'token-monster-lg',  label: 'Monster L',  icon: '👹', kind: 'monster',
+    title: 'Place a large (3×3) Monster token — click on a cell to drop it.' },
 ];
 
 // Fog tools are drag-rectangles of cells; they only appear when fog is
@@ -228,7 +233,7 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
             key={tool.id}
             className={`tool-btn ${activeTool === tool.id ? 'active' : ''}`}
             onClick={() => onSetTool(tool.id)}
-            title={`Place a ${tool.label} token — click on a cell to drop it.`}
+            title={tool.title ?? `Place a ${tool.label} token — click on a cell to drop it.`}
           >
             <span
               className="tool-icon"
