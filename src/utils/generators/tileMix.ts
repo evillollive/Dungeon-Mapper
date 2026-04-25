@@ -158,13 +158,33 @@ export const OPEN_TERRAIN_TILE_MIX_SLIDERS: TileMixSliderSpec[] = [
     format: fmtCount('cache'),
     hint: 'Number of treasure caches placed on open ground.',
   },
+  {
+    key: 'trap',
+    label: 'Traps / Hazards',
+    min: 0,
+    max: 0.05,
+    step: 0.001,
+    format: fmtPct,
+    hint: '≈ share of map area holding a trap or hazard.',
+  },
+  {
+    key: 'areas',
+    label: 'Named areas',
+    min: 0,
+    max: 8,
+    step: 1,
+    format: fmtCount('area'),
+    hint: 'Number of designated outdoor areas (clearings, watering holes, …) labeled in the notes panel.',
+  },
 ];
 
 /**
  * Default open-terrain mix. The wall/water/pillar fractions match the
  * legacy area-relative counts (e.g. wall blobs covered ≈ area * 1/80 *
  * 6 ≈ 7.5% of the map at default density), so leaving the sliders alone
- * reproduces the previous output.
+ * reproduces the previous output for those keys; trap and named-area
+ * defaults are set so a default-density wilderness map gets a few
+ * pit traps and a handful of labeled clearings out of the box.
  */
 export function getOpenTerrainDefaultMix(themeId?: string): Record<string, number> {
   const flavor = getOpenTerrainFlavor(themeId);
@@ -173,6 +193,13 @@ export function getOpenTerrainDefaultMix(themeId?: string): Record<string, numbe
     water: 0.032,
     pillar: 0.0083,
     treasure: flavor.treasureCount,
+    // Default ≈ area / 400 × theme multiplier in the generator → as a
+    // map-area fraction that's ~0.0025 × multiplier. Expose the
+    // baseline so the slider opens at "a few hazards" instead of 0.
+    trap: 0.0025 * flavor.trapMultiplier,
+    // Roughly matches the generator's density-scaled default of 3 at
+    // density 1.0; the generator clamps to detected pocket count.
+    areas: 3,
   };
 }
 
@@ -192,10 +219,37 @@ export const CAVERN_TILE_MIX_SLIDERS: TileMixSliderSpec[] = [
     key: 'treasure',
     label: 'Treasure caches',
     min: 0,
-    max: 6,
+    max: 12,
     step: 1,
     format: fmtCount('cache'),
-    hint: 'Optional caches scattered across the cave floor.',
+    hint: 'Caches scattered across the cave floor.',
+  },
+  {
+    key: 'trap',
+    label: 'Traps / Hazards',
+    min: 0,
+    max: 0.05,
+    step: 0.001,
+    format: fmtPct,
+    hint: '≈ share of cave floor holding a trap or hazard.',
+  },
+  {
+    key: 'water',
+    label: 'Water pools',
+    min: 0,
+    max: 0.15,
+    step: 0.005,
+    format: fmtPct,
+    hint: '≈ share of cave floor flooded with water pools / streams.',
+  },
+  {
+    key: 'areas',
+    label: 'Named chambers',
+    min: 0,
+    max: 8,
+    step: 1,
+    format: fmtCount('chamber'),
+    hint: 'Designated cave chambers labeled in the notes panel (Grand Chamber, Underground Pool, …).',
   },
   {
     key: 'stairsDown',
@@ -208,11 +262,29 @@ export const CAVERN_TILE_MIX_SLIDERS: TileMixSliderSpec[] = [
   },
 ];
 
-/** Default cavern mix — matches the previous behavior (0.45 fill, no extra caches, stairs on). */
+/**
+ * Default cavern mix. Treasure / trap / water / area defaults sit at
+ * the generator's density-scaled values for a default-density map
+ * (~density 1.0, 32×32 area), so opening the dialog and clicking
+ * Generate gives the populated cave system the user expects. Sliders
+ * still let the user dial them all the way down for the legacy "empty
+ * cavern" look.
+ */
 export function getCavernDefaultMix(): Record<string, number> {
   return {
     wall: 0.45,
-    treasure: 0,
+    // Match the in-generator default at density ~1: floor area / 220
+    // works out to roughly 4–6 caches on a typical map.
+    treasure: 4,
+    // ~1.5% of floor cells at density 1 — a handful of hazards on a
+    // default map, scaling with the slider.
+    trap: 0.015,
+    // ~2.5% of floor cells covered by water pools (a couple of small
+    // puddles on a typical cave).
+    water: 0.025,
+    // Up to 3 labeled chambers by default; the generator clamps to
+    // detected pocket count, so small caves get fewer.
+    areas: 3,
     stairsDown: 1,
   };
 }
