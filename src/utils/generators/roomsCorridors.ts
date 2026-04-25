@@ -26,6 +26,17 @@ interface Room {
   kind?: RoomKind;
 }
 
+/**
+ * Clamp the optional `roomSize` tile-mix multiplier to a sane range
+ * and default missing / non-finite values to `1` (legacy behavior).
+ * The slider in the dialog is bounded to 0.5..1.5; we clamp to the
+ * same range here so direct API callers can't push past it.
+ */
+function clampRoomSize(v: number | undefined): number {
+  if (v == null || !Number.isFinite(v)) return 1;
+  return Math.max(0.5, Math.min(1.5, v));
+}
+
 function rectsOverlap(a: Room, b: Room, pad = 1): boolean {
   return !(
     a.x + a.w + pad <= b.x ||
@@ -399,9 +410,13 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
 
   // Room sizing — keep rooms small enough to leave space for corridors and
   // walls on a typical 32x32 map, but allow the upper bound to grow on
-  // bigger maps.
-  const minSide = 3;
-  const maxSide = Math.max(minSide + 2, Math.min(8, Math.floor(Math.min(width, height) / 4)));
+  // bigger maps. The optional `roomSize` tile-mix slider scales both
+  // bounds (default 1×) so users can dial rooms from cell-tight to
+  // sprawling halls without touching density (which controls *count*).
+  const roomSizeMul = clampRoomSize(ov.roomSize);
+  const minSide = Math.max(3, Math.round(3 * roomSizeMul));
+  const baseMaxSide = Math.max(5, Math.min(8, Math.floor(Math.min(width, height) / 4)));
+  const maxSide = Math.max(minSide + 2, Math.round(baseMaxSide * roomSizeMul));
   // Number of attempts scales with map area and density (clamped).
   const d = clampDensity(density);
   const targetRooms = Math.max(3, Math.round((width * height) / 60 * d));

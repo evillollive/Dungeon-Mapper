@@ -52,6 +52,39 @@ interface GenerateMapDialogProps {
 
 const MIN_DIM = 8;
 const MAX_DIM = 128;
+/**
+ * Spinner step for the Width / Height number inputs. Aligned to the
+ * "standard" map sizes (8, 16, 24, 32, …) so clicking the up/down
+ * arrows jumps between common sizes. Users can still type any integer
+ * — `clampDim` only constrains it to `[MIN_DIM, MAX_DIM]`.
+ */
+const DIM_STEP = 8;
+
+/** Allowed values for the dialog-local size scaler (small → large). */
+const DIALOG_SCALE_OPTIONS = [0.85, 1, 1.15, 1.3, 1.5] as const;
+const DEFAULT_DIALOG_SCALE = 1;
+const DIALOG_SCALE_STORAGE_KEY = 'dungeon-mapper:generate-dialog-scale';
+
+const loadInitialDialogScale = (): number => {
+  if (typeof window === 'undefined') return DEFAULT_DIALOG_SCALE;
+  try {
+    const raw = window.localStorage.getItem(DIALOG_SCALE_STORAGE_KEY);
+    if (!raw) return DEFAULT_DIALOG_SCALE;
+    const n = Number(raw);
+    if (!Number.isFinite(n)) return DEFAULT_DIALOG_SCALE;
+    // Snap to the nearest allowed option so we never end up with a
+    // size the +/- buttons can't navigate away from.
+    let best = DIALOG_SCALE_OPTIONS[0] as number;
+    let bestDelta = Math.abs(n - best);
+    for (const opt of DIALOG_SCALE_OPTIONS) {
+      const d = Math.abs(n - opt);
+      if (d < bestDelta) { best = opt; bestDelta = d; }
+    }
+    return best;
+  } catch {
+    return DEFAULT_DIALOG_SCALE;
+  }
+};
 
 /**
  * Smallest selection rectangle the "Generate into selection" toggle
@@ -73,6 +106,33 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
   const [density, setDensity] = useState<number>(1);
   const [seedText, setSeedText] = useState<string>(() => seedToString(randomSeed()));
   const [error, setError] = useState<string | null>(null);
+
+  // Dialog-local size scaler — independent of the global --ui-scale so
+  // tweaking it here doesn't double-scale with the app-wide setting.
+  // Persisted to localStorage so the user's preferred dialog size
+  // sticks across opens.
+  const [dialogScale, setDialogScale] = useState<number>(loadInitialDialogScale);
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(DIALOG_SCALE_STORAGE_KEY, String(dialogScale));
+    } catch {
+      // Storage may be unavailable (private mode); fall back to in-memory only.
+    }
+  }, [dialogScale]);
+  const scaleIndex = DIALOG_SCALE_OPTIONS.indexOf(
+    dialogScale as typeof DIALOG_SCALE_OPTIONS[number]
+  );
+  const safeScaleIndex = scaleIndex < 0
+    ? DIALOG_SCALE_OPTIONS.indexOf(DEFAULT_DIALOG_SCALE as typeof DIALOG_SCALE_OPTIONS[number])
+    : scaleIndex;
+  const canShrink = safeScaleIndex > 0;
+  const canGrow = safeScaleIndex < DIALOG_SCALE_OPTIONS.length - 1;
+  const scaleDown = () => {
+    if (canShrink) setDialogScale(DIALOG_SCALE_OPTIONS[safeScaleIndex - 1]);
+  };
+  const scaleUp = () => {
+    if (canGrow) setDialogScale(DIALOG_SCALE_OPTIONS[safeScaleIndex + 1]);
+  };
 
   // Slider values for the per-tile-type "Tile mix" section. The map is
   // keyed by `${generatorId}.${sliderKey}` so each generator keeps its
@@ -196,10 +256,42 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
       aria-modal="true"
       aria-labelledby="generate-dialog-title"
     >
-      <div className="generate-dialog">
-        <h2 id="generate-dialog-title" className="generate-dialog-title">
-          🎲 Generate Map
-        </h2>
+      <div
+        className="generate-dialog"
+        style={{ ['--gen-dialog-scale' as string]: String(dialogScale) }}
+      >
+        <div className="generate-dialog-title-row">
+          <h2 id="generate-dialog-title" className="generate-dialog-title">
+            🎲 Generate Map
+          </h2>
+          <div
+            className="generate-dialog-scale"
+            role="group"
+            aria-label="Dialog text size"
+          >
+            <button
+              type="button"
+              onClick={scaleDown}
+              disabled={!canShrink}
+              title="Shrink dialog text"
+              aria-label="Shrink dialog text"
+            >
+              A−
+            </button>
+            <span className="generate-dialog-scale-label" aria-hidden="true">
+              {Math.round(dialogScale * 100)}%
+            </span>
+            <button
+              type="button"
+              onClick={scaleUp}
+              disabled={!canGrow}
+              title="Enlarge dialog text"
+              aria-label="Enlarge dialog text"
+            >
+              A+
+            </button>
+          </div>
+        </div>
         <p className="generate-dialog-help">
           Procedurally creates a map in the current theme ({themeId}). The
           generator only emits the standard tile types — every theme renders
@@ -226,6 +318,7 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
               type="number"
               min={MIN_DIM}
               max={MAX_DIM}
+              step={DIM_STEP}
               value={intoSelection && selection ? selection.w : width}
               disabled={intoSelection}
               onChange={e => setWidth(Number(e.target.value))}
@@ -237,6 +330,7 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
               type="number"
               min={MIN_DIM}
               max={MAX_DIM}
+              step={DIM_STEP}
               value={intoSelection && selection ? selection.h : height}
               disabled={intoSelection}
               onChange={e => setHeight(Number(e.target.value))}
@@ -274,7 +368,7 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
         </label>
 
         {sliderSpecs.length > 0 && (
-          <details className="generate-dialog-mix">
+          <details className="generate-dialog-mix" open>
             <summary>
               Tile mix
               <button

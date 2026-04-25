@@ -748,20 +748,56 @@
   z-index: 100;
 }
 .generate-dialog {
+  --gen-dialog-scale: 1;
   background: #1a1f3d;
   color: #e0e0ff;
   border: 1px solid #3a4570;
   border-radius: 6px;
   padding: 18px 20px;
-  width: min(420px, 92vw);
+  width: min(calc(560px * var(--gen-dialog-scale)), 94vw);
   max-height: 90vh;
   overflow: auto;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-  font-size: calc(13px * var(--ui-scale, 1));
+  font-size: calc(15px * var(--gen-dialog-scale));
+}
+.generate-dialog-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 8px 0;
 }
 .generate-dialog-title {
-  margin: 0 0 8px 0;
-  font-size: calc(16px * var(--ui-scale, 1));
+  margin: 0;
+  font-size: calc(19px * var(--gen-dialog-scale));
+}
+.generate-dialog-scale {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.generate-dialog-scale button {
+  background: #2d3561;
+  color: #e0e0ff;
+  border: 1px solid #3a4570;
+  border-radius: 3px;
+  padding: 2px 8px;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1.2;
+}
+.generate-dialog-scale button:hover:not(:disabled) {
+  filter: brightness(1.15);
+}
+.generate-dialog-scale button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.generate-dialog-scale-label {
+  color: #8a93b8;
+  font-size: 0.8em;
+  min-width: 3ch;
+  text-align: center;
 }
 .generate-dialog-help {
   margin: 0 0 12px 0;
