@@ -18,6 +18,15 @@ interface PlayerToolbarProps {
   drawWidth: number;
   onSetDrawWidth: (w: number) => void;
   onClearPlayerDrawings: () => void;
+  /**
+   * Fog-of-war controls. The GM is still in charge of the map even on the
+   * player side, so these controls live in the player toolbar (where the
+   * fog actually shows up) instead of in the GM toolbar.
+   */
+  fogEnabled: boolean;
+  onToggleFogEnabled: () => void;
+  onResetFog: () => void;
+  onClearFog: () => void;
 }
 
 const DRAW_TOOLS: { id: ToolType; label: string; icon: string; title: string }[] = [
@@ -29,6 +38,13 @@ const TOKEN_TOOLS: { id: ToolType; label: string; icon: string; kind: keyof type
   { id: 'token-player',  label: 'Player',  icon: '🧝', kind: 'player' },
   { id: 'token-npc',     label: 'NPC',     icon: '🧙', kind: 'npc' },
   { id: 'token-monster', label: 'Monster', icon: '👹', kind: 'monster' },
+];
+
+// Fog tools are drag-rectangles of cells; they only appear when fog is
+// enabled for the current map. Reveal exposes cells; Hide re-covers them.
+const FOG_TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
+  { id: 'reveal', label: 'Reveal', shortcut: 'V', icon: '👁' },
+  { id: 'hide',   label: 'Hide',   shortcut: 'H', icon: '🌫' },
 ];
 
 const COLOR_SWATCHES = ['#dc2626', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7', '#1f2937', '#ffffff'];
@@ -43,6 +59,7 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
   drawColor, onSetDrawColor,
   drawWidth, onSetDrawWidth,
   onClearPlayerDrawings,
+  fogEnabled, onToggleFogEnabled, onResetFog, onClearFog,
 }) => {
   return (
     <div className="toolbar">
@@ -160,6 +177,56 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
           <span className="tool-icon">✕</span>
           <span className="tool-name">Remove</span>
         </button>
+      </div>
+
+      <div className="toolbar-section">
+        <div className="toolbar-label">FOG OF WAR</div>
+        <label
+          className={`tool-btn ${fogEnabled ? 'active' : ''}`}
+          style={{ cursor: 'pointer' }}
+          title="Toggle fog-of-war for this map. When on, fogged cells are hidden under an opaque grey overlay in the player view."
+        >
+          <span className="tool-icon">🌫</span>
+          <span className="tool-name">Enabled</span>
+          <input
+            type="checkbox"
+            checked={fogEnabled}
+            onChange={onToggleFogEnabled}
+            style={{ margin: 0 }}
+          />
+        </label>
+        {fogEnabled && (
+          <>
+            {FOG_TOOLS.map(tool => (
+              <button
+                key={tool.id}
+                className={`tool-btn ${activeTool === tool.id ? 'active' : ''}`}
+                onClick={() => onSetTool(tool.id)}
+                title={`${tool.label} — drag a rectangle of cells to ${tool.id === 'reveal' ? 'reveal' : 'hide'} [${tool.shortcut}]`}
+              >
+                <span className="tool-icon">{tool.icon}</span>
+                <span className="tool-name">{tool.label}</span>
+                <span className="tool-shortcut">[{tool.shortcut}]</span>
+              </button>
+            ))}
+            <button
+              className="tool-btn"
+              onClick={onResetFog}
+              title="Re-fog the entire map (hide every cell)."
+            >
+              <span className="tool-icon">⟲</span>
+              <span className="tool-name">Reset Fog</span>
+            </button>
+            <button
+              className="tool-btn"
+              onClick={onClearFog}
+              title="Reveal the entire map (clear all fog)."
+            >
+              <span className="tool-icon">☀</span>
+              <span className="tool-name">Clear Fog</span>
+            </button>
+          </>
+        )}
       </div>
     </div>
   );

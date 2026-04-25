@@ -19,6 +19,7 @@ const MAX_UI_SCALE = UI_SCALE_OPTIONS[UI_SCALE_OPTIONS.length - 1];
 
 const PRESERVE_THEME_STORAGE_KEY = 'dungeon-mapper:preserve-on-theme-switch';
 const VIEW_MODE_STORAGE_KEY = 'dungeon-mapper:view-mode';
+const GM_SHOW_FOG_STORAGE_KEY = 'dungeon-mapper:gm-show-fog';
 
 // Stable no-op handlers for the player-view notes panel — defined at module
 // scope so we don't allocate fresh callbacks on every render.
@@ -41,6 +42,15 @@ function loadInitialViewMode(): ViewMode {
     return window.localStorage.getItem(VIEW_MODE_STORAGE_KEY) === 'player' ? 'player' : 'gm';
   } catch {
     return 'gm';
+  }
+}
+
+function loadInitialGmShowFog(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    return window.localStorage.getItem(GM_SHOW_FOG_STORAGE_KEY) === '1';
+  } catch {
+    return false;
   }
 }
 
@@ -110,6 +120,7 @@ function App() {
   const [preserveOnThemeSwitch, setPreserveOnThemeSwitch] = useState<boolean>(
     loadInitialPreserveOnThemeSwitch
   );
+  const [gmShowFog, setGmShowFog] = useState<boolean>(loadInitialGmShowFog);
   // Player drawing pen state — color and brush width are UI-only and not
   // persisted on the map; they're a per-session preference.
   const [drawColor, setDrawColor] = useState<string>('#dc2626');
@@ -117,7 +128,8 @@ function App() {
 
   // When switching view modes, snap the active tool to a sensible default
   // for that mode so the user isn't left holding a tool the new toolbar
-  // doesn't expose.
+  // doesn't expose. Fog tools (reveal/hide) live on the player toolbar
+  // now, so they're treated as player tools for this purpose.
   const switchViewMode = useCallback(() => {
     setViewMode(prev => {
       const next: ViewMode = prev === 'gm' ? 'player' : 'gm';
@@ -138,6 +150,7 @@ function App() {
   const handleResetFog = useCallback(() => fillAllFog(true), [fillAllFog]);
   const handleClearFog = useCallback(() => fillAllFog(false), [fillAllFog]);
   const handleClearPlayerDrawings = useCallback(() => clearAnnotations('player'), [clearAnnotations]);
+  const handleToggleGmShowFog = useCallback(() => setGmShowFog(p => !p), []);
 
   // Persist the preserve-on-theme-switch preference across sessions.
   useEffect(() => {
@@ -150,6 +163,15 @@ function App() {
       // Ignore storage failures (e.g. private mode).
     }
   }, [preserveOnThemeSwitch]);
+
+  // Persist the GM "Show Fog" preview toggle across sessions.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(GM_SHOW_FOG_STORAGE_KEY, gmShowFog ? '1' : '0');
+    } catch {
+      // Ignore storage failures (e.g. private mode).
+    }
+  }, [gmShowFog]);
 
   // Apply the UI scale to :root so every CSS rule using --ui-scale picks
   // it up, and persist the preference across sessions.
@@ -227,9 +249,8 @@ function App() {
             preserveOnThemeSwitch={preserveOnThemeSwitch}
             onTogglePreserveOnThemeSwitch={() => setPreserveOnThemeSwitch(p => !p)}
             fogEnabled={fogEnabled}
-            onToggleFogEnabled={handleToggleFogEnabled}
-            onResetFog={handleResetFog}
-            onClearFog={handleClearFog}
+            gmShowFog={gmShowFog}
+            onToggleGmShowFog={handleToggleGmShowFog}
           />
         ) : (
           <PlayerToolbar
@@ -240,6 +261,10 @@ function App() {
             drawWidth={drawWidth}
             onSetDrawWidth={setDrawWidth}
             onClearPlayerDrawings={handleClearPlayerDrawings}
+            fogEnabled={fogEnabled}
+            onToggleFogEnabled={handleToggleFogEnabled}
+            onResetFog={handleResetFog}
+            onClearFog={handleClearFog}
           />
         )}
         <main className="canvas-area">
@@ -251,6 +276,7 @@ function App() {
             themeId={themeId}
             printMode={printMode}
             viewMode={viewMode}
+            gmShowFog={gmShowFog}
             selectedNoteId={selectedNoteId}
             drawColor={drawColor}
             drawWidth={drawWidth}

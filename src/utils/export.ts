@@ -133,10 +133,13 @@ export function exportMapSVG(
     svg += `<text x="${tcx}" y="${tcy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * 0.5)}" font-family="monospace" fill="#ffffff" font-weight="bold">${escapeXML(glyph)}</text>`;
   }
 
-  // Fog overlay. In player exports paint solid black; in GM exports paint
-  // a translucent wash so the GM still sees the underlying tiles.
+  // Fog overlay. Player exports paint opaque grey so hidden content is
+  // genuinely hidden; GM exports paint a translucent grey wash so the GM
+  // still sees the underlying tiles. (GM-side on-screen rendering omits
+  // fog entirely by default and only shows it when the GM opts in to the
+  // "Show Fog" preview, but exports always include it for GM reference.)
   if (fogActive && fog) {
-    const fogFill = isPlayerView ? '#0a0a12' : 'rgba(20,22,40,0.55)';
+    const fogFill = isPlayerView ? '#6b7280' : 'rgba(107,114,128,0.55)';
     let fogPath = '';
     for (let y = 0; y < height; y++) {
       for (let x = 0; x < width; x++) {
