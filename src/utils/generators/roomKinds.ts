@@ -136,6 +136,21 @@ const DUNGEON: ThemeRoomPalette = [
   { label: 'Great Hall', size: 'large', weight: 0.8 },
 ];
 
+// Lost-civilization temple complex: a hall of pillars at the center, a few
+// burial / ritual spaces on the sides, and a small treasure-rich vault.
+const ANCIENT: ThemeRoomPalette = [
+  { label: 'Hall of Pillars', size: 'large', weight: 1 },
+  { label: 'Antechamber', weight: 1 },
+  { label: 'Tomb', weight: 1, bias: { treasure: 1.5, trap: 1.5 } },
+  { label: 'Shrine', weight: 0.8 },
+  { label: 'Sanctum', weight: 0.6, bias: { trap: 1.2 } },
+  { label: 'Ritual Chamber', weight: 0.7, bias: { trap: 1.5 } },
+  { label: 'Hall of Statues', weight: 0.7 },
+  { label: 'Treasury', size: 'small', weight: 0.6, bias: { treasure: 3, trap: 1.5 } },
+  { label: 'Reliquary', size: 'small', weight: 0.5, bias: { treasure: 2 } },
+  { label: 'Collapsed Hall', weight: 0.6, bias: { trap: 1.2 } },
+];
+
 export const THEME_ROOM_PALETTES: Record<string, ThemeRoomPalette> = {
   castle: CASTLE,
   starship: STARSHIP,
@@ -146,6 +161,7 @@ export const THEME_ROOM_PALETTES: Record<string, ThemeRoomPalette> = {
   moderncity: MODERNCITY,
   pirate: PIRATE,
   dungeon: DUNGEON,
+  ancient: ANCIENT,
 };
 
 /** Returns the palette for a theme, or `undefined` if the theme has none. */
