@@ -10,7 +10,7 @@ import {
   type TypeGrid,
   typeGridToTiles,
 } from './common';
-import { getRoomsCorridorsFlavor, poiLabelFor } from './poi';
+import { getRoomsCorridorsFlavor, poiLabelFor, poiLabelIsRoom } from './poi';
 import { getRoomPalette, type RoomKind } from './roomKinds';
 import { makeRng, type Rng } from './random';
 import type { GenerateContext, GeneratedMap } from './types';
@@ -570,8 +570,12 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   // Build auto-named MapNote entries for every POI placed above and link
   // them to the corresponding tile via `noteId`. POI types that occur
   // more than once get a numeric suffix (Treasure 1, Treasure 2, …) so
-  // they're distinguishable in the notes panel.
-  const notes: MapNote[] = buildPoiNotes(tiles, pois, themeId);
+  // they're distinguishable in the notes panel. We pass the carved-room
+  // list so POIs whose label happens to name a room (e.g. "Gatehouse")
+  // are only tagged `kind: 'room'` when they don't sit inside another
+  // already-room-tagged carved room — keeping the "no room contains
+  // another room" invariant.
+  const notes: MapNote[] = buildPoiNotes(tiles, pois, themeId, hasPalette ? rooms : []);
 
   // When room labeling is on, append one MapNote per carved room at its
   // center (or nearest floor cell if the center got overwritten by a
@@ -595,7 +599,8 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
 function buildPoiNotes(
   tiles: Tile[][],
   pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'treasure' | 'trap' }[],
-  themeId: string | undefined
+  themeId: string | undefined,
+  labeledRooms: Room[]
 ): MapNote[] {
   const counts = new Map<string, number>();
   for (const p of pois) counts.set(p.type, (counts.get(p.type) ?? 0) + 1);
@@ -607,12 +612,24 @@ function buildPoiNotes(
     const idx = (seen.get(p.type) ?? 0) + 1;
     seen.set(p.type, idx);
     const id = i + 1;
+    // A POI is tagged `kind: 'room'` only when its theme label names a
+    // room AND it is not already inside a carved room that will receive
+    // its own room-kind note (those rooms are passed in `labeledRooms`).
+    // That guarantees the "no room nested inside another room"
+    // invariant: if there's a containing room-kind note, the POI keeps
+    // `kind: 'poi'` so only the room-kind owns the room designation.
+    const labelIsRoom = poiLabelIsRoom(themeId, p.type);
+    const insideLabeledRoom = labeledRooms.some(
+      r => p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h
+    );
+    const kind: 'room' | 'poi' = labelIsRoom && !insideLabeledRoom ? 'room' : 'poi';
     notes.push({
       id,
       x: p.x,
       y: p.y,
       label: poiLabelFor(themeId, p.type, total > 1 ? idx : undefined),
       description: '',
+      kind,
     });
     if (tiles[p.y]?.[p.x]) tiles[p.y][p.x] = { ...tiles[p.y][p.x], noteId: id };
   }
@@ -676,7 +693,7 @@ function appendRoomKindNotes(tiles: Tile[][], rooms: Room[], notes: MapNote[]): 
     }
 
     const id = nextId++;
-    notes.push({ id, x: ax, y: ay, label, description: '' });
+    notes.push({ id, x: ax, y: ay, label, description: '', kind: 'room' });
     const t = tiles[ay]?.[ax];
     if (t && t.noteId === undefined) tiles[ay][ax] = { ...t, noteId: id };
   }

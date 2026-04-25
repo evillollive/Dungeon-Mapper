@@ -9,7 +9,7 @@ import {
   type TypeGrid,
   typeGridToTiles,
 } from './common';
-import { getOpenTerrainFlavor, poiLabelFor } from './poi';
+import { getOpenTerrainFlavor, poiLabelFor, poiLabelIsRoom } from './poi';
 import { makeRng, type Rng } from './random';
 import type { GenerateContext, GeneratedMap } from './types';
 
@@ -137,6 +137,10 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
       y: p.y,
       label: poiLabelFor(themeId, p.type, total > 1 ? idx : undefined),
       description: '',
+      // Open-terrain maps don't carve rooms, so a room-named POI label
+      // (e.g. "Bunker") is the room itself, with no containing room to
+      // nest inside.
+      kind: poiLabelIsRoom(themeId, p.type) ? 'room' : 'poi',
     });
     if (tiles[p.y]?.[p.x]) tiles[p.y][p.x] = { ...tiles[p.y][p.x], noteId: id };
   }
