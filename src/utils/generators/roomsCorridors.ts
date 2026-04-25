@@ -48,21 +48,113 @@ function carveRoom(grid: TypeGrid, r: Room): void {
   }
 }
 
-function carveCorridor(
-  grid: TypeGrid,
+/**
+ * Enumerate the cells of an L-shaped corridor between (ax, ay) and (bx, by).
+ * `horizontalFirst` controls which leg comes first.
+ */
+function corridorCells(
   ax: number,
   ay: number,
   bx: number,
   by: number,
   horizontalFirst: boolean
-): void {
+): { x: number; y: number }[] {
+  const out: { x: number; y: number }[] = [];
   if (horizontalFirst) {
-    for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) setCell(grid, x, ay, 'floor');
-    for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) setCell(grid, bx, y, 'floor');
+    for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) out.push({ x, y: ay });
+    for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) out.push({ x: bx, y });
   } else {
-    for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) setCell(grid, ax, y, 'floor');
-    for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) setCell(grid, x, by, 'floor');
+    for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) out.push({ x: ax, y });
+    for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) out.push({ x, y: by });
   }
+  return out;
+}
+
+/**
+ * Count how many cells of a corridor path land inside the *interior* of any
+ * room not in `skip`. Used to prefer L-bends that don't slice through
+ * unrelated rooms (which is what produced the open, half-walled rooms in
+ * the previous algorithm).
+ */
+function countRoomCrossings(
+  cells: { x: number; y: number }[],
+  rooms: Room[],
+  skip: Set<number>
+): number {
+  let n = 0;
+  for (const c of cells) {
+    for (let i = 0; i < rooms.length; i++) {
+      if (skip.has(i)) continue;
+      const r = rooms[i];
+      if (c.x >= r.x && c.x < r.x + r.w && c.y >= r.y && c.y < r.y + r.h) {
+        n++;
+        break;
+      }
+    }
+  }
+  return n;
+}
+
+/**
+ * Pick a single doorway on `room` facing `target`. Returns:
+ *  - `door`: the wall cell on `room`'s perimeter that should become a door
+ *    tile (lies between the room's interior and the corridor).
+ *  - `exit`: the floor cell one step further out, where the corridor
+ *    actually starts. Carving from `exit` (rather than the room center) is
+ *    what keeps the room's four walls intact.
+ *
+ * The side is chosen by the dominant axis between room centers, with the
+ * other three sides as fallbacks if the preferred exit would fall outside
+ * the map bounds.
+ */
+function pickExit(
+  room: Room,
+  target: Room,
+  rng: Rng,
+  width: number,
+  height: number
+): {
+  exit: { x: number; y: number };
+  door: { x: number; y: number; type: 'door-h' | 'door-v' };
+} {
+  const tc = roomCenter(target);
+  const rc = roomCenter(room);
+  const dx = tc.x - rc.x;
+  const dy = tc.y - rc.y;
+  type Side = 'e' | 'w' | 's' | 'n';
+  const order: Side[] = Math.abs(dx) >= Math.abs(dy)
+    ? [dx >= 0 ? 'e' : 'w', dy >= 0 ? 's' : 'n', dx >= 0 ? 'w' : 'e', dy >= 0 ? 'n' : 's']
+    : [dy >= 0 ? 's' : 'n', dx >= 0 ? 'e' : 'w', dy >= 0 ? 'n' : 's', dx >= 0 ? 'w' : 'e'];
+
+  for (const side of order) {
+    let doorX: number, doorY: number, exitX: number, exitY: number;
+    let type: 'door-h' | 'door-v';
+    if (side === 'e' || side === 'w') {
+      // Door sits on the east or west wall; traversal is east-west → door-v.
+      doorX = side === 'e' ? room.x + room.w : room.x - 1;
+      exitX = side === 'e' ? doorX + 1 : doorX - 1;
+      const ey = rng.int(room.y, room.y + room.h - 1);
+      doorY = ey;
+      exitY = ey;
+      type = 'door-v';
+    } else {
+      // Door on the north or south wall; traversal is north-south → door-h.
+      doorY = side === 's' ? room.y + room.h : room.y - 1;
+      exitY = side === 's' ? doorY + 1 : doorY - 1;
+      const ex = rng.int(room.x, room.x + room.w - 1);
+      doorX = ex;
+      exitX = ex;
+      type = 'door-h';
+    }
+    if (exitX >= 1 && exitX < width - 1 && exitY >= 1 && exitY < height - 1) {
+      return { exit: { x: exitX, y: exitY }, door: { x: doorX, y: doorY, type } };
+    }
+  }
+
+  // Fallback (only triggers for rooms wedged against the map border): aim
+  // straight at the room center so connectivity is at least preserved.
+  const c = roomCenter(room);
+  return { exit: c, door: { x: c.x, y: c.y, type: 'door-v' } };
 }
 
 /**
@@ -257,16 +349,42 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
 
   for (const r of rooms) carveRoom(grid, r);
 
-  // Connect each room to the previous one with an L-shaped corridor. This
-  // guarantees the dungeon is fully connected (the connectivity graph is a
-  // path, so BFS from any room reaches every other room).
+  // Connect each room to the previous one with an L-shaped corridor. To
+  // keep rooms looking like real rooms (four intact walls + a door),
+  // corridors are routed between *perimeter doorway* cells of each room
+  // rather than between room centers — that way the carve never tears
+  // through a room's interior. We also try both L-bends and pick the one
+  // that crosses the fewest other rooms' interiors, so corridors mostly
+  // run along the outside of rooms instead of straight through them.
+  // The connectivity graph remains a path (room i ↔ room i+1), so the
+  // dungeon is still fully connected.
+  const doorsToPlace: { x: number; y: number; type: 'door-h' | 'door-v' }[] = [];
   for (let i = 1; i < rooms.length; i++) {
-    const a = roomCenter(rooms[i - 1]);
-    const b = roomCenter(rooms[i]);
-    carveCorridor(grid, a.x, a.y, b.x, b.y, rng.chance());
+    const a = pickExit(rooms[i - 1], rooms[i], rng, width, height);
+    const b = pickExit(rooms[i], rooms[i - 1], rng, width, height);
+    const skip = new Set([i - 1, i]);
+    const opt1 = corridorCells(a.exit.x, a.exit.y, b.exit.x, b.exit.y, true);
+    const opt2 = corridorCells(a.exit.x, a.exit.y, b.exit.x, b.exit.y, false);
+    const c1 = countRoomCrossings(opt1, rooms, skip);
+    const c2 = countRoomCrossings(opt2, rooms, skip);
+    // Tie-break randomly so seeds with no crossings on either bend stay varied.
+    let cells: { x: number; y: number }[];
+    if (c1 < c2) cells = opt1;
+    else if (c2 < c1) cells = opt2;
+    else cells = rng.chance() ? opt1 : opt2;
+    for (const c of cells) setCell(grid, c.x, c.y, 'floor');
+    doorsToPlace.push(a.door, b.door);
   }
 
   outlineWalls(grid);
+  // Stamp the explicit per-room doors first. Each door cell sits in a
+  // freshly-outlined wall between the room's interior and the corridor
+  // we just carved, so converting it to a door tile both visualizes the
+  // entrance and makes the room reachable for the BFS / floodfills below.
+  // `placeDoors` skips non-`wall` cells, so these stay put.
+  for (const d of doorsToPlace) {
+    if (getCell(grid, d.x, d.y) === 'wall') setCell(grid, d.x, d.y, d.type);
+  }
   placeDoors(grid);
   // Apply the "Doors" slider: thin doors after they've been geometrically
   // placed. Defaults to keeping all of them so legacy seeds reproduce.
