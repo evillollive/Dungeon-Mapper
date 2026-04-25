@@ -1,7 +1,7 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
 
-// Ancient World theme: a forgotten civilization's stone complex — sun-bleached
+// Lost Civilization theme: a forgotten civilization's stone complex — sun-bleached
 // sandstone halls, carved hieroglyph-style walls, fluted pillars, toppled
 // statues, and reflecting pools. The palette is deliberately Earthly
 // (limestone, ochre, weathered bronze) with a few spots of color (lapis blue,
@@ -11,7 +11,7 @@ import type { TileType } from '../types/map';
 // specific real-world script, deity, or culture is depicted.
 export const ancientTheme: TileTheme = {
   id: 'ancient',
-  name: 'Ancient World',
+  name: 'Lost Civilization',
   tiles: [
     { id: 'empty', label: 'Sand' }, { id: 'floor', label: 'Flagstone' }, { id: 'wall', label: 'Carved Wall' },
     { id: 'door-h', label: 'Stone Slab (H)' }, { id: 'door-v', label: 'Stone Slab (V)' },
