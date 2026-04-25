@@ -176,10 +176,11 @@ export function useMapState() {
       // Newly-added cells from a grow-resize default to fogged so unexplored
       // area added to the map stays hidden until the GM reveals it.
       const newFog = resizeFogGrid(prev.fog, width, height, true);
-      // Drop tokens that fell outside the new bounds.
-      const newTokens = (prev.tokens ?? []).filter(
-        t => t.x >= 0 && t.x < width && t.y >= 0 && t.y < height
-      );
+      // Drop tokens whose footprint no longer fits on the resized map.
+      const newTokens = (prev.tokens ?? []).filter(t => {
+        const sz = Math.max(1, Math.floor(t.size ?? 1));
+        return t.x >= 0 && t.y >= 0 && t.x + sz <= width && t.y + sz <= height;
+      });
       const updated = {
         ...prev,
         meta: { ...prev.meta, width, height },
@@ -421,18 +422,21 @@ export function useMapState() {
   // Tokens are not part of the tile/fog undo stack — they're treated as
   // lightweight overlays that can be added/moved/removed freely.
 
-  const addToken = useCallback((kind: TokenKind, x: number, y: number, label?: string) => {
+  const addToken = useCallback((kind: TokenKind, x: number, y: number, label?: string, size?: number) => {
     const newId = nextTokenIdRef.current;
     nextTokenIdRef.current = newId + 1;
     setMap(prev => {
       const w = prev.meta.width;
       const h = prev.meta.height;
-      if (x < 0 || x >= w || y < 0 || y >= h) return prev;
+      const sz = Math.max(1, Math.floor(size ?? 1));
+      // Reject placement if the footprint wouldn't fit on the map.
+      if (x < 0 || y < 0 || x + sz > w || y + sz > h) return prev;
       const token: Token = {
         id: newId,
         x, y,
         kind,
         label: label ?? `${kind[0].toUpperCase()}${newId}`,
+        ...(sz > 1 ? { size: sz } : {}),
       };
       const updated = { ...prev, tokens: [...(prev.tokens ?? []), token] };
       debouncedSave(updated);
@@ -444,9 +448,19 @@ export function useMapState() {
     setMap(prev => {
       const w = prev.meta.width;
       const h = prev.meta.height;
-      if (x < 0 || x >= w || y < 0 || y >= h) return prev;
+      const existing = (prev.tokens ?? []).find(t => t.id === id);
+      if (!existing) return prev;
+      const sz = Math.max(1, Math.floor(existing.size ?? 1));
+      // Refuse the move if the map is too small to fit the footprint;
+      // otherwise the clamp below would force the token to (0,0) with
+      // its footprint extending off the map.
+      if (sz > w || sz > h) return prev;
+      // Clamp the top-left so the full footprint stays on the map.
+      const cx = Math.min(Math.max(0, x), w - sz);
+      const cy = Math.min(Math.max(0, y), h - sz);
+      if (cx === existing.x && cy === existing.y) return prev;
       const tokens = (prev.tokens ?? []).map(t =>
-        t.id === id ? { ...t, x, y } : t
+        t.id === id ? { ...t, x: cx, y: cy } : t
       );
       const updated = { ...prev, tokens };
       debouncedSave(updated);
