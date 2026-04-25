@@ -3,6 +3,7 @@ import type { DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, Annota
 import { TOKEN_KIND_COLORS } from '../types/map';
 import { getTheme } from '../themes/index';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
+import { isTokenFogged } from '../utils/tokenVisibility';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
 // evoking traditional engineering / quad-ruled graph paper regardless of theme.
@@ -34,6 +35,12 @@ interface MapCanvasProps {
    */
   gmShowFog: boolean;
   selectedNoteId: number | null;
+  /**
+   * Token id currently highlighted in the Initiative panel. When set, the
+   * matching token is rendered with a contrasting outline ring so the GM
+   * and players can quickly locate whose turn it is.
+   */
+  selectedTokenId?: number | null;
   drawColor: string;
   drawWidth: number;
   onSetTile: (x: number, y: number, type: TileType) => void;
@@ -121,7 +128,8 @@ function rectCells(x0: number, y0: number, x1: number, y1: number): { x: number;
 function drawToken(
   ctx: CanvasRenderingContext2D,
   token: Token,
-  tileSize: number
+  tileSize: number,
+  isSelected: boolean = false
 ) {
   const size = Math.max(1, Math.floor(token.size ?? 1));
   const px = token.x * tileSize + (tileSize * size) / 2;
@@ -130,6 +138,16 @@ function drawToken(
   const fill = token.color ?? TOKEN_KIND_COLORS[token.kind];
 
   ctx.save();
+  // Selection ring sits just outside the token disc so it doesn't obscure
+  // the kind color or glyph. A bright yellow ring contrasts with every
+  // token kind color and the graph-paper background.
+  if (isSelected) {
+    ctx.beginPath();
+    ctx.arc(px, py, radius + Math.max(2, tileSize * size * 0.1), 0, Math.PI * 2);
+    ctx.lineWidth = Math.max(2, tileSize * size * 0.12);
+    ctx.strokeStyle = '#ffd400';
+    ctx.stroke();
+  }
   ctx.fillStyle = fill;
   ctx.beginPath();
   ctx.arc(px, py, radius, 0, Math.PI * 2);
@@ -206,6 +224,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   viewMode,
   gmShowFog,
   selectedNoteId,
+  selectedTokenId,
   drawColor,
   drawWidth,
   onSetTile,
@@ -281,10 +300,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     ? notes.filter(n => !(fog?.[n.y]?.[n.x]))
     : notes;
 
-  // Tokens on fogged cells are also hidden from players (so the GM can place
-  // a hidden monster ahead of time without revealing it).
+  // Tokens are hidden from players when *any* cell of their footprint sits
+  // under fog — otherwise a multi-cell monster anchored on a fogged cell
+  // could still be visible (or vice-versa) and leak the GM's prep.
   const visibleTokens = (fogActive && isPlayerView)
-    ? tokens.filter(t => !(fog?.[t.y]?.[t.x]))
+    ? tokens.filter(t => !isTokenFogged(t, fog))
     : tokens;
 
   // Main render
@@ -379,7 +399,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // Render tokens before fog so fogged cells in player mode genuinely
     // hide the tokens beneath them.
     for (const token of visibleTokens) {
-      drawToken(ctx, token, tileSize);
+      drawToken(ctx, token, tileSize, token.id === selectedTokenId);
     }
 
     // Live (in-progress) freehand stroke, drawn on top so the player sees
@@ -472,7 +492,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke]);
 
   // Minimap render
   useEffect(() => {
@@ -574,35 +594,40 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     if (!coords) return;
     const { x, y } = coords;
 
-    // Player-mode tools take precedence — and tile-paint tools are a no-op
-    // in player mode regardless.
+    // Token placement / removal tools work in both GM and Player views so
+    // the GM can pre-place tokens before play starts. Players still can't
+    // drop tokens onto fogged cells (that would leak hidden geography);
+    // the GM has no such restriction.
+    if (activeTool === 'token-player' || activeTool === 'token-npc'
+        || activeTool === 'token-monster' || activeTool === 'token-monster-md'
+        || activeTool === 'token-monster-lg') {
+      const kind: TokenKind = activeTool === 'token-player' ? 'player'
+        : activeTool === 'token-npc' ? 'npc' : 'monster';
+      const size = activeTool === 'token-monster-lg' ? 3
+        : activeTool === 'token-monster-md' ? 2
+        : 1;
+      // Don't drop tokens onto fogged cells in player view — players
+      // shouldn't be able to interact with hidden geography.
+      if (isPlayerView && fogActive && fog?.[y]?.[x]) return;
+      // Reject if the map is too small to fit the footprint at all.
+      if (size > meta.width || size > meta.height) return;
+      // Clamp the top-left so a multi-cell footprint stays on the map
+      // when the user clicks near the right/bottom edge.
+      const px = Math.min(x, meta.width - size);
+      const py = Math.min(y, meta.height - size);
+      onAddToken(kind, px, py, undefined, size);
+      return;
+    }
+    if (activeTool === 'remove-token') {
+      const t = findTokenAt(tokens, x + 0.5, y + 0.5);
+      // The Remove Token tool can delete any token kind in either view.
+      if (t) onRemoveToken(t.id);
+      return;
+    }
+
+    // Player-only tools (drawing eraser).
     if (isPlayerView) {
-      if (activeTool === 'token-player' || activeTool === 'token-npc'
-          || activeTool === 'token-monster' || activeTool === 'token-monster-md'
-          || activeTool === 'token-monster-lg') {
-        const kind: TokenKind = activeTool === 'token-player' ? 'player'
-          : activeTool === 'token-npc' ? 'npc' : 'monster';
-        const size = activeTool === 'token-monster-lg' ? 3
-          : activeTool === 'token-monster-md' ? 2
-          : 1;
-        // Don't drop tokens onto fogged cells in player view — players
-        // shouldn't be able to interact with hidden geography.
-        if (fogActive && fog?.[y]?.[x]) return;
-        // Reject if the map is too small to fit the footprint at all.
-        if (size > meta.width || size > meta.height) return;
-        // Clamp the top-left so a multi-cell footprint stays on the map
-        // when the user clicks near the right/bottom edge.
-        const px = Math.min(x, meta.width - size);
-        const py = Math.min(y, meta.height - size);
-        onAddToken(kind, px, py, undefined, size);
-      } else if (activeTool === 'remove-token') {
-        const t = findTokenAt(tokens, x + 0.5, y + 0.5);
-        // The Remove Token tool can delete any token kind, mirroring the
-        // Move Token tool — token management lives entirely in the player
-        // toolbar, so restricting removal to player-kind tokens would leave
-        // NPC/monster tokens stranded with no way to clean them up.
-        if (t) onRemoveToken(t.id);
-      } else if (activeTool === 'perase') {
+      if (activeTool === 'perase') {
         // Click a stroke's bounding cell to remove it. Only player strokes
         // are removable from the player view.
         for (let i = annotations.length - 1; i >= 0; i--) {
@@ -661,9 +686,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       setDefogStroke([coords]);
       return;
     }
-    if (isPlayerView && activeTool === 'move-token' && coords) {
+    if (activeTool === 'move-token' && coords) {
       const t = findTokenAt(tokens, coords.x + 0.5, coords.y + 0.5);
-      // The Move Token tool can relocate any token kind.
+      // The Move Token tool can relocate any token kind, in either view.
       if (t) {
         draggingTokenRef.current = {
           id: t.id,
@@ -756,8 +781,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       return;
     }
 
-    // Player-mode token drag.
-    if (isPlayerView && activeTool === 'move-token' && draggingTokenRef.current && coords) {
+    // Token drag — works in both views.
+    if (activeTool === 'move-token' && draggingTokenRef.current && coords) {
       const drag = draggingTokenRef.current;
       // Apply the grab offset so the token's top-left tracks where the
       // user originally clicked inside the footprint instead of snapping

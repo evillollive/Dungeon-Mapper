@@ -2,6 +2,7 @@ import React from 'react';
 import type { ToolType, TileType } from '../types/map';
 import { ALL_TILE_TYPES, TILE_LABELS } from '../types/map';
 import { getTheme, THEME_LIST } from '../themes/index';
+import TokenToolsSection from './TokenToolsSection';
 
 interface ToolbarProps {
   activeTool: ToolType;
@@ -169,6 +170,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
           ))}
         </div>
       </div>
+
+      <TokenToolsSection activeTool={activeTool} onSetTool={onSetTool} />
     </div>
   );
 };
