@@ -290,10 +290,12 @@ export function useMapState() {
       pushHistory(prev.tiles, prev.fog);
       const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
       // Map the generator's local note ids (1..N) onto fresh ids that
-      // don't collide with existing notes on this map.
-      const idBase = nextIdAfter(prev.notes) - 1;
+      // don't collide with existing notes on this map. `idOffset` is the
+      // amount we shift each generator id by — generator id 1 becomes
+      // `idOffset + 1`, generator id 2 becomes `idOffset + 2`, etc.
+      const idOffset = nextIdAfter(prev.notes) - 1;
       const idMap = new Map<number, number>();
-      for (const n of genNotes) idMap.set(n.id, n.id + idBase);
+      for (const n of genNotes) idMap.set(n.id, n.id + idOffset);
       for (let y = 0; y < regionH; y++) {
         const ty = oy + y;
         if (ty < 0 || ty >= prev.meta.height) continue;
@@ -311,7 +313,7 @@ export function useMapState() {
       }
       const remappedNotes: MapNote[] = genNotes.map(n => ({
         ...n,
-        id: n.id + idBase,
+        id: n.id + idOffset,
         x: n.x + ox,
         y: n.y + oy,
       }));

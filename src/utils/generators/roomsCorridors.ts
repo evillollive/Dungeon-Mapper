@@ -225,11 +225,12 @@ function buildPoiNotes(
   for (const p of pois) counts.set(p.type, (counts.get(p.type) ?? 0) + 1);
   const seen = new Map<string, number>();
   const notes: MapNote[] = [];
-  for (const p of pois) {
+  for (let i = 0; i < pois.length; i++) {
+    const p = pois[i];
     const total = counts.get(p.type) ?? 1;
     const idx = (seen.get(p.type) ?? 0) + 1;
     seen.set(p.type, idx);
-    const id = notes.length + 1;
+    const id = i + 1;
     notes.push({
       id,
       x: p.x,

@@ -123,8 +123,9 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
 
   const tiles: Tile[][] = typeGridToTiles(grid);
   const notes: MapNote[] = [];
-  for (const p of pois) {
-    const id = notes.length + 1;
+  for (let i = 0; i < pois.length; i++) {
+    const p = pois[i];
+    const id = i + 1;
     notes.push({
       id,
       x: p.x,
