@@ -9,6 +9,12 @@ import {
   type GeneratedMap,
 } from '../utils/generators';
 import { MAX_DENSITY, MIN_DENSITY } from '../utils/generators/common';
+import {
+  GENERATOR_TILE_MIX,
+  getDefaultTileMix,
+  type TileMixSliderSpec,
+} from '../utils/generators/tileMix';
+import { themeSupportsRoomLabels } from '../utils/generators/roomKinds';
 
 interface GenerateMapDialogProps {
   /** Theme id of the current map — used to pick the default algorithm. */
@@ -68,6 +74,41 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
   const [seedText, setSeedText] = useState<string>(() => seedToString(randomSeed()));
   const [error, setError] = useState<string | null>(null);
 
+  // Slider values for the per-tile-type "Tile mix" section. The map is
+  // keyed by `${generatorId}.${sliderKey}` so each generator keeps its
+  // own values when the user flips between algorithms in the dropdown
+  // without losing what they had dialed in. Missing entries fall back
+  // to the generator's theme-aware defaults at read time, so the UI
+  // always opens in a non-surprising state.
+  const [mixOverrides, setMixOverrides] = useState<Record<string, number>>({});
+  const sliderSpecs: TileMixSliderSpec[] = GENERATOR_TILE_MIX[generatorId] ?? [];
+  const tileMixDefaults = useMemo(
+    () => getDefaultTileMix(generatorId, themeId),
+    [generatorId, themeId]
+  );
+  const tileMixValue = (key: string): number =>
+    mixOverrides[`${generatorId}.${key}`] ?? tileMixDefaults[key] ?? 0;
+  const setTileMixValue = (key: string, v: number) =>
+    setMixOverrides(prev => ({ ...prev, [`${generatorId}.${key}`]: v }));
+  const resetMixToDefaults = () => {
+    // Drop only the entries belonging to the current generator so the
+    // user's tweaks for other generators are preserved.
+    setMixOverrides(prev => {
+      const next: Record<string, number> = {};
+      for (const k of Object.keys(prev)) {
+        if (!k.startsWith(`${generatorId}.`)) next[k] = prev[k];
+      }
+      return next;
+    });
+  };
+
+  // Per-room labeling — defaults to ON when the active theme has a room
+  // archetype palette (built spaces like castle / starship / city) and
+  // OFF for themes that don't, matching their lack of room kinds.
+  const [labelRooms, setLabelRooms] = useState<boolean>(() => themeSupportsRoomLabels(themeId));
+  const showLabelRoomsToggle =
+    generatorId === 'rooms-and-corridors' && themeSupportsRoomLabels(themeId);
+
   // True when the current selection is large enough to host a generator
   // run. Falls back to false (and disables the toggle) when no selection
   // is active or the rectangle is too small to be useful.
@@ -117,7 +158,22 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
     }
     const seed = parseSeed(seedText);
     try {
-      const result = generator.generate({ width: w, height: h, seed, density, themeId });
+      // Build the slider payload from the user's overrides so generators
+      // that don't see any change reproduce the legacy behavior exactly.
+      const tileMix: Record<string, number> = {};
+      for (const spec of sliderSpecs) {
+        const k = `${generatorId}.${spec.key}`;
+        if (k in mixOverrides) tileMix[spec.key] = mixOverrides[k];
+      }
+      const result = generator.generate({
+        width: w,
+        height: h,
+        seed,
+        density,
+        themeId,
+        tileMix,
+        labelRooms: showLabelRoomsToggle ? labelRooms : false,
+      });
       const suggestedName = `Generated ${generator.name}`;
       if (intoSelection && selection) {
         onGenerate(result, suggestedName, selection);
@@ -213,6 +269,60 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
             onChange={e => setDensity(Number(e.target.value))}
           />
         </label>
+
+        {sliderSpecs.length > 0 && (
+          <details className="generate-dialog-mix">
+            <summary>
+              Tile mix
+              <button
+                type="button"
+                className="generate-dialog-mix-reset"
+                onClick={e => {
+                  // Don't toggle the <details> when the user clicks Reset.
+                  e.stopPropagation();
+                  resetMixToDefaults();
+                }}
+                title="Reset all tile-mix sliders to the theme defaults"
+              >
+                Reset
+              </button>
+            </summary>
+            {sliderSpecs.map(spec => {
+              const v = tileMixValue(spec.key);
+              return (
+                <label className="generate-dialog-row" key={spec.key}>
+                  <span>
+                    {spec.label} ({spec.format(v)})
+                  </span>
+                  <input
+                    type="range"
+                    min={spec.min}
+                    max={spec.max}
+                    step={spec.step}
+                    value={v}
+                    onChange={e => setTileMixValue(spec.key, Number(e.target.value))}
+                  />
+                  {spec.hint && (
+                    <span className="generate-dialog-mix-hint">{spec.hint}</span>
+                  )}
+                </label>
+              );
+            })}
+          </details>
+        )}
+
+        {showLabelRoomsToggle && (
+          <label className="generate-dialog-row generate-dialog-checkbox">
+            <input
+              type="checkbox"
+              checked={labelRooms}
+              onChange={e => setLabelRooms(e.target.checked)}
+            />
+            <span>
+              Label rooms with theme archetypes (e.g. Bridge, Great Hall)
+            </span>
+          </label>
+        )}
 
         <label className="generate-dialog-row">
           <span>Seed</span>

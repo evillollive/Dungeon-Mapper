@@ -32,9 +32,14 @@ function wallNeighbors(grid: TypeGrid, x: number, y: number): number {
  * (0.55 default) — higher density = tighter caves, lower = more open.
  */
 export function generateCavern(ctx: GenerateContext): GeneratedMap {
-  const { width, height, seed, density, themeId } = ctx;
+  const { width, height, seed, density, themeId, tileMix } = ctx;
   const rng = makeRng(seed);
   const grid = makeTypeGrid(width, height, 'wall');
+
+  // Slider-driven overrides come in via `ctx.tileMix`; when a key is
+  // absent we use the legacy formula so unchanged sliders reproduce the
+  // previous output identically.
+  const ov = tileMix ?? {};
 
   // Apply the shared density bounds, then take an extra max with 0.2:
   // below ~0.2 the random fill is too sparse for the smoothing pass to
@@ -42,9 +47,13 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
   // little structure, so we floor cavern-specific density there even if
   // the global slider goes lower.
   const d = Math.max(0.2, clampDensity(density));
-  // Map density 1.0 → 0.45 wall fill (classic value). Less density = more
-  // open caves; more density = tighter passages.
-  const fillRatio = Math.max(0.3, Math.min(0.6, 0.45 + (d - 1) * 0.05));
+  // When the user moves the "Wall fill" slider, take its value as the
+  // source of truth; otherwise map density 1.0 → 0.45 (classic value)
+  // exactly like the legacy generator. Always clamp to the safe band so
+  // smoothing keeps producing coherent caverns.
+  const fillRatio = ov.wall !== undefined
+    ? Math.max(0.3, Math.min(0.6, ov.wall))
+    : Math.max(0.3, Math.min(0.6, 0.45 + (d - 1) * 0.05));
 
   for (let y = 1; y < height - 1; y++) {
     for (let x = 1; x < width - 1; x++) {
@@ -108,29 +117,60 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
   // stairs-down at the farthest reachable floor. If the region is too
   // small to host both, just drop the start. Each placed POI gets an
   // auto-named MapNote (theme-flavored where applicable) so the cavern
-  // shows up in the notes panel right away.
-  const pois: { x: number; y: number; type: 'start' | 'stairs-down' }[] = [];
+  // shows up in the notes panel right away. The "Stairs Down" toggle and
+  // "Treasure caches" slider gate optional POIs from the dialog.
+  const placeStairs = ov.stairsDown !== undefined ? ov.stairsDown >= 0.5 : true;
+  const treasureCaches = ov.treasure !== undefined
+    ? Math.max(0, Math.round(ov.treasure))
+    : 0;
+  const pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'treasure' }[] = [];
   if (bestRegion.length > 0) {
     const start = bestRegion[0];
     setCell(grid, start.x, start.y, 'start');
     pois.push({ x: start.x, y: start.y, type: 'start' });
-    const { farthest } = bfsDistances(grid, start.x, start.y, t => t === 'floor' || t === 'start');
-    if (farthest.d > 0 && getCell(grid, farthest.x, farthest.y) === 'floor') {
-      setCell(grid, farthest.x, farthest.y, 'stairs-down');
-      pois.push({ x: farthest.x, y: farthest.y, type: 'stairs-down' });
+    if (placeStairs) {
+      const { farthest } = bfsDistances(grid, start.x, start.y, t => t === 'floor' || t === 'start');
+      if (farthest.d > 0 && getCell(grid, farthest.x, farthest.y) === 'floor') {
+        setCell(grid, farthest.x, farthest.y, 'stairs-down');
+        pois.push({ x: farthest.x, y: farthest.y, type: 'stairs-down' });
+      }
+    }
+    // Optional cache scatter — picks from remaining floor cells.
+    if (treasureCaches > 0) {
+      const floors: { x: number; y: number }[] = [];
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          if (grid[y][x] === 'floor') floors.push({ x, y });
+        }
+      }
+      const target = Math.min(floors.length, treasureCaches);
+      for (let i = 0; i < target && floors.length > 0; i++) {
+        const idx = rng.int(0, floors.length - 1);
+        const c = floors.splice(idx, 1)[0];
+        setCell(grid, c.x, c.y, 'treasure');
+        pois.push({ x: c.x, y: c.y, type: 'treasure' });
+      }
     }
   }
 
   const tiles: Tile[][] = typeGridToTiles(grid);
   const notes: MapNote[] = [];
+  // Suffix duplicate POI types ("Treasure 1", "Treasure 2", …) so the
+  // notes panel shows distinct entries when multiple caches are placed.
+  const counts = new Map<string, number>();
+  for (const p of pois) counts.set(p.type, (counts.get(p.type) ?? 0) + 1);
+  const seen = new Map<string, number>();
   for (let i = 0; i < pois.length; i++) {
     const p = pois[i];
+    const total = counts.get(p.type) ?? 1;
+    const ord = (seen.get(p.type) ?? 0) + 1;
+    seen.set(p.type, ord);
     const id = i + 1;
     notes.push({
       id,
       x: p.x,
       y: p.y,
-      label: poiLabelFor(themeId, p.type),
+      label: poiLabelFor(themeId, p.type, total > 1 ? ord : undefined),
       description: '',
     });
     if (tiles[p.y]?.[p.x]) tiles[p.y][p.x] = { ...tiles[p.y][p.x], noteId: id };
