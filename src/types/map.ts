@@ -88,6 +88,13 @@ export interface DungeonMap {
   tokens?: Token[];
   /** Free-form pen strokes drawn over the map. */
   annotations?: AnnotationStroke[];
+  /**
+   * Ordered list of token ids representing the initiative order shown in
+   * the right-hand Initiative panel. The order is GM-controlled (drag to
+   * reorder) and persisted with the map. Tokens are appended in placement
+   * order and removed automatically when a token is removed from the map.
+   */
+  initiative?: number[];
 }
 
 export type ToolType =

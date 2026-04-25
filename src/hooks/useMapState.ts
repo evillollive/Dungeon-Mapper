@@ -18,6 +18,7 @@ function createDefaultMap(): DungeonMap {
     fogEnabled: true,
     tokens: [],
     annotations: [],
+    initiative: [],
   };
 }
 
@@ -36,6 +37,7 @@ function withDefaults(map: DungeonMap): DungeonMap {
     fogEnabled: map.fogEnabled ?? true,
     tokens: map.tokens ?? [],
     annotations: map.annotations ?? [],
+    initiative: map.initiative ?? (map.tokens ?? []).map(t => t.id),
   };
 }
 
@@ -181,12 +183,15 @@ export function useMapState() {
         const sz = Math.max(1, Math.floor(t.size ?? 1));
         return t.x >= 0 && t.y >= 0 && t.x + sz <= width && t.y + sz <= height;
       });
+      const keptIds = new Set(newTokens.map(t => t.id));
+      const newInitiative = (prev.initiative ?? []).filter(id => keptIds.has(id));
       const updated = {
         ...prev,
         meta: { ...prev.meta, width, height },
         tiles: newTiles,
         fog: newFog,
         tokens: newTokens,
+        initiative: newInitiative,
       };
       debouncedSave(updated);
       return updated;
@@ -205,6 +210,7 @@ export function useMapState() {
         fog: createFogGrid(prev.meta.width, prev.meta.height, true),
         tokens: [],
         annotations: [],
+        initiative: [],
       };
       debouncedSave(updated);
       return updated;
@@ -257,6 +263,7 @@ export function useMapState() {
         fogEnabled: prev.fogEnabled ?? true,
         tokens: [],
         annotations: [],
+        initiative: [],
       };
       debouncedSave(updated);
       return updated;
@@ -530,9 +537,9 @@ export function useMapState() {
   // Tokens are not part of the tile/fog undo stack — they're treated as
   // lightweight overlays that can be added/moved/removed freely.
 
-  const addToken = useCallback((kind: TokenKind, x: number, y: number, label?: string, size?: number) => {
+  const addToken = useCallback((kind: TokenKind, x: number, y: number, label?: string, size?: number): number | null => {
     const newId = nextTokenIdRef.current;
-    nextTokenIdRef.current = newId + 1;
+    let placed = false;
     setMap(prev => {
       const w = prev.meta.width;
       const h = prev.meta.height;
@@ -546,10 +553,23 @@ export function useMapState() {
         label: label ?? `${kind[0].toUpperCase()}${newId}`,
         ...(sz > 1 ? { size: sz } : {}),
       };
-      const updated = { ...prev, tokens: [...(prev.tokens ?? []), token] };
+      placed = true;
+      const updated = {
+        ...prev,
+        tokens: [...(prev.tokens ?? []), token],
+        // Append the new token to the initiative order so it shows up in
+        // the Initiative panel in the order it was placed. The GM can
+        // drag entries to reorder afterwards.
+        initiative: [...(prev.initiative ?? []), newId],
+      };
       debouncedSave(updated);
       return updated;
     });
+    if (placed) {
+      nextTokenIdRef.current = newId + 1;
+      return newId;
+    }
+    return null;
   }, [debouncedSave]);
 
   const moveToken = useCallback((id: number, x: number, y: number) => {
@@ -579,7 +599,8 @@ export function useMapState() {
   const removeToken = useCallback((id: number) => {
     setMap(prev => {
       const tokens = (prev.tokens ?? []).filter(t => t.id !== id);
-      const updated = { ...prev, tokens };
+      const initiative = (prev.initiative ?? []).filter(tid => tid !== id);
+      const updated = { ...prev, tokens, initiative };
       debouncedSave(updated);
       return updated;
     });
@@ -591,6 +612,35 @@ export function useMapState() {
         t.id === id ? { ...t, ...patch } : t
       );
       const updated = { ...prev, tokens };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  // ── Initiative order ──────────────────────────────────────────────────
+  // The initiative panel mirrors the GM-controlled turn order. Tokens are
+  // appended on placement (see `addToken`) and removed on deletion (see
+  // `removeToken`); these helpers let the GM drag entries to reorder and
+  // wipe the list without removing the underlying tokens.
+
+  const reorderInitiative = useCallback((fromIndex: number, toIndex: number) => {
+    setMap(prev => {
+      const init = [...(prev.initiative ?? [])];
+      if (fromIndex < 0 || fromIndex >= init.length) return prev;
+      const clampedTo = Math.max(0, Math.min(init.length - 1, toIndex));
+      if (fromIndex === clampedTo) return prev;
+      const [moved] = init.splice(fromIndex, 1);
+      init.splice(clampedTo, 0, moved);
+      const updated = { ...prev, initiative: init };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const clearInitiative = useCallback(() => {
+    setMap(prev => {
+      if ((prev.initiative ?? []).length === 0) return prev;
+      const updated = { ...prev, initiative: [] };
       debouncedSave(updated);
       return updated;
     });
@@ -664,6 +714,9 @@ export function useMapState() {
     moveToken,
     removeToken,
     updateToken,
+    // Initiative
+    reorderInitiative,
+    clearInitiative,
     // Annotations
     addAnnotation,
     removeAnnotation,

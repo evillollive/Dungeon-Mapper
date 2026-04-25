@@ -3,6 +3,7 @@ import MapCanvas, { type MapCanvasHandle } from './components/MapCanvas';
 import Toolbar from './components/Toolbar';
 import PlayerToolbar from './components/PlayerToolbar';
 import NotesPanel from './components/NotesPanel';
+import InitiativePanel from './components/InitiativePanel';
 import MapHeader from './components/MapHeader';
 import GenerateMapDialog from './components/GenerateMapDialog';
 import type { GeneratedMap } from './utils/generators';
@@ -104,6 +105,9 @@ function App() {
     addToken,
     moveToken,
     removeToken,
+    updateToken,
+    reorderInitiative,
+    clearInitiative,
     addAnnotation,
     removeAnnotation,
     clearAnnotations,
@@ -131,6 +135,10 @@ function App() {
   // offer "Generate into selection" as a target region. `null` when no
   // selection is active.
   const [selection, setSelection] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  // Token currently highlighted in the Initiative panel (and rendered with
+  // a yellow ring on the map). Cleared on view-mode switch and when the
+  // user clicks the same entry again.
+  const [selectedTokenId, setSelectedTokenId] = useState<number | null>(null);
   // Player drawing pen state — color and brush width are UI-only and not
   // persisted on the map; they're a per-session preference.
   const [drawColor, setDrawColor] = useState<string>('#dc2626');
@@ -161,6 +169,31 @@ function App() {
   const handleClearFog = useCallback(() => fillAllFog(false), [fillAllFog]);
   const handleClearPlayerDrawings = useCallback(() => clearAnnotations('player'), [clearAnnotations]);
   const handleToggleGmShowFog = useCallback(() => setGmShowFog(p => !p), []);
+
+  // When a token is placed from the player view, prompt for a name so the
+  // new entry shows up in the Initiative panel with something meaningful
+  // (and the player isn't stuck reading "P3" / "M7" auto-labels). The GM
+  // skips the prompt — they place tokens during prep and rename later.
+  const handleAddToken = useCallback(
+    (kind: Parameters<typeof addToken>[0], x: number, y: number, _label?: string, size?: number) => {
+      if (viewMode === 'player') {
+        const defaultName = kind.charAt(0).toUpperCase() + kind.slice(1);
+        const raw = window.prompt(`Name for this ${kind}?`, defaultName);
+        // Cancel aborts placement entirely. Empty string falls back to the
+        // hook's auto-label so we don't add a blank-named entry.
+        if (raw === null) return;
+        const trimmed = raw.trim();
+        addToken(kind, x, y, trimmed.length > 0 ? trimmed : undefined, size);
+      } else {
+        addToken(kind, x, y, undefined, size);
+      }
+    },
+    [addToken, viewMode]
+  );
+
+  const handleRenameToken = useCallback((id: number, label: string) => {
+    updateToken(id, { label });
+  }, [updateToken]);
 
   // Whether the current map has any non-empty tiles. Used by the generator
   // dialog to decide whether to show a stronger overwrite warning.
@@ -318,6 +351,7 @@ function App() {
             viewMode={viewMode}
             gmShowFog={gmShowFog}
             selectedNoteId={selectedNoteId}
+            selectedTokenId={selectedTokenId}
             drawColor={drawColor}
             drawWidth={drawWidth}
             onSetTile={setTile}
@@ -328,7 +362,7 @@ function App() {
             onSelectNote={setSelectedNoteId}
             onEraseTiles={handleEraseTiles}
             onSetFogCells={setFogCells}
-            onAddToken={addToken}
+            onAddToken={handleAddToken}
             onMoveToken={moveToken}
             onRemoveToken={removeToken}
             onAddAnnotation={addAnnotation}
@@ -337,31 +371,64 @@ function App() {
           />
         </main>
         {viewMode === 'gm' && (
-          <NotesPanel
-            notes={map.notes}
-            selectedNoteId={selectedNoteId}
-            onSelectNote={setSelectedNoteId}
-            onUpdateNote={updateNote}
-            onDeleteNote={deleteNote}
-            onActivateNoteTool={() => setActiveTool('note')}
-          />
+          <aside className="right-panel">
+            <InitiativePanel
+              tokens={map.tokens ?? []}
+              initiative={map.initiative ?? []}
+              selectedTokenId={selectedTokenId}
+              onSelectToken={setSelectedTokenId}
+              onRenameToken={handleRenameToken}
+              onReorder={reorderInitiative}
+              onClear={clearInitiative}
+              viewMode="gm"
+            />
+            <NotesPanel
+              notes={map.notes}
+              selectedNoteId={selectedNoteId}
+              onSelectNote={setSelectedNoteId}
+              onUpdateNote={updateNote}
+              onDeleteNote={deleteNote}
+              onActivateNoteTool={() => setActiveTool('note')}
+            />
+          </aside>
         )}
         {viewMode === 'player' && (
-          <NotesPanel
-            // In player mode, hide notes that sit under fog so the panel
-            // doesn't leak the existence of hidden rooms. Editing/deleting
-            // is also disabled by routing through no-op callbacks.
-            notes={
-              fogEnabled
-                ? map.notes.filter(n => !(map.fog?.[n.y]?.[n.x]))
-                : map.notes
-            }
-            selectedNoteId={selectedNoteId}
-            onSelectNote={setSelectedNoteId}
-            onUpdateNote={NOOP_UPDATE_NOTE}
-            onDeleteNote={NOOP_DELETE_NOTE}
-            onActivateNoteTool={NOOP_ACTIVATE_NOTE_TOOL}
-          />
+          <aside className="right-panel">
+            <InitiativePanel
+              // Hide tokens on fogged cells from the player initiative list
+              // so the panel doesn't leak the existence of hidden enemies.
+              tokens={
+                fogEnabled
+                  ? (map.tokens ?? []).filter(t => !(map.fog?.[t.y]?.[t.x]))
+                  : (map.tokens ?? [])
+              }
+              initiative={map.initiative ?? []}
+              selectedTokenId={selectedTokenId}
+              onSelectToken={setSelectedTokenId}
+              // Player view is read-only — these handlers are wired to
+              // satisfy the prop shape but never actually invoked because
+              // the panel hides the rename/clear/drag affordances.
+              onRenameToken={handleRenameToken}
+              onReorder={reorderInitiative}
+              onClear={clearInitiative}
+              viewMode="player"
+            />
+            <NotesPanel
+              // In player mode, hide notes that sit under fog so the panel
+              // doesn't leak the existence of hidden rooms. Editing/deleting
+              // is also disabled by routing through no-op callbacks.
+              notes={
+                fogEnabled
+                  ? map.notes.filter(n => !(map.fog?.[n.y]?.[n.x]))
+                  : map.notes
+              }
+              selectedNoteId={selectedNoteId}
+              onSelectNote={setSelectedNoteId}
+              onUpdateNote={NOOP_UPDATE_NOTE}
+              onDeleteNote={NOOP_DELETE_NOTE}
+              onActivateNoteTool={NOOP_ACTIVATE_NOTE_TOOL}
+            />
+          </aside>
         )}
       </div>
       {showGenerateDialog && viewMode === 'gm' && (

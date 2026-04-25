@@ -343,6 +343,159 @@
   white-space: nowrap;
 }
 
+/* ── Right-side panel column (Initiative + Notes stacked) ────── */
+.right-panel {
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border-left: 2px solid #8a7f66;
+  overflow: hidden;
+  min-height: 0;
+}
+/* When the right column wraps both panels, the inner NotesPanel no longer
+   needs its own border (the wrapper provides it) and should expand to fill
+   the remaining space below the Initiative panel. */
+.right-panel > .notes-panel {
+  border-left: none;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Initiative Panel ─────────────────────────────────────── */
+.initiative-panel {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  /* Cap the initiative list height so a long party doesn't squeeze the
+     Notes panel below it off-screen — internal list scrolls instead. */
+  max-height: 40%;
+  border-bottom: 1px solid #8a7f66;
+  background: #ffffff;
+  min-height: 0;
+}
+
+.initiative-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px 6px;
+  border-bottom: 1px solid #c2bbab;
+  flex-shrink: 0;
+}
+
+.initiative-clear-btn {
+  background: #ece6d6;
+  border: 1px solid #8a3a3a;
+  color: #8a3a3a;
+  padding: 3px 8px;
+  font-size: var(--fs-11);
+  transition: background 0.15s, color 0.15s;
+}
+.initiative-clear-btn:hover {
+  background: #8a3a3a;
+  color: #ffffff;
+}
+
+.initiative-empty {
+  color: #6a6258;
+  font-size: var(--fs-11);
+  padding: 12px;
+  text-align: center;
+  line-height: 1.5;
+}
+
+.initiative-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px;
+}
+
+.initiative-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  margin-bottom: 3px;
+  border: 1px solid #c2bbab;
+  background: #f4f1ea;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+  user-select: none;
+}
+.initiative-item:hover {
+  border-color: #8a7f66;
+}
+.initiative-item.selected {
+  border-color: #8a3a3a;
+  background: #f5e8e8;
+}
+.initiative-item.drag-over {
+  /* Visual cue for the drop target while reordering. */
+  border-color: #2a6f97;
+  background: #e6f1f7;
+}
+
+.initiative-order {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  background: #2a2620;
+  color: #ffffff;
+  font-size: var(--fs-10);
+  font-weight: bold;
+  border-radius: 50%;
+  padding: 0 4px;
+  flex-shrink: 0;
+}
+
+.initiative-swatch {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1px solid #2d3561;
+  flex-shrink: 0;
+}
+
+.initiative-name {
+  flex: 1;
+  font-size: var(--fs-12);
+  color: #2a2620;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.initiative-input {
+  flex: 1;
+  font-size: var(--fs-12);
+  padding: 1px 4px;
+  border: 1px solid #8a7f66;
+  background: #ffffff;
+  min-width: 0;
+}
+
+.initiative-edit-btn {
+  background: #ffffff;
+  border: 1px solid #c2bbab;
+  color: #6a6258;
+  width: 18px;
+  height: 18px;
+  font-size: var(--fs-11);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: background 0.12s, color 0.12s;
+}
+.initiative-edit-btn:hover {
+  background: #ece6d6;
+  color: #2a2620;
+}
+
 /* ── Notes Panel ─────────────────────────────────────────── */
 .notes-panel {
   display: flex;
