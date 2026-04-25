@@ -1,9 +1,11 @@
-import { useRef, useCallback, useEffect, useState } from 'react';
+import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import MapCanvas, { type MapCanvasHandle } from './components/MapCanvas';
 import Toolbar from './components/Toolbar';
 import PlayerToolbar from './components/PlayerToolbar';
 import NotesPanel from './components/NotesPanel';
 import MapHeader from './components/MapHeader';
+import GenerateMapDialog from './components/GenerateMapDialog';
+import type { GeneratedMap } from './utils/generators';
 import { useMapState } from './hooks/useMapState';
 import { useDrawingTool } from './hooks/useDrawingTool';
 import { exportMapSVG } from './utils/export';
@@ -85,6 +87,7 @@ function App() {
     clearMap,
     newMap,
     loadMapData,
+    generateMap,
     addNote,
     updateNote,
     deleteNote,
@@ -121,6 +124,7 @@ function App() {
     loadInitialPreserveOnThemeSwitch
   );
   const [gmShowFog, setGmShowFog] = useState<boolean>(loadInitialGmShowFog);
+  const [showGenerateDialog, setShowGenerateDialog] = useState<boolean>(false);
   // Player drawing pen state — color and brush width are UI-only and not
   // persisted on the map; they're a per-session preference.
   const [drawColor, setDrawColor] = useState<string>('#dc2626');
@@ -151,6 +155,25 @@ function App() {
   const handleClearFog = useCallback(() => fillAllFog(false), [fillAllFog]);
   const handleClearPlayerDrawings = useCallback(() => clearAnnotations('player'), [clearAnnotations]);
   const handleToggleGmShowFog = useCallback(() => setGmShowFog(p => !p), []);
+
+  // Whether the current map has any non-empty tiles. Used by the generator
+  // dialog to decide whether to show a stronger overwrite warning.
+  const hasExistingContent = useMemo(
+    () => map.tiles.some(row => row.some(t => t.type !== 'empty')) ||
+      (map.notes?.length ?? 0) > 0 ||
+      (map.tokens?.length ?? 0) > 0,
+    [map.tiles, map.notes, map.tokens]
+  );
+
+  const handleOpenGenerateMap = useCallback(() => setShowGenerateDialog(true), []);
+  const handleCancelGenerateMap = useCallback(() => setShowGenerateDialog(false), []);
+  const handleGenerateMap = useCallback(
+    (result: GeneratedMap, suggestedName: string) => {
+      generateMap(result.tiles, result.width, result.height, result.notes, suggestedName);
+      setShowGenerateDialog(false);
+    },
+    [generateMap]
+  );
 
   // Persist the preserve-on-theme-switch preference across sessions.
   useEffect(() => {
@@ -251,6 +274,7 @@ function App() {
             fogEnabled={fogEnabled}
             gmShowFog={gmShowFog}
             onToggleGmShowFog={handleToggleGmShowFog}
+            onOpenGenerateMap={handleOpenGenerateMap}
           />
         ) : (
           <PlayerToolbar
@@ -323,6 +347,16 @@ function App() {
           />
         )}
       </div>
+      {showGenerateDialog && viewMode === 'gm' && (
+        <GenerateMapDialog
+          themeId={themeId}
+          initialWidth={map.meta.width}
+          initialHeight={map.meta.height}
+          hasExistingContent={hasExistingContent}
+          onCancel={handleCancelGenerateMap}
+          onGenerate={handleGenerateMap}
+        />
+      )}
     </div>
   );
 }

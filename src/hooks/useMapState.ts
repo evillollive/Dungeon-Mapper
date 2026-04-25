@@ -229,6 +229,44 @@ export function useMapState() {
     setSelectedNoteId(null);
   }, [debouncedSave]);
 
+  /**
+   * Replace the map with procedurally-generated tiles. The previous tiles
+   * and fog grid are pushed onto the undo stack so the user can revert a
+   * generation; notes/tokens/annotations are reset (and not undoable, since
+   * the existing history only tracks tiles+fog), matching the behavior of
+   * `clearMap`. The current theme and tile size are preserved so the
+   * generated map renders in whatever style the user already picked.
+   */
+  const generateMap = useCallback((
+    tiles: Tile[][],
+    width: number,
+    height: number,
+    notes: MapNote[] = [],
+    name?: string
+  ) => {
+    setMap(prev => {
+      pushHistory(prev.tiles, prev.fog);
+      const updated: DungeonMap = {
+        ...prev,
+        meta: { ...prev.meta, width, height, ...(name ? { name } : {}) },
+        tiles,
+        notes,
+        // Generated maps start fully fogged so a GM can reveal as players
+        // explore — same default as `createDefaultMap`.
+        fog: createFogGrid(width, height, true),
+        fogEnabled: prev.fogEnabled ?? true,
+        tokens: [],
+        annotations: [],
+      };
+      debouncedSave(updated);
+      return updated;
+    });
+    setNextNoteId(nextIdAfter(notes));
+    nextTokenIdRef.current = 1;
+    nextStrokeIdRef.current = 1;
+    setSelectedNoteId(null);
+  }, [debouncedSave]);
+
   const loadMapData = useCallback((loaded: DungeonMap) => {
     const ready = withDefaults(loaded);
     pastRef.current = [];
@@ -536,6 +574,7 @@ export function useMapState() {
     clearMap,
     newMap,
     loadMapData,
+    generateMap,
     addNote,
     updateNote,
     deleteNote,
