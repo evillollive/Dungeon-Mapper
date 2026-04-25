@@ -4,7 +4,6 @@ import type { ToolType, TileType } from '../types/map';
 export function useDrawingTool() {
   const [activeTool, setActiveTool] = useState<ToolType>('paint');
   const [activeTile, setActiveTile] = useState<TileType>('floor');
-  const [isDrawing, setIsDrawing] = useState(false);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
     if ((e.target as HTMLElement).tagName === 'INPUT' ||
@@ -34,7 +33,5 @@ export function useDrawingTool() {
     setActiveTool,
     activeTile,
     setActiveTile,
-    isDrawing,
-    setIsDrawing,
   };
 }

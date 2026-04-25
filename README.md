@@ -17,6 +17,7 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **Player view** — header **🛡 GM View / 👁 Player View** toggle swaps to a player-safe toolbar with a freehand drawing pen, an eraser, fog-of-war controls, and token tools (see [Player View](#player-view) below)
 - **Fog of war** — per-cell hidden / revealed flags with a Defog brush, Reveal `V` / Hide `H` drag-rectangles, Reset Fog (re-cover the map), Clear Fog (reveal everything), and an optional GM **🌫 Show Fog** preview overlay
 - **Tokens** — drop Player, NPC, and Monster tokens (small 1×1, medium 2×2, large 3×3) onto the map; Move Token to drag, Remove Token to delete
+- **Initiative panel** — a turn-order list in the right-hand sidebar that mirrors placed tokens; the GM can drag entries to reorder, rename them inline, or clear the list (see [Initiative](#initiative) below)
 - **Player annotations** — freehand pen with eight color swatches and Thin / Medium / Thick brush widths; per-stroke eraser and a Clear All button
 - **Zoom & pan** — `+` / `-` / `Reset` / `Fit` controls along the bottom of the map; right-click drag to pan; mouse-wheel zoom while holding `Shift` (or with Caps Lock on)
 - **Undo / Redo** — up to 50 steps (`Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z`)
@@ -65,7 +66,7 @@ Your view-mode preference is remembered across sessions.
 
 ### Fog of war
 
-Fog is opt-in per map. Enable it from the Player toolbar's **🌫 Enabled** checkbox (off by default). Once enabled:
+New maps start with fog enabled and every cell hidden so the Player View is safe to share with the table by default. You can toggle fog on or off per map from the Player toolbar's **🌫 Enabled** checkbox. While fog is enabled:
 
 - **Defog** — freehand brush; drag across the map to wipe fog away cell-by-cell.
 - **Reveal `V`** / **Hide `H`** — drag a rectangle of cells to expose or re-cover them.
@@ -92,6 +93,20 @@ Drop tokens onto cells to track participants and threats:
 - **Remove** — click a token to delete it.
 
 Tokens, fog flags, and player annotations are all stored on the map and survive auto-save / JSON export.
+
+### Initiative
+
+A right-hand **Initiative** panel is shown in both GM and Player views. Tokens are appended to the list as they are placed on the map and removed automatically when their token is deleted. Click an entry to highlight the matching token on the map (a yellow ring is drawn around it); click the same entry again to clear the highlight.
+
+In **GM View** the panel is fully editable:
+
+- **Drag** an entry up or down to change the turn order.
+- **✎ Rename** an entry inline so the displayed label can be something other than the token's auto-generated name.
+- **Clear** wipes the initiative list (tokens themselves stay on the map).
+
+In **Player View** the panel is read-only — no rename, reorder, or clear. When fog is enabled, tokens whose footprint sits entirely under fog are also omitted from the list so it doesn't leak the existence of hidden enemies.
+
+The initiative order is persisted with the map (auto-save and JSON export).
 
 ## Map Generation
 
