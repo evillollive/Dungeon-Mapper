@@ -583,3 +583,126 @@
   border-color: #c2bbab;
   color: #2a2620;
 }
+
+/* ── Generate Map dialog ─────────────────────────────────── */
+.generate-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.generate-dialog {
+  background: #1a1f3d;
+  color: #e0e0ff;
+  border: 1px solid #3a4570;
+  border-radius: 6px;
+  padding: 18px 20px;
+  width: min(420px, 92vw);
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  font-size: calc(13px * var(--ui-scale, 1));
+}
+.generate-dialog-title {
+  margin: 0 0 8px 0;
+  font-size: calc(16px * var(--ui-scale, 1));
+}
+.generate-dialog-help {
+  margin: 0 0 12px 0;
+  color: #b0b8d8;
+  font-size: 0.9em;
+}
+.generate-dialog-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 10px;
+}
+.generate-dialog-row > span {
+  color: #b0b8d8;
+  font-size: 0.9em;
+}
+.generate-dialog-row input[type="text"],
+.generate-dialog-row input[type="number"],
+.generate-dialog-row select {
+  background: #0f1330;
+  color: #e0e0ff;
+  border: 1px solid #3a4570;
+  border-radius: 3px;
+  padding: 4px 6px;
+  font: inherit;
+  width: 100%;
+  box-sizing: border-box;
+}
+.generate-dialog-row input[type="range"] {
+  width: 100%;
+}
+.generate-dialog-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.generate-dialog-grid-2 label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.generate-dialog-grid-2 label > span {
+  color: #b0b8d8;
+  font-size: 0.9em;
+}
+.generate-dialog-description {
+  margin: -4px 0 12px 0;
+  color: #8a93b8;
+  font-size: 0.85em;
+}
+.generate-dialog-seed-row {
+  display: flex;
+  gap: 6px;
+}
+.generate-dialog-seed-row input {
+  flex: 1;
+}
+.generate-dialog-seed-row button {
+  background: #2d3561;
+  color: #e0e0ff;
+  border: 1px solid #3a4570;
+  border-radius: 3px;
+  padding: 4px 10px;
+  cursor: pointer;
+  font: inherit;
+}
+.generate-dialog-warning {
+  background: #3a2530;
+  border: 1px solid #7a3a4a;
+  color: #ffd0d0;
+  border-radius: 3px;
+  padding: 6px 8px;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+}
+.generate-dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+.generate-dialog-buttons button {
+  background: #2d3561;
+  color: #e0e0ff;
+  border: 1px solid #3a4570;
+  border-radius: 3px;
+  padding: 6px 14px;
+  cursor: pointer;
+  font: inherit;
+}
+.generate-dialog-buttons button.primary {
+  background: #4a5599;
+  border-color: #6a75c0;
+}
+.generate-dialog-buttons button:hover {
+  filter: brightness(1.15);
+}

@@ -21,6 +21,8 @@ interface ToolbarProps {
    */
   gmShowFog: boolean;
   onToggleGmShowFog: () => void;
+  /** Open the procedural map-generation dialog. GM-only. */
+  onOpenGenerateMap: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -56,7 +58,7 @@ function TilePreview({ type, size = 28, themeId }: { type: TileType; size?: numb
 const Toolbar: React.FC<ToolbarProps> = ({
   activeTool, activeTile, themeId, onSetTool, onSetTile,
   onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
-  fogEnabled, gmShowFog, onToggleGmShowFog,
+  fogEnabled, gmShowFog, onToggleGmShowFog, onOpenGenerateMap,
 }) => {
   const theme = getTheme(themeId);
   const tileLabels = React.useMemo(() => {
@@ -117,6 +119,15 @@ const Toolbar: React.FC<ToolbarProps> = ({
             style={{ margin: 0 }}
           />
         </label>
+        <button
+          type="button"
+          className="tool-btn"
+          onClick={onOpenGenerateMap}
+          title="Procedurally generate a random map (dungeon, terrain, cavern, …) in the current theme. Replaces the current map; tile / fog changes can be undone."
+        >
+          <span className="tool-icon">🎲</span>
+          <span className="tool-name">Generate</span>
+        </button>
       </div>
 
       <div className="toolbar-section">
