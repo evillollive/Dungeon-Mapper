@@ -130,14 +130,16 @@ export function collectCells(grid: TypeGrid, type: TileType): { x: number; y: nu
 
 /**
  * Re-order generated `MapNote`s so the notes panel reads naturally:
- * rooms (`kind === 'room'`) come first, then everything else (treasure,
- * traps, …); within each group notes are sorted left-to-right,
- * top-to-bottom (by `y`, then `x`). Labels that were auto-suffixed by a
- * generator (e.g. `Coffer 1`, `Coffer 2`, …) are re-suffixed so the
- * suffix order matches the new reading order. Finally, note ids are
- * renumbered `1..N` in that order and every tile's `noteId` reference
- * is remapped to keep the on-map tokens linked to their renumbered
- * notes.
+ * notes are sorted left-to-right, top-to-bottom (by `y`, then `x`),
+ * regardless of `kind`. Sorting all notes together (instead of grouping
+ * rooms before POIs) keeps numbering spatially coherent — neighbors on
+ * the map get consecutive numbers in the panel rather than jumping
+ * across the map between the room block and the POI block. Labels that
+ * were auto-suffixed by a generator (e.g. `Coffer 1`, `Coffer 2`, …)
+ * are re-suffixed so the suffix order matches the new reading order.
+ * Finally, note ids are renumbered `1..N` in that order and every
+ * tile's `noteId` reference is remapped to keep the on-map tokens
+ * linked to their renumbered notes.
  *
  * Single-occurrence labels keep their original text — generators only
  * suffix labels when a base name appears more than once, so we mirror
@@ -146,9 +148,6 @@ export function collectCells(grid: TypeGrid, type: TileType): { x: number; y: nu
 export function reorderNotesReadingOrder(tiles: Tile[][], notes: MapNote[]): MapNote[] {
   if (notes.length === 0) return notes;
   const sorted = [...notes].sort((a, b) => {
-    const ar = a.kind === 'room' ? 0 : 1;
-    const br = b.kind === 'room' ? 0 : 1;
-    if (ar !== br) return ar - br;
     if (a.y !== b.y) return a.y - b.y;
     return a.x - b.x;
   });
