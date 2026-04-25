@@ -50,35 +50,53 @@ const fmtCount = (unit: string) => (v: number) => {
 
 /* ── Rooms & Corridors ───────────────────────────────────────── */
 
-export const ROOMS_TILE_MIX_SLIDERS: TileMixSliderSpec[] = [
-  {
-    key: 'treasure',
-    label: 'Treasure',
-    min: 0,
-    max: 0.15,
-    step: 0.005,
-    format: fmtPct,
-    hint: '≈ share of floor cells holding a treasure cache.',
-  },
-  {
-    key: 'trap',
-    label: 'Trap / Hazard',
-    min: 0,
-    max: 0.15,
-    step: 0.005,
-    format: fmtPct,
-    hint: '≈ share of floor cells holding a trap or hazard.',
-  },
-  {
-    key: 'doors',
-    label: 'Doors',
-    min: 0,
-    max: 1,
-    step: 0.05,
-    format: fmtPct,
-    hint: 'Fraction of geometric door candidates kept (lower = fewer doors, more open archways).',
-  },
-];
+/**
+ * Build the rooms-and-corridors slider specs for a given theme.
+ *
+ * Treasure and Trap sliders are clamped so the upper bound equals the
+ * theme's default value: in practice these effects only read well at
+ * very low densities, so the default sits at the high end and the
+ * slider lets the user dial down toward 0. Doors keeps its full 0..1
+ * range.
+ */
+export function getRoomsTileMixSliders(themeId?: string): TileMixSliderSpec[] {
+  const defaults = getRoomsDefaultMix(themeId);
+  return [
+    {
+      key: 'treasure',
+      label: 'Treasure',
+      min: 0,
+      max: defaults.treasure,
+      step: 0.001,
+      format: fmtPct,
+      hint: '≈ share of floor cells holding a treasure cache.',
+    },
+    {
+      key: 'trap',
+      label: 'Trap / Hazard',
+      min: 0,
+      max: defaults.trap,
+      step: 0.001,
+      format: fmtPct,
+      hint: '≈ share of floor cells holding a trap or hazard.',
+    },
+    {
+      key: 'doors',
+      label: 'Doors',
+      min: 0,
+      max: 1,
+      step: 0.05,
+      format: fmtPct,
+      hint: 'Fraction of geometric door candidates kept (lower = fewer doors, more open archways).',
+    },
+  ];
+}
+
+/**
+ * Static fallback used when the theme is not known (e.g. importers /
+ * tests that read the spec list directly). Uses a multiplier of 1.
+ */
+export const ROOMS_TILE_MIX_SLIDERS: TileMixSliderSpec[] = getRoomsTileMixSliders();
 
 /**
  * Resolve the default mix the rooms-and-corridors slider section should
@@ -204,6 +222,21 @@ export const GENERATOR_TILE_MIX: Record<string, TileMixSliderSpec[]> = {
   'open-terrain': OPEN_TERRAIN_TILE_MIX_SLIDERS,
   cavern: CAVERN_TILE_MIX_SLIDERS,
 };
+
+/**
+ * Returns the slider specs the dialog should render for the given
+ * generator. Some specs (e.g. rooms-and-corridors treasure/trap caps)
+ * depend on the active theme, so callers should prefer this helper
+ * over indexing `GENERATOR_TILE_MIX` directly.
+ */
+export function getTileMixSliders(generatorId: string, themeId?: string): TileMixSliderSpec[] {
+  switch (generatorId) {
+    case 'rooms-and-corridors':
+      return getRoomsTileMixSliders(themeId);
+    default:
+      return GENERATOR_TILE_MIX[generatorId] ?? [];
+  }
+}
 
 /** Returns the default mix object the dialog should open with. */
 export function getDefaultTileMix(generatorId: string, themeId?: string): Record<string, number> {
