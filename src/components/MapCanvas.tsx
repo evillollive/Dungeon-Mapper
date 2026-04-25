@@ -580,8 +580,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         onAddToken(kind, px, py, undefined, size);
       } else if (activeTool === 'remove-token') {
         const t = findTokenAt(tokens, x + 0.5, y + 0.5);
-        // Players may only remove player-kind tokens. NPCs/monsters are GM-managed.
-        if (t && t.kind === 'player') onRemoveToken(t.id);
+        // The Remove Token tool can delete any token kind, mirroring the
+        // Move Token tool — token management lives entirely in the player
+        // toolbar, so restricting removal to player-kind tokens would leave
+        // NPC/monster tokens stranded with no way to clean them up.
+        if (t) onRemoveToken(t.id);
       } else if (activeTool === 'perase') {
         // Click a stroke's bounding cell to remove it. Only player strokes
         // are removable from the player view.
