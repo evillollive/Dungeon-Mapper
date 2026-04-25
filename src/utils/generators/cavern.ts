@@ -6,6 +6,7 @@ import {
   getCell,
   makeTypeGrid,
   outlineWalls,
+  reorderNotesReadingOrder,
   setCell,
   type TypeGrid,
   typeGridToTiles,
@@ -178,5 +179,5 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
     });
     if (tiles[p.y]?.[p.x]) tiles[p.y][p.x] = { ...tiles[p.y][p.x], noteId: id };
   }
-  return { tiles, notes, width, height };
+  return { tiles, notes: reorderNotesReadingOrder(tiles, notes), width, height };
 }

@@ -6,6 +6,7 @@ import {
   getCell,
   makeTypeGrid,
   outlineWalls,
+  reorderNotesReadingOrder,
   setCell,
   type TypeGrid,
   typeGridToTiles,
@@ -586,7 +587,12 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
     appendRoomKindNotes(tiles, rooms, notes);
   }
 
-  return { tiles, notes, width, height };
+  // Re-order so the notes panel reads naturally: rooms first, then
+  // non-room POIs (treasure, traps, …); each group sorted left-to-right,
+  // top-to-bottom. Renumbers ids and re-suffixes grouped labels.
+  const orderedNotes = reorderNotesReadingOrder(tiles, notes);
+
+  return { tiles, notes: orderedNotes, width, height };
 }
 
 /**

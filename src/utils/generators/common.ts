@@ -1,4 +1,4 @@
-import type { Tile, TileType } from '../../types/map';
+import type { MapNote, Tile, TileType } from '../../types/map';
 
 /**
  * Bounds applied by every generator to the `density` knob exposed in the
@@ -126,4 +126,69 @@ export function collectCells(grid: TypeGrid, type: TileType): { x: number; y: nu
     }
   }
   return out;
+}
+
+/**
+ * Re-order generated `MapNote`s so the notes panel reads naturally:
+ * rooms (`kind === 'room'`) come first, then everything else (treasure,
+ * traps, …); within each group notes are sorted left-to-right,
+ * top-to-bottom (by `y`, then `x`). Labels that were auto-suffixed by a
+ * generator (e.g. `Coffer 1`, `Coffer 2`, …) are re-suffixed so the
+ * suffix order matches the new reading order. Finally, note ids are
+ * renumbered `1..N` in that order and every tile's `noteId` reference
+ * is remapped to keep the on-map tokens linked to their renumbered
+ * notes.
+ *
+ * Single-occurrence labels keep their original text — generators only
+ * suffix labels when a base name appears more than once, so we mirror
+ * that behavior here to avoid relabeling unique notes.
+ */
+export function reorderNotesReadingOrder(tiles: Tile[][], notes: MapNote[]): MapNote[] {
+  if (notes.length === 0) return notes;
+  const sorted = [...notes].sort((a, b) => {
+    const ar = a.kind === 'room' ? 0 : 1;
+    const br = b.kind === 'room' ? 0 : 1;
+    if (ar !== br) return ar - br;
+    if (a.y !== b.y) return a.y - b.y;
+    return a.x - b.x;
+  });
+  // Re-suffix grouped labels so "Coffer 1/2/3" follow reading order
+  // instead of original placement order. Only relabel bases that occur
+  // more than once, matching the generators' suffixing rule.
+  const suffixRe = /^(.*) (\d+)$/;
+  const baseCounts = new Map<string, number>();
+  for (const n of sorted) {
+    const m = suffixRe.exec(n.label);
+    if (m) baseCounts.set(m[1], (baseCounts.get(m[1]) ?? 0) + 1);
+  }
+  const baseSeen = new Map<string, number>();
+  const relabeled: MapNote[] = sorted.map(n => {
+    const m = suffixRe.exec(n.label);
+    if (!m) return n;
+    const base = m[1];
+    if ((baseCounts.get(base) ?? 0) <= 1) return n;
+    const idx = (baseSeen.get(base) ?? 0) + 1;
+    baseSeen.set(base, idx);
+    return { ...n, label: `${base} ${idx}` };
+  });
+  // Renumber ids 1..N and remap tile noteIds.
+  const idMap = new Map<number, number>();
+  const renumbered: MapNote[] = relabeled.map((n, i) => {
+    const newId = i + 1;
+    idMap.set(n.id, newId);
+    return { ...n, id: newId };
+  });
+  for (let y = 0; y < tiles.length; y++) {
+    const row = tiles[y];
+    if (!row) continue;
+    for (let x = 0; x < row.length; x++) {
+      const t = row[x];
+      if (t.noteId === undefined) continue;
+      const next = idMap.get(t.noteId);
+      if (next !== undefined && next !== t.noteId) {
+        row[x] = { ...t, noteId: next };
+      }
+    }
+  }
+  return renumbered;
 }

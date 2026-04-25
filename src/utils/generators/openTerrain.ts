@@ -5,6 +5,7 @@ import {
   DIRS_4,
   getCell,
   makeTypeGrid,
+  reorderNotesReadingOrder,
   setCell,
   type TypeGrid,
   typeGridToTiles,
@@ -144,5 +145,5 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
     });
     if (tiles[p.y]?.[p.x]) tiles[p.y][p.x] = { ...tiles[p.y][p.x], noteId: id };
   }
-  return { tiles, notes, width, height };
+  return { tiles, notes: reorderNotesReadingOrder(tiles, notes), width, height };
 }
