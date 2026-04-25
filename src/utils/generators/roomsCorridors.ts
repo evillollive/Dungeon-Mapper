@@ -189,6 +189,90 @@ function placeDoors(grid: TypeGrid): void {
 }
 
 /**
+ * Walk each carved room's 4 perimeter sides and seal any multi-cell
+ * opening down to a single doorway. Wide openings appear when an
+ * L-shaped corridor crosses (or skims) a room: after `outlineWalls`,
+ * a contiguous run of perimeter cells is left as floor instead of wall,
+ * which reads as a missing wall section rather than a proper entrance.
+ *
+ * For each contiguous run of floor/door cells along a side we keep one
+ * cell — preferring an existing door so the explicit per-room exits
+ * survive — and convert it to the side-appropriate door tile, then turn
+ * the rest of the run into wall. Connectivity is preserved because each
+ * separate opening keeps one passable cell. Doors on the perpendicular
+ * sides (where the corridor enters / exits) are likewise reduced to one
+ * each, so the room ends up reachable only through doors.
+ *
+ * Corridors that pass *through* a room remain functional: the corridor
+ * enters and exits on different sides (or different runs on the same
+ * side), and each retained door keeps a single passable cell open.
+ */
+function narrowRoomEntrances(grid: TypeGrid, rooms: Room[]): void {
+  const h = grid.length;
+  const w = grid[0]?.length ?? 0;
+  type SideCell = { x: number; y: number; type: 'door-h' | 'door-v' };
+  const inBounds = (x: number, y: number) =>
+    x >= 0 && y >= 0 && x < w && y < h;
+  for (const room of rooms) {
+    const sides: SideCell[][] = [[], [], [], []];
+    // North wall row (above the room): door-h (traversed N-S).
+    for (let x = room.x; x < room.x + room.w; x++) {
+      sides[0].push({ x, y: room.y - 1, type: 'door-h' });
+    }
+    // South wall row.
+    for (let x = room.x; x < room.x + room.w; x++) {
+      sides[1].push({ x, y: room.y + room.h, type: 'door-h' });
+    }
+    // West wall column: door-v (traversed E-W).
+    for (let y = room.y; y < room.y + room.h; y++) {
+      sides[2].push({ x: room.x - 1, y, type: 'door-v' });
+    }
+    // East wall column.
+    for (let y = room.y; y < room.y + room.h; y++) {
+      sides[3].push({ x: room.x + room.w, y, type: 'door-v' });
+    }
+    for (const side of sides) {
+      const cells = side.filter(c => inBounds(c.x, c.y));
+      let runStart = -1;
+      const runs: { start: number; end: number }[] = [];
+      for (let i = 0; i < cells.length; i++) {
+        const c = cells[i];
+        const t = grid[c.y][c.x];
+        const isOpening = t === 'floor' || t === 'door-h' || t === 'door-v';
+        if (isOpening) {
+          if (runStart < 0) runStart = i;
+        } else if (runStart >= 0) {
+          runs.push({ start: runStart, end: i - 1 });
+          runStart = -1;
+        }
+      }
+      if (runStart >= 0) runs.push({ start: runStart, end: cells.length - 1 });
+      for (const run of runs) {
+        // Prefer to keep an already-placed door so the explicit per-room
+        // exits picked by `pickExit` stay where they were.
+        let keepIdx = -1;
+        for (let i = run.start; i <= run.end; i++) {
+          const c = cells[i];
+          const t = grid[c.y][c.x];
+          if (t === 'door-h' || t === 'door-v') {
+            keepIdx = i;
+            break;
+          }
+        }
+        if (keepIdx < 0) {
+          keepIdx = Math.floor((run.start + run.end) / 2);
+        }
+        for (let i = run.start; i <= run.end; i++) {
+          const c = cells[i];
+          if (i === keepIdx) grid[c.y][c.x] = c.type;
+          else grid[c.y][c.x] = 'wall';
+        }
+      }
+    }
+  }
+}
+
+/**
  * Randomly demote a fraction of the placed doors back to walls. Driven by
  * the "Doors" tile-mix slider — `keepFraction = 1` (default) preserves
  * legacy behavior, `0` removes every door, intermediate values thin them.
@@ -386,6 +470,13 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
     if (getCell(grid, d.x, d.y) === 'wall') setCell(grid, d.x, d.y, d.type);
   }
   placeDoors(grid);
+  // Indoor themes look best when each room is fully enclosed and only
+  // reachable through doors. Walk every carved room's perimeter and
+  // narrow any multi-cell wall opening (left behind by L-corridors that
+  // crossed or skimmed the room) down to a single door tile. This runs
+  // before `thinDoors` so the user's "Doors" slider still applies to the
+  // narrowed result.
+  narrowRoomEntrances(grid, rooms);
   // Apply the "Doors" slider: thin doors after they've been geometrically
   // placed. Defaults to keeping all of them so legacy seeds reproduce.
   if (ov.doors !== undefined) thinDoors(grid, rng, ov.doors);
