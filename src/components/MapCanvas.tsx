@@ -49,6 +49,14 @@ interface MapCanvasProps {
   onRemoveToken: (id: number) => void;
   onAddAnnotation: (stroke: Omit<AnnotationStroke, 'id'>) => void;
   onRemoveAnnotation: (id: number) => void;
+  /**
+   * Notified whenever the user-painted selection rectangle changes.
+   * Receives `null` when the selection is cleared (e.g. after a
+   * Delete/Backspace press while the select tool is active). Used by
+   * features that operate on the selected region — currently the
+   * "Generate into selection" toggle in the Generate Map dialog.
+   */
+  onSelectionChange?: (selection: { x: number; y: number; w: number; h: number } | null) => void;
 }
 
 export interface MapCanvasHandle {
@@ -213,6 +221,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   onRemoveToken,
   onAddAnnotation,
   onRemoveAnnotation,
+  onSelectionChange,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -245,6 +254,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   useImperativeHandle(ref, () => ({
     getCanvas: () => canvasRef.current,
   }));
+
+  // Forward selection changes to the parent so features outside the canvas
+  // (e.g. the Generate Map dialog's "Generate into selection" toggle) can
+  // react to the user-painted rectangle. The effect runs whenever the
+  // selection's identity changes, including when it's cleared to null.
+  useEffect(() => {
+    onSelectionChange?.(selection);
+  }, [selection, onSelectionChange]);
 
   const { meta, tiles } = map;
   const { tileSize } = meta;

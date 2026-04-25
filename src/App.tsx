@@ -88,6 +88,7 @@ function App() {
     newMap,
     loadMapData,
     generateMap,
+    applyGeneratedRegion,
     addNote,
     updateNote,
     deleteNote,
@@ -125,6 +126,11 @@ function App() {
   );
   const [gmShowFog, setGmShowFog] = useState<boolean>(loadInitialGmShowFog);
   const [showGenerateDialog, setShowGenerateDialog] = useState<boolean>(false);
+  // Latest selection rectangle painted with the Select tool (in tile
+  // coordinates), mirrored from `MapCanvas` so the Generate Map dialog can
+  // offer "Generate into selection" as a target region. `null` when no
+  // selection is active.
+  const [selection, setSelection] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   // Player drawing pen state — color and brush width are UI-only and not
   // persisted on the map; they're a per-session preference.
   const [drawColor, setDrawColor] = useState<string>('#dc2626');
@@ -168,11 +174,21 @@ function App() {
   const handleOpenGenerateMap = useCallback(() => setShowGenerateDialog(true), []);
   const handleCancelGenerateMap = useCallback(() => setShowGenerateDialog(false), []);
   const handleGenerateMap = useCallback(
-    (result: GeneratedMap, suggestedName: string) => {
-      generateMap(result.tiles, result.width, result.height, result.notes, suggestedName);
+    (
+      result: GeneratedMap,
+      suggestedName: string,
+      target?: { x: number; y: number; w: number; h: number }
+    ) => {
+      if (target) {
+        // Stamp into the existing map at the selection's offset; the rest
+        // of the canvas (notes outside the rect, tokens, fog) is kept.
+        applyGeneratedRegion(result.tiles, target.x, target.y, result.notes);
+      } else {
+        generateMap(result.tiles, result.width, result.height, result.notes, suggestedName);
+      }
       setShowGenerateDialog(false);
     },
-    [generateMap]
+    [generateMap, applyGeneratedRegion]
   );
 
   // Persist the preserve-on-theme-switch preference across sessions.
@@ -317,6 +333,7 @@ function App() {
             onRemoveToken={removeToken}
             onAddAnnotation={addAnnotation}
             onRemoveAnnotation={removeAnnotation}
+            onSelectionChange={setSelection}
           />
         </main>
         {viewMode === 'gm' && (
@@ -353,6 +370,7 @@ function App() {
           initialWidth={map.meta.width}
           initialHeight={map.meta.height}
           hasExistingContent={hasExistingContent}
+          selection={selection}
           onCancel={handleCancelGenerateMap}
           onGenerate={handleGenerateMap}
         />

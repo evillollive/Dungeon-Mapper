@@ -22,15 +22,43 @@ interface GenerateMapDialogProps {
    * and asks for explicit confirmation before generating.
    */
   hasExistingContent: boolean;
+  /**
+   * Optional active selection rectangle (in tile coordinates). When
+   * present, the dialog offers a "Generate into selection" toggle that
+   * confines generation to the selected region — only those cells are
+   * overwritten and the rest of the map is preserved. When absent (or
+   * too small to host a useful map), the toggle is hidden.
+   */
+  selection?: { x: number; y: number; w: number; h: number } | null;
   onCancel: () => void;
-  onGenerate: (result: GeneratedMap, suggestedName: string) => void;
+  /**
+   * Called with the generator's output and a suggested map name. When the
+   * user opted in to "Generate into selection", `target` carries the
+   * selection rectangle so the caller can stamp the result into the
+   * existing map at that offset instead of replacing the whole canvas.
+   */
+  onGenerate: (
+    result: GeneratedMap,
+    suggestedName: string,
+    target?: { x: number; y: number; w: number; h: number }
+  ) => void;
 }
 
 const MIN_DIM = 8;
 const MAX_DIM = 128;
 
+/**
+ * Smallest selection rectangle the "Generate into selection" toggle
+ * accepts. The generators need a bit of room (rooms-and-corridors needs
+ * at least ~6 cells per side to fit any room plus a wall outline), so we
+ * gate the toggle on this minimum to avoid producing degenerate output
+ * — the user can still generate a full map at that size from the
+ * regular Width/Height fields.
+ */
+const MIN_SELECTION_DIM = 6;
+
 const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
-  themeId, initialWidth, initialHeight, hasExistingContent, onCancel, onGenerate,
+  themeId, initialWidth, initialHeight, hasExistingContent, selection, onCancel, onGenerate,
 }) => {
   const defaultGen = useMemo(() => pickGeneratorForTheme(themeId), [themeId]);
   const [generatorId, setGeneratorId] = useState<string>(defaultGen.id);
@@ -39,6 +67,19 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
   const [density, setDensity] = useState<number>(1);
   const [seedText, setSeedText] = useState<string>(() => seedToString(randomSeed()));
   const [error, setError] = useState<string | null>(null);
+
+  // True when the current selection is large enough to host a generator
+  // run. Falls back to false (and disables the toggle) when no selection
+  // is active or the rectangle is too small to be useful.
+  const selectionUsable = !!selection &&
+    selection.w >= MIN_SELECTION_DIM &&
+    selection.h >= MIN_SELECTION_DIM;
+  const [intoSelectionRaw, setIntoSelection] = useState<boolean>(false);
+  // If the selection becomes unavailable (cleared, or shrunk below the
+  // minimum) the stored toggle is ignored — we never act on it without a
+  // usable selection. Deriving here (rather than syncing via an effect)
+  // keeps the state model simple and avoids cascading renders.
+  const intoSelection = intoSelectionRaw && selectionUsable;
 
   // Esc cancels the dialog so it behaves like a native modal.
   useEffect(() => {
@@ -59,13 +100,16 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
   const handleReroll = () => setSeedText(seedToString(randomSeed()));
 
   const handleGenerate = () => {
-    const w = clampDim(Number(width));
-    const h = clampDim(Number(height));
+    // When generating into a selection, the dimensions come from the
+    // selection rectangle and the W/H inputs are ignored. Otherwise we
+    // clamp the user-entered values to the supported map size range.
+    const w = intoSelection && selection ? selection.w : clampDim(Number(width));
+    const h = intoSelection && selection ? selection.h : clampDim(Number(height));
     if (!Number.isFinite(w) || !Number.isFinite(h)) {
       setError('Width and height must be numbers.');
       return;
     }
-    if (hasExistingContent) {
+    if (hasExistingContent && !intoSelection) {
       const ok = window.confirm(
         'This will replace the current map. Notes and tokens will be cleared. Continue?'
       );
@@ -73,9 +117,13 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
     }
     const seed = parseSeed(seedText);
     try {
-      const result = generator.generate({ width: w, height: h, seed, density });
+      const result = generator.generate({ width: w, height: h, seed, density, themeId });
       const suggestedName = `Generated ${generator.name}`;
-      onGenerate(result, suggestedName);
+      if (intoSelection && selection) {
+        onGenerate(result, suggestedName, selection);
+      } else {
+        onGenerate(result, suggestedName);
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Generation failed.');
     }
@@ -119,7 +167,8 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
               type="number"
               min={MIN_DIM}
               max={MAX_DIM}
-              value={width}
+              value={intoSelection && selection ? selection.w : width}
+              disabled={intoSelection}
               onChange={e => setWidth(Number(e.target.value))}
             />
           </label>
@@ -129,11 +178,29 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
               type="number"
               min={MIN_DIM}
               max={MAX_DIM}
-              value={height}
+              value={intoSelection && selection ? selection.h : height}
+              disabled={intoSelection}
               onChange={e => setHeight(Number(e.target.value))}
             />
           </label>
         </div>
+
+        {selection && (
+          <label className="generate-dialog-row generate-dialog-checkbox">
+            <input
+              type="checkbox"
+              checked={intoSelection}
+              disabled={!selectionUsable}
+              onChange={e => setIntoSelection(e.target.checked)}
+            />
+            <span>
+              Generate into selection
+              {selectionUsable
+                ? ` (${selection.w} × ${selection.h} at ${selection.x}, ${selection.y})`
+                : ` (selection too small — needs at least ${MIN_SELECTION_DIM} × ${MIN_SELECTION_DIM})`}
+            </span>
+          </label>
+        )}
 
         <label className="generate-dialog-row">
           <span>Density ({density.toFixed(2)})</span>
@@ -167,10 +234,17 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
           </div>
         </label>
 
-        {hasExistingContent && (
+        {hasExistingContent && !intoSelection && (
           <div className="generate-dialog-warning" role="alert">
             ⚠️ This will replace the current map. Notes and tokens will be
             cleared. (Tile / fog changes can be reverted with Undo.)
+          </div>
+        )}
+        {intoSelection && selection && (
+          <div className="generate-dialog-info" role="note">
+            Only cells inside the selection will be overwritten. Existing
+            notes, tokens, and fog elsewhere on the map are preserved
+            (tile changes can be reverted with Undo).
           </div>
         )}
         {error && (

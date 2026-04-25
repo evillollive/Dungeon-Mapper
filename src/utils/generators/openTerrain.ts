@@ -9,6 +9,7 @@ import {
   type TypeGrid,
   typeGridToTiles,
 } from './common';
+import { getOpenTerrainFlavor, poiLabelFor } from './poi';
 import { makeRng, type Rng } from './random';
 import type { GenerateContext, GeneratedMap } from './types';
 
@@ -43,7 +44,8 @@ function paintBlob(
  * dunes in desert, rubble in post-apocalypse, etc.).
  */
 export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
-  const { width, height, seed, density } = ctx;
+  const { width, height, seed, density, themeId } = ctx;
+  const flavor = getOpenTerrainFlavor(themeId);
   const rng = makeRng(seed);
   const grid = makeTypeGrid(width, height, 'floor');
 
@@ -71,9 +73,11 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
     if (getCell(grid, x, y) === 'floor') setCell(grid, x, y, 'pillar');
   }
 
-  // Place a `start` and a single treasure on floor cells. Pick the start
-  // near a corner so there's room to explore outward.
+  // Place a `start` and treasure caches on floor cells. Pick the start
+  // near a corner so there's room to explore outward. Track POI cells so
+  // we can attach auto-named MapNote entries (theme-flavored) below.
   const corner = { x: rng.int(1, Math.max(1, Math.floor(width / 4))), y: rng.int(1, Math.max(1, Math.floor(height / 4))) };
+  const pois: { x: number; y: number; type: 'start' | 'treasure' }[] = [];
   let placedStart = false;
   for (let r = 0; r < 6 && !placedStart; r++) {
     for (let dy = -r; dy <= r && !placedStart; dy++) {
@@ -82,6 +86,7 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
         const y = corner.y + dy;
         if (getCell(grid, x, y) === 'floor') {
           setCell(grid, x, y, 'start');
+          pois.push({ x, y, type: 'start' });
           placedStart = true;
         }
       }
@@ -89,12 +94,32 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
   }
 
   const floors = collectCells(grid, 'floor');
-  if (floors.length > 0) {
-    const c = floors[rng.int(0, floors.length - 1)];
+  const treasureCount = Math.min(floors.length, Math.max(0, flavor.treasureCount));
+  for (let i = 0; i < treasureCount && floors.length > 0; i++) {
+    const idx = rng.int(0, floors.length - 1);
+    const c = floors.splice(idx, 1)[0];
     setCell(grid, c.x, c.y, 'treasure');
+    pois.push({ x: c.x, y: c.y, type: 'treasure' });
   }
 
   const tiles: Tile[][] = typeGridToTiles(grid);
   const notes: MapNote[] = [];
+  const counts = new Map<string, number>();
+  for (const p of pois) counts.set(p.type, (counts.get(p.type) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  for (const p of pois) {
+    const total = counts.get(p.type) ?? 1;
+    const idx = (seen.get(p.type) ?? 0) + 1;
+    seen.set(p.type, idx);
+    const id = notes.length + 1;
+    notes.push({
+      id,
+      x: p.x,
+      y: p.y,
+      label: poiLabelFor(themeId, p.type, total > 1 ? idx : undefined),
+      description: '',
+    });
+    if (tiles[p.y]?.[p.x]) tiles[p.y][p.x] = { ...tiles[p.y][p.x], noteId: id };
+  }
   return { tiles, notes, width, height };
 }

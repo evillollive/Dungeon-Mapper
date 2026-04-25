@@ -13,6 +13,13 @@ export interface GenerateContext {
    * Generators clamp to a sensible range internally.
    */
   density: number;
+  /**
+   * Optional theme id (e.g. `'dungeon'`, `'wilderness'`). Generators use it
+   * to bias their POI mix and to label auto-generated notes with
+   * theme-appropriate names. Generators must still produce valid output for
+   * unknown / missing themes by falling back to neutral defaults.
+   */
+  themeId?: string;
 }
 
 /** A generator's output — pre-built tile grid plus optional notes. */

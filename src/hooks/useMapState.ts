@@ -267,6 +267,74 @@ export function useMapState() {
     setSelectedNoteId(null);
   }, [debouncedSave]);
 
+  /**
+   * Stamp a generated sub-map onto the existing map at `(ox, oy)` instead
+   * of replacing the whole canvas. Cells inside the target rectangle are
+   * overwritten by the generator's tiles (preserving any per-tile theme
+   * overrides on tiles outside the rectangle); the previous tiles are
+   * pushed onto the undo stack so the operation is fully revertible. Notes
+   * produced by the generator are merged into the existing notes list with
+   * fresh ids and their coordinates offset into the target region.
+   * Tokens, fog, and annotations are left untouched — only the drawn
+   * tiles and the notes list change.
+   */
+  const applyGeneratedRegion = useCallback((
+    genTiles: Tile[][],
+    ox: number,
+    oy: number,
+    genNotes: MapNote[] = []
+  ) => {
+    const regionH = genTiles.length;
+    const regionW = genTiles[0]?.length ?? 0;
+    setMap(prev => {
+      pushHistory(prev.tiles, prev.fog);
+      const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
+      // Map the generator's local note ids (1..N) onto fresh ids that
+      // don't collide with existing notes on this map.
+      const idBase = nextIdAfter(prev.notes) - 1;
+      const idMap = new Map<number, number>();
+      for (const n of genNotes) idMap.set(n.id, n.id + idBase);
+      for (let y = 0; y < regionH; y++) {
+        const ty = oy + y;
+        if (ty < 0 || ty >= prev.meta.height) continue;
+        for (let x = 0; x < regionW; x++) {
+          const tx = ox + x;
+          if (tx < 0 || tx >= prev.meta.width) continue;
+          const src = genTiles[y][x];
+          const next: Tile = { type: src.type };
+          if (src.noteId !== undefined) {
+            const remapped = idMap.get(src.noteId);
+            if (remapped !== undefined) next.noteId = remapped;
+          }
+          newTiles[ty][tx] = next;
+        }
+      }
+      const remappedNotes: MapNote[] = genNotes.map(n => ({
+        ...n,
+        id: n.id + idBase,
+        x: n.x + ox,
+        y: n.y + oy,
+      }));
+      const updatedNotes = [...prev.notes, ...remappedNotes];
+      const updated: DungeonMap = {
+        ...prev,
+        tiles: newTiles,
+        notes: updatedNotes,
+      };
+      debouncedSave(updated);
+      return updated;
+    });
+    // Bump the next-note allocator past the ids we just appended so the
+    // user's subsequent manual notes don't collide with them. The highest
+    // id in `genNotes` is `nextIdAfter(genNotes) - 1`, and we shifted
+    // every id up by `nextNoteId - 1`, so the new floor is
+    // `nextNoteId + (highest in genNotes)`.
+    if (genNotes.length > 0) {
+      const highestGen = nextIdAfter(genNotes) - 1;
+      setNextNoteId(prev => prev + highestGen);
+    }
+  }, [debouncedSave]);
+
   const loadMapData = useCallback((loaded: DungeonMap) => {
     const ready = withDefaults(loaded);
     pastRef.current = [];
@@ -575,6 +643,7 @@ export function useMapState() {
     newMap,
     loadMapData,
     generateMap,
+    applyGeneratedRegion,
     addNote,
     updateNote,
     deleteNote,

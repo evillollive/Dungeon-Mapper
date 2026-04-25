@@ -684,6 +684,29 @@
   margin-bottom: 10px;
   font-size: 0.9em;
 }
+.generate-dialog-info {
+  background: #1f2d3a;
+  border: 1px solid #3a5570;
+  color: #cfe5ff;
+  border-radius: 3px;
+  padding: 6px 8px;
+  margin-bottom: 10px;
+  font-size: 0.9em;
+}
+.generate-dialog-checkbox {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+}
+.generate-dialog-checkbox > span {
+  font-size: 0.9em;
+  color: #c0c8e0;
+}
+.generate-dialog-checkbox input[type="checkbox"]:disabled + span,
+.generate-dialog-checkbox input[type="checkbox"]:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
 .generate-dialog-buttons {
   display: flex;
   justify-content: flex-end;

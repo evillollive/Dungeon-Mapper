@@ -10,6 +10,7 @@ import {
   type TypeGrid,
   typeGridToTiles,
 } from './common';
+import { getRoomsCorridorsFlavor, poiLabelFor } from './poi';
 import { makeRng } from './random';
 import type { GenerateContext, GeneratedMap } from './types';
 
@@ -95,7 +96,8 @@ function placeDoors(grid: TypeGrid): void {
  * `density` (0..1) scales the number of attempted rooms.
  */
 export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
-  const { width, height, seed, density } = ctx;
+  const { width, height, seed, density, themeId } = ctx;
+  const flavor = getRoomsCorridorsFlavor(themeId);
   const rng = makeRng(seed);
   const grid = makeTypeGrid(width, height, 'empty');
 
@@ -152,34 +154,90 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   // reachable floor cell so the player has a visible objective.
   const start = roomCenter(rooms[0]);
   setCell(grid, start.x, start.y, 'start');
+  // Track POI tiles so we can attach auto-named MapNote entries below. The
+  // start gets a note even though there's only ever one, since it gives
+  // the player a clearly-labeled target on first load.
+  const pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'treasure' | 'trap' }[] = [
+    { x: start.x, y: start.y, type: 'start' },
+  ];
 
-  const { farthest } = bfsDistances(grid, start.x, start.y, t =>
-    t === 'floor' || t === 'door-h' || t === 'door-v' || t === 'start'
-  );
-  if (farthest.d > 0 && getCell(grid, farthest.x, farthest.y) === 'floor') {
-    setCell(grid, farthest.x, farthest.y, 'stairs-down');
+  if (flavor.placeStairsDown) {
+    const { farthest } = bfsDistances(grid, start.x, start.y, t =>
+      t === 'floor' || t === 'door-h' || t === 'door-v' || t === 'start'
+    );
+    if (farthest.d > 0 && getCell(grid, farthest.x, farthest.y) === 'floor') {
+      setCell(grid, farthest.x, farthest.y, 'stairs-down');
+      pois.push({ x: farthest.x, y: farthest.y, type: 'stairs-down' });
+    }
   }
 
   // Drop a few POIs on remaining floor cells. Number scales gently with
-  // room count so big dungeons feel a bit busier.
+  // room count so big dungeons feel a bit busier; per-theme multipliers
+  // (e.g. fewer traps in `moderncity`/`pirate`) bias the mix.
   const floors = collectCells(grid, 'floor');
-  const treasureCount = Math.min(floors.length, Math.max(1, Math.round(rooms.length / 3)));
+  const baseTreasure = Math.max(1, Math.round(rooms.length / 3));
+  const treasureCount = Math.min(
+    floors.length,
+    Math.max(0, Math.round(baseTreasure * flavor.treasureMultiplier))
+  );
+  const baseTrap = Math.max(0, Math.round(rooms.length / 4));
   const trapCount = Math.min(
     Math.max(0, floors.length - treasureCount),
-    Math.max(0, Math.round(rooms.length / 4))
+    Math.max(0, Math.round(baseTrap * flavor.trapMultiplier))
   );
   for (let i = 0; i < treasureCount && floors.length > 0; i++) {
     const idx = rng.int(0, floors.length - 1);
     const c = floors.splice(idx, 1)[0];
     setCell(grid, c.x, c.y, 'treasure');
+    pois.push({ x: c.x, y: c.y, type: 'treasure' });
   }
   for (let i = 0; i < trapCount && floors.length > 0; i++) {
     const idx = rng.int(0, floors.length - 1);
     const c = floors.splice(idx, 1)[0];
     setCell(grid, c.x, c.y, 'trap');
+    pois.push({ x: c.x, y: c.y, type: 'trap' });
   }
 
   const tiles: Tile[][] = typeGridToTiles(grid);
-  const notes: MapNote[] = [];
+
+  // Build auto-named MapNote entries for every POI placed above and link
+  // them to the corresponding tile via `noteId`. POI types that occur
+  // more than once get a numeric suffix (Treasure 1, Treasure 2, …) so
+  // they're distinguishable in the notes panel.
+  const notes: MapNote[] = buildPoiNotes(tiles, pois, themeId);
+
   return { tiles, notes, width, height };
+}
+
+/**
+ * Convert a list of placed POI cells into auto-named `MapNote` entries
+ * and stamp the matching `noteId` onto each underlying tile. Duplicate
+ * POI types get a 1-based suffix in display order so the notes panel
+ * lists them as "Treasure 1", "Treasure 2", etc.; types that occur
+ * exactly once stay unsuffixed for readability.
+ */
+function buildPoiNotes(
+  tiles: Tile[][],
+  pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'treasure' | 'trap' }[],
+  themeId: string | undefined
+): MapNote[] {
+  const counts = new Map<string, number>();
+  for (const p of pois) counts.set(p.type, (counts.get(p.type) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  const notes: MapNote[] = [];
+  for (const p of pois) {
+    const total = counts.get(p.type) ?? 1;
+    const idx = (seen.get(p.type) ?? 0) + 1;
+    seen.set(p.type, idx);
+    const id = notes.length + 1;
+    notes.push({
+      id,
+      x: p.x,
+      y: p.y,
+      label: poiLabelFor(themeId, p.type, total > 1 ? idx : undefined),
+      description: '',
+    });
+    if (tiles[p.y]?.[p.x]) tiles[p.y][p.x] = { ...tiles[p.y][p.x], noteId: id };
+  }
+  return notes;
 }
