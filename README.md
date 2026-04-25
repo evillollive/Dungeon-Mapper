@@ -13,6 +13,7 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **Graph-paper canvas** — light parchment background with cyan grid lines, evoking traditional engineering / quad-ruled graph paper
 - **Print mode** — toggle a high-contrast black-and-white renderer for printer-friendly output
 - **GM drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`
+- **Procedural map generation** — toolbar **🎲 Generate** opens a dialog with three algorithms (Rooms & Corridors, Open Terrain, Cavern), a deterministic seed, a density slider, per-generator tile-mix sliders, optional theme room labels, and an opt-in **Generate into selection** mode that stamps a generated map into an active selection rectangle without disturbing the rest of the map (see [Map Generation](#map-generation) below)
 - **Player view** — header **🛡 GM View / 👁 Player View** toggle swaps to a player-safe toolbar with a freehand drawing pen, an eraser, fog-of-war controls, and token tools (see [Player View](#player-view) below)
 - **Fog of war** — per-cell hidden / revealed flags with a Defog brush, Reveal `V` / Hide `H` drag-rectangles, Reset Fog (re-cover the map), Clear Fog (reveal everything), and an optional GM **🌫 Show Fog** preview overlay
 - **Tokens** — drop Player, NPC, and Monster tokens (small 1×1, medium 2×2, large 3×3) onto the map; Move Token to drag, Remove Token to delete
@@ -91,6 +92,57 @@ Drop tokens onto cells to track participants and threats:
 - **Remove** — click a token to delete it.
 
 Tokens, fog flags, and player annotations are all stored on the map and survive auto-save / JSON export.
+
+## Map Generation
+
+The toolbar **🎲 Generate** button (in the **THEME** section of the GM toolbar) opens a procedural map-generation dialog. Generated maps use the standard tile types only (Floor, Wall, Door, Secret Door, Stairs, Water, Pillar, Trap, Treasure, Start) so the result is rendered in whatever theme the map currently uses — switching the theme afterwards restyles the generated map without losing any tile data.
+
+### Algorithms
+
+The **Algorithm** dropdown selects the generator. Opening the dialog pre-selects an algorithm based on the current theme; you can change it at any time.
+
+| Algorithm | What it produces | Default for themes |
+| --- | --- | --- |
+| **Rooms & Corridors** | Rectangular rooms connected by L-shaped corridors. Best for dungeons, castles, ships, and other built spaces. | Dungeon, Castle, Starship, Alien World, Steampunk, Cyberpunk, Modern City, Pirate, Old West |
+| **Open Terrain** | Open ground scattered with obstacles, water, and standing stones. Best for outdoor / overland maps. | Wilderness, Desert, Post-Apocalypse |
+| **Cavern** | Organic cave system carved out via cellular-automata smoothing, guaranteed to be a single connected region. | (No theme defaults to this — pick it manually for any theme.) |
+
+### Dialog controls
+
+- **Width / Height** — target map size in tiles. Clamped to 8–128 (the same range as the header **SIZE** dropdowns).
+- **Generate into selection** — visible only when an active selection rectangle is present in the editor (use the Select tool `S` to make one) and is at least 6 × 6 tiles. When checked, Width / Height are taken from the selection and only cells inside the selection are overwritten — notes, tokens, fog, and tiles outside the selection are preserved. When unchecked (or no selection exists), generating replaces the entire map and clears notes and tokens.
+- **Density** — global "how full should the map feel" multiplier (range: 0.1–1.5, default 1.0). Higher values pack in more rooms / obstacles / features; lower values produce sparser layouts.
+- **Tile mix** *(collapsible section)* — per-generator sliders for fine-tuning what gets sprinkled in. Each generator exposes its own set, e.g. Rooms & Corridors offers Treasure share, Trap / Hazard share, and Door fraction; Open Terrain and Cavern have their own. The dialog remembers the values you set per algorithm as you flip between them, and a **Reset** button restores the active algorithm's theme defaults.
+- **Label rooms with theme archetypes** — Rooms & Corridors only, and only when the active theme has a room-archetype palette (built spaces such as Castle "Great Hall", Starship "Bridge", Modern City rooms, etc.). When checked, generated rooms are auto-labeled with theme-appropriate names dropped into the side notes panel.
+- **Seed** — text seed used to make generation deterministic; the same seed + algorithm + parameters always produces the same map. Accepts decimal digits, hex (with or without an `0x` prefix), or any free-form string (which is hashed). Use the **🎲** button next to the field to roll a new random seed; leaving the field blank also picks a fresh random seed at generate time.
+
+### Confirmation and undo
+
+- If the current map already contains painted tiles, generating a full map (i.e. with **Generate into selection** off) prompts for confirmation before replacing it. Notes and tokens are cleared by a full-map generation.
+- A selection-scoped generation never asks for confirmation and never touches notes, tokens, or fog.
+- Tile changes from any generation can be reverted with **Undo** (`Ctrl+Z`).
+
+## Keyboard Shortcuts
+
+Shortcuts fire whenever the focus is not in a text field:
+
+| Shortcut | Action |
+| --- | --- |
+| `P` | Paint tool |
+| `E` | Erase tool |
+| `F` | Flood Fill tool |
+| `N` | Add Note tool |
+| `L` | Line tool |
+| `R` | Rectangle tool |
+| `S` | Select tool |
+| `V` | Reveal fog (drag-rectangle, fog must be enabled) |
+| `H` | Hide fog (drag-rectangle, fog must be enabled) |
+| `Ctrl+Z` | Undo (up to 50 steps) |
+| `Ctrl+Y` *or* `Ctrl+Shift+Z` | Redo |
+| `Delete` *or* `Backspace` | Clear tiles inside the active selection |
+| `Esc` | Clear the active selection (Select tool) or close the Generate dialog |
+| `Shift` + mouse wheel | Zoom in / out (Caps Lock also enables wheel zoom without `Shift`) |
+| Right-click drag | Pan the canvas |
 
 ## Saving, Exporting & Importing
 
