@@ -63,6 +63,15 @@ export function getRoomsTileMixSliders(themeId?: string): TileMixSliderSpec[] {
   const defaults = getRoomsDefaultMix(themeId);
   return [
     {
+      key: 'roomSize',
+      label: 'Room size',
+      min: 0.5,
+      max: 1.5,
+      step: 0.05,
+      format: v => `${v.toFixed(2)}×`,
+      hint: 'Scales room dimensions. Lower = tight cells; higher = sprawling halls. Density still controls how many rooms fit.',
+    },
+    {
       key: 'treasure',
       label: 'Treasure',
       min: 0,
@@ -113,6 +122,7 @@ export function getRoomsDefaultMix(themeId?: string): Record<string, number> {
   // respectively at multiplier = 1, so we use those as the "no override"
   // baseline and apply the theme multiplier on top.
   return {
+    roomSize: 1,
     treasure: 0.03 * flavor.treasureMultiplier,
     trap: 0.02 * flavor.trapMultiplier,
     doors: 1,
