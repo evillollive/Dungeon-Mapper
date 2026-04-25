@@ -716,17 +716,25 @@
 .generate-dialog-mix {
   border: 1px solid #3a4570;
   border-radius: 4px;
-  padding: 8px 12px 4px 12px;
+  padding: 4px 12px;
   margin: 0 0 12px 0;
   min-width: 0;
 }
-.generate-dialog-mix legend {
+.generate-dialog-mix[open] {
+  padding: 4px 12px 4px 12px;
+}
+.generate-dialog-mix > summary {
   color: #b0b8d8;
   font-size: 0.9em;
-  padding: 0 6px;
-  display: inline-flex;
+  padding: 4px 0;
+  cursor: pointer;
+  list-style: revert;
+  display: flex;
   align-items: center;
   gap: 8px;
+}
+.generate-dialog-mix > summary:hover {
+  color: #d0d8f0;
 }
 .generate-dialog-mix-reset {
   background: #2d3561;

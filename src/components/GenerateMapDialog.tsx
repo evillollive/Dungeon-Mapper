@@ -271,18 +271,22 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
         </label>
 
         {sliderSpecs.length > 0 && (
-          <fieldset className="generate-dialog-mix">
-            <legend>
+          <details className="generate-dialog-mix">
+            <summary>
               Tile mix
               <button
                 type="button"
                 className="generate-dialog-mix-reset"
-                onClick={resetMixToDefaults}
+                onClick={e => {
+                  // Don't toggle the <details> when the user clicks Reset.
+                  e.stopPropagation();
+                  resetMixToDefaults();
+                }}
                 title="Reset all tile-mix sliders to the theme defaults"
               >
                 Reset
               </button>
-            </legend>
+            </summary>
             {sliderSpecs.map(spec => {
               const v = tileMixValue(spec.key);
               return (
@@ -304,7 +308,7 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
                 </label>
               );
             })}
-          </fieldset>
+          </details>
         )}
 
         {showLabelRoomsToggle && (
