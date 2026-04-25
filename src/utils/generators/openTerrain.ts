@@ -44,7 +44,7 @@ function paintBlob(
  * dunes in desert, rubble in post-apocalypse, etc.).
  */
 export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
-  const { width, height, seed, density, themeId } = ctx;
+  const { width, height, seed, density, themeId, tileMix } = ctx;
   const flavor = getOpenTerrainFlavor(themeId);
   const rng = makeRng(seed);
   const grid = makeTypeGrid(width, height, 'floor');
@@ -52,21 +52,34 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
   const area = width * height;
   const d = clampDensity(density);
 
-  // Scatter rocky / wooded clusters.
-  const wallBlobs = Math.round((area / 80) * d);
+  // Slider-driven overrides come in via `ctx.tileMix`; when a key is
+  // absent we fall back to the legacy area-relative formulas so existing
+  // seeds reproduce identically. Each fraction key is "approximate share
+  // of map area" (the dialog stores them in those units).
+  const ov = tileMix ?? {};
+
+  // Scatter rocky / wooded clusters. Density still scales the count
+  // multiplicatively so the existing "How busy?" slider remains useful.
+  const wallBlobs = ov.wall !== undefined
+    ? Math.max(0, Math.round((area * Math.max(0, ov.wall) / 6) * d))
+    : Math.round((area / 80) * d);
   for (let i = 0; i < wallBlobs; i++) {
     paintBlob(grid, rng, rng.int(0, width - 1), rng.int(0, height - 1), rng.int(3, 9), 'wall');
   }
 
   // A couple of small water pools — fewer and smaller than the wall blobs
   // so the map still feels traversable.
-  const waterBlobs = Math.max(1, Math.round((area / 250) * d));
+  const waterBlobs = ov.water !== undefined
+    ? Math.max(0, Math.round((area * Math.max(0, ov.water) / 8) * d))
+    : Math.max(1, Math.round((area / 250) * d));
   for (let i = 0; i < waterBlobs; i++) {
     paintBlob(grid, rng, rng.int(0, width - 1), rng.int(0, height - 1), rng.int(4, 12), 'water');
   }
 
   // Sprinkle individual boulders / standing stones across remaining floor.
-  const pillarCount = Math.max(2, Math.round((area / 120) * d));
+  const pillarCount = ov.pillar !== undefined
+    ? Math.max(0, Math.round(area * Math.max(0, ov.pillar) * d))
+    : Math.max(2, Math.round((area / 120) * d));
   for (let i = 0; i < pillarCount; i++) {
     const x = rng.int(0, width - 1);
     const y = rng.int(0, height - 1);
@@ -94,7 +107,12 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
   }
 
   const floors = collectCells(grid, 'floor');
-  const treasureCount = Math.min(floors.length, Math.max(0, flavor.treasureCount));
+  const treasureCount = Math.min(
+    floors.length,
+    ov.treasure !== undefined
+      ? Math.max(0, Math.round(ov.treasure))
+      : Math.max(0, flavor.treasureCount)
+  );
   for (let i = 0; i < treasureCount && floors.length > 0; i++) {
     const idx = rng.int(0, floors.length - 1);
     const c = floors.splice(idx, 1)[0];
