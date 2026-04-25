@@ -87,6 +87,11 @@ export type ToolType =
   | 'paint' | 'erase' | 'fill' | 'eyedropper' | 'note' | 'line' | 'rect' | 'select'
   // GM fog tools — reveal/hide drag-rectangles of cells.
   | 'reveal' | 'hide'
+  // Freehand "wipe away the fog" brush — clears fog cell-by-cell as the
+  // cursor is dragged across the map. Available in the player view as a
+  // more discoverable alternative to the rectangle Reveal / whole-map
+  // Clear Fog buttons.
+  | 'defog'
   // Player tools — visible only when viewMode === 'player'.
   | 'pdraw' | 'perase'
   | 'token-player' | 'token-npc' | 'token-monster'

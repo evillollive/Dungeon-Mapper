@@ -197,6 +197,14 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
         </label>
         {fogEnabled && (
           <>
+            <button
+              className={`tool-btn ${activeTool === 'defog' ? 'active' : ''}`}
+              onClick={() => onSetTool('defog')}
+              title="Defog brush — drag across the map to wipe fog away cell-by-cell."
+            >
+              <span className="tool-icon">🧹</span>
+              <span className="tool-name">Defog</span>
+            </button>
             {FOG_TOOLS.map(tool => (
               <button
                 key={tool.id}
