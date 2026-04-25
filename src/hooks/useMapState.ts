@@ -25,13 +25,15 @@ function createDefaultMap(): DungeonMap {
  * Backfill optional fields on maps loaded from older saves so the rest of
  * the app can rely on them being present. Mirrors the defaults from
  * createDefaultMap and is applied on every load path (IndexedDB autosave
- * and JSON import).
+ * and JSON import). Fog-of-war defaults to *on* with a fully-fogged grid
+ * so the player view always starts safe regardless of when the map was
+ * saved.
  */
 function withDefaults(map: DungeonMap): DungeonMap {
   return {
     ...map,
-    fog: map.fog ?? createFogGrid(map.meta.width, map.meta.height, false),
-    fogEnabled: map.fogEnabled ?? false,
+    fog: map.fog ?? createFogGrid(map.meta.width, map.meta.height, true),
+    fogEnabled: map.fogEnabled ?? true,
     tokens: map.tokens ?? [],
     annotations: map.annotations ?? [],
   };

@@ -13,9 +13,14 @@ interface ToolbarProps {
   preserveOnThemeSwitch: boolean;
   onTogglePreserveOnThemeSwitch: () => void;
   fogEnabled: boolean;
-  onToggleFogEnabled: () => void;
-  onResetFog: () => void;
-  onClearFog: () => void;
+  /**
+   * GM-only preview toggle. The fog-of-war controls themselves now live in
+   * the Player toolbar (the GM still drives the map even on the player
+   * side), but the GM may opt in to a translucent overlay so they can see
+   * which cells are currently hidden from players.
+   */
+  gmShowFog: boolean;
+  onToggleGmShowFog: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -28,13 +33,6 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] =
   { id: 'line',       label: 'Line',        shortcut: 'L', icon: '📏' },
   { id: 'rect',       label: 'Rectangle',   shortcut: 'R', icon: '⬛' },
   { id: 'select',     label: 'Select',      shortcut: 'S', icon: '⬜' },
-];
-
-// Fog tools live in their own section so they only appear when fog is
-// enabled for the current map. Drag to reveal / re-hide rectangles of cells.
-const FOG_TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
-  { id: 'reveal', label: 'Reveal', shortcut: 'V', icon: '👁' },
-  { id: 'hide',   label: 'Hide',   shortcut: 'H', icon: '🌫' },
 ];
 
 function TilePreview({ type, size = 28, themeId }: { type: TileType; size?: number; themeId: string }) {
@@ -58,7 +56,7 @@ function TilePreview({ type, size = 28, themeId }: { type: TileType; size?: numb
 const Toolbar: React.FC<ToolbarProps> = ({
   activeTool, activeTile, themeId, onSetTool, onSetTile,
   onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
-  fogEnabled, onToggleFogEnabled, onResetFog, onClearFog,
+  fogEnabled, gmShowFog, onToggleGmShowFog,
 }) => {
   const theme = getTheme(themeId);
   const tileLabels = React.useMemo(() => {
@@ -124,51 +122,24 @@ const Toolbar: React.FC<ToolbarProps> = ({
       <div className="toolbar-section">
         <div className="toolbar-label">FOG OF WAR</div>
         <label
-          className={`tool-btn ${fogEnabled ? 'active' : ''}`}
+          className={`tool-btn ${gmShowFog ? 'active' : ''}`}
           style={{ cursor: 'pointer' }}
-          title="Toggle fog-of-war for this map. When on, the GM can paint over cells to hide them from the player view."
+          title={
+            fogEnabled
+              ? 'Show Fog (preview) — overlay a translucent grey wash on cells that are currently hidden from players. The map stays visible to you; this is a GM-only preview. Fog controls live on the Player toolbar.'
+              : 'Show Fog has no effect until fog-of-war is enabled. Switch to the Player view to enable fog and reveal/hide cells.'
+          }
         >
           <span className="tool-icon">🌫</span>
-          <span className="tool-name">Enabled</span>
+          <span className="tool-name">Show Fog</span>
           <input
             type="checkbox"
-            checked={fogEnabled}
-            onChange={onToggleFogEnabled}
+            checked={gmShowFog}
+            onChange={onToggleGmShowFog}
+            disabled={!fogEnabled}
             style={{ margin: 0 }}
           />
         </label>
-        {fogEnabled && (
-          <>
-            {FOG_TOOLS.map(tool => (
-              <button
-                key={tool.id}
-                className={`tool-btn ${activeTool === tool.id ? 'active' : ''}`}
-                onClick={() => onSetTool(tool.id)}
-                title={`${tool.label} — drag a rectangle of cells to ${tool.id === 'reveal' ? 'reveal' : 'hide'} [${tool.shortcut}]`}
-              >
-                <span className="tool-icon">{tool.icon}</span>
-                <span className="tool-name">{tool.label}</span>
-                <span className="tool-shortcut">[{tool.shortcut}]</span>
-              </button>
-            ))}
-            <button
-              className="tool-btn"
-              onClick={onResetFog}
-              title="Re-fog the entire map (hide every cell)."
-            >
-              <span className="tool-icon">⟲</span>
-              <span className="tool-name">Reset Fog</span>
-            </button>
-            <button
-              className="tool-btn"
-              onClick={onClearFog}
-              title="Reveal the entire map (clear all fog)."
-            >
-              <span className="tool-icon">☀</span>
-              <span className="tool-name">Clear Fog</span>
-            </button>
-          </>
-        )}
       </div>
 
       <div className="toolbar-section">

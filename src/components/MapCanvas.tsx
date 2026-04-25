@@ -9,11 +9,14 @@ import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 const SCREEN_BG = '#f4f1e4';
 const SCREEN_GRID = '#5fb8c9';
 
-// Fog overlay colors. Player mode uses a fully opaque near-black so hidden
-// content is genuinely hidden; GM mode uses a translucent dark wash so the
-// GM can still see what's been hidden but knows it's fogged (Roll20-style).
-const FOG_PLAYER_FILL = '#0a0a12';
-const FOG_GM_FILL = 'rgba(20, 22, 40, 0.55)';
+// Fog overlay colors. Player mode uses a fully opaque medium grey so hidden
+// content is genuinely hidden but the overlay reads as "fog" rather than a
+// black void. GM mode normally renders no fog overlay at all (the GM is in
+// control of the map and shouldn't have it obscured); when the GM opts in
+// to the "Show Fog" preview, fogged cells are painted with a translucent
+// grey wash so the GM can see *what* is fogged without losing the map.
+const FOG_PLAYER_FILL = '#6b7280';
+const FOG_GM_FILL = 'rgba(107, 114, 128, 0.55)';
 
 interface MapCanvasProps {
   map: DungeonMap;
@@ -22,6 +25,14 @@ interface MapCanvasProps {
   themeId: string;
   printMode: boolean;
   viewMode: ViewMode;
+  /**
+   * GM-only preview toggle. When `true` and the current view is GM, fogged
+   * cells are painted with a translucent grey wash so the GM can see at a
+   * glance what is hidden from players. When `false` (default) the GM sees
+   * the unobscured map. Has no effect in player view, where fog always
+   * renders as an opaque grey overlay.
+   */
+  gmShowFog: boolean;
   selectedNoteId: number | null;
   drawColor: string;
   drawWidth: number;
@@ -182,6 +193,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   themeId,
   printMode,
   viewMode,
+  gmShowFog,
   selectedNoteId,
   drawColor,
   drawWidth,
@@ -353,10 +365,13 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       }, tileSize);
     }
 
-    // Fog overlay. In player view, paint fully opaque dark cells. In GM
-    // view (when fog is enabled), paint a translucent wash so the GM still
-    // sees the underlying map but knows the cell is hidden.
-    if (fogActive && fog) {
+    // Fog overlay. In player view, paint fully opaque grey cells so hidden
+    // content is genuinely hidden. In GM view, normally render nothing —
+    // the GM is in control of the map and shouldn't have it obscured —
+    // but when the GM has opted in to "Show Fog", paint a translucent grey
+    // wash so they can see at a glance what is fogged.
+    const renderFog = fogActive && fog && (isPlayerView || gmShowFog);
+    if (renderFog) {
       ctx.save();
       ctx.fillStyle = isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
       for (let y = 0; y < meta.height; y++) {
@@ -421,7 +436,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, fog, fogActive, isPlayerView, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth]);
 
   // Minimap render
   useEffect(() => {
