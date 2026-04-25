@@ -23,6 +23,19 @@ export interface MapNote {
   y: number;
   label: string;
   description: string;
+  /**
+   * Internal classification used by the procedural generators so the UI /
+   * future logic can tell whether a note represents an actual room (a
+   * carved room archetype like "Strongroom", or a POI whose label happens
+   * to name a room such as "Gatehouse" / "Lobby") versus a non-room point
+   * of interest (entrance markers, treasure, traps, …). The generators
+   * guarantee that no `kind: 'room'` note is ever placed inside another
+   * `kind: 'room'` note's footprint, so consumers can rely on this tag
+   * for hierarchy. Optional for backward compatibility with notes saved
+   * before the field existed and with manually-authored notes (treat
+   * absent as untagged).
+   */
+  kind?: 'room' | 'poi';
 }
 
 export interface MapMeta {

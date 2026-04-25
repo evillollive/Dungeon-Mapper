@@ -1,6 +1,15 @@
 import type { TileType } from '../../types/map';
 
 /**
+ * A POI label entry. Either a bare display string (the common case) or
+ * an object that also flags the label as a *room name* — used by
+ * generators to tag the resulting `MapNote` with `kind: 'room'` so the
+ * "no room nested inside another room" invariant can be enforced. Plain
+ * strings are treated as non-room labels.
+ */
+export type PoiLabel = string | { label: string; isRoom?: boolean };
+
+/**
  * Per-theme labels for the points of interest the procedural generators
  * place on the map. Each entry is keyed by the standard generator tile
  * type and provides a short, theme-appropriate name. The generator emits
@@ -11,7 +20,7 @@ import type { TileType } from '../../types/map';
  * Themes that don't override a particular tile fall back to the
  * `DEFAULT_POI_LABELS` table, which uses neutral generic names.
  */
-export const DEFAULT_POI_LABELS: Partial<Record<TileType, string>> = {
+export const DEFAULT_POI_LABELS: Partial<Record<TileType, PoiLabel>> = {
   start: 'Entrance',
   'stairs-down': 'Stairs Down',
   'stairs-up': 'Stairs Up',
@@ -19,7 +28,7 @@ export const DEFAULT_POI_LABELS: Partial<Record<TileType, string>> = {
   trap: 'Trap',
 };
 
-const THEME_POI_LABELS: Record<string, Partial<Record<TileType, string>>> = {
+const THEME_POI_LABELS: Record<string, Partial<Record<TileType, PoiLabel>>> = {
   dungeon: {
     start: 'Entrance',
     'stairs-down': 'Descent',
@@ -27,7 +36,12 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, string>>> = {
     trap: 'Trap',
   },
   castle: {
-    start: 'Gatehouse',
+    // "Gatehouse" is itself a room, so the resulting POI note is tagged
+    // `kind: 'room'` when it doesn't sit inside an already-labeled
+    // carved room. Inside a labeled room the room-kind wins and this
+    // note keeps `kind: 'poi'` so we never end up with two overlapping
+    // room-tagged notes.
+    start: { label: 'Gatehouse', isRoom: true },
     'stairs-down': 'Cellar Stair',
     // POI labels stay distinct from CASTLE room-kind names in
     // `roomKinds.ts` (which include "Strongroom") so a treasure tile
@@ -37,7 +51,9 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, string>>> = {
     trap: 'Snare',
   },
   starship: {
-    start: 'Airlock',
+    // "Airlock" is also a STARSHIP room kind in `roomKinds.ts`, so this
+    // is one of the labels that needs the room-vs-poi disambiguation.
+    start: { label: 'Airlock', isRoom: true },
     'stairs-down': 'Lower Deck',
     treasure: 'Cargo Cache',
     trap: 'Hazard',
@@ -50,13 +66,14 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, string>>> = {
   },
   oldwest: {
     start: 'Saloon Door',
-    'stairs-down': 'Cellar',
+    'stairs-down': { label: 'Cellar', isRoom: true },
     treasure: 'Strongbox',
     trap: 'Tripwire',
   },
   steampunk: {
-    start: 'Foyer',
-    'stairs-down': 'Engine Room',
+    start: { label: 'Foyer', isRoom: true },
+    // "Engine Room" overlaps a STEAMPUNK room-kind label, so flag it.
+    'stairs-down': { label: 'Engine Room', isRoom: true },
     treasure: 'Gear Cache',
     trap: 'Steam Vent',
   },
@@ -73,12 +90,13 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, string>>> = {
   },
   postapocalypse: {
     start: 'Doorway',
-    'stairs-down': 'Bunker',
+    'stairs-down': { label: 'Bunker', isRoom: true },
     treasure: 'Scrap Cache',
     trap: 'Snare',
   },
   moderncity: {
-    start: 'Lobby',
+    // "Lobby" is also a MODERNCITY room-kind label.
+    start: { label: 'Lobby', isRoom: true },
     'stairs-down': 'Basement',
     // Distinct from the MODERNCITY room-kind "Vault" so a treasure tile
     // in a labeled room doesn't look like a second overlapping room.
@@ -87,7 +105,7 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, string>>> = {
   },
   pirate: {
     start: 'Gangplank',
-    'stairs-down': 'Hold',
+    'stairs-down': { label: 'Hold', isRoom: true },
     treasure: 'Treasure Chest',
     trap: 'Snare',
   },
@@ -178,7 +196,21 @@ export function poiLabelFor(
   index?: number
 ): string {
   const themed = themeId ? THEME_POI_LABELS[themeId]?.[tile] : undefined;
-  const base = themed ?? DEFAULT_POI_LABELS[tile] ?? tile;
+  const entry = themed ?? DEFAULT_POI_LABELS[tile];
+  const base = entry === undefined ? tile : typeof entry === 'string' ? entry : entry.label;
   if (typeof index === 'number' && index > 0) return `${base} ${index}`;
   return base;
+}
+
+/**
+ * Whether the POI label resolved by {@link poiLabelFor} for this theme
+ * + tile names a room (e.g. "Gatehouse", "Lobby", "Engine Room"). The
+ * generators use this to decide whether the resulting `MapNote` should
+ * be tagged `kind: 'room'` (when it isn't already inside another carved
+ * room with its own room-kind label).
+ */
+export function poiLabelIsRoom(themeId: string | undefined, tile: TileType): boolean {
+  const themed = themeId ? THEME_POI_LABELS[themeId]?.[tile] : undefined;
+  const entry = themed ?? DEFAULT_POI_LABELS[tile];
+  return !!(entry && typeof entry !== 'string' && entry.isRoom);
 }

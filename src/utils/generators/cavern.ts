@@ -10,7 +10,7 @@ import {
   type TypeGrid,
   typeGridToTiles,
 } from './common';
-import { poiLabelFor } from './poi';
+import { poiLabelFor, poiLabelIsRoom } from './poi';
 import { makeRng } from './random';
 import type { GenerateContext, GeneratedMap } from './types';
 
@@ -172,6 +172,9 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
       y: p.y,
       label: poiLabelFor(themeId, p.type, total > 1 ? ord : undefined),
       description: '',
+      // Caverns don't carve discrete rooms, so a POI whose label names a
+      // room (e.g. "Lobby", "Gatehouse") is the room — no nesting risk.
+      kind: poiLabelIsRoom(themeId, p.type) ? 'room' : 'poi',
     });
     if (tiles[p.y]?.[p.x]) tiles[p.y][p.x] = { ...tiles[p.y][p.x], noteId: id };
   }
