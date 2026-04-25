@@ -10,6 +10,7 @@ import type { GeneratedMap } from './utils/generators';
 import { useMapState } from './hooks/useMapState';
 import { useDrawingTool } from './hooks/useDrawingTool';
 import { exportMapSVG } from './utils/export';
+import { isTokenFogged } from './utils/tokenVisibility';
 import { getTheme } from './themes/index';
 import type { ViewMode } from './types/map';
 import './App.css';
@@ -395,11 +396,12 @@ function App() {
         {viewMode === 'player' && (
           <aside className="right-panel">
             <InitiativePanel
-              // Hide tokens on fogged cells from the player initiative list
-              // so the panel doesn't leak the existence of hidden enemies.
+              // Hide tokens whose footprint touches any fogged cell from
+              // the player initiative list so the panel doesn't leak the
+              // existence of hidden enemies (matching MapCanvas).
               tokens={
                 fogEnabled
-                  ? (map.tokens ?? []).filter(t => !(map.fog?.[t.y]?.[t.x]))
+                  ? (map.tokens ?? []).filter(t => !isTokenFogged(t, map.fog))
                   : (map.tokens ?? [])
               }
               initiative={map.initiative ?? []}

@@ -3,6 +3,7 @@ import type { DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, Annota
 import { TOKEN_KIND_COLORS } from '../types/map';
 import { getTheme } from '../themes/index';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
+import { isTokenFogged } from '../utils/tokenVisibility';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
 // evoking traditional engineering / quad-ruled graph paper regardless of theme.
@@ -299,10 +300,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     ? notes.filter(n => !(fog?.[n.y]?.[n.x]))
     : notes;
 
-  // Tokens on fogged cells are also hidden from players (so the GM can place
-  // a hidden monster ahead of time without revealing it).
+  // Tokens are hidden from players when *any* cell of their footprint sits
+  // under fog — otherwise a multi-cell monster anchored on a fogged cell
+  // could still be visible (or vice-versa) and leak the GM's prep.
   const visibleTokens = (fogActive && isPlayerView)
-    ? tokens.filter(t => !(fog?.[t.y]?.[t.x]))
+    ? tokens.filter(t => !isTokenFogged(t, fog))
     : tokens;
 
   // Main render

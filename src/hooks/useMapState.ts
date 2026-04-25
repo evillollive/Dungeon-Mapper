@@ -37,7 +37,10 @@ function withDefaults(map: DungeonMap): DungeonMap {
     fogEnabled: map.fogEnabled ?? true,
     tokens: map.tokens ?? [],
     annotations: map.annotations ?? [],
-    initiative: map.initiative ?? (map.tokens ?? []).map(t => t.id),
+    // Default to an empty initiative list rather than auto-populating from
+    // existing tokens on legacy saves — a freshly loaded map shouldn't
+    // surprise the GM with a pre-filled turn order they didn't set.
+    initiative: map.initiative ?? [],
   };
 }
 
@@ -537,6 +540,12 @@ export function useMapState() {
   // Tokens are not part of the tile/fog undo stack — they're treated as
   // lightweight overlays that can be added/moved/removed freely.
 
+  /**
+   * Place a token on the map. Returns the new token's id on success, or
+   * `null` if placement was rejected (e.g. the footprint wouldn't fit on
+   * the map). On success the token is also appended to the initiative
+   * order so it shows up in the right-hand Initiative panel.
+   */
   const addToken = useCallback((kind: TokenKind, x: number, y: number, label?: string, size?: number): number | null => {
     const newId = nextTokenIdRef.current;
     let placed = false;
