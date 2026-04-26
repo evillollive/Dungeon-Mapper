@@ -98,6 +98,15 @@ export function getRoomsTileMixSliders(themeId?: string): TileMixSliderSpec[] {
       format: fmtPct,
       hint: 'Fraction of geometric door candidates kept (lower = fewer doors, more open archways).',
     },
+    {
+      key: 'secretDoors',
+      label: 'Secret Doors',
+      min: 0,
+      max: 0.5,
+      step: 0.05,
+      format: fmtPct,
+      hint: 'Fraction of remaining doors converted to hidden secret doors.',
+    },
   ];
 }
 
@@ -126,6 +135,7 @@ export function getRoomsDefaultMix(themeId?: string): Record<string, number> {
     treasure: 0.03 * flavor.treasureMultiplier,
     trap: 0.02 * flavor.trapMultiplier,
     doors: 1,
+    secretDoors: 0,
   };
 }
 

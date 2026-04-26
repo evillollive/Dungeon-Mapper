@@ -32,6 +32,7 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, PoiLabel>>> = {
   dungeon: {
     start: 'Entrance',
     'stairs-down': 'Descent',
+    'stairs-up': 'Ascent',
     treasure: 'Treasure',
     trap: 'Trap',
   },
@@ -43,6 +44,7 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, PoiLabel>>> = {
     // room-tagged notes.
     start: { label: 'Gatehouse', isRoom: true },
     'stairs-down': 'Cellar Stair',
+    'stairs-up': 'Tower Stair',
     // POI labels stay distinct from CASTLE room-kind names in
     // `roomKinds.ts` (which include "Strongroom") so a treasure tile
     // dropped inside a labeled room doesn't read as a second overlapping
@@ -55,18 +57,21 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, PoiLabel>>> = {
     // is one of the labels that needs the room-vs-poi disambiguation.
     start: { label: 'Airlock', isRoom: true },
     'stairs-down': 'Lower Deck',
+    'stairs-up': 'Upper Deck',
     treasure: 'Cargo Cache',
     trap: 'Hazard',
   },
   alien: {
     start: 'Hatch',
     'stairs-down': 'Tunnel Down',
+    'stairs-up': 'Tunnel Up',
     treasure: 'Relic',
     trap: 'Spore Trap',
   },
   oldwest: {
     start: 'Saloon Door',
     'stairs-down': { label: 'Cellar', isRoom: true },
+    'stairs-up': 'Upper Floor',
     treasure: 'Strongbox',
     trap: 'Tripwire',
   },
@@ -74,23 +79,27 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, PoiLabel>>> = {
     start: { label: 'Foyer', isRoom: true },
     // "Engine Room" overlaps a STEAMPUNK room-kind label, so flag it.
     'stairs-down': { label: 'Engine Room', isRoom: true },
+    'stairs-up': 'Upper Works',
     treasure: 'Gear Cache',
     trap: 'Steam Vent',
   },
   wilderness: {
     start: 'Trailhead',
+    'stairs-up': 'High Ground',
     treasure: 'Cache',
     trap: 'Pit Trap',
   },
   cyberpunk: {
     start: 'Entryway',
     'stairs-down': 'Sub-basement',
+    'stairs-up': 'Upper Level',
     treasure: 'Data Cache',
     trap: 'ICE',
   },
   postapocalypse: {
     start: 'Doorway',
     'stairs-down': { label: 'Bunker', isRoom: true },
+    'stairs-up': 'Rooftop Access',
     treasure: 'Scrap Cache',
     trap: 'Snare',
   },
@@ -98,6 +107,7 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, PoiLabel>>> = {
     // "Lobby" is also a MODERNCITY room-kind label.
     start: { label: 'Lobby', isRoom: true },
     'stairs-down': 'Basement',
+    'stairs-up': 'Upper Floor',
     // Distinct from the MODERNCITY room-kind "Vault" so a treasure tile
     // in a labeled room doesn't look like a second overlapping room.
     treasure: 'Safe',
@@ -106,11 +116,13 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, PoiLabel>>> = {
   pirate: {
     start: 'Gangplank',
     'stairs-down': { label: 'Hold', isRoom: true },
+    'stairs-up': 'Crow\u2019s Nest',
     treasure: 'Treasure Chest',
     trap: 'Snare',
   },
   desert: {
     start: 'Oasis',
+    'stairs-up': 'Upper Passage',
     treasure: 'Cache',
     trap: 'Sand Pit',
   },
@@ -120,6 +132,7 @@ const THEME_POI_LABELS: Record<string, Partial<Record<TileType, PoiLabel>>> = {
     // room-tagged notes at the same spot.
     start: { label: 'Antechamber', isRoom: true },
     'stairs-down': 'Descent',
+    'stairs-up': 'Upper Passage',
     treasure: 'Hoard',
     trap: 'Cursed Glyph',
   },
@@ -263,78 +276,91 @@ const GENERATOR_THEME_POI_LABELS: Record<string, Record<string, Partial<Record<T
     dungeon: {
       start: 'Cave Mouth',
       'stairs-down': 'Deep Passage',
+      'stairs-up': 'Upper Passage',
       treasure: 'Hoard',
       trap: 'Pit Trap',
     },
     castle: {
       start: 'Cellar Entry',
       'stairs-down': 'Lower Tunnel',
+      'stairs-up': 'Upper Tunnel',
       treasure: 'Coffer',
       trap: 'Snare',
     },
     starship: {
       start: 'Hull Breach',
       'stairs-down': 'Lower Deck',
+      'stairs-up': 'Upper Deck',
       treasure: 'Cargo Cache',
       trap: 'Hazard',
     },
     alien: {
       start: 'Hatch',
       'stairs-down': 'Tunnel Down',
+      'stairs-up': 'Tunnel Up',
       treasure: 'Relic',
       trap: 'Spore Trap',
     },
     oldwest: {
       start: 'Mine Entrance',
       'stairs-down': 'Lower Shaft',
+      'stairs-up': 'Upper Shaft',
       treasure: 'Strongbox',
       trap: 'Cave-In',
     },
     steampunk: {
       start: 'Sub-tunnel',
       'stairs-down': 'Lower Works',
+      'stairs-up': 'Upper Works',
       treasure: 'Gear Cache',
       trap: 'Steam Vent',
     },
     wilderness: {
       start: 'Cave Mouth',
       'stairs-down': 'Deep Passage',
+      'stairs-up': 'Upper Passage',
       treasure: 'Cache',
       trap: 'Pit Trap',
     },
     cyberpunk: {
       start: 'Service Tunnel',
       'stairs-down': 'Sub-basement',
+      'stairs-up': 'Upper Level',
       treasure: 'Data Cache',
       trap: 'ICE',
     },
     postapocalypse: {
       start: 'Cave Mouth',
       'stairs-down': 'Deep Passage',
+      'stairs-up': 'Upper Passage',
       treasure: 'Scrap Cache',
       trap: 'Snare',
     },
     moderncity: {
       start: 'Maintenance Hatch',
       'stairs-down': 'Sub-basement',
+      'stairs-up': 'Upper Floor',
       treasure: 'Stash',
       trap: 'Alarm',
     },
     pirate: {
       start: 'Smuggler\u2019s Cave',
       'stairs-down': 'Lower Hold',
+      'stairs-up': 'Upper Hold',
       treasure: 'Treasure Chest',
       trap: 'Snare',
     },
     desert: {
       start: 'Cave Mouth',
       'stairs-down': 'Deep Passage',
+      'stairs-up': 'Upper Passage',
       treasure: 'Cache',
       trap: 'Sand Pit',
     },
     ancient: {
       start: 'Tomb Mouth',
       'stairs-down': 'Inner Sanctum',
+      'stairs-up': 'Upper Sanctum',
       treasure: 'Hoard',
       trap: 'Cursed Glyph',
     },
