@@ -1,6 +1,5 @@
 import type { Tile, TileType } from '../../types/map';
 import {
-  bfsDistances,
   clampDensity,
   collectCells,
   DIRS_8,
@@ -14,7 +13,9 @@ import {
 import { assignAreaKinds, detectAreas, getCavernAreaPalette, type DetectedArea, type NaturalAreaKind } from './naturalAreas';
 import { getCavernFlavor } from './poi';
 import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotesEngine';
+import { largestRegion } from './connectivity';
 import { makeRng, type Rng } from './random';
+import { placeStairs } from './stairsEngine';
 import type { GenerateContext, GeneratedMap } from './types';
 
 /** Count the number of `wall` neighbors (8-connected) around `(x, y)`. */
@@ -166,32 +167,7 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
 
   // Find the largest connected floor region and erase the rest so there
   // are no orphaned pockets the player can never reach.
-  const visited: boolean[][] = Array.from({ length: height }, () =>
-    Array.from({ length: width }, () => false)
-  );
-  let bestRegion: { x: number; y: number }[] = [];
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      if (grid[y][x] !== 'floor' || visited[y][x]) continue;
-      // Flood-fill this region.
-      const region: { x: number; y: number }[] = [];
-      const stack: [number, number][] = [[x, y]];
-      visited[y][x] = true;
-      while (stack.length > 0) {
-        const [cx, cy] = stack.pop()!;
-        region.push({ x: cx, y: cy });
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-          const nx = cx + dx;
-          const ny = cy + dy;
-          if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
-          if (visited[ny][nx] || grid[ny][nx] !== 'floor') continue;
-          visited[ny][nx] = true;
-          stack.push([nx, ny]);
-        }
-      }
-      if (region.length > bestRegion.length) bestRegion = region;
-    }
-  }
+  const bestRegion = largestRegion(grid, t => t === 'floor');
 
   // Rebuild the grid: every cell becomes empty unless it's part of the
   // chosen region. Then outline walls so the cavern reads correctly.
@@ -204,7 +180,7 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
   // Place the start at the first cell of the largest region and the
   // stairs-down at the farthest reachable floor. If the region is too
   // small to host both, just drop the start.
-  const placeStairs = ov.stairsDown !== undefined ? ov.stairsDown >= 0.5 : flavor.placeStairsDown;
+  const placeStairsFlag = ov.stairsDown !== undefined ? ov.stairsDown >= 0.5 : flavor.placeStairsDown;
   const pois: PoiPlacement[] = [];
   if (bestRegion.length === 0) {
     // Degenerate cave (the smoothing wiped everything) — return an
@@ -215,23 +191,14 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
   const start = bestRegion[0];
   setCell(grid, start.x, start.y, 'start');
   pois.push({ x: start.x, y: start.y, type: 'start' });
-  if (placeStairs) {
-    const { farthest } = bfsDistances(grid, start.x, start.y, t =>
-      t === 'floor' || t === 'start' || t === 'water'
-    );
-    if (farthest.d > 0 && getCell(grid, farthest.x, farthest.y) === 'floor') {
-      setCell(grid, farthest.x, farthest.y, 'stairs-down');
-      pois.push({ x: farthest.x, y: farthest.y, type: 'stairs-down' });
-      // Place stairs-up adjacent to stairs-down so the pair reads as a
-      // connected stairwell.
-      for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
-        if (getCell(grid, farthest.x + dx, farthest.y + dy) === 'floor') {
-          setCell(grid, farthest.x + dx, farthest.y + dy, 'stairs-up');
-          pois.push({ x: farthest.x + dx, y: farthest.y + dy, type: 'stairs-up' });
-          break;
-        }
-      }
-    }
+  if (placeStairsFlag) {
+    const stairs = placeStairs(grid, start.x, start.y, {
+      // Cavern allows BFS to traverse pools so stairs can land deep
+      // inside a water-filled chamber when that's the farthest point.
+      passable: t => t === 'floor' || t === 'start' || t === 'water',
+    });
+    if (stairs.down) pois.push({ x: stairs.down.x, y: stairs.down.y, type: 'stairs-down' });
+    if (stairs.up) pois.push({ x: stairs.up.x, y: stairs.up.y, type: 'stairs-up' });
   }
 
   // Carve water pools before chamber detection so the "Underground

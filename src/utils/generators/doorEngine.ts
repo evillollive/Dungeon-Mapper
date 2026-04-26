@@ -1,5 +1,6 @@
 import type { TileType } from '../../types/map';
 import { DIRS_4, getCell, type TypeGrid } from './common';
+import { isRectReachable, reachableMask } from './connectivity';
 import type { Rng } from './random';
 
 /**
@@ -399,43 +400,11 @@ function findStartCell(grid: TypeGrid, rooms: readonly DoorEngineRoom[], startRo
 }
 
 function bfsConnectivity(grid: TypeGrid, sx: number, sy: number): Uint8Array {
-  const h = grid.length;
-  const w = grid[0]?.length ?? 0;
-  const visited = new Uint8Array(w * h);
-  if (sx < 0 || sy < 0 || sx >= w || sy >= h) return visited;
-  if (!isConnectivityPassable(grid[sy][sx])) return visited;
-  const queue: number[] = [sy * w + sx];
-  visited[sy * w + sx] = 1;
-  let head = 0;
-  while (head < queue.length) {
-    const idx = queue[head++];
-    const x = idx % w;
-    const y = (idx - x) / w;
-    for (const [dx, dy] of DIRS_4) {
-      const nx = x + dx;
-      const ny = y + dy;
-      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-      const ni = ny * w + nx;
-      if (visited[ni]) continue;
-      if (!isConnectivityPassable(grid[ny][nx])) continue;
-      visited[ni] = 1;
-      queue.push(ni);
-    }
-  }
-  return visited;
+  return reachableMask(grid, sx, sy, isConnectivityPassable);
 }
 
 function roomIsReachable(visited: Uint8Array, room: DoorEngineRoom, w: number, h: number): boolean {
-  const x0 = Math.max(0, room.x);
-  const x1 = Math.min(w, room.x + room.w);
-  const y0 = Math.max(0, room.y);
-  const y1 = Math.min(h, room.y + room.h);
-  for (let y = y0; y < y1; y++) {
-    for (let x = x0; x < x1; x++) {
-      if (visited[y * w + x]) return true;
-    }
-  }
-  return false;
+  return isRectReachable(visited, room, w, h);
 }
 
 /* ------------------------------------------------------------------ */

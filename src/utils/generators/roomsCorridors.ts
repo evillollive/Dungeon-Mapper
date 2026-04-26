@@ -1,6 +1,5 @@
 import type { Tile } from '../../types/map';
 import {
-  bfsDistances,
   clampDensity,
   collectCells,
   getCell,
@@ -15,6 +14,7 @@ import { getRoomsCorridorsFlavor } from './poi';
 import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotesEngine';
 import { getRoomPalette, type RoomKind } from './roomKinds';
 import { makeRng, type Rng } from './random';
+import { placeStairs } from './stairsEngine';
 import { DEFAULT_SECRET_DOOR_FRACTION } from './tileMix';
 import type { GenerateContext, GeneratedMap } from './types';
 
@@ -287,16 +287,6 @@ function roomSuggestsPillars(kind: RoomKind | undefined): boolean {
   return !!kind && PILLAR_ROOM_LABELS.has(kind.label);
 }
 
-/** Find a cardinal-adjacent floor cell, or undefined if none. */
-function findAdjacentFloor(grid: TypeGrid, cx: number, cy: number): { x: number; y: number } | undefined {
-  for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
-    if (getCell(grid, cx + dx, cy + dy) === 'floor') {
-      return { x: cx + dx, y: cy + dy };
-    }
-  }
-  return undefined;
-}
-
 /**
  * Place water features (fountain / well / puddle) inside rooms. Picks
  * 1–5 rooms large enough (≥5×5) and puts a single water tile near
@@ -496,21 +486,9 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
     // of this function). Corridors are still pure `floor`, so a plain
     // floor-only BFS reaches every connected room — there's nothing for
     // door tiles to gate at this point in the pipeline.
-    const { farthest } = bfsDistances(grid, start.x, start.y, t =>
-      t === 'floor' || t === 'start'
-    );
-    if (farthest.d > 0 && getCell(grid, farthest.x, farthest.y) === 'floor') {
-      setCell(grid, farthest.x, farthest.y, 'stairs-down');
-      pois.push({ x: farthest.x, y: farthest.y, type: 'stairs-down' });
-      // Place stairs-up adjacent to stairs-down so the pair reads as a
-      // connected stairwell. Try all four cardinal neighbors and pick the
-      // first available floor cell.
-      const upCell = findAdjacentFloor(grid, farthest.x, farthest.y);
-      if (upCell) {
-        setCell(grid, upCell.x, upCell.y, 'stairs-up');
-        pois.push({ x: upCell.x, y: upCell.y, type: 'stairs-up' });
-      }
-    }
+    const stairs = placeStairs(grid, start.x, start.y);
+    if (stairs.down) pois.push({ x: stairs.down.x, y: stairs.down.y, type: 'stairs-down' });
+    if (stairs.up) pois.push({ x: stairs.up.x, y: stairs.up.y, type: 'stairs-up' });
   }
 
   // Place water features (fountains, wells, puddles) inside rooms on maps
