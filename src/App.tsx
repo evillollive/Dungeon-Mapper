@@ -258,6 +258,17 @@ function App() {
     }
   }, [uiScale]);
 
+  // When a note is selected from the panel, centre the map viewport on it.
+  const handleSelectNote = useCallback((id: number | null) => {
+    setSelectedNoteId(id);
+    if (id != null) {
+      const note = map.notes.find(n => n.id === id);
+      if (note) {
+        canvasRef.current?.centerOnTile(note.x, note.y);
+      }
+    }
+  }, [setSelectedNoteId, map.notes]);
+
   const handlePickTile = useCallback((tileType: typeof activeTile) => {
     setActiveTile(tileType);
     setActiveTool('paint');
@@ -386,7 +397,7 @@ function App() {
             <NotesPanel
               notes={map.notes}
               selectedNoteId={selectedNoteId}
-              onSelectNote={setSelectedNoteId}
+              onSelectNote={handleSelectNote}
               onUpdateNote={updateNote}
               onDeleteNote={deleteNote}
               onActivateNoteTool={() => setActiveTool('note')}
@@ -425,7 +436,7 @@ function App() {
                   : map.notes
               }
               selectedNoteId={selectedNoteId}
-              onSelectNote={setSelectedNoteId}
+              onSelectNote={handleSelectNote}
               onUpdateNote={NOOP_UPDATE_NOTE}
               onDeleteNote={NOOP_DELETE_NOTE}
               onActivateNoteTool={NOOP_ACTIVATE_NOTE_TOOL}
