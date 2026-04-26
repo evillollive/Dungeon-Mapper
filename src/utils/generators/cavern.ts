@@ -358,17 +358,26 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
       const ord = (kindSeen.get(kind.label) ?? 0) + 1;
       kindSeen.set(kind.label, ord);
       const label = total > 1 ? `${kind.label} ${ord}` : kind.label;
-      // Prefer the centroid; fall back to any chamber cell that isn't
-      // already an anchored POI tile so a labeled tile is always
-      // available for the note → tile link.
+      // Prefer the centroid; fall back to the closest chamber cell to
+      // the centroid that isn't already an anchored POI tile. Using the
+      // nearest cell (rather than the first in array order) keeps the
+      // note close to the area's visual center so reading-order
+      // numbering stays spatially coherent.
       const area = keptAreas[i];
       let ax = area.centroid.x;
       let ay = area.centroid.y;
       if (tiles[ay]?.[ax]?.noteId !== undefined) {
-        const free = area.cells.find(c => tiles[c.y]?.[c.x]?.noteId === undefined);
-        if (free) {
-          ax = free.x;
-          ay = free.y;
+        let bestDist = Infinity;
+        for (const c of area.cells) {
+          if (tiles[c.y]?.[c.x]?.noteId !== undefined) continue;
+          const dx = c.x - area.centroid.x;
+          const dy = c.y - area.centroid.y;
+          const dist = dx * dx + dy * dy;
+          if (dist < bestDist) {
+            bestDist = dist;
+            ax = c.x;
+            ay = c.y;
+          }
         }
       }
       const id = nextId++;

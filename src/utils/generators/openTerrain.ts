@@ -225,10 +225,17 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
       let ax = a.centroid.x;
       let ay = a.centroid.y;
       if (tiles[ay]?.[ax]?.noteId !== undefined) {
-        const free = a.cells.find(c => tiles[c.y]?.[c.x]?.noteId === undefined);
-        if (free) {
-          ax = free.x;
-          ay = free.y;
+        let bestDist = Infinity;
+        for (const c of a.cells) {
+          if (tiles[c.y]?.[c.x]?.noteId !== undefined) continue;
+          const dx = c.x - a.centroid.x;
+          const dy = c.y - a.centroid.y;
+          const dist = dx * dx + dy * dy;
+          if (dist < bestDist) {
+            bestDist = dist;
+            ax = c.x;
+            ay = c.y;
+          }
         }
       }
       const id = nextId++;
