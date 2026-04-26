@@ -258,7 +258,7 @@ function App() {
     }
   }, [uiScale]);
 
-  // When a note is selected from the panel, centre the map viewport on it.
+  // When a note is selected from the panel, center the map viewport on it.
   const handleSelectNote = useCallback((id: number | null) => {
     setSelectedNoteId(id);
     if (id != null) {
