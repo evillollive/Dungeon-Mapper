@@ -367,14 +367,36 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
       let ax = area.centroid.x;
       let ay = area.centroid.y;
       if (tiles[ay]?.[ax]?.noteId !== undefined) {
+        // Compute the fractional geometric mean of the area cells so
+        // distance ties are broken toward the true visual center,
+        // avoiding scan-order bias (always picking the top-left cell).
+        // For symmetric areas the fractional mean may coincide with an
+        // integer cell, leaving ties among 4-neighbors; break those by
+        // preferring the cell on the centroid row (|dy| smallest) then
+        // centroid column (|dx| smallest).
+        let sx = 0;
+        let sy = 0;
+        for (const c of area.cells) { sx += c.x; sy += c.y; }
+        const mx = sx / area.cells.length;
+        const my = sy / area.cells.length;
         let bestDist = Infinity;
+        let bestAbsDy = Infinity;
+        let bestAbsDx = Infinity;
         for (const c of area.cells) {
           if (tiles[c.y]?.[c.x]?.noteId !== undefined) continue;
-          const dx = c.x - area.centroid.x;
-          const dy = c.y - area.centroid.y;
+          const dx = c.x - mx;
+          const dy = c.y - my;
           const dist = dx * dx + dy * dy;
-          if (dist < bestDist) {
+          const absDy = Math.abs(dy);
+          const absDx = Math.abs(dx);
+          if (
+            dist < bestDist ||
+            (dist === bestDist && absDy < bestAbsDy) ||
+            (dist === bestDist && absDy === bestAbsDy && absDx < bestAbsDx)
+          ) {
             bestDist = dist;
+            bestAbsDy = absDy;
+            bestAbsDx = absDx;
             ax = c.x;
             ay = c.y;
           }

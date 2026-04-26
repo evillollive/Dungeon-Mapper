@@ -698,16 +698,41 @@ function appendRoomKindNotes(tiles: Tile[][], rooms: Room[], notes: MapNote[]): 
       ax = center.x;
       ay = center.y;
     } else {
+      // Measure distance from the room's true geometric center
+      // (fractional) rather than from the integer center cell. For
+      // even-sized rooms Math.floor rounds the integer center to one
+      // side, so equidistant integer cells around it appear tied; the
+      // fractional center breaks those ties naturally, keeping the
+      // note as close to the visual middle as possible without any
+      // scan-order bias (top-left, etc.).
+      //
+      // For odd-sized rooms the fractional and integer centers coincide,
+      // so cells directly above/below/left/right of center still tie.
+      // Break remaining ties by preferring the cell on the center row
+      // (smallest |dy|) then center column (smallest |dx|) so the note
+      // stays visually centered rather than jumping to the top edge.
+      const gcx = r.x + (r.w - 1) / 2;
+      const gcy = r.y + (r.h - 1) / 2;
       let bestDist = Infinity;
+      let bestAbsDy = Infinity;
+      let bestAbsDx = Infinity;
       for (let y = r.y; y < r.y + r.h; y++) {
         for (let x = r.x; x < r.x + r.w; x++) {
           const t = tiles[y]?.[x];
           if (t && t.type === 'floor' && t.noteId === undefined) {
-            const dx = x - center.x;
-            const dy = y - center.y;
+            const dx = x - gcx;
+            const dy = y - gcy;
             const dist = dx * dx + dy * dy;
-            if (dist < bestDist) {
+            const absDy = Math.abs(dy);
+            const absDx = Math.abs(dx);
+            if (
+              dist < bestDist ||
+              (dist === bestDist && absDy < bestAbsDy) ||
+              (dist === bestDist && absDy === bestAbsDy && absDx < bestAbsDx)
+            ) {
               bestDist = dist;
+              bestAbsDy = absDy;
+              bestAbsDx = absDx;
               ax = x;
               ay = y;
             }
