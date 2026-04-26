@@ -547,7 +547,7 @@ function adjacentRoomsForDoor(rooms: Room[], x: number, y: number): number[] {
  * doors read as entrances to concealed rooms instead of arbitrary hidden
  * panels between already-accessible spaces or into blank wall.
  */
-function shuffleDoorCells<T>(items: T[], rng: Rng): T[] {
+function shuffleArray<T>(items: T[], rng: Rng): T[] {
   const shuffled = [...items];
   for (let i = shuffled.length - 1; i > 0; i--) {
     const j = rng.int(0, i);
@@ -585,11 +585,12 @@ function convertSecretDoors(grid: TypeGrid, rooms: Room[], rng: Rng, fraction: n
   for (const c of doorCells) {
     c.preferred = c.rooms.length === 1 && (doorCountByRoom.get(c.rooms[0]) ?? 0) === 1;
   }
+  if (doorCells.length === 0) return;
 
   const target = Math.min(doorCells.length, Math.max(1, Math.round(doorCells.length * chance)));
   const selected: { x: number; y: number }[] = [];
   const addFrom = (cells: typeof doorCells) => {
-    for (const c of shuffleDoorCells(cells, rng)) {
+    for (const c of shuffleArray(cells, rng)) {
       if (selected.length >= target) break;
       selected.push(c);
     }
