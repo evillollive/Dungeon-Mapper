@@ -3,6 +3,7 @@ import {
   bfsDistances,
   clampDensity,
   collectCells,
+  DIRS_4,
   getCell,
   makeTypeGrid,
   outlineWalls,
@@ -500,7 +501,7 @@ function isPassageTile(t: TileType): boolean {
 
 function adjacentRoomsForDoor(rooms: Room[], x: number, y: number): number[] {
   const out: number[] = [];
-  for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
+  for (const [dx, dy] of DIRS_4) {
     const idx = roomContaining(rooms, x + dx, y + dy);
     if (idx >= 0 && !out.includes(idx)) out.push(idx);
   }
@@ -558,7 +559,9 @@ function removeInvalidSecretDoors(grid: TypeGrid): void {
       const southPassable = isPassageTile(getCell(grid, x, y + 1));
       const eastPassable = isPassageTile(getCell(grid, x + 1, y));
       const westPassable = isPassageTile(getCell(grid, x - 1, y));
-      if (!(northPassable && southPassable) && !(eastPassable && westPassable)) grid[y][x] = 'wall';
+      const hasVerticalPassage = northPassable && southPassable;
+      const hasHorizontalPassage = eastPassable && westPassable;
+      if (!hasVerticalPassage && !hasHorizontalPassage) grid[y][x] = 'wall';
     }
   }
 }
