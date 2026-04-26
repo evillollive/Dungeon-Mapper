@@ -9,7 +9,7 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **Grid editor** — configurable map from 8×8 up to 128×128 (selectable widths/heights: 8, 16, 24, 32, 48, 64, 96, 128), default 32×32
 - **Tile size** — selectable tile size (12, 16, 20, 24, 32 px), default 20 px
 - **12 paintable tile types** — Floor, Wall, Door (H/V), Secret Door, Stairs Up/Down, Water, Pillar, Trap, Treasure, Start (use the Erase tool to clear a tile back to empty)
-- **12 preset theme modes** — Castle, Dungeon, Starship, Alien World, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City, Pirate, Desert (see [Preset Modes](#preset-modes) below)
+- **13 preset theme modes** — Castle, Dungeon, Starship, Alien World, Lost Civilization, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City, Pirate, Desert (see [Preset Modes](#preset-modes) below)
 - **Graph-paper canvas** — light parchment background with cyan grid lines, evoking traditional engineering / quad-ruled graph paper
 - **Print mode** — toggle a high-contrast black-and-white renderer for printer-friendly output
 - **GM drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`
@@ -43,6 +43,7 @@ Each theme keeps the same underlying tile types but renames them and re-renders 
 | **Cyberpunk** | Neon-lit street grids | Street / Barrier / Shutter / Cloaked Panel / Acid Pool / Terminal / Turret / Chip Cache / Spawn |
 | **Desert** | Sun-baked sands and tombs | Sand / Sandstone / Tomb Door / Hidden Chamber / Oasis / Cactus / Quicksand / Relic / Caravan |
 | **Dungeon** *(default)* | Subterranean crawl | Flagstone / Stone Wall / Iron Door / Secret Door / Underground Pool / Pillar / Trap / Treasure / Entrance |
+| **Lost Civilization** | Ancient temple complex | Flagstone / Carved Wall / Stone Slab / Hidden Glyph / Reflecting Pool / Pillar / Cursed Glyph / Sarcophagus / Obelisk |
 | **Modern City** | Contemporary urban streets | Sidewalk / Building / Doorway / Hidden Door / Fountain / Lamp Post / Manhole / ATM / Bus Stop |
 | **Old West** | Frontier towns and saloons | Dirt / Plank Wall / Saloon Door / Hidden Passage / Water Trough / Post / Bear Trap / Gold / Entrance |
 | **Pirate** | Tall ships and hidden coves | Deck / Hull / Hatch / Smuggler Hatch / Bilge / Mast / Cannon / Booty / Anchor |
@@ -118,7 +119,7 @@ The **Algorithm** dropdown selects the generator. Opening the dialog pre-selects
 
 | Algorithm | What it produces | Default for themes |
 | --- | --- | --- |
-| **Rooms & Corridors** | Rectangular rooms connected by L-shaped corridors. Best for dungeons, castles, ships, and other built spaces. | Dungeon, Castle, Starship, Alien World, Steampunk, Cyberpunk, Modern City, Pirate, Old West |
+| **Rooms & Corridors** | Rectangular rooms connected by L-shaped corridors. Best for dungeons, castles, ships, and other built spaces. | Dungeon, Castle, Starship, Alien World, Steampunk, Cyberpunk, Modern City, Pirate, Old West, Lost Civilization |
 | **Open Terrain** | Open ground scattered with obstacles, water, and standing stones. Best for outdoor / overland maps. | Wilderness, Desert, Post-Apocalypse |
 | **Cavern** | Organic cave system carved out via cellular-automata smoothing, guaranteed to be a single connected region. | (No theme defaults to this — pick it manually for any theme.) |
 
