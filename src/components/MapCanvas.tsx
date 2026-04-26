@@ -3,6 +3,7 @@ import type { DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, Annota
 import { TOKEN_KIND_COLORS } from '../types/map';
 import { getTheme } from '../themes/index';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
+import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from '../utils/tokenVisibility';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
@@ -338,6 +339,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
             // maps render each tile in its original theme.
             const tileTheme = tile.theme ? getTheme(tile.theme) : theme;
             tileTheme.drawTile(ctx, tile.type, x, y, tileSize);
+            // Draw print-mode-inspired glyph overlay for quick identification.
+            drawTileOverlay(ctx, tile.type, x, y, tileSize, tileTheme.tileColors[tile.type]);
           }
         }
       }
