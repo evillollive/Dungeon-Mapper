@@ -111,7 +111,7 @@ export interface DungeonMap {
 }
 
 export type ToolType =
-  | 'paint' | 'erase' | 'fill' | 'eyedropper' | 'note' | 'line' | 'rect' | 'select'
+  | 'paint' | 'erase' | 'fill' | 'note' | 'line' | 'rect' | 'select'
   // GM fog tools — reveal/hide drag-rectangles of cells.
   | 'reveal' | 'hide'
   // Freehand "wipe away the fog" brush — clears fog cell-by-cell as the

@@ -269,11 +269,6 @@ function App() {
     }
   }, [setSelectedNoteId, map.notes]);
 
-  const handlePickTile = useCallback((tileType: typeof activeTile) => {
-    setActiveTile(tileType);
-    setActiveTool('paint');
-  }, [setActiveTile, setActiveTool]);
-
   const handleEraseTiles = useCallback((tiles: { x: number; y: number }[]) => {
     setTiles(tiles.map(t => ({ ...t, type: 'empty' as const })));
   }, [setTiles]);
@@ -369,7 +364,6 @@ function App() {
             onSetTile={setTile}
             onSetTiles={setTiles}
             onFillTile={fillTiles}
-            onPickTile={handlePickTile}
             onAddNote={addNote}
             onSelectNote={setSelectedNoteId}
             onEraseTiles={handleEraseTiles}

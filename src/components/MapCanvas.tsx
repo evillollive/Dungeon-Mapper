@@ -47,7 +47,6 @@ interface MapCanvasProps {
   onSetTile: (x: number, y: number, type: TileType) => void;
   onSetTiles: (tiles: { x: number; y: number; type: TileType }[]) => void;
   onFillTile: (x: number, y: number, type: TileType) => void;
-  onPickTile: (type: TileType) => void;
   onAddNote: (x: number, y: number) => void;
   onSelectNote: (id: number | null) => void;
   onEraseTiles: (tiles: { x: number; y: number }[]) => void;
@@ -233,7 +232,6 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   onSetTile,
   onSetTiles,
   onFillTile,
-  onPickTile,
   onAddNote,
   onSelectNote,
   onEraseTiles,
@@ -664,9 +662,6 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       onSetTile(x, y, 'empty');
     } else if (activeTool === 'fill') {
       onFillTile(x, y, activeTile);
-    } else if (activeTool === 'eyedropper') {
-      const tileType = tiles[y]?.[x]?.type;
-      if (tileType) onPickTile(tileType);
     } else if (activeTool === 'note') {
       const existingNote = notes.find(n => n.x === x && n.y === y);
       if (existingNote) {
@@ -676,8 +671,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       }
     }
   }, [
-    activeTool, activeTile, getTileCoords, onSetTile, onFillTile, onPickTile, onAddNote, onSelectNote,
-    tiles, notes, selectedNoteId, isPlayerView, fogActive, fog, tokens, annotations,
+    activeTool, activeTile, getTileCoords, onSetTile, onFillTile, onAddNote, onSelectNote,
+    notes, selectedNoteId, isPlayerView, fogActive, fog, tokens, annotations,
     onAddToken, onRemoveToken, onRemoveAnnotation, meta.width, meta.height,
   ]);
 
@@ -952,8 +947,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setPan({ x: 0, y: -controlsH / 2 });
   }, [meta.width, meta.height, tileSize]);
 
-  const cursorStyle = activeTool === 'eyedropper' ? 'crosshair'
-    : activeTool === 'fill' ? 'cell'
+  const cursorStyle = activeTool === 'fill' ? 'cell'
     : activeTool === 'note' ? 'copy'
     : activeTool === 'select' ? 'default'
     : activeTool === 'reveal' || activeTool === 'hide' ? 'cell'
