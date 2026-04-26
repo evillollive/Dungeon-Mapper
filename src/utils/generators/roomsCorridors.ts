@@ -1,8 +1,9 @@
-import type { MapNote, Tile } from '../../types/map';
+import type { MapNote, Tile, TileType } from '../../types/map';
 import {
   bfsDistances,
   clampDensity,
   collectCells,
+  DIRS_4,
   getCell,
   makeTypeGrid,
   outlineWalls,
@@ -25,6 +26,8 @@ interface Room {
    *  the active theme has no room palette or labeling is disabled. */
   kind?: RoomKind;
 }
+
+type DoorType = 'door-h' | 'door-v';
 
 /**
  * Clamp the optional `roomSize` tile-mix multiplier to a sane range
@@ -127,7 +130,7 @@ function pickExit(
   height: number
 ): {
   exit: { x: number; y: number };
-  door: { x: number; y: number; type: 'door-h' | 'door-v' };
+  door: { x: number; y: number; type: DoorType };
 } {
   const tc = roomCenter(target);
   const rc = roomCenter(room);
@@ -140,7 +143,7 @@ function pickExit(
 
   for (const side of order) {
     let doorX: number, doorY: number, exitX: number, exitY: number;
-    let type: 'door-h' | 'door-v';
+    let type: DoorType;
     if (side === 'e' || side === 'w') {
       // Door sits on the east or west wall; traversal is east-west → door-v.
       doorX = side === 'e' ? room.x + room.w : room.x - 1;
@@ -179,7 +182,7 @@ function pickExit(
 function placeDoors(grid: TypeGrid): void {
   const h = grid.length;
   const w = grid[0]?.length ?? 0;
-  const updates: { x: number; y: number; type: 'door-h' | 'door-v' }[] = [];
+  const updates: { x: number; y: number; type: DoorType }[] = [];
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       if (grid[y][x] !== 'wall') continue;
@@ -215,22 +218,22 @@ function placeDoors(grid: TypeGrid): void {
  * door-v candidates run along a column (same x, consecutive y).
  */
 function reduceConsecutiveDoors(
-  candidates: { x: number; y: number; type: 'door-h' | 'door-v' }[],
-): { x: number; y: number; type: 'door-h' | 'door-v' }[] {
+  candidates: { x: number; y: number; type: DoorType }[],
+): { x: number; y: number; type: DoorType }[] {
   // Build a fast lookup set so we can walk neighbours.
   const key = (x: number, y: number, t: string) => `${x},${y},${t}`;
   const remaining = new Set(candidates.map(c => key(c.x, c.y, c.type)));
-  const index = new Map<string, { x: number; y: number; type: 'door-h' | 'door-v' }>();
+  const index = new Map<string, { x: number; y: number; type: DoorType }>();
   for (const c of candidates) index.set(key(c.x, c.y, c.type), c);
 
-  const result: { x: number; y: number; type: 'door-h' | 'door-v' }[] = [];
+  const result: { x: number; y: number; type: DoorType }[] = [];
 
   for (const c of candidates) {
     const k = key(c.x, c.y, c.type);
     if (!remaining.has(k)) continue;
 
     // Collect the full contiguous run starting from this candidate.
-    const run: { x: number; y: number; type: 'door-h' | 'door-v' }[] = [c];
+    const run: { x: number; y: number; type: DoorType }[] = [c];
     remaining.delete(k);
 
     // Step delta along the wall: row for door-h, column for door-v.
@@ -280,7 +283,7 @@ function reduceConsecutiveDoors(
 function narrowRoomEntrances(grid: TypeGrid, rooms: Room[]): void {
   const h = grid.length;
   const w = grid[0]?.length ?? 0;
-  type SideCell = { x: number; y: number; type: 'door-h' | 'door-v' };
+  type SideCell = { x: number; y: number; type: DoorType };
   const inBounds = (x: number, y: number) =>
     x >= 0 && y >= 0 && x < w && y < h;
   for (const room of rooms) {
@@ -337,6 +340,27 @@ function narrowRoomEntrances(grid: TypeGrid, rooms: Room[]): void {
           if (i === keepIdx) grid[c.y][c.x] = c.type;
           else grid[c.y][c.x] = 'wall';
         }
+      }
+    }
+  }
+}
+
+/**
+ * Collapse "airlock" artifacts where two same-facing doors end up adjacent
+ * along their travel direction. A person would experience that as one
+ * doorway with an extra threshold, so keep the farther door and turn the
+ * other cell back into open passage.
+ */
+function collapseBackToBackDoors(grid: TypeGrid): void {
+  const h = grid.length;
+  const w = grid[0]?.length ?? 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const t = grid[y][x];
+      if (t === 'door-v' && getCell(grid, x + 1, y) === 'door-v') {
+        grid[y][x] = 'floor';
+      } else if (t === 'door-h' && getCell(grid, x, y + 1) === 'door-h') {
+        grid[y][x] = 'floor';
       }
     }
   }
@@ -467,15 +491,79 @@ function roomSuggestsPillars(kind: RoomKind | undefined): boolean {
  * Convert a fraction of placed doors to hidden `secret-door` tiles.
  * Runs after door thinning so it only touches surviving doors.
  */
-function convertSecretDoors(grid: TypeGrid, rng: Rng, fraction: number): void {
+function isAnyDoorType(t: TileType): t is DoorType | 'secret-door' {
+  return t === 'door-h' || t === 'door-v' || t === 'secret-door';
+}
+
+function isPassageTile(t: TileType): boolean {
+  return t === 'floor' || isAnyDoorType(t);
+}
+
+function adjacentRoomsForDoor(rooms: Room[], x: number, y: number): number[] {
+  const out = new Set<number>();
+  for (const [dx, dy] of DIRS_4) {
+    const idx = roomContaining(rooms, x + dx, y + dy);
+    if (idx >= 0) out.add(idx);
+  }
+  return [...out];
+}
+
+/**
+ * Convert a fraction of doors to hidden `secret-door` tiles, but only where
+ * the hidden door is the sole visible entrance to a room. This makes secret
+ * doors read as entrances to concealed rooms instead of arbitrary hidden
+ * panels between already-accessible spaces or into blank wall.
+ */
+function convertSecretDoors(grid: TypeGrid, rooms: Room[], rng: Rng, fraction: number): void {
   if (fraction <= 0) return;
   const h = grid.length;
   const w = grid[0]?.length ?? 0;
+  // `generateRoomsCorridors` always places the player start in rooms[0], so
+  // keep that initial room visibly connected instead of making it "secret".
+  const initialRoomIndex = 0;
+  const doorCells: { x: number; y: number; rooms: number[] }[] = [];
+  const doorCountByRoom = new Map<number, number>();
+
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const t = grid[y][x];
       if (t !== 'door-h' && t !== 'door-v') continue;
-      if (rng.next() < fraction) grid[y][x] = 'secret-door';
+      const adjacentRooms = adjacentRoomsForDoor(rooms, x, y);
+      if (adjacentRooms.length === 0) continue;
+      doorCells.push({ x, y, rooms: adjacentRooms });
+      for (const roomIdx of adjacentRooms) {
+        doorCountByRoom.set(roomIdx, (doorCountByRoom.get(roomIdx) ?? 0) + 1);
+      }
+    }
+  }
+
+  for (const c of doorCells) {
+    if (c.rooms.length !== 1) continue;
+    const roomIdx = c.rooms[0];
+    if (roomIdx === initialRoomIndex) continue;
+    if ((doorCountByRoom.get(roomIdx) ?? 0) !== 1) continue;
+    if (rng.next() < fraction) grid[c.y][c.x] = 'secret-door';
+  }
+}
+
+/**
+ * After thinning can remove neighboring doors, a secret door may no longer
+ * bridge two passable cells. Restore those invalid hidden doors to walls so
+ * the map never shows a secret door leading straight into solid wall.
+ */
+function removeInvalidSecretDoors(grid: TypeGrid): void {
+  const h = grid.length;
+  const w = grid[0]?.length ?? 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      if (grid[y][x] !== 'secret-door') continue;
+      const northPassable = isPassageTile(getCell(grid, x, y - 1));
+      const southPassable = isPassageTile(getCell(grid, x, y + 1));
+      const eastPassable = isPassageTile(getCell(grid, x + 1, y));
+      const westPassable = isPassageTile(getCell(grid, x - 1, y));
+      const hasVerticalPassage = northPassable && southPassable;
+      const hasHorizontalPassage = eastPassable && westPassable;
+      if (!hasVerticalPassage && !hasHorizontalPassage) grid[y][x] = 'wall';
     }
   }
 }
@@ -629,7 +717,7 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   // run along the outside of rooms instead of straight through them.
   // The connectivity graph remains a path (room i ↔ room i+1), so the
   // dungeon is still fully connected.
-  const doorsToPlace: { x: number; y: number; type: 'door-h' | 'door-v' }[] = [];
+  const doorsToPlace: { x: number; y: number; type: DoorType }[] = [];
   for (let i = 1; i < rooms.length; i++) {
     const a = pickExit(rooms[i - 1], rooms[i], rng, width, height);
     const b = pickExit(rooms[i], rooms[i - 1], rng, width, height);
@@ -664,13 +752,15 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   // before `thinDoors` so the user's "Doors" slider still applies to the
   // narrowed result.
   narrowRoomEntrances(grid, rooms);
+  collapseBackToBackDoors(grid);
   // Apply the "Doors" slider: thin doors after they've been geometrically
   // placed. Defaults to keeping all of them so legacy seeds reproduce.
   if (ov.doors !== undefined) thinDoors(grid, rng, ov.doors);
   // Apply the "Secret Doors" slider: convert a fraction of remaining doors
   // to hidden secret-door tiles so the map has discoverable passages.
   if (ov.secretDoors !== undefined && ov.secretDoors > 0) {
-    convertSecretDoors(grid, rng, ov.secretDoors);
+    convertSecretDoors(grid, rooms, rng, ov.secretDoors);
+    removeInvalidSecretDoors(grid);
   }
 
   // Resolve the per-room archetype before placing POIs so the bias loop
