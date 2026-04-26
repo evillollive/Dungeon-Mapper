@@ -382,6 +382,12 @@ function pickBiasedFloor(
   return { idx, cell: cells[idx] };
 }
 
+/** 8-neighborhood offsets: cardinals first, then diagonals. */
+const DIRS_8_OFFSETS: readonly [number, number][] = [
+  [0, -1], [0, 1], [-1, 0], [1, 0],
+  [-1, -1], [1, -1], [-1, 1], [1, 1],
+];
+
 /**
  * Room-kind labels that suggest pillars / columns. When a room has one
  * of these archetypes and is large enough (≥6×6), pillars are placed in
@@ -450,15 +456,12 @@ function placeWaterFeatures(grid: TypeGrid, rooms: Room[], rng: Rng): void {
       setCell(grid, cx, cy, 'water');
     } else {
       // Try one ring around center.
-      let placed = false;
-      for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]] as const) {
+      for (const [dx, dy] of DIRS_8_OFFSETS) {
         if (getCell(grid, cx + dx, cy + dy) === 'floor') {
           setCell(grid, cx + dx, cy + dy, 'water');
-          placed = true;
           break;
         }
       }
-      if (!placed) continue;
     }
   }
 }
@@ -467,16 +470,19 @@ function placeWaterFeatures(grid: TypeGrid, rooms: Room[], rng: Rng): void {
  * Place pillar tiles in a grid pattern inside rooms large enough (≥6×6).
  * Rooms whose archetype suggests pillars (Great Hall, Hall of Pillars,
  * Lobby, etc.) always get pillars. Other rooms only get pillars when
- * their area exceeds 64 cells (≈8×8). The grid pattern uses a 2-cell
- * spacing inset by 1 cell from the room walls.
+ * their area exceeds MIN_PILLAR_AREA cells, and only with
+ * PILLAR_CHANCE_NON_SUGGESTED probability to keep variation between maps.
+ * The grid pattern uses a 2-cell spacing inset by 1 cell from the room
+ * walls.
  */
+const MIN_PILLAR_AREA = 64;
+const PILLAR_CHANCE_NON_SUGGESTED = 0.4;
+
 function placePillarsInRooms(grid: TypeGrid, rooms: Room[], rng: Rng): void {
   for (const r of rooms) {
     if (r.w < 6 || r.h < 6) continue;
     const suggested = roomSuggestsPillars(r.kind);
-    // Non-suggested rooms only get pillars at ≥64 area, and only 40% of
-    // the time to keep variation between maps.
-    if (!suggested && (roomArea(r) < 64 || !rng.chance(0.4))) continue;
+    if (!suggested && (roomArea(r) < MIN_PILLAR_AREA || !rng.chance(PILLAR_CHANCE_NON_SUGGESTED))) continue;
     // Grid pattern: 2 cells from each wall, then every 3 cells.
     for (let y = r.y + 2; y < r.y + r.h - 2; y += 3) {
       for (let x = r.x + 2; x < r.x + r.w - 2; x += 3) {
