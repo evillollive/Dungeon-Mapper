@@ -557,10 +557,10 @@ function shuffleArray<T>(items: T[], rng: Rng): T[] {
 }
 
 function convertSecretDoors(grid: TypeGrid, rooms: Room[], rng: Rng, fraction: number): void {
-  if (fraction <= 0) return;
+  if (!Number.isFinite(fraction) || fraction <= 0) return;
   const h = grid.length;
   const w = grid[0]?.length ?? 0;
-  const chance = Math.max(0, Math.min(1, fraction));
+  const clampedFraction = Math.min(1, fraction);
   // `generateRoomsCorridors` always places the player start in rooms[0], so
   // keep that initial room visibly connected instead of making it "secret".
   const initialRoomIndex = 0;
@@ -587,7 +587,8 @@ function convertSecretDoors(grid: TypeGrid, rooms: Room[], rng: Rng, fraction: n
   }
   if (doorCells.length === 0) return;
 
-  const target = Math.min(doorCells.length, Math.max(1, Math.round(doorCells.length * chance)));
+  const target = Math.min(doorCells.length, Math.round(doorCells.length * clampedFraction));
+  if (target <= 0) return;
   const selected: { x: number; y: number }[] = [];
   const addFrom = (cells: typeof doorCells) => {
     for (const c of shuffleArray(cells, rng)) {
