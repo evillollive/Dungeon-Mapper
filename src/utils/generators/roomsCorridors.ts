@@ -369,9 +369,9 @@ function collapseBackToBackDoors(grid: TypeGrid): void {
 
 function doorHasOrientedPassage(grid: TypeGrid, x: number, y: number, type: DoorType): boolean {
   if (type === 'door-h') {
-    return isPassageTile(getCell(grid, x, y - 1)) && isPassageTile(getCell(grid, x, y + 1));
+    return isNonDoorPassageTile(getCell(grid, x, y - 1)) && isNonDoorPassageTile(getCell(grid, x, y + 1));
   }
-  return isPassageTile(getCell(grid, x - 1, y)) && isPassageTile(getCell(grid, x + 1, y));
+  return isNonDoorPassageTile(getCell(grid, x - 1, y)) && isNonDoorPassageTile(getCell(grid, x + 1, y));
 }
 
 /**
@@ -388,8 +388,8 @@ function normalizeInvalidDoors(grid: TypeGrid): void {
       if (t !== 'door-h' && t !== 'door-v') continue;
       if (doorHasOrientedPassage(grid, x, y, t)) continue;
       const hasPerpendicularPassage = t === 'door-h'
-        ? isPassageTile(getCell(grid, x - 1, y)) && isPassageTile(getCell(grid, x + 1, y))
-        : isPassageTile(getCell(grid, x, y - 1)) && isPassageTile(getCell(grid, x, y + 1));
+        ? isNonDoorPassageTile(getCell(grid, x - 1, y)) && isNonDoorPassageTile(getCell(grid, x + 1, y))
+        : isNonDoorPassageTile(getCell(grid, x, y - 1)) && isNonDoorPassageTile(getCell(grid, x, y + 1));
       grid[y][x] = hasPerpendicularPassage ? 'floor' : 'wall';
     }
   }
@@ -520,12 +520,16 @@ function roomSuggestsPillars(kind: RoomKind | undefined): boolean {
  * Convert a fraction of placed doors to hidden `secret-door` tiles.
  * Runs after door thinning so it only touches surviving doors.
  */
-function isAnyDoorType(t: TileType): t is DoorType | 'secret-door' {
-  return t === 'door-h' || t === 'door-v' || t === 'secret-door';
-}
-
-function isPassageTile(t: TileType): boolean {
-  return t === 'floor' || isAnyDoorType(t);
+function isNonDoorPassageTile(t: TileType): boolean {
+  return (
+    t === 'floor' ||
+    t === 'secret-door' ||
+    t === 'start' ||
+    t === 'stairs-up' ||
+    t === 'stairs-down' ||
+    t === 'treasure' ||
+    t === 'trap'
+  );
 }
 
 function adjacentRoomsForDoor(rooms: Room[], x: number, y: number): number[] {
@@ -609,10 +613,10 @@ function removeInvalidSecretDoors(grid: TypeGrid): void {
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       if (grid[y][x] !== 'secret-door') continue;
-      const northPassable = isPassageTile(getCell(grid, x, y - 1));
-      const southPassable = isPassageTile(getCell(grid, x, y + 1));
-      const eastPassable = isPassageTile(getCell(grid, x + 1, y));
-      const westPassable = isPassageTile(getCell(grid, x - 1, y));
+      const northPassable = isNonDoorPassageTile(getCell(grid, x, y - 1));
+      const southPassable = isNonDoorPassageTile(getCell(grid, x, y + 1));
+      const eastPassable = isNonDoorPassageTile(getCell(grid, x + 1, y));
+      const westPassable = isNonDoorPassageTile(getCell(grid, x - 1, y));
       const hasVerticalPassage = northPassable && southPassable;
       const hasHorizontalPassage = eastPassable && westPassable;
       if (!hasVerticalPassage && !hasHorizontalPassage) grid[y][x] = 'wall';
