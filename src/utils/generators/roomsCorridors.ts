@@ -15,6 +15,7 @@ import {
 import { getRoomsCorridorsFlavor, poiLabelFor, poiLabelIsRoom } from './poi';
 import { getRoomPalette, type RoomKind } from './roomKinds';
 import { makeRng, type Rng } from './random';
+import { DEFAULT_SECRET_DOOR_FRACTION } from './tileMix';
 import type { GenerateContext, GeneratedMap } from './types';
 
 interface Room {
@@ -366,6 +367,34 @@ function collapseBackToBackDoors(grid: TypeGrid): void {
   }
 }
 
+function doorHasOrientedPassage(grid: TypeGrid, x: number, y: number, type: DoorType): boolean {
+  if (type === 'door-h') {
+    return isNonDoorPassageTile(getCell(grid, x, y - 1)) && isNonDoorPassageTile(getCell(grid, x, y + 1));
+  }
+  return isNonDoorPassageTile(getCell(grid, x - 1, y)) && isNonDoorPassageTile(getCell(grid, x + 1, y));
+}
+
+/**
+ * Remove door glyphs that no longer bridge passable cells in their rendered
+ * orientation. If the same cell is actually part of a perpendicular corridor,
+ * keep the corridor as floor; otherwise restore the solid wall.
+ */
+function normalizeInvalidDoors(grid: TypeGrid): void {
+  const h = grid.length;
+  const w = grid[0]?.length ?? 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const t = grid[y][x];
+      if (t !== 'door-h' && t !== 'door-v') continue;
+      if (doorHasOrientedPassage(grid, x, y, t)) continue;
+      const hasPerpendicularPassage = t === 'door-h'
+        ? isNonDoorPassageTile(getCell(grid, x - 1, y)) && isNonDoorPassageTile(getCell(grid, x + 1, y))
+        : isNonDoorPassageTile(getCell(grid, x, y - 1)) && isNonDoorPassageTile(getCell(grid, x, y + 1));
+      grid[y][x] = hasPerpendicularPassage ? 'floor' : 'wall';
+    }
+  }
+}
+
 /**
  * Randomly demote a fraction of the placed doors back to walls. Driven by
  * the "Doors" tile-mix slider — `keepFraction = 1` (default) preserves
@@ -491,12 +520,16 @@ function roomSuggestsPillars(kind: RoomKind | undefined): boolean {
  * Convert a fraction of placed doors to hidden `secret-door` tiles.
  * Runs after door thinning so it only touches surviving doors.
  */
-function isAnyDoorType(t: TileType): t is DoorType | 'secret-door' {
-  return t === 'door-h' || t === 'door-v' || t === 'secret-door';
-}
-
-function isPassageTile(t: TileType): boolean {
-  return t === 'floor' || isAnyDoorType(t);
+function isNonDoorPassageTile(t: TileType): boolean {
+  return (
+    t === 'floor' ||
+    t === 'secret-door' ||
+    t === 'start' ||
+    t === 'stairs-up' ||
+    t === 'stairs-down' ||
+    t === 'treasure' ||
+    t === 'trap'
+  );
 }
 
 function adjacentRoomsForDoor(rooms: Room[], x: number, y: number): number[] {
@@ -514,23 +547,35 @@ function adjacentRoomsForDoor(rooms: Room[], x: number, y: number): number[] {
  * doors read as entrances to concealed rooms instead of arbitrary hidden
  * panels between already-accessible spaces or into blank wall.
  */
+function shuffleArray<T>(items: T[], rng: Rng): T[] {
+  const shuffled = [...items];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = rng.int(0, i);
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 function convertSecretDoors(grid: TypeGrid, rooms: Room[], rng: Rng, fraction: number): void {
-  if (fraction <= 0) return;
+  if (!Number.isFinite(fraction) || fraction <= 0) return;
   const h = grid.length;
   const w = grid[0]?.length ?? 0;
+  const clampedFraction = Math.min(1, fraction);
   // `generateRoomsCorridors` always places the player start in rooms[0], so
   // keep that initial room visibly connected instead of making it "secret".
   const initialRoomIndex = 0;
-  const doorCells: { x: number; y: number; rooms: number[] }[] = [];
+  const doorCells: { x: number; y: number; rooms: number[]; preferred: boolean }[] = [];
   const doorCountByRoom = new Map<number, number>();
 
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       const t = grid[y][x];
       if (t !== 'door-h' && t !== 'door-v') continue;
+      if (!doorHasOrientedPassage(grid, x, y, t)) continue;
       const adjacentRooms = adjacentRoomsForDoor(rooms, x, y);
       if (adjacentRooms.length === 0) continue;
-      doorCells.push({ x, y, rooms: adjacentRooms });
+      if (adjacentRooms.includes(initialRoomIndex)) continue;
+      doorCells.push({ x, y, rooms: adjacentRooms, preferred: false });
       for (const roomIdx of adjacentRooms) {
         doorCountByRoom.set(roomIdx, (doorCountByRoom.get(roomIdx) ?? 0) + 1);
       }
@@ -538,11 +583,24 @@ function convertSecretDoors(grid: TypeGrid, rooms: Room[], rng: Rng, fraction: n
   }
 
   for (const c of doorCells) {
-    if (c.rooms.length !== 1) continue;
-    const roomIdx = c.rooms[0];
-    if (roomIdx === initialRoomIndex) continue;
-    if ((doorCountByRoom.get(roomIdx) ?? 0) !== 1) continue;
-    if (rng.next() < fraction) grid[c.y][c.x] = 'secret-door';
+    c.preferred = c.rooms.length === 1 && (doorCountByRoom.get(c.rooms[0]) ?? 0) === 1;
+  }
+  if (doorCells.length === 0) return;
+
+  const target = Math.min(doorCells.length, Math.round(doorCells.length * clampedFraction));
+  if (target <= 0) return;
+  const selected: { x: number; y: number }[] = [];
+  const addFrom = (cells: typeof doorCells) => {
+    for (const c of shuffleArray(cells, rng)) {
+      if (selected.length >= target) break;
+      selected.push(c);
+    }
+  };
+  addFrom(doorCells.filter(c => c.preferred));
+  if (selected.length < target) addFrom(doorCells.filter(c => !c.preferred));
+
+  for (const c of selected) {
+    grid[c.y][c.x] = 'secret-door';
   }
 }
 
@@ -557,10 +615,10 @@ function removeInvalidSecretDoors(grid: TypeGrid): void {
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       if (grid[y][x] !== 'secret-door') continue;
-      const northPassable = isPassageTile(getCell(grid, x, y - 1));
-      const southPassable = isPassageTile(getCell(grid, x, y + 1));
-      const eastPassable = isPassageTile(getCell(grid, x + 1, y));
-      const westPassable = isPassageTile(getCell(grid, x - 1, y));
+      const northPassable = isNonDoorPassageTile(getCell(grid, x, y - 1));
+      const southPassable = isNonDoorPassageTile(getCell(grid, x, y + 1));
+      const eastPassable = isNonDoorPassageTile(getCell(grid, x + 1, y));
+      const westPassable = isNonDoorPassageTile(getCell(grid, x - 1, y));
       const hasVerticalPassage = northPassable && southPassable;
       const hasHorizontalPassage = eastPassable && westPassable;
       if (!hasVerticalPassage && !hasHorizontalPassage) grid[y][x] = 'wall';
@@ -753,13 +811,16 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   // narrowed result.
   narrowRoomEntrances(grid, rooms);
   collapseBackToBackDoors(grid);
+  normalizeInvalidDoors(grid);
   // Apply the "Doors" slider: thin doors after they've been geometrically
   // placed. Defaults to keeping all of them so legacy seeds reproduce.
   if (ov.doors !== undefined) thinDoors(grid, rng, ov.doors);
+  normalizeInvalidDoors(grid);
   // Apply the "Secret Doors" slider: convert a fraction of remaining doors
   // to hidden secret-door tiles so the map has discoverable passages.
-  if (ov.secretDoors !== undefined && ov.secretDoors > 0) {
-    convertSecretDoors(grid, rooms, rng, ov.secretDoors);
+  const secretDoorFraction = ov.secretDoors ?? DEFAULT_SECRET_DOOR_FRACTION;
+  if (secretDoorFraction > 0) {
+    convertSecretDoors(grid, rooms, rng, secretDoorFraction);
     removeInvalidSecretDoors(grid);
   }
 

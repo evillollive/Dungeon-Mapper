@@ -14,6 +14,8 @@
  */
 import { getOpenTerrainFlavor, getRoomsCorridorsFlavor } from './poi';
 
+export const DEFAULT_SECRET_DOOR_FRACTION = 0.05;
+
 /** A single slider exposed by the "Tile mix" section of the dialog. */
 export interface TileMixSliderSpec {
   /** Stable key used by the generator to read the value. */
@@ -121,7 +123,8 @@ export const ROOMS_TILE_MIX_SLIDERS: TileMixSliderSpec[] = getRoomsTileMixSlider
  * open with for the given theme. Treasure / trap defaults derive from
  * the theme's flavor multipliers and the typical "treasure tiles per
  * floor cell" ratio the legacy generator produces; `doors` defaults to
- * 1 (keep them all) which matches the original behavior.
+ * 1 (keep them all), and secret doors default to a small sprinkling so
+ * generated dungeons visibly include discoverable hidden passages.
  */
 export function getRoomsDefaultMix(themeId?: string): Record<string, number> {
   const flavor = getRoomsCorridorsFlavor(themeId);
@@ -135,7 +138,7 @@ export function getRoomsDefaultMix(themeId?: string): Record<string, number> {
     treasure: 0.03 * flavor.treasureMultiplier,
     trap: 0.02 * flavor.trapMultiplier,
     doors: 1,
-    secretDoors: 0,
+    secretDoors: DEFAULT_SECRET_DOOR_FRACTION,
   };
 }
 
