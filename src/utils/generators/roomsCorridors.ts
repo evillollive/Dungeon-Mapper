@@ -494,6 +494,10 @@ function isDoorTile(t: TileType): t is DoorType | 'secret-door' {
   return t === 'door-h' || t === 'door-v' || t === 'secret-door';
 }
 
+function isPassageTile(t: TileType): boolean {
+  return t === 'floor' || isDoorTile(t);
+}
+
 function adjacentRoomsForDoor(rooms: Room[], x: number, y: number): number[] {
   const out: number[] = [];
   for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
@@ -513,6 +517,7 @@ function convertSecretDoors(grid: TypeGrid, rooms: Room[], rng: Rng, fraction: n
   if (fraction <= 0) return;
   const h = grid.length;
   const w = grid[0]?.length ?? 0;
+  const initialRoomIndex = 0;
   const doorCells: { x: number; y: number; rooms: number[] }[] = [];
   const doorCountByRoom = new Map<number, number>();
 
@@ -532,7 +537,7 @@ function convertSecretDoors(grid: TypeGrid, rooms: Room[], rng: Rng, fraction: n
   for (const c of doorCells) {
     if (c.rooms.length !== 1) continue;
     const roomIdx = c.rooms[0];
-    if (roomIdx === 0) continue;
+    if (roomIdx === initialRoomIndex) continue;
     if ((doorCountByRoom.get(roomIdx) ?? 0) !== 1) continue;
     if (rng.next() < fraction) grid[c.y][c.x] = 'secret-door';
   }
@@ -549,10 +554,10 @@ function removeInvalidSecretDoors(grid: TypeGrid): void {
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       if (grid[y][x] !== 'secret-door') continue;
-      const northPassable = isDoorTile(getCell(grid, x, y - 1)) || getCell(grid, x, y - 1) === 'floor';
-      const southPassable = isDoorTile(getCell(grid, x, y + 1)) || getCell(grid, x, y + 1) === 'floor';
-      const eastPassable = isDoorTile(getCell(grid, x + 1, y)) || getCell(grid, x + 1, y) === 'floor';
-      const westPassable = isDoorTile(getCell(grid, x - 1, y)) || getCell(grid, x - 1, y) === 'floor';
+      const northPassable = isPassageTile(getCell(grid, x, y - 1));
+      const southPassable = isPassageTile(getCell(grid, x, y + 1));
+      const eastPassable = isPassageTile(getCell(grid, x + 1, y));
+      const westPassable = isPassageTile(getCell(grid, x - 1, y));
       if (!(northPassable && southPassable) && !(eastPassable && westPassable)) grid[y][x] = 'wall';
     }
   }
