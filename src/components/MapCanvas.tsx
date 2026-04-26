@@ -318,8 +318,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
     const w = meta.width * tileSize;
     const h = meta.height * tileSize;
-    canvas.width = w;
-    canvas.height = h;
+    const dpr = window.devicePixelRatio || 1;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = `${w}px`;
+    canvas.style.height = `${h}px`;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     ctx.fillStyle = printMode ? PRINT_BG : SCREEN_BG;
     ctx.fillRect(0, 0, w, h);
@@ -565,8 +569,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    const dpr = window.devicePixelRatio || 1;
+    const scaleX = canvas.width / (rect.width * dpr);
+    const scaleY = canvas.height / (rect.height * dpr);
     const x = Math.floor(((e.clientX - rect.left) * scaleX) / tileSize);
     const y = Math.floor(((e.clientY - rect.top) * scaleY) / tileSize);
     if (x < 0 || x >= meta.width || y < 0 || y >= meta.height) return null;
@@ -580,8 +585,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const scaleY = canvas.height / rect.height;
+    const dpr = window.devicePixelRatio || 1;
+    const scaleX = canvas.width / (rect.width * dpr);
+    const scaleY = canvas.height / (rect.height * dpr);
     const fx = ((e.clientX - rect.left) * scaleX) / tileSize;
     const fy = ((e.clientY - rect.top) * scaleY) / tileSize;
     if (fx < 0 || fx > meta.width || fy < 0 || fy > meta.height) return null;
@@ -965,7 +971,6 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
             ref={canvasRef}
             style={{
               cursor: cursorStyle,
-              imageRendering: 'pixelated',
               display: 'block',
             }}
             onMouseDown={handleMouseDown}
