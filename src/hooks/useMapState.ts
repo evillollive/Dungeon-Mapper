@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import type { DungeonMap, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke } from '../types/map';
 import { createEmptyGrid, createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
 import { saveMap, loadMap, migrateFromLocalStorage } from '../utils/storage';
+import { reThemeNotes } from '../utils/reThemeNotes';
 
 const DEFAULT_WIDTH = 32;
 const DEFAULT_HEIGHT = 32;
@@ -438,18 +439,21 @@ export function useMapState() {
           newTiles = stamped;
         }
       } else {
-        // When *not* preserving, drop auto-generated notes (room labels and
-        // POIs) whose text is theme-specific. User-created notes (no `kind`)
-        // are kept. The corresponding `noteId` links on tiles are cleared so
-        // the canvas doesn't reference stale notes.
-        const generatedIds = new Set(
-          prev.notes.filter(n => n.kind === 'room' || n.kind === 'poi').map(n => n.id),
+        // When *not* preserving, re-label auto-generated notes (room labels
+        // and POIs) to match the new theme. User-created notes (no `kind`)
+        // are left unchanged. Room-archetype notes are removed only when the
+        // new theme lacks a room palette; their stale `noteId` links on
+        // tiles are cleared so the canvas doesn't reference dead notes.
+        const { notes: themed, removedIds } = reThemeNotes(
+          prev.notes,
+          prev.tiles,
+          theme,
         );
-        if (generatedIds.size > 0) {
-          newNotes = prev.notes.filter(n => !generatedIds.has(n.id));
+        newNotes = themed;
+        if (removedIds.size > 0) {
           newTiles = prev.tiles.map(row =>
             row.map(t =>
-              t.noteId !== undefined && generatedIds.has(t.noteId)
+              t.noteId !== undefined && removedIds.has(t.noteId)
                 ? { ...t, noteId: undefined }
                 : t,
             ),
