@@ -1,4 +1,4 @@
-import type { MapNote, Tile } from '../../types/map';
+import type { Tile } from '../../types/map';
 import {
   bfsDistances,
   clampDensity,
@@ -6,17 +6,22 @@ import {
   getCell,
   makeTypeGrid,
   outlineWalls,
-  reorderNotesReadingOrder,
   setCell,
   type TypeGrid,
   typeGridToTiles,
 } from './common';
 import { applyDoors } from './doorEngine';
-import { getRoomsCorridorsFlavor, poiLabelFor, poiLabelIsRoom } from './poi';
+import { getRoomsCorridorsFlavor } from './poi';
+import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotesEngine';
 import { getRoomPalette, type RoomKind } from './roomKinds';
 import { makeRng, type Rng } from './random';
 import { DEFAULT_SECRET_DOOR_FRACTION } from './tileMix';
 import type { GenerateContext, GeneratedMap } from './types';
+
+/** Tile types eligible to host a room-kind note in rooms-and-corridors.
+ *  Matches the legacy `appendRoomKindNotes` predicate (`type === 'floor'`)
+ *  so room notes never land on a water/pillar/POI cell. */
+const ROOMS_CORRIDORS_ANCHOR_TYPES: ReadonlySet<Tile['type']> = new Set(['floor']);
 
 interface Room {
   x: number;
@@ -478,10 +483,11 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   // reachable floor cell so the player has a visible objective.
   const start = roomCenter(rooms[0]);
   setCell(grid, start.x, start.y, 'start');
-  // Track POI tiles so we can attach auto-named MapNote entries below. The
-  // start gets a note even though there's only ever one, since it gives
-  // the player a clearly-labeled target on first load.
-  const pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'stairs-up' | 'treasure' | 'trap' }[] = [
+  // Track POI tiles so the POI / Notes engine (called after the door
+  // engine) can attach auto-named MapNote entries below. The start gets
+  // a note even though there's only ever one, since it gives the player
+  // a clearly-labeled target on first load.
+  const pois: PoiPlacement[] = [
     { x: start.x, y: start.y, type: 'start' },
   ];
 
@@ -589,175 +595,32 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
 
   const tiles: Tile[][] = typeGridToTiles(grid);
 
-  // Build auto-named MapNote entries for every POI placed above and link
-  // them to the corresponding tile via `noteId`. POI types that occur
-  // more than once get a numeric suffix (Treasure 1, Treasure 2, …) so
-  // they're distinguishable in the notes panel. We pass the carved-room
-  // list so POIs whose label happens to name a room (e.g. "Gatehouse")
-  // are only tagged `kind: 'room'` when they don't sit inside another
-  // already-room-tagged carved room — keeping the "no room contains
-  // another room" invariant.
-  const notes: MapNote[] = buildPoiNotes(tiles, pois, themeId, hasPalette ? rooms : []);
-
-  // When room labeling is on, append one MapNote per carved room at its
-  // center (or nearest floor cell if the center got overwritten by a
-  // POI). Duplicate kinds within a single map are suffixed (Office 1,
-  // Office 2, …). Notes are appended after POI notes so POI noteIds stay
-  // stable for callers that key on them.
-  if (hasPalette) {
-    appendRoomKindNotes(tiles, rooms, notes);
-  }
-
-  // Re-order so the notes panel reads naturally: rooms first, then
-  // non-room POIs (treasure, traps, …); each group sorted left-to-right,
-  // top-to-bottom. Renumbers ids and re-suffixes grouped labels.
-  const orderedNotes = reorderNotesReadingOrder(tiles, notes);
-
-  return { tiles, notes: orderedNotes, width, height };
-}
-
-/**
- * Convert a list of placed POI cells into auto-named `MapNote` entries
- * and stamp the matching `noteId` onto each underlying tile. Duplicate
- * POI types get a 1-based suffix in display order so the notes panel
- * lists them as "Treasure 1", "Treasure 2", etc.; types that occur
- * exactly once stay unsuffixed for readability.
- */
-function buildPoiNotes(
-  tiles: Tile[][],
-  pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'stairs-up' | 'treasure' | 'trap' }[],
-  themeId: string | undefined,
-  labeledRooms: Room[]
-): MapNote[] {
-  const counts = new Map<string, number>();
-  for (const p of pois) counts.set(p.type, (counts.get(p.type) ?? 0) + 1);
-  const seen = new Map<string, number>();
-  const notes: MapNote[] = [];
-  for (let i = 0; i < pois.length; i++) {
-    const p = pois[i];
-    const total = counts.get(p.type) ?? 1;
-    const idx = (seen.get(p.type) ?? 0) + 1;
-    seen.set(p.type, idx);
-    const id = i + 1;
-    // A POI is tagged `kind: 'room'` only when its theme label names a
-    // room AND it is not already inside a carved room that will receive
-    // its own room-kind note (those rooms are passed in `labeledRooms`).
-    // That guarantees the "no room nested inside another room"
-    // invariant: if there's a containing room-kind note, the POI keeps
-    // `kind: 'poi'` so only the room-kind owns the room designation.
-    const labelIsRoom = poiLabelIsRoom(themeId, p.type);
-    const insideLabeledRoom = labeledRooms.some(
-      r => p.x >= r.x && p.x < r.x + r.w && p.y >= r.y && p.y < r.y + r.h
-    );
-    const kind: 'room' | 'poi' = labelIsRoom && !insideLabeledRoom ? 'room' : 'poi';
-    notes.push({
-      id,
-      x: p.x,
-      y: p.y,
-      label: poiLabelFor(themeId, p.type, total > 1 ? idx : undefined),
-      description: '',
-      kind,
-    });
-    if (tiles[p.y]?.[p.x]) tiles[p.y][p.x] = { ...tiles[p.y][p.x], noteId: id };
-  }
-  return notes;
-}
-
-/**
- * Append one `MapNote` per carved room to label it with its archetype
- * (Bridge, Cargo Bay, …). Reuses the next available `id` after the POI
- * notes already in the list. Each note is anchored on the room center
- * if that cell isn't already a POI, otherwise on the next available
- * `floor` cell inside the room (or at the corner as a last resort) so
- * the room note doesn't clobber the POI's `noteId`.
- */
-function appendRoomKindNotes(tiles: Tile[][], rooms: Room[], notes: MapNote[]): void {
-  const counts = new Map<string, number>();
-  for (const r of rooms) {
-    if (!r.kind) continue;
-    counts.set(r.kind.label, (counts.get(r.kind.label) ?? 0) + 1);
-  }
-  const seen = new Map<string, number>();
-  let nextId = notes.reduce((m, n) => Math.max(m, n.id), 0) + 1;
-  for (const r of rooms) {
-    if (!r.kind) continue;
-    const total = counts.get(r.kind.label) ?? 1;
-    const idx = (seen.get(r.kind.label) ?? 0) + 1;
-    seen.set(r.kind.label, idx);
-    const label = total > 1 ? `${r.kind.label} ${idx}` : r.kind.label;
-
-    // Find an anchor cell: prefer the room center, fall back to the
-    // closest unannotated `floor` cell to the center. Using the nearest
-    // cell (rather than scanning top-left → bottom-right) keeps the
-    // note close to the room's visual center so reading-order numbering
-    // stays spatially coherent — otherwise a POI at the center would
-    // push the room note to the top-left corner, causing it to sort
-    // far from its room's actual position.
-    const center = roomCenter(r);
-    let ax: number | undefined;
-    let ay: number | undefined;
-    if (
-      tiles[center.y]?.[center.x] &&
-      tiles[center.y][center.x].type === 'floor' &&
-      tiles[center.y][center.x].noteId === undefined
-    ) {
-      ax = center.x;
-      ay = center.y;
-    } else {
-      // Measure distance from the room's true geometric center
-      // (fractional) rather than from the integer center cell. For
-      // even-sized rooms Math.floor rounds the integer center to one
-      // side, so equidistant integer cells around it appear tied; the
-      // fractional center breaks those ties naturally, keeping the
-      // note as close to the visual middle as possible without any
-      // scan-order bias (top-left, etc.).
-      //
-      // For odd-sized rooms the fractional and integer centers coincide,
-      // so cells directly above/below/left/right of center still tie.
-      // Break remaining ties by preferring the cell on the center row
-      // (smallest |dy|) then center column (smallest |dx|) so the note
-      // stays visually centered rather than jumping to the top edge.
-      const gcx = r.x + (r.w - 1) / 2;
-      const gcy = r.y + (r.h - 1) / 2;
-      let bestDist = Infinity;
-      let bestAbsDy = Infinity;
-      let bestAbsDx = Infinity;
-      for (let y = r.y; y < r.y + r.h; y++) {
-        for (let x = r.x; x < r.x + r.w; x++) {
-          const t = tiles[y]?.[x];
-          if (t && t.type === 'floor' && t.noteId === undefined) {
-            const dx = x - gcx;
-            const dy = y - gcy;
-            const dist = dx * dx + dy * dy;
-            const absDy = Math.abs(dy);
-            const absDx = Math.abs(dx);
-            if (
-              dist < bestDist ||
-              (dist === bestDist && absDy < bestAbsDy) ||
-              (dist === bestDist && absDy === bestAbsDy && absDx < bestAbsDx)
-            ) {
-              bestDist = dist;
-              bestAbsDy = absDy;
-              bestAbsDx = absDx;
-              ax = x;
-              ay = y;
-            }
-          }
+  // Hand the placed POIs and (optionally) the labeled rooms to the POI
+  // / Notes engine, which is the single source of truth for `MapNote`
+  // creation and tile `noteId` stamping. It builds POI notes (with
+  // duplicate-label suffixing and the room-vs-poi `kind` decision),
+  // appends one room-kind note per labeled carved room (anchored on
+  // the room's center or — when occupied — the closest unannotated
+  // floor cell to the fractional geometric center), and renumbers
+  // everything in reading order. Rooms-and-corridors restricts room-
+  // note anchors to `floor` tiles via `validAnchorTypes` so notes
+  // never land on water/pillar features carved earlier.
+  const regions: LabeledRegion[] = hasPalette
+    ? rooms.flatMap(r => {
+        if (!r.kind) return [];
+        const cells: { x: number; y: number }[] = [];
+        for (let y = r.y; y < r.y + r.h; y++) {
+          for (let x = r.x; x < r.x + r.w; x++) cells.push({ x, y });
         }
-      }
-    }
+        return [{
+          label: r.kind.label,
+          preferredAnchor: roomCenter(r),
+          cells,
+          validAnchorTypes: ROOMS_CORRIDORS_ANCHOR_TYPES,
+        }];
+      })
+    : [];
+  const notes = applyPoiNotes(tiles, { pois, themeId, regions });
 
-    if (ax === undefined || ay === undefined) {
-      // No free floor cell — anchor at the unmodified center coordinates
-      // anyway so the note still appears in the notes panel even if it
-      // doesn't get a tile-side `noteId` link.
-      ax = center.x;
-      ay = center.y;
-    }
-
-    const id = nextId++;
-    notes.push({ id, x: ax, y: ay, label, description: '', kind: 'room' });
-    const t = tiles[ay]?.[ax];
-    if (t && t.noteId === undefined) tiles[ay][ax] = { ...t, noteId: id };
-  }
+  return { tiles, notes, width, height };
 }
