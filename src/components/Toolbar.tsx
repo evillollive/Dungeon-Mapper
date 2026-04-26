@@ -41,7 +41,6 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] =
 
 function TilePreview({ type, size = 28, themeId }: { type: TileType; size?: number; themeId: string }) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
-  const theme = getTheme(themeId);
 
   React.useEffect(() => {
     const canvas = canvasRef.current;
@@ -49,6 +48,7 @@ function TilePreview({ type, size = 28, themeId }: { type: TileType; size?: numb
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    const theme = getTheme(themeId);
     canvas.width = size;
     canvas.height = size;
 
@@ -56,7 +56,7 @@ function TilePreview({ type, size = 28, themeId }: { type: TileType; size?: numb
     theme.drawTile(ctx, type, 0, 0, size);
     // Add print-mode-inspired glyph overlay.
     drawTileOverlay(ctx, type, 0, 0, size, theme.tileColors[type]);
-  }, [type, size, theme]);
+  }, [type, size, themeId]);
 
   return (
     <canvas
