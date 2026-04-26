@@ -549,11 +549,11 @@ function removeInvalidSecretDoors(grid: TypeGrid): void {
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       if (grid[y][x] !== 'secret-door') continue;
-      const northSouth = isDoorTile(getCell(grid, x, y - 1)) || getCell(grid, x, y - 1) === 'floor';
-      const southNorth = isDoorTile(getCell(grid, x, y + 1)) || getCell(grid, x, y + 1) === 'floor';
-      const eastWest = isDoorTile(getCell(grid, x + 1, y)) || getCell(grid, x + 1, y) === 'floor';
-      const westEast = isDoorTile(getCell(grid, x - 1, y)) || getCell(grid, x - 1, y) === 'floor';
-      if (!(northSouth && southNorth) && !(eastWest && westEast)) grid[y][x] = 'wall';
+      const northPassable = isDoorTile(getCell(grid, x, y - 1)) || getCell(grid, x, y - 1) === 'floor';
+      const southPassable = isDoorTile(getCell(grid, x, y + 1)) || getCell(grid, x, y + 1) === 'floor';
+      const eastPassable = isDoorTile(getCell(grid, x + 1, y)) || getCell(grid, x + 1, y) === 'floor';
+      const westPassable = isDoorTile(getCell(grid, x - 1, y)) || getCell(grid, x - 1, y) === 'floor';
+      if (!(northPassable && southPassable) && !(eastPassable && westPassable)) grid[y][x] = 'wall';
     }
   }
 }
