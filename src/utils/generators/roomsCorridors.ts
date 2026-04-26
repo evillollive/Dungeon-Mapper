@@ -518,6 +518,8 @@ function convertSecretDoors(grid: TypeGrid, rooms: Room[], rng: Rng, fraction: n
   if (fraction <= 0) return;
   const h = grid.length;
   const w = grid[0]?.length ?? 0;
+  // `generateRoomsCorridors` always places the player start in rooms[0], so
+  // keep that initial room visibly connected instead of making it "secret".
   const initialRoomIndex = 0;
   const doorCells: { x: number; y: number; rooms: number[] }[] = [];
   const doorCountByRoom = new Map<number, number>();
