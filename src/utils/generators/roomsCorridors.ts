@@ -197,7 +197,65 @@ function placeDoors(grid: TypeGrid): void {
       else if (vertical) updates.push({ x, y, type: 'door-v' });
     }
   }
-  for (const u of updates) grid[u.y][u.x] = u.type;
+
+  // When a corridor runs parallel to a wall, every cell in the shared wall
+  // matches the geometric pattern, producing an ugly "wall of doors". To
+  // fix this we group candidates into contiguous runs along the wall
+  // direction (same row for door-h, same column for door-v) and keep only
+  // the middle candidate from each run.
+  const kept = reduceConsecutiveDoors(updates);
+  for (const u of kept) grid[u.y][u.x] = u.type;
+}
+
+/**
+ * Group a list of door candidates into contiguous runs along the wall
+ * direction and return only the middle candidate from each run.
+ *
+ * door-h candidates run along a row  (same y, consecutive x).
+ * door-v candidates run along a column (same x, consecutive y).
+ */
+function reduceConsecutiveDoors(
+  candidates: { x: number; y: number; type: 'door-h' | 'door-v' }[],
+): { x: number; y: number; type: 'door-h' | 'door-v' }[] {
+  // Build a fast lookup set so we can walk neighbours.
+  const key = (x: number, y: number, t: string) => `${x},${y},${t}`;
+  const remaining = new Set(candidates.map(c => key(c.x, c.y, c.type)));
+  const index = new Map<string, { x: number; y: number; type: 'door-h' | 'door-v' }>();
+  for (const c of candidates) index.set(key(c.x, c.y, c.type), c);
+
+  const result: { x: number; y: number; type: 'door-h' | 'door-v' }[] = [];
+
+  for (const c of candidates) {
+    const k = key(c.x, c.y, c.type);
+    if (!remaining.has(k)) continue;
+
+    // Collect the full contiguous run starting from this candidate.
+    const run: { x: number; y: number; type: 'door-h' | 'door-v' }[] = [c];
+    remaining.delete(k);
+
+    // Step delta along the wall: row for door-h, column for door-v.
+    const dx = c.type === 'door-h' ? 1 : 0;
+    const dy = c.type === 'door-v' ? 1 : 0;
+
+    // Walk forward.
+    for (let nx = c.x + dx, ny = c.y + dy; ; nx += dx, ny += dy) {
+      const nk = key(nx, ny, c.type);
+      if (!remaining.has(nk)) break;
+      run.push(index.get(nk)!);
+      remaining.delete(nk);
+    }
+    // Walk backward.
+    for (let nx = c.x - dx, ny = c.y - dy; ; nx -= dx, ny -= dy) {
+      const nk = key(nx, ny, c.type);
+      if (!remaining.has(nk)) break;
+      run.unshift(index.get(nk)!);
+      remaining.delete(nk);
+    }
+
+    // Keep only the middle element of the run.
+    result.push(run[Math.floor(run.length / 2)]);
+  }
+  return result;
 }
 
 /**
