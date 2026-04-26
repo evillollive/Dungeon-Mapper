@@ -225,14 +225,36 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
       let ax = a.centroid.x;
       let ay = a.centroid.y;
       if (tiles[ay]?.[ax]?.noteId !== undefined) {
+        // Compute the fractional geometric mean of the area cells so
+        // distance ties are broken toward the true visual center,
+        // avoiding scan-order bias (always picking the top-left cell).
+        // For symmetric areas the fractional mean may coincide with an
+        // integer cell, leaving ties among 4-neighbors; break those by
+        // preferring the cell on the centroid row (|dy| smallest) then
+        // centroid column (|dx| smallest).
+        let sx = 0;
+        let sy = 0;
+        for (const c of a.cells) { sx += c.x; sy += c.y; }
+        const mx = sx / a.cells.length;
+        const my = sy / a.cells.length;
         let bestDist = Infinity;
+        let bestAbsDy = Infinity;
+        let bestAbsDx = Infinity;
         for (const c of a.cells) {
           if (tiles[c.y]?.[c.x]?.noteId !== undefined) continue;
-          const dx = c.x - a.centroid.x;
-          const dy = c.y - a.centroid.y;
+          const dx = c.x - mx;
+          const dy = c.y - my;
           const dist = dx * dx + dy * dy;
-          if (dist < bestDist) {
+          const absDy = Math.abs(dy);
+          const absDx = Math.abs(dx);
+          if (
+            dist < bestDist ||
+            (dist === bestDist && absDy < bestAbsDy) ||
+            (dist === bestDist && absDy === bestAbsDy && absDx < bestAbsDx)
+          ) {
             bestDist = dist;
+            bestAbsDy = absDy;
+            bestAbsDx = absDx;
             ax = c.x;
             ay = c.y;
           }
