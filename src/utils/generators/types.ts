@@ -23,14 +23,14 @@ export interface GenerateContext {
   /**
    * Optional per-tile-type proportion overrides driven by the dialog's
    * "Tile mix" sliders. Each generator interprets the keys it understands
-   * (e.g. rooms-and-corridors reads `treasure`, `trap`, `doors`; open
-   * terrain reads `wall`, `water`, `pillar`, `treasure`, `trap`, `areas`;
-   * cavern reads `wall`, `treasure`, `trap`, `water`, `areas`,
-   * `stairsDown`). Values are 0..1 fractions whose exact meaning is
-   * generator-specific (typically a fraction of the floor / placeable
-   * cells, or — for cavern walls — the initial fill ratio). Missing
-   * keys fall back to the per-theme defaults so passing an empty /
-   * undefined `tileMix` reproduces legacy behavior.
+   * (e.g. rooms-and-corridors reads `treasure`, `trap`, `doors`,
+   * `secretDoors`; open terrain reads `wall`, `water`, `pillar`,
+   * `treasure`, `trap`, `areas`; cavern reads `wall`, `treasure`, `trap`,
+   * `water`, `areas`, `stairsDown`). Values are 0..1 fractions whose
+   * exact meaning is generator-specific (typically a fraction of the
+   * floor / placeable cells, or — for cavern walls — the initial fill
+   * ratio). Missing keys fall back to the per-theme defaults so passing
+   * an empty / undefined `tileMix` reproduces legacy behavior.
    */
   tileMix?: Partial<Record<string, number>>;
   /**

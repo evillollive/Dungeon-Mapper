@@ -383,6 +383,112 @@ function pickBiasedFloor(
 }
 
 /**
+ * Room-kind labels that suggest pillars / columns. When a room has one
+ * of these archetypes and is large enough (≥6×6), pillars are placed in
+ * a grid pattern even if the room wouldn't otherwise qualify by size.
+ */
+const PILLAR_ROOM_LABELS = new Set([
+  'Great Hall', 'Hall of Pillars', 'Lobby', 'Chapel', 'Library',
+  'Throne Room', 'Grand Chamber', 'Hive Chamber', 'Hall of Statues',
+  'Bridge', 'Cargo Bay', 'Workshop', 'Server Farm', 'Saloon',
+  'Captain\u2019s Cabin', 'Conference Room',
+]);
+
+/** True when a room's archetype suggests it should contain pillars. */
+function roomSuggestsPillars(kind: RoomKind | undefined): boolean {
+  return !!kind && PILLAR_ROOM_LABELS.has(kind.label);
+}
+
+/**
+ * Convert a fraction of placed doors to hidden `secret-door` tiles.
+ * Runs after door thinning so it only touches surviving doors.
+ */
+function convertSecretDoors(grid: TypeGrid, rng: Rng, fraction: number): void {
+  if (fraction <= 0) return;
+  const h = grid.length;
+  const w = grid[0]?.length ?? 0;
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const t = grid[y][x];
+      if (t !== 'door-h' && t !== 'door-v') continue;
+      if (rng.next() < fraction) grid[y][x] = 'secret-door';
+    }
+  }
+}
+
+/** Find a cardinal-adjacent floor cell, or undefined if none. */
+function findAdjacentFloor(grid: TypeGrid, cx: number, cy: number): { x: number; y: number } | undefined {
+  for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
+    if (getCell(grid, cx + dx, cy + dy) === 'floor') {
+      return { x: cx + dx, y: cy + dy };
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Place water features (fountain / well / puddle) inside rooms. Picks
+ * 1–5 rooms large enough (≥5×5) and puts a single water tile near
+ * their center. Only called on maps larger than 32×32.
+ */
+function placeWaterFeatures(grid: TypeGrid, rooms: Room[], rng: Rng): void {
+  const eligible = rooms.filter(r => r.w >= 5 && r.h >= 5);
+  if (eligible.length === 0) return;
+  const count = Math.min(eligible.length, rng.int(1, 5));
+  // Shuffle and take the first `count`.
+  for (let i = eligible.length - 1; i > 0; i--) {
+    const j = rng.int(0, i);
+    [eligible[i], eligible[j]] = [eligible[j], eligible[i]];
+  }
+  for (let i = 0; i < count; i++) {
+    const r = eligible[i];
+    const cx = Math.floor(r.x + r.w / 2);
+    const cy = Math.floor(r.y + r.h / 2);
+    // Find the nearest floor cell to the room center for the water tile.
+    // Avoid overwriting start / stairs / other POIs.
+    if (getCell(grid, cx, cy) === 'floor') {
+      setCell(grid, cx, cy, 'water');
+    } else {
+      // Try one ring around center.
+      let placed = false;
+      for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0], [-1, -1], [1, -1], [-1, 1], [1, 1]] as const) {
+        if (getCell(grid, cx + dx, cy + dy) === 'floor') {
+          setCell(grid, cx + dx, cy + dy, 'water');
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) continue;
+    }
+  }
+}
+
+/**
+ * Place pillar tiles in a grid pattern inside rooms large enough (≥6×6).
+ * Rooms whose archetype suggests pillars (Great Hall, Hall of Pillars,
+ * Lobby, etc.) always get pillars. Other rooms only get pillars when
+ * their area exceeds 64 cells (≈8×8). The grid pattern uses a 2-cell
+ * spacing inset by 1 cell from the room walls.
+ */
+function placePillarsInRooms(grid: TypeGrid, rooms: Room[], rng: Rng): void {
+  for (const r of rooms) {
+    if (r.w < 6 || r.h < 6) continue;
+    const suggested = roomSuggestsPillars(r.kind);
+    // Non-suggested rooms only get pillars at ≥64 area, and only 40% of
+    // the time to keep variation between maps.
+    if (!suggested && (roomArea(r) < 64 || !rng.chance(0.4))) continue;
+    // Grid pattern: 2 cells from each wall, then every 3 cells.
+    for (let y = r.y + 2; y < r.y + r.h - 2; y += 3) {
+      for (let x = r.x + 2; x < r.x + r.w - 2; x += 3) {
+        if (getCell(grid, x, y) === 'floor') {
+          setCell(grid, x, y, 'pillar');
+        }
+      }
+    }
+  }
+}
+
+/**
  * Generate a classic dungeon: rectangular rooms connected by L-shaped
  * corridors, walled in, with a `start`, a `stairs-down` at the farthest
  * room, and a sprinkling of `treasure` and `trap` tiles.
@@ -391,6 +497,7 @@ function pickBiasedFloor(
  * per-tile-type overrides come in via `ctx.tileMix` (see `tileMix.ts`):
  *  - `treasure` / `trap`: target fraction of floor cells.
  *  - `doors`: fraction of door-candidate cells kept (1 = all, 0 = none).
+ *  - `secretDoors`: fraction of remaining doors converted to secret doors.
  *
  * When `ctx.labelRooms` is true and the theme has a room palette, every
  * carved room emits a theme-flavored `MapNote` (Bridge, Great Hall, …)
@@ -496,6 +603,11 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   // Apply the "Doors" slider: thin doors after they've been geometrically
   // placed. Defaults to keeping all of them so legacy seeds reproduce.
   if (ov.doors !== undefined) thinDoors(grid, rng, ov.doors);
+  // Apply the "Secret Doors" slider: convert a fraction of remaining doors
+  // to hidden secret-door tiles so the map has discoverable passages.
+  if (ov.secretDoors !== undefined && ov.secretDoors > 0) {
+    convertSecretDoors(grid, rng, ov.secretDoors);
+  }
 
   // Resolve the per-room archetype before placing POIs so the bias loop
   // can consult it. Skipped when the theme has no palette or labeling is
@@ -513,19 +625,38 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   // Track POI tiles so we can attach auto-named MapNote entries below. The
   // start gets a note even though there's only ever one, since it gives
   // the player a clearly-labeled target on first load.
-  const pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'treasure' | 'trap' }[] = [
+  const pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'stairs-up' | 'treasure' | 'trap' }[] = [
     { x: start.x, y: start.y, type: 'start' },
   ];
 
   if (flavor.placeStairsDown) {
     const { farthest } = bfsDistances(grid, start.x, start.y, t =>
-      t === 'floor' || t === 'door-h' || t === 'door-v' || t === 'start'
+      t === 'floor' || t === 'door-h' || t === 'door-v' || t === 'secret-door' || t === 'start'
     );
     if (farthest.d > 0 && getCell(grid, farthest.x, farthest.y) === 'floor') {
       setCell(grid, farthest.x, farthest.y, 'stairs-down');
       pois.push({ x: farthest.x, y: farthest.y, type: 'stairs-down' });
+      // Place stairs-up adjacent to stairs-down so the pair reads as a
+      // connected stairwell. Try all four cardinal neighbors and pick the
+      // first available floor cell.
+      const upCell = findAdjacentFloor(grid, farthest.x, farthest.y);
+      if (upCell) {
+        setCell(grid, upCell.x, upCell.y, 'stairs-up');
+        pois.push({ x: upCell.x, y: upCell.y, type: 'stairs-up' });
+      }
     }
   }
+
+  // Place water features (fountains, wells, puddles) inside rooms on maps
+  // larger than 32×32. No slider — automatically 1–5 based on room count.
+  if (width > 32 || height > 32) {
+    placeWaterFeatures(grid, rooms, rng);
+  }
+
+  // Place pillar patterns in large rooms. Rooms whose archetype suggests
+  // pillars (Great Hall, Hall of Pillars, Lobby, etc.) are strongly
+  // preferred, but any room ≥6×6 is eligible.
+  placePillarsInRooms(grid, rooms, rng);
 
   // Drop POIs on remaining floor cells. The slider values are fractions of
   // floor cells; clamp to whatever's actually reachable so we never exceed
@@ -619,7 +750,7 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
  */
 function buildPoiNotes(
   tiles: Tile[][],
-  pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'treasure' | 'trap' }[],
+  pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'stairs-up' | 'treasure' | 'trap' }[],
   themeId: string | undefined,
   labeledRooms: Room[]
 ): MapNote[] {

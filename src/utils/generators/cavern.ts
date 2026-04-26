@@ -205,7 +205,7 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
   // stairs-down at the farthest reachable floor. If the region is too
   // small to host both, just drop the start.
   const placeStairs = ov.stairsDown !== undefined ? ov.stairsDown >= 0.5 : flavor.placeStairsDown;
-  const pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'treasure' | 'trap' }[] = [];
+  const pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'stairs-up' | 'treasure' | 'trap' }[] = [];
   if (bestRegion.length === 0) {
     // Degenerate cave (the smoothing wiped everything) — return an
     // empty map so the caller still has a valid grid + notes shape.
@@ -222,6 +222,15 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
     if (farthest.d > 0 && getCell(grid, farthest.x, farthest.y) === 'floor') {
       setCell(grid, farthest.x, farthest.y, 'stairs-down');
       pois.push({ x: farthest.x, y: farthest.y, type: 'stairs-down' });
+      // Place stairs-up adjacent to stairs-down so the pair reads as a
+      // connected stairwell.
+      for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
+        if (getCell(grid, farthest.x + dx, farthest.y + dy) === 'floor') {
+          setCell(grid, farthest.x + dx, farthest.y + dy, 'stairs-up');
+          pois.push({ x: farthest.x + dx, y: farthest.y + dy, type: 'stairs-up' });
+          break;
+        }
+      }
     }
   }
 
