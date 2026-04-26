@@ -2,6 +2,7 @@ import React from 'react';
 import type { ToolType, TileType } from '../types/map';
 import { ALL_TILE_TYPES, TILE_LABELS } from '../types/map';
 import { getTheme, THEME_LIST } from '../themes/index';
+import { drawTileOverlay } from '../themes/tileOverlays';
 import TokenToolsSection from './TokenToolsSection';
 
 interface ToolbarProps {
@@ -39,15 +40,32 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] =
 ];
 
 function TilePreview({ type, size = 28, themeId }: { type: TileType; size?: number; themeId: string }) {
-  const color = getTheme(themeId).tileColors[type];
+  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const theme = getTheme(themeId);
+    canvas.width = size;
+    canvas.height = size;
+
+    // Draw themed tile at position (0,0).
+    theme.drawTile(ctx, type, 0, 0, size);
+    // Add print-mode-inspired glyph overlay.
+    drawTileOverlay(ctx, type, 0, 0, size, theme.tileColors[type]);
+  }, [type, size, themeId]);
+
   return (
-    <span
+    <canvas
+      ref={canvasRef}
       className="tile-preview"
       style={{
         display: 'inline-block',
         width: size,
         height: size,
-        background: color,
         border: '1px solid #2d3561',
         flexShrink: 0,
         verticalAlign: 'middle',
