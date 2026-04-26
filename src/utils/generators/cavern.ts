@@ -10,6 +10,7 @@ import {
   type TypeGrid,
   typeGridToTiles,
 } from './common';
+import { applyDecorations } from './decorationEngine';
 import { assignAreaKinds, detectAreas, getCavernAreaPalette, type DetectedArea, type NaturalAreaKind } from './naturalAreas';
 import { getCavernFlavor } from './poi';
 import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotesEngine';
@@ -27,40 +28,6 @@ function wallNeighbors(grid: TypeGrid, x: number, y: number): number {
     if (t === 'wall' || t === 'empty') n++;
   }
   return n;
-}
-
-/**
- * Carve a small puddle of `water` onto floor cells with a random walk,
- * preserving any non-floor tile already on the grid (start, stairs,
- * walls). Used by `paintWaterPools`.
- */
-function carveWaterPool(grid: TypeGrid, rng: Rng, cx: number, cy: number, size: number): void {
-  let x = cx;
-  let y = cy;
-  for (let i = 0; i < size; i++) {
-    if (getCell(grid, x, y) === 'floor') setCell(grid, x, y, 'water');
-    const [dx, dy] = rng.pick([[1, 0], [-1, 0], [0, 1], [0, -1]] as const);
-    x += dx;
-    y += dy;
-  }
-}
-
-/**
- * Sprinkle a few water pools across the cavern's floor. Centers are
- * picked from the existing floor pool so puddles always start in
- * reachable space; the random walk may bleed onto adjacent walls but
- * the in-bounds check in `carveWaterPool` skips non-floor cells, so the
- * cave outline stays intact.
- */
-function paintWaterPools(grid: TypeGrid, rng: Rng, count: number, avgSize: number): void {
-  if (count <= 0) return;
-  const floors = collectCells(grid, 'floor');
-  if (floors.length === 0) return;
-  for (let i = 0; i < count; i++) {
-    const c = floors[rng.int(0, floors.length - 1)];
-    const size = Math.max(1, Math.round(avgSize * (0.6 + rng.next() * 0.8)));
-    carveWaterPool(grid, rng, c.x, c.y, size);
-  }
 }
 
 /**
@@ -204,7 +171,9 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
   // Carve water pools before chamber detection so the "Underground
   // Pool" archetype can match chambers that contain water. Pool count
   // / size scale with density × the theme's water multiplier; the user
-  // can take it to 0 with the slider for a dry cave.
+  // can take it to 0 with the slider for a dry cave. Routed through the
+  // decoration engine so all `water` writes (here + in rooms-and-
+  // corridors + in open-terrain) share a single owner / contract.
   const totalFloorArea = Math.max(1, bestRegion.length);
   const defaultWaterFraction = 0.025 * d * flavor.waterMultiplier;
   const waterFraction = ov.water !== undefined ? Math.max(0, ov.water) : defaultWaterFraction;
@@ -213,7 +182,18 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
   // spawn dozens of micro-puddles on a small map.
   const avgPoolSize = 8;
   const waterPoolCount = Math.max(0, Math.min(12, Math.round(waterTargetCells / avgPoolSize)));
-  paintWaterPools(grid, rng, waterPoolCount, avgPoolSize);
+  if (waterPoolCount > 0) {
+    const seedFloors = collectCells(grid, 'floor');
+    if (seedFloors.length > 0) {
+      applyDecorations(grid, rng, [{
+        kind: 'pools',
+        tile: 'water',
+        seedCandidates: seedFloors,
+        count: waterPoolCount,
+        avgSize: avgPoolSize,
+      }]);
+    }
+  }
 
   // Detect labeled chambers. The "areas" slider is a target count: we
   // first detect every interior pocket that satisfies the radius +

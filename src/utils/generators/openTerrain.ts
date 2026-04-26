@@ -9,6 +9,7 @@ import {
   type TypeGrid,
   typeGridToTiles,
 } from './common';
+import { applyDecorations } from './decorationEngine';
 import { assignAreaKinds, detectAreas, getOpenAreaPalette, type DetectedArea, type NaturalAreaKind } from './naturalAreas';
 import { getOpenTerrainFlavor } from './poi';
 import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotesEngine';
@@ -70,23 +71,40 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
   }
 
   // A couple of small water pools — fewer and smaller than the wall blobs
-  // so the map still feels traversable.
+  // so the map still feels traversable. Sprinkle standing-stones / boulders
+  // across remaining floor afterwards. Both go through the decoration
+  // engine so all `water` / `pillar` writes share a single owner / contract.
+  // Wall-blob terrain above stays inline because it defines the map's
+  // basic structure (runs first, may overwrite anything) rather than
+  // decorating an existing layout.
   const waterBlobs = ov.water !== undefined
     ? Math.max(0, Math.round((area * Math.max(0, ov.water) / 8) * d))
     : Math.max(1, Math.round((area / 250) * d));
-  for (let i = 0; i < waterBlobs; i++) {
-    paintBlob(grid, rng, rng.int(0, width - 1), rng.int(0, height - 1), rng.int(4, 12), 'water');
-  }
-
-  // Sprinkle individual boulders / standing stones across remaining floor.
   const pillarCount = ov.pillar !== undefined
     ? Math.max(0, Math.round(area * Math.max(0, ov.pillar) * d))
     : Math.max(2, Math.round((area / 120) * d));
-  for (let i = 0; i < pillarCount; i++) {
-    const x = rng.int(0, width - 1);
-    const y = rng.int(0, height - 1);
-    if (getCell(grid, x, y) === 'floor') setCell(grid, x, y, 'pillar');
-  }
+  applyDecorations(grid, rng, [
+    {
+      kind: 'blobs',
+      tile: 'water',
+      width,
+      height,
+      count: waterBlobs,
+      sizeMin: 4,
+      sizeMax: 12,
+      // Open-terrain blobs historically overwrote anything they touched
+      // (matching `paintBlob`); keep that contract so existing seeds
+      // reproduce identically.
+      overwrite: true,
+    },
+    {
+      kind: 'scatter',
+      tile: 'pillar',
+      width,
+      height,
+      count: pillarCount,
+    },
+  ]);
 
   // Place a `start` and treasure caches on floor cells. Pick the start
   // near a corner so there's room to explore outward. Track POI cells so
@@ -169,7 +187,6 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
   const areaKinds: (NaturalAreaKind | undefined)[] = keptAreas.length > 0
     ? assignAreaKinds(keptAreas, palette, grid, rng)
     : [];
-
 
   const tiles: Tile[][] = typeGridToTiles(grid);
 

@@ -10,6 +10,7 @@ import {
   typeGridToTiles,
 } from './common';
 import { applyDoors } from './doorEngine';
+import { applyDecorations, type Decoration } from './decorationEngine';
 import { getRoomsCorridorsFlavor } from './poi';
 import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotesEngine';
 import { getRoomPalette, type RoomKind } from './roomKinds';
@@ -287,67 +288,14 @@ function roomSuggestsPillars(kind: RoomKind | undefined): boolean {
   return !!kind && PILLAR_ROOM_LABELS.has(kind.label);
 }
 
-/**
- * Place water features (fountain / well / puddle) inside rooms. Picks
- * 1–5 rooms large enough (≥5×5) and puts a single water tile near
- * their center. Only called on maps larger than 32×32.
- */
-function placeWaterFeatures(grid: TypeGrid, rooms: Room[], rng: Rng): void {
-  const eligible = rooms.filter(r => r.w >= 5 && r.h >= 5);
-  if (eligible.length === 0) return;
-  const count = Math.min(eligible.length, rng.int(1, 5));
-  // Shuffle and take the first `count`.
-  for (let i = eligible.length - 1; i > 0; i--) {
-    const j = rng.int(0, i);
-    [eligible[i], eligible[j]] = [eligible[j], eligible[i]];
-  }
-  for (let i = 0; i < count; i++) {
-    const r = eligible[i];
-    const cx = Math.floor(r.x + r.w / 2);
-    const cy = Math.floor(r.y + r.h / 2);
-    // Find the nearest floor cell to the room center for the water tile.
-    // Avoid overwriting start / stairs / other POIs.
-    if (getCell(grid, cx, cy) === 'floor') {
-      setCell(grid, cx, cy, 'water');
-    } else {
-      // Try one ring around center.
-      for (const [dx, dy] of DIRS_8_OFFSETS) {
-        if (getCell(grid, cx + dx, cy + dy) === 'floor') {
-          setCell(grid, cx + dx, cy + dy, 'water');
-          break;
-        }
-      }
-    }
-  }
-}
-
-/**
- * Place pillar tiles in a grid pattern inside rooms large enough (≥6×6).
- * Rooms whose archetype suggests pillars (Great Hall, Hall of Pillars,
- * Lobby, etc.) always get pillars. Other rooms only get pillars when
- * their area exceeds MIN_PILLAR_AREA cells, and only with
- * PILLAR_CHANCE_NON_SUGGESTED probability to keep variation between maps.
- * The grid pattern uses a 2-cell spacing inset by 1 cell from the room
- * walls.
- */
+/** Pillar-pattern threshold: rooms below this area only receive pillars
+ *  when their archetype explicitly suggests them. Keeps small chambers
+ *  uncluttered. */
 const MIN_PILLAR_AREA = 64;
+/** Probability a room large enough for pillars but without a pillar-
+ *  suggesting archetype actually receives them. Keeps map-to-map
+ *  variation high so not every dungeon turns into a forest of columns. */
 const PILLAR_CHANCE_NON_SUGGESTED = 0.4;
-
-function placePillarsInRooms(grid: TypeGrid, rooms: Room[], rng: Rng): void {
-  for (const r of rooms) {
-    if (r.w < 6 || r.h < 6) continue;
-    const suggested = roomSuggestsPillars(r.kind);
-    if (!suggested && (roomArea(r) < MIN_PILLAR_AREA || !rng.chance(PILLAR_CHANCE_NON_SUGGESTED))) continue;
-    // Grid pattern: 2 cells from each wall, then every 3 cells.
-    for (let y = r.y + 2; y < r.y + r.h - 2; y += 3) {
-      for (let x = r.x + 2; x < r.x + r.w - 2; x += 3) {
-        if (getCell(grid, x, y) === 'floor') {
-          setCell(grid, x, y, 'pillar');
-        }
-      }
-    }
-  }
-}
 
 /**
  * Generate a classic dungeon: rectangular rooms connected by L-shaped
@@ -491,16 +439,51 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
     if (stairs.up) pois.push({ x: stairs.up.x, y: stairs.up.y, type: 'stairs-up' });
   }
 
-  // Place water features (fountains, wells, puddles) inside rooms on maps
-  // larger than 32×32. No slider — automatically 1–5 based on room count.
+  // Hand decoration writes (water features in big maps + pillar
+  // patterns in eligible rooms) to the decoration engine, which is the
+  // single source of truth for `water` / `pillar` tile placement. The
+  // RNG-consumption order matches the legacy in-line code so existing
+  // seeds reproduce identically: water-count is sampled first (and
+  // only when there's at least one eligible room, matching the early
+  // return in `placeWaterFeatures`), the engine's `centered` strategy
+  // then shuffles the eligible list and stamps; pillars follow with
+  // the `grid` strategy whose `eligible` closure consumes the same
+  // per-room `rng.chance(PILLAR_CHANCE_NON_SUGGESTED)` rolls.
+  const decorations: Decoration[] = [];
   if (width > 32 || height > 32) {
-    placeWaterFeatures(grid, rooms, rng);
+    const eligibleWater = rooms.filter(r => r.w >= 5 && r.h >= 5);
+    if (eligibleWater.length > 0) {
+      const waterCount = rng.int(1, 5);
+      decorations.push({
+        kind: 'centered',
+        tile: 'water',
+        rooms: eligibleWater,
+        count: waterCount,
+        probeOffsets: DIRS_8_OFFSETS,
+      });
+    }
   }
-
-  // Place pillar patterns in large rooms. Rooms whose archetype suggests
-  // pillars (Great Hall, Hall of Pillars, Lobby, etc.) are strongly
-  // preferred, but any room ≥6×6 is eligible.
-  placePillarsInRooms(grid, rooms, rng);
+  // Precompute the pillar-suggesting flag per room so the decoration
+  // engine's `eligible` callback can read it via reference lookup
+  // without depending on the generator's `Room.kind` shape leaking into
+  // the engine's API.
+  const pillarSuggested = new Map<typeof rooms[number], boolean>();
+  for (const r of rooms) pillarSuggested.set(r, roomSuggestsPillars(r.kind));
+  decorations.push({
+    kind: 'grid',
+    tile: 'pillar',
+    rooms,
+    eligible: r => {
+      if (r.w < 6 || r.h < 6) return false;
+      const suggested = pillarSuggested.get(r as Room) ?? false;
+      if (suggested) return true;
+      if (roomArea(r as Room) < MIN_PILLAR_AREA) return false;
+      return rng.chance(PILLAR_CHANCE_NON_SUGGESTED);
+    },
+    inset: 2,
+    step: 3,
+  });
+  applyDecorations(grid, rng, decorations);
 
   // Drop POIs on remaining floor cells. The slider values are fractions of
   // floor cells; clamp to whatever's actually reachable so we never exceed
