@@ -19,6 +19,29 @@ const POI_TILE_TYPES: ReadonlySet<TileType> = new Set<TileType>([
   'start', 'stairs-down', 'stairs-up', 'treasure', 'trap',
 ]);
 
+/** Bounds-safe tile-type lookup. */
+function tileTypeAt(tiles: Tile[][], x: number, y: number): TileType | undefined {
+  return tiles[y]?.[x]?.type;
+}
+
+/**
+ * Apply the generators' suffix convention to a list of base labels: labels
+ * that appear more than once get a 1-based suffix ("Bridge 1", "Bridge 2"),
+ * while unique labels stay unsuffixed. Returns the final label for each
+ * entry (same order as `baseLabels`).
+ */
+function applySuffixes(baseLabels: string[]): string[] {
+  const counts = new Map<string, number>();
+  for (const l of baseLabels) counts.set(l, (counts.get(l) ?? 0) + 1);
+  const seen = new Map<string, number>();
+  return baseLabels.map(base => {
+    const count = counts.get(base) ?? 1;
+    const idx = (seen.get(base) ?? 0) + 1;
+    seen.set(base, idx);
+    return count > 1 ? `${base} ${idx}` : base;
+  });
+}
+
 /**
  * Result of re-theming notes. `notes` is the updated list; `removedIds`
  * contains the ids of notes that were removed (e.g. room-archetype notes
@@ -55,7 +78,7 @@ export function reThemeNotes(
   const poiNotes: MapNote[] = [];
   const roomArchNotes: MapNote[] = [];
   for (const n of generated) {
-    const tileType = tiles[n.y]?.[n.x]?.type;
+    const tileType = tileTypeAt(tiles, n.x, n.y);
     if (tileType && POI_TILE_TYPES.has(tileType)) {
       poiNotes.push(n);
     } else if (n.kind === 'room') {
@@ -73,7 +96,7 @@ export function reThemeNotes(
   // same tile type exist.
   const poiByType = new Map<TileType, MapNote[]>();
   for (const n of poiNotes) {
-    const t = tiles[n.y]?.[n.x]?.type ?? 'floor';
+    const t = tileTypeAt(tiles, n.x, n.y) ?? 'floor';
     const list = poiByType.get(t) ?? [];
     list.push(n);
     poiByType.set(t, list);
@@ -86,22 +109,16 @@ export function reThemeNotes(
     const sorted = [...group].sort((a, b) =>
       a.y !== b.y ? a.y - b.y : a.x - b.x,
     );
-    for (let i = 0; i < sorted.length; i++) {
-      const n = sorted[i];
-      if (POI_TILE_TYPES.has(tileType)) {
-        const label = poiLabelFor(
-          newThemeId,
-          tileType,
-          sorted.length > 1 ? i + 1 : undefined,
-        );
-        newPoiLabels.set(n.id, label);
-        // Update kind: a POI whose new-theme label names a room should
-        // become kind 'room' (and vice versa) to stay consistent.
+    if (POI_TILE_TYPES.has(tileType)) {
+      const baseLabels = sorted.map(() => poiLabelFor(newThemeId, tileType));
+      const labels = applySuffixes(baseLabels);
+      for (let i = 0; i < sorted.length; i++) {
+        newPoiLabels.set(sorted[i].id, labels[i]);
         const isRoom = poiLabelIsRoom(newThemeId, tileType);
-        newPoiKinds.set(n.id, isRoom ? 'room' : 'poi');
+        newPoiKinds.set(sorted[i].id, isRoom ? 'room' : 'poi');
       }
-      // Non-POI-tile POI notes keep their original label (set above).
     }
+    // Non-POI-tile POI notes keep their original label.
   }
 
   // ── Re-label room-archetype notes ─────────────────────────────────
@@ -133,19 +150,9 @@ export function reThemeNotes(
       }
     }
 
-    // Count occurrences so we only suffix labels that appear > 1 time.
-    const labelCounts = new Map<string, number>();
-    for (const l of baseLabels) {
-      labelCounts.set(l, (labelCounts.get(l) ?? 0) + 1);
-    }
-    const labelSeen = new Map<string, number>();
+    const labels = applySuffixes(baseLabels);
     for (let i = 0; i < sorted.length; i++) {
-      const base = baseLabels[i];
-      const count = labelCounts.get(base) ?? 1;
-      const idx = (labelSeen.get(base) ?? 0) + 1;
-      labelSeen.set(base, idx);
-      const label = count > 1 ? `${base} ${idx}` : base;
-      newRoomLabels.set(sorted[i].id, label);
+      newRoomLabels.set(sorted[i].id, labels[i]);
     }
   } else if (roomArchNotes.length > 0) {
     // New theme has no room palette — remove room-archetype notes.
