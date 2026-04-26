@@ -893,17 +893,23 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   }, [isDragging, activeStroke, defogStroke, onSetFogCells]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
-    // Zooming with the mouse wheel was found to be far too easy to trigger
-    // by accident. Require an explicit modifier — Shift held, or Caps Lock
-    // toggled on — before treating wheel events as zoom input. Without a
-    // modifier, the wheel is a no-op (and we let it bubble naturally).
+    // Shift (or Caps Lock) + wheel pans the map; unmodified wheel zooms.
     const capsOn = typeof e.getModifierState === 'function' && e.getModifierState('CapsLock');
-    if (!e.shiftKey && !capsOn) return;
     e.preventDefault();
-    setZoom(prev => {
-      const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      return Math.max(0.25, Math.min(4, prev + delta));
-    });
+    if (e.shiftKey || capsOn) {
+      // Pan: deltaY scrolls vertically, deltaX (or Shift-swapped deltaX)
+      // scrolls horizontally. Browsers typically swap axes when Shift is
+      // held, so we use both deltas.
+      setPan(prev => ({
+        x: prev.x - e.deltaX - (e.shiftKey ? e.deltaY : 0),
+        y: prev.y - (e.shiftKey ? 0 : e.deltaY),
+      }));
+    } else {
+      setZoom(prev => {
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        return Math.max(0.25, Math.min(4, prev + delta));
+      });
+    }
   }, []);
 
   const handleMinimapClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -982,13 +988,13 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
           />
         </div>
       </div>
-      <div className="zoom-controls" title="Mouse-wheel zoom requires Shift or Caps Lock">
+      <div className="zoom-controls" title="Scroll wheel to zoom · Hold Shift + scroll to pan">
         <button onClick={() => setZoom(z => Math.min(4, z + 0.25))}>+</button>
         <span>{Math.round(zoom * 100)}%</span>
         <button onClick={() => setZoom(z => Math.max(0.25, z - 0.25))}>-</button>
         <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}>Reset</button>
         <button onClick={handleFitToScreen} title="Fit map to screen">Fit</button>
-        <span className="zoom-hint">⇧ / ⇪ + wheel</span>
+        <span className="zoom-hint">Wheel: zoom · ⇧+wheel: pan</span>
       </div>
       {mousePos && (
         <div className="coord-display">
