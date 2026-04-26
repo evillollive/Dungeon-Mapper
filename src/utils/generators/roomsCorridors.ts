@@ -680,8 +680,13 @@ function appendRoomKindNotes(tiles: Tile[][], rooms: Room[], notes: MapNote[]): 
     seen.set(r.kind.label, idx);
     const label = total > 1 ? `${r.kind.label} ${idx}` : r.kind.label;
 
-    // Find an anchor cell: prefer the room center, fall back to any
-    // unannotated `floor` cell in the room.
+    // Find an anchor cell: prefer the room center, fall back to the
+    // closest unannotated `floor` cell to the center. Using the nearest
+    // cell (rather than scanning top-left → bottom-right) keeps the
+    // note close to the room's visual center so reading-order numbering
+    // stays spatially coherent — otherwise a POI at the center would
+    // push the room note to the top-left corner, causing it to sort
+    // far from its room's actual position.
     const center = roomCenter(r);
     let ax: number | undefined;
     let ay: number | undefined;
@@ -693,13 +698,19 @@ function appendRoomKindNotes(tiles: Tile[][], rooms: Room[], notes: MapNote[]): 
       ax = center.x;
       ay = center.y;
     } else {
-      outer: for (let y = r.y; y < r.y + r.h; y++) {
+      let bestDist = Infinity;
+      for (let y = r.y; y < r.y + r.h; y++) {
         for (let x = r.x; x < r.x + r.w; x++) {
           const t = tiles[y]?.[x];
           if (t && t.type === 'floor' && t.noteId === undefined) {
-            ax = x;
-            ay = y;
-            break outer;
+            const dx = x - center.x;
+            const dy = y - center.y;
+            const dist = dx * dx + dy * dy;
+            if (dist < bestDist) {
+              bestDist = dist;
+              ax = x;
+              ay = y;
+            }
           }
         }
       }
