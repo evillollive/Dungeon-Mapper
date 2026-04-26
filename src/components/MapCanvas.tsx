@@ -69,6 +69,8 @@ interface MapCanvasProps {
 
 export interface MapCanvasHandle {
   getCanvas: () => HTMLCanvasElement | null;
+  /** Pan the viewport so the given tile coordinate is centered on screen. */
+  centerOnTile: (tileX: number, tileY: number) => void;
 }
 
 const MINIMAP_MAX_W = 160;
@@ -273,7 +275,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
   useImperativeHandle(ref, () => ({
     getCanvas: () => canvasRef.current,
-  }));
+    centerOnTile: (tx: number, ty: number) => {
+      const { width, height, tileSize: ts } = map.meta;
+      setPan({
+        x: (width / 2 - (tx + 0.5)) * zoom * ts,
+        y: (height / 2 - (ty + 0.5)) * zoom * ts,
+      });
+    },
+  }), [map.meta, zoom]);
 
   // Forward selection changes to the parent so features outside the canvas
   // (e.g. the Generate Map dialog's "Generate into selection" toggle) can
