@@ -897,12 +897,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     const capsOn = typeof e.getModifierState === 'function' && e.getModifierState('CapsLock');
     e.preventDefault();
     if (e.shiftKey || capsOn) {
-      // Pan: deltaY scrolls vertically, deltaX (or Shift-swapped deltaX)
-      // scrolls horizontally. Browsers typically swap axes when Shift is
-      // held, so we use both deltas.
+      // Pan: browsers typically swap deltaY into deltaX when Shift is held,
+      // so deltaX already carries the vertical scroll value. We use both
+      // deltas directly — deltaX for horizontal panning, deltaY for vertical.
       setPan(prev => ({
-        x: prev.x - e.deltaX - (e.shiftKey ? e.deltaY : 0),
-        y: prev.y - (e.shiftKey ? 0 : e.deltaY),
+        x: prev.x - e.deltaX,
+        y: prev.y - e.deltaY,
       }));
     } else {
       setZoom(prev => {
