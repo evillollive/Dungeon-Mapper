@@ -491,21 +491,21 @@ function roomSuggestsPillars(kind: RoomKind | undefined): boolean {
  * Convert a fraction of placed doors to hidden `secret-door` tiles.
  * Runs after door thinning so it only touches surviving doors.
  */
-function isDoorTile(t: TileType): t is DoorType | 'secret-door' {
+function isAnyDoorType(t: TileType): t is DoorType | 'secret-door' {
   return t === 'door-h' || t === 'door-v' || t === 'secret-door';
 }
 
 function isPassageTile(t: TileType): boolean {
-  return t === 'floor' || isDoorTile(t);
+  return t === 'floor' || isAnyDoorType(t);
 }
 
 function adjacentRoomsForDoor(rooms: Room[], x: number, y: number): number[] {
-  const out: number[] = [];
+  const out = new Set<number>();
   for (const [dx, dy] of DIRS_4) {
     const idx = roomContaining(rooms, x + dx, y + dy);
-    if (idx >= 0 && !out.includes(idx)) out.push(idx);
+    if (idx >= 0) out.add(idx);
   }
-  return out;
+  return [...out];
 }
 
 /**
