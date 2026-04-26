@@ -13,7 +13,7 @@ const roomsCorridors: MapGenerator = {
     'Rectangular rooms connected by L-shaped corridors. Best for dungeons, castles, ships, and other built spaces.',
   preferredThemes: [
     'dungeon', 'castle', 'starship', 'alien', 'steampunk',
-    'cyberpunk', 'moderncity', 'pirate', 'oldwest',
+    'cyberpunk', 'moderncity', 'pirate', 'oldwest', 'ancient',
   ],
   generate: generateRoomsCorridors,
 };
