@@ -1,6 +1,6 @@
 import React from 'react';
-import type { ToolType, TileType } from '../types/map';
-import { ALL_TILE_TYPES, TILE_LABELS } from '../types/map';
+import type { ToolType, TileType, MarkerShape } from '../types/map';
+import { ALL_TILE_TYPES, TILE_LABELS, MARKER_SHAPES, MARKER_COLORS, MARKER_SHAPE_LABELS } from '../types/map';
 import { getTheme, THEME_LIST } from '../themes/index';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import TokenToolsSection from './TokenToolsSection';
@@ -25,6 +25,14 @@ interface ToolbarProps {
   onToggleGmShowFog: () => void;
   /** Open the procedural map-generation dialog. GM-only. */
   onOpenGenerateMap: () => void;
+  // Shape marker tool settings
+  markerShape: MarkerShape;
+  markerColor: string;
+  markerSize: number;
+  onSetMarkerShape: (s: MarkerShape) => void;
+  onSetMarkerColor: (c: string) => void;
+  onSetMarkerSize: (s: number) => void;
+  onClearMarkers: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -76,6 +84,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   activeTool, activeTile, themeId, onSetTool, onSetTile,
   onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
   fogEnabled, gmShowFog, onToggleGmShowFog, onOpenGenerateMap,
+  markerShape, markerColor, markerSize, onSetMarkerShape, onSetMarkerColor,
+  onSetMarkerSize, onClearMarkers,
 }) => {
   const theme = getTheme(themeId);
   const tileLabels = React.useMemo(() => {
@@ -200,6 +210,102 @@ const Toolbar: React.FC<ToolbarProps> = ({
       </div>
 
       <TokenToolsSection activeTool={activeTool} onSetTool={onSetTool} />
+
+      <div className="toolbar-section">
+        <div className="toolbar-label">MARKERS</div>
+        <button
+          type="button"
+          className={`tool-btn ${activeTool === 'marker' ? 'active' : ''}`}
+          onClick={() => onSetTool('marker')}
+          title="Place a shape marker (spell area, hazard zone, etc.)"
+          aria-label="Place marker"
+          aria-pressed={activeTool === 'marker'}
+        >
+          <span className="tool-icon" aria-hidden="true">🔵</span>
+          <span className="tool-name">Place</span>
+        </button>
+        <button
+          type="button"
+          className={`tool-btn ${activeTool === 'remove-marker' ? 'active' : ''}`}
+          onClick={() => onSetTool('remove-marker')}
+          title="Remove a marker — click a marker to delete it."
+          aria-label="Remove marker"
+          aria-pressed={activeTool === 'remove-marker'}
+        >
+          <span className="tool-icon" aria-hidden="true">✕</span>
+          <span className="tool-name">Remove</span>
+        </button>
+        <button
+          type="button"
+          className="tool-btn"
+          onClick={onClearMarkers}
+          title="Remove all markers from the map."
+          aria-label="Clear all markers"
+        >
+          <span className="tool-icon" aria-hidden="true">🗑</span>
+          <span className="tool-name">Clear All</span>
+        </button>
+        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Shape</div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {MARKER_SHAPES.map(s => (
+            <button
+              key={s}
+              type="button"
+              className={`tile-btn ${markerShape === s ? 'active' : ''}`}
+              onClick={() => onSetMarkerShape(s)}
+              title={MARKER_SHAPE_LABELS[s]}
+              aria-label={`${MARKER_SHAPE_LABELS[s]} marker shape`}
+              aria-pressed={markerShape === s}
+              style={{ padding: 2, width: 'auto' }}
+            >
+              <span aria-hidden="true" style={{ fontSize: 16 }}>
+                {s === 'circle' ? '●' : s === 'square' ? '■' : '◆'}
+              </span>
+            </button>
+          ))}
+        </div>
+        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Color</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+          {MARKER_COLORS.map(c => (
+            <button
+              key={c}
+              type="button"
+              className={`tile-btn ${markerColor === c ? 'active' : ''}`}
+              onClick={() => onSetMarkerColor(c)}
+              title={`Color: ${c}`}
+              aria-label={`Marker color ${c}`}
+              aria-pressed={markerColor === c}
+              style={{ padding: 2, width: 'auto', justifyContent: 'center' }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  display: 'inline-block',
+                  width: 18,
+                  height: 18,
+                  background: c,
+                  border: '1px solid #2d3561',
+                  borderRadius: markerShape === 'circle' ? '50%' : 0,
+                }}
+              />
+            </button>
+          ))}
+        </div>
+        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Radius</div>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          <input
+            type="range"
+            min={1}
+            max={10}
+            value={markerSize}
+            onChange={e => onSetMarkerSize(Number(e.target.value))}
+            title={`Marker radius: ${markerSize} tiles`}
+            aria-label="Marker radius"
+            style={{ flex: 1 }}
+          />
+          <span style={{ fontSize: '0.7rem', minWidth: 16, textAlign: 'center' }}>{markerSize}</span>
+        </div>
+      </div>
     </div>
   );
 };

@@ -14,7 +14,7 @@ import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
 import { exportMapSVG } from './utils/export';
 import { isTokenFogged } from './utils/tokenVisibility';
 import { getTheme, THEME_LIST } from './themes/index';
-import { ALL_TILE_TYPES, type ViewMode } from './types/map';
+import { ALL_TILE_TYPES, type ViewMode, type MarkerShape } from './types/map';
 import './App.css';
 
 const UI_SCALE_STORAGE_KEY = 'dungeon-mapper:ui-scale';
@@ -117,6 +117,9 @@ function App() {
     copySelection,
     cutSelection,
     pasteClipboard,
+    addMarker,
+    removeMarker,
+    clearMarkers,
   } = useMapState();
 
   const {
@@ -157,6 +160,10 @@ function App() {
   // persisted on the map; they're a per-session preference.
   const [drawColor, setDrawColor] = useState<string>('#dc2626');
   const [drawWidth, setDrawWidth] = useState<number>(0.25);
+  // Marker tool settings — shape, color, radius (in tiles).
+  const [markerShape, setMarkerShape] = useState<MarkerShape>('circle');
+  const [markerColor, setMarkerColor] = useState<string>('#dc2626');
+  const [markerSize, setMarkerSize] = useState<number>(2);
   // Track clipboard state for the paste preview overlay on the canvas.
   // Updated after every copy/cut so the canvas knows whether a paste
   // preview should be rendered and how large the buffer is.
@@ -484,6 +491,13 @@ function App() {
               gmShowFog={gmShowFog}
               onToggleGmShowFog={handleToggleGmShowFogAnnounced}
               onOpenGenerateMap={handleOpenGenerateMap}
+              markerShape={markerShape}
+              markerColor={markerColor}
+              markerSize={markerSize}
+              onSetMarkerShape={setMarkerShape}
+              onSetMarkerColor={setMarkerColor}
+              onSetMarkerSize={setMarkerSize}
+              onClearMarkers={clearMarkers}
             />
           </nav>
         ) : (
@@ -529,6 +543,11 @@ function App() {
             onRemoveToken={removeToken}
             onAddAnnotation={addAnnotation}
             onRemoveAnnotation={removeAnnotation}
+            onAddMarker={addMarker}
+            onRemoveMarker={removeMarker}
+            markerShape={markerShape}
+            markerColor={markerColor}
+            markerSize={markerSize}
             onSelectionChange={setSelection}
             hasClipboard={clipboardInfo != null}
             clipboardSize={clipboardInfo}

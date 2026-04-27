@@ -121,6 +121,23 @@ export function exportMapSVG(
     }
   }
 
+  // Shape markers: rendered with transparency like on-screen.
+  for (const marker of map.markers ?? []) {
+    const mcx = marker.x * tileSize + tileSize / 2;
+    const mcy = marker.y * tileSize + tileSize / 2;
+    const mr = marker.size * tileSize;
+    const sw = Math.max(1, tileSize * 0.08);
+    if (marker.shape === 'circle') {
+      svg += `<circle cx="${mcx}" cy="${mcy}" r="${mr}" fill="${marker.color}" fill-opacity="0.25" stroke="${marker.color}" stroke-opacity="0.6" stroke-width="${sw}"/>`;
+    } else if (marker.shape === 'square') {
+      svg += `<rect x="${mcx - mr}" y="${mcy - mr}" width="${mr * 2}" height="${mr * 2}" fill="${marker.color}" fill-opacity="0.25" stroke="${marker.color}" stroke-opacity="0.6" stroke-width="${sw}"/>`;
+    } else {
+      // diamond
+      const dp = `M${mcx} ${mcy - mr} L${mcx + mr} ${mcy} L${mcx} ${mcy + mr} L${mcx - mr} ${mcy} Z`;
+      svg += `<path d="${dp}" fill="${marker.color}" fill-opacity="0.25" stroke="${marker.color}" stroke-opacity="0.6" stroke-width="${sw}"/>`;
+    }
+  }
+
   // Tokens: hidden under fog in player exports (mirrors on-screen behavior).
   for (const token of map.tokens ?? []) {
     if (isPlayerView && isFogged(token.x, token.y)) continue;
