@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { DungeonMap, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke } from '../types/map';
+import type { DungeonMap, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape } from '../types/map';
 import { createEmptyGrid, createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
 import { saveMap, loadMap, migrateFromLocalStorage } from '../utils/storage';
 import { reThemeNotes } from '../utils/reThemeNotes';
@@ -19,6 +19,7 @@ function createDefaultMap(): DungeonMap {
     fogEnabled: true,
     tokens: [],
     annotations: [],
+    markers: [],
     initiative: [],
   };
 }
@@ -38,6 +39,7 @@ function withDefaults(map: DungeonMap): DungeonMap {
     fogEnabled: map.fogEnabled ?? true,
     tokens: map.tokens ?? [],
     annotations: map.annotations ?? [],
+    markers: map.markers ?? [],
     // Default to an empty initiative list rather than auto-populating from
     // existing tokens on legacy saves — a freshly loaded map shouldn't
     // surprise the GM with a pre-filled turn order they didn't set.
@@ -97,6 +99,7 @@ export function useMapState() {
   const [nextNoteId, setNextNoteId] = useState(1);
   const nextTokenIdRef = useRef(1);
   const nextStrokeIdRef = useRef(1);
+  const nextMarkerIdRef = useRef(1);
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -115,6 +118,7 @@ export function useMapState() {
         setNextNoteId(nextIdAfter(ready.notes));
         nextTokenIdRef.current = nextIdAfter(ready.tokens);
         nextStrokeIdRef.current = nextIdAfter(ready.annotations);
+        nextMarkerIdRef.current = nextIdAfter(ready.markers);
       }
     }).catch(() => {});
   }, []);
@@ -392,6 +396,7 @@ export function useMapState() {
     setNextNoteId(nextIdAfter(ready.notes));
     nextTokenIdRef.current = nextIdAfter(ready.tokens);
     nextStrokeIdRef.current = nextIdAfter(ready.annotations);
+    nextMarkerIdRef.current = nextIdAfter(ready.markers);
     setSelectedNoteId(null);
   }, [debouncedSave]);
 
@@ -774,6 +779,46 @@ export function useMapState() {
     });
   }, [debouncedSave]);
 
+  // ── Shape Markers ─────────────────────────────────────────────────────
+  // Lightweight tactical overlays (spell AoE, hazard zones, etc.) rendered
+  // with transparency so the map content underneath remains visible.
+
+  const addMarker = useCallback((shape: MarkerShape, x: number, y: number, color: string, size: number): number | null => {
+    const newId = nextMarkerIdRef.current;
+    let placed = false;
+    setMap(prev => {
+      if (x < 0 || y < 0 || x >= prev.meta.width || y >= prev.meta.height) return prev;
+      const marker: ShapeMarker = { id: newId, x, y, shape, color, size: Math.max(1, Math.floor(size)) };
+      placed = true;
+      const updated = { ...prev, markers: [...(prev.markers ?? []), marker] };
+      debouncedSave(updated);
+      return updated;
+    });
+    if (placed) {
+      nextMarkerIdRef.current = newId + 1;
+      return newId;
+    }
+    return null;
+  }, [debouncedSave]);
+
+  const removeMarker = useCallback((id: number) => {
+    setMap(prev => {
+      const markers = (prev.markers ?? []).filter(m => m.id !== id);
+      const updated = { ...prev, markers };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const clearMarkers = useCallback(() => {
+    setMap(prev => {
+      if ((prev.markers ?? []).length === 0) return prev;
+      const updated = { ...prev, markers: [] };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
   /**
    * Copy the contents of the given selection rectangle into the internal
    * clipboard buffer. Tiles and notes within the rectangle are captured
@@ -949,5 +994,9 @@ export function useMapState() {
     copySelection,
     cutSelection,
     pasteClipboard,
+    // Shape markers
+    addMarker,
+    removeMarker,
+    clearMarkers,
   };
 }

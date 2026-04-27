@@ -72,6 +72,35 @@ export interface Token {
   size?: number;
 }
 
+export type MarkerShape = 'circle' | 'square' | 'diamond';
+
+export interface ShapeMarker {
+  id: number;
+  /** Tile-aligned X coordinate of the marker's center cell. */
+  x: number;
+  /** Tile-aligned Y coordinate of the marker's center cell. */
+  y: number;
+  shape: MarkerShape;
+  /** Hex color (e.g. '#dc2626'). */
+  color: string;
+  /**
+   * Radius in tiles (1 = covers 1 tile out from center in each direction,
+   * i.e. a 3×3 footprint). Minimum 1.
+   */
+  size: number;
+}
+
+export const MARKER_SHAPES: MarkerShape[] = ['circle', 'square', 'diamond'];
+export const MARKER_COLORS = [
+  '#dc2626', '#f97316', '#eab308', '#22c55e',
+  '#3b82f6', '#a855f7', '#ec4899', '#1f2937',
+];
+export const MARKER_SHAPE_LABELS: Record<MarkerShape, string> = {
+  circle: 'Circle',
+  square: 'Square',
+  diamond: 'Diamond',
+};
+
 export interface AnnotationStroke {
   id: number;
   /**
@@ -104,6 +133,8 @@ export interface DungeonMap {
   tokens?: Token[];
   /** Free-form pen strokes drawn over the map. */
   annotations?: AnnotationStroke[];
+  /** Shape/area markers placed on the map (spell AoE, hazard zones, etc.). */
+  markers?: ShapeMarker[];
   /**
    * Ordered list of token ids representing the initiative order shown in
    * the right-hand Initiative panel. The order is GM-controlled (drag to
@@ -126,7 +157,8 @@ export type ToolType =
   | 'pdraw' | 'perase'
   | 'token-player' | 'token-npc'
   | 'token-monster' | 'token-monster-md' | 'token-monster-lg'
-  | 'move-token' | 'remove-token';
+  | 'move-token' | 'remove-token'
+  | 'marker' | 'remove-marker';
 
 export type ViewMode = 'gm' | 'player';
 

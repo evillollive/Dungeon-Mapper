@@ -363,4 +363,6 @@ export const TOOL_SHORTCUTS: Record<ToolType, string | undefined> = {
   'token-monster-lg': undefined,
   'move-token': undefined,
   'remove-token': undefined,
+  marker: undefined,
+  'remove-marker': undefined,
 };

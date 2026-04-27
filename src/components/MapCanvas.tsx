@@ -1,10 +1,11 @@
 import React, { useRef, useEffect, useMemo, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
-import type { DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke } from '../types/map';
+import type { DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape } from '../types/map';
 import { TOKEN_KIND_COLORS } from '../types/map';
 import { getTheme } from '../themes/index';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from '../utils/tokenVisibility';
+import { ICON_BY_ID } from '../utils/iconLibrary';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
 // evoking traditional engineering / quad-ruled graph paper regardless of theme.
@@ -19,6 +20,18 @@ const SCREEN_GRID = '#5fb8c9';
 // grey wash so the GM can see *what* is fogged without losing the map.
 const FOG_PLAYER_FILL = '#6b7280';
 const FOG_GM_FILL = 'rgba(107, 114, 128, 0.55)';
+
+// Cache parsed Path2D objects for icon rendering. Keyed by icon id.
+const iconPath2DCache = new Map<string, Path2D>();
+function getIconPath2D(iconId: string): Path2D | null {
+  const cached = iconPath2DCache.get(iconId);
+  if (cached) return cached;
+  const def = ICON_BY_ID.get(iconId);
+  if (!def) return null;
+  const p = new Path2D(def.path);
+  iconPath2DCache.set(iconId, p);
+  return p;
+}
 
 interface MapCanvasProps {
   map: DungeonMap;
@@ -56,6 +69,11 @@ interface MapCanvasProps {
   onRemoveToken: (id: number) => void;
   onAddAnnotation: (stroke: Omit<AnnotationStroke, 'id'>) => void;
   onRemoveAnnotation: (id: number) => void;
+  onAddMarker: (shape: MarkerShape, x: number, y: number, color: string, size: number) => void;
+  onRemoveMarker: (id: number) => void;
+  markerShape: MarkerShape;
+  markerColor: string;
+  markerSize: number;
   /**
    * Notified whenever the user-painted selection rectangle changes.
    * Receives `null` when the selection is cleared (e.g. after a
@@ -174,14 +192,29 @@ function drawToken(
   ctx.strokeStyle = '#1a1a2e';
   ctx.stroke();
 
-  // Foreground glyph: emoji icon if provided, otherwise the first letter
-  // of the label (or the token kind).
-  const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `bold ${Math.max(8, tileSize * size * 0.5)}px "Courier New", monospace`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(glyph, px, py + 0.5);
+  // Foreground glyph: library icon SVG path if the token's icon field
+  // matches a library id, otherwise emoji icon or the first letter of the
+  // label (or the token kind).
+  const iconPath = token.icon ? getIconPath2D(token.icon) : null;
+  if (iconPath) {
+    // Render the library SVG path. The paths use a 512×512 coordinate
+    // space, so we scale and translate to fit inside the token circle.
+    const iconSize = radius * 1.5; // Icon drawn at 75% of diameter
+    const scale = iconSize / 512;
+    ctx.save();
+    ctx.translate(px - iconSize / 2, py - iconSize / 2);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill(iconPath);
+    ctx.restore();
+  } else {
+    const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.max(8, tileSize * size * 0.5)}px "Courier New", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(glyph, px, py + 0.5);
+  }
   ctx.restore();
 }
 
@@ -215,6 +248,62 @@ function drawAnnotation(
     ctx.stroke();
   }
   ctx.restore();
+}
+
+/** Draw a shape marker (circle, square, or diamond) with transparency. */
+function drawMarker(
+  ctx: CanvasRenderingContext2D,
+  marker: ShapeMarker,
+  tileSize: number
+) {
+  const cx = marker.x * tileSize + tileSize / 2;
+  const cy = marker.y * tileSize + tileSize / 2;
+  const r = marker.size * tileSize;
+  ctx.save();
+  ctx.globalAlpha = 0.25;
+  ctx.fillStyle = marker.color;
+  ctx.beginPath();
+  if (marker.shape === 'circle') {
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  } else if (marker.shape === 'square') {
+    ctx.rect(cx - r, cy - r, r * 2, r * 2);
+  } else {
+    // diamond
+    ctx.moveTo(cx, cy - r);
+    ctx.lineTo(cx + r, cy);
+    ctx.lineTo(cx, cy + r);
+    ctx.lineTo(cx - r, cy);
+    ctx.closePath();
+  }
+  ctx.fill();
+  ctx.globalAlpha = 0.6;
+  ctx.strokeStyle = marker.color;
+  ctx.lineWidth = Math.max(1, tileSize * 0.08);
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Hit-test markers at the given fractional tile coordinate. Returns the
+ * top-most matching marker. */
+function findMarkerAt(markers: ShapeMarker[] | undefined, fx: number, fy: number): ShapeMarker | null {
+  if (!markers) return null;
+  for (let i = markers.length - 1; i >= 0; i--) {
+    const m = markers[i];
+    const cx = m.x + 0.5;
+    const cy = m.y + 0.5;
+    const dx = fx - cx;
+    const dy = fy - cy;
+    const r = m.size;
+    if (m.shape === 'circle') {
+      if (dx * dx + dy * dy <= r * r) return m;
+    } else if (m.shape === 'square') {
+      if (Math.abs(dx) <= r && Math.abs(dy) <= r) return m;
+    } else {
+      // diamond: |dx|/r + |dy|/r <= 1
+      if (Math.abs(dx) / r + Math.abs(dy) / r <= 1) return m;
+    }
+  }
+  return null;
 }
 
 /** Hit-test tokens at the given fractional tile coordinate. Returns the
@@ -257,6 +346,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   onRemoveToken,
   onAddAnnotation,
   onRemoveAnnotation,
+  onAddMarker,
+  onRemoveMarker,
+  markerShape,
+  markerColor,
+  markerSize,
   onSelectionChange,
   hasClipboard,
   clipboardSize,
@@ -326,6 +420,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   // and trips react-hooks/exhaustive-deps).
   const tokens = useMemo(() => map.tokens ?? [], [map.tokens]);
   const annotations = useMemo(() => map.annotations ?? [], [map.annotations]);
+  const markers = useMemo(() => map.markers ?? [], [map.markers]);
   const fog = map.fog;
   const fogActive = (map.fogEnabled ?? false);
   const isPlayerView = viewMode === 'player';
@@ -436,6 +531,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     for (const stroke of annotations) {
       if (isPlayerView && stroke.kind === 'gm') continue;
       drawAnnotation(ctx, stroke, tileSize);
+    }
+
+    // Shape markers are drawn on top of annotations but under tokens so
+    // the tactical overlays don't obscure token glyphs.
+    for (const marker of markers) {
+      drawMarker(ctx, marker, tileSize);
     }
 
     // Render tokens before fog so fogged cells in player mode genuinely
@@ -560,7 +661,24 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       );
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos]);
+
+    // Marker preview — when the marker tool is active and the mouse is on
+    // the canvas, show a ghost marker at the cursor position.
+    if (activeTool === 'marker' && mousePos) {
+      const ghost: ShapeMarker = {
+        id: -1,
+        x: mousePos.x,
+        y: mousePos.y,
+        shape: markerShape,
+        color: markerColor,
+        size: markerSize,
+      };
+      ctx.save();
+      ctx.globalAlpha = 0.5;
+      drawMarker(ctx, ghost, tileSize);
+      ctx.restore();
+    }
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize]);
 
   // Minimap render
   useEffect(() => {
@@ -714,6 +832,18 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       if (t) onRemoveToken(t.id);
       return;
     }
+    if (activeTool === 'marker') {
+      onAddMarker(markerShape, x, y, markerColor, markerSize);
+      return;
+    }
+    if (activeTool === 'remove-marker') {
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        const m = findMarkerAt(markers, fc.x, fc.y);
+        if (m) onRemoveMarker(m.id);
+      }
+      return;
+    }
 
     // Player-only tools (drawing eraser).
     if (isPlayerView) {
@@ -748,6 +878,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     activeTool, activeTile, getTileCoords, onSetTile, onFillTile, onAddNote, onSelectNote,
     notes, selectedNoteId, isPlayerView, fogActive, fog, tokens, annotations,
     onAddToken, onRemoveToken, onRemoveAnnotation, meta.width, meta.height,
+    onAddMarker, onRemoveMarker, markerShape, markerColor, markerSize, markers,
+    getFractionalCoords,
   ]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1039,6 +1171,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     : activeTool === 'token-player' || activeTool === 'token-npc'
         || activeTool === 'token-monster' || activeTool === 'token-monster-md'
         || activeTool === 'token-monster-lg' ? 'copy'
+    : activeTool === 'marker' ? 'copy'
+    : activeTool === 'remove-marker' ? 'not-allowed'
     : 'crosshair';
 
   const handleCanvasKeyDown = useCallback((e: React.KeyboardEvent<HTMLCanvasElement>) => {

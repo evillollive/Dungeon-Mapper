@@ -1,6 +1,7 @@
 import type { DungeonMap, ViewMode } from '../types/map';
 import { TOKEN_KIND_COLORS } from '../types/map';
 import type { TileTheme } from '../themes/index';
+import { ICON_BY_ID } from './iconLibrary';
 
 export function exportMapJSON(map: DungeonMap): void {
   const json = JSON.stringify(map, null, 2);
@@ -121,6 +122,23 @@ export function exportMapSVG(
     }
   }
 
+  // Shape markers: rendered with transparency like on-screen.
+  for (const marker of map.markers ?? []) {
+    const mcx = marker.x * tileSize + tileSize / 2;
+    const mcy = marker.y * tileSize + tileSize / 2;
+    const mr = marker.size * tileSize;
+    const sw = Math.max(1, tileSize * 0.08);
+    if (marker.shape === 'circle') {
+      svg += `<circle cx="${mcx}" cy="${mcy}" r="${mr}" fill="${marker.color}" fill-opacity="0.25" stroke="${marker.color}" stroke-opacity="0.6" stroke-width="${sw}"/>`;
+    } else if (marker.shape === 'square') {
+      svg += `<rect x="${mcx - mr}" y="${mcy - mr}" width="${mr * 2}" height="${mr * 2}" fill="${marker.color}" fill-opacity="0.25" stroke="${marker.color}" stroke-opacity="0.6" stroke-width="${sw}"/>`;
+    } else {
+      // diamond
+      const dp = `M${mcx} ${mcy - mr} L${mcx + mr} ${mcy} L${mcx} ${mcy + mr} L${mcx - mr} ${mcy} Z`;
+      svg += `<path d="${dp}" fill="${marker.color}" fill-opacity="0.25" stroke="${marker.color}" stroke-opacity="0.6" stroke-width="${sw}"/>`;
+    }
+  }
+
   // Tokens: hidden under fog in player exports (mirrors on-screen behavior).
   for (const token of map.tokens ?? []) {
     if (isPlayerView && isFogged(token.x, token.y)) continue;
@@ -129,9 +147,20 @@ export function exportMapSVG(
     const tcy = token.y * tileSize + (tileSize * sz) / 2;
     const r = tileSize * sz * 0.42;
     const fill = token.color ?? TOKEN_KIND_COLORS[token.kind];
-    const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
     svg += `<circle cx="${tcx}" cy="${tcy}" r="${r}" fill="${fill}" stroke="#1a1a2e" stroke-width="${Math.max(1, tileSize * sz * 0.08)}"/>`;
-    svg += `<text x="${tcx}" y="${tcy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * sz * 0.5)}" font-family="monospace" fill="#ffffff" font-weight="bold">${escapeXML(glyph)}</text>`;
+    // If the token has a library icon, render the SVG path; otherwise fall
+    // back to a text glyph.
+    const iconDef = token.icon ? ICON_BY_ID.get(token.icon) : undefined;
+    if (iconDef) {
+      const iconSize = r * 1.5;
+      const scale = iconSize / 512;
+      const ox = tcx - iconSize / 2;
+      const oy = tcy - iconSize / 2;
+      svg += `<g transform="translate(${ox},${oy}) scale(${scale})"><path d="${iconDef.path}" fill="#ffffff"/></g>`;
+    } else {
+      const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
+      svg += `<text x="${tcx}" y="${tcy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * sz * 0.5)}" font-family="monospace" fill="#ffffff" font-weight="bold">${escapeXML(glyph)}</text>`;
+    }
   }
 
   // Fog overlay. Player exports paint opaque grey so hidden content is
