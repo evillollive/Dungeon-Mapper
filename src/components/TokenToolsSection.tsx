@@ -32,12 +32,16 @@ const TokenToolsSection: React.FC<TokenToolsSectionProps> = ({ activeTool, onSet
       {TOKEN_TOOLS.map(tool => (
         <button
           key={tool.id}
+          type="button"
           className={`tool-btn ${activeTool === tool.id ? 'active' : ''}`}
           onClick={() => onSetTool(tool.id)}
           title={tool.title ?? `Place a ${tool.label} token — click on a cell to drop it.`}
+          aria-label={`Place ${tool.label} token`}
+          aria-pressed={activeTool === tool.id}
         >
           <span
             className="tool-icon"
+            aria-hidden="true"
             style={{
               display: 'inline-block',
               width: 18, height: 18, borderRadius: '50%',
@@ -52,19 +56,25 @@ const TokenToolsSection: React.FC<TokenToolsSectionProps> = ({ activeTool, onSet
         </button>
       ))}
       <button
+        type="button"
         className={`tool-btn ${activeTool === 'move-token' ? 'active' : ''}`}
         onClick={() => onSetTool('move-token')}
         title="Move a token — click and drag a token to relocate it."
+        aria-label="Move token tool"
+        aria-pressed={activeTool === 'move-token'}
       >
-        <span className="tool-icon">✋</span>
+        <span className="tool-icon" aria-hidden="true">✋</span>
         <span className="tool-name">Move Token</span>
       </button>
       <button
+        type="button"
         className={`tool-btn ${activeTool === 'remove-token' ? 'active' : ''}`}
         onClick={() => onSetTool('remove-token')}
         title="Remove a token — click a token to delete it."
+        aria-label="Remove token tool"
+        aria-pressed={activeTool === 'remove-token'}
       >
-        <span className="tool-icon">✕</span>
+        <span className="tool-icon" aria-hidden="true">✕</span>
         <span className="tool-name">Remove</span>
       </button>
     </div>

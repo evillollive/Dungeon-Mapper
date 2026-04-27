@@ -92,13 +92,17 @@ const Toolbar: React.FC<ToolbarProps> = ({
         {TOOLS.map(tool => (
           <button
             key={tool.id}
+            type="button"
             className={`tool-btn ${activeTool === tool.id ? 'active' : ''}`}
             onClick={() => onSetTool(tool.id)}
             title={`${tool.label} [${tool.shortcut}]`}
+            aria-label={`${tool.label} tool`}
+            aria-pressed={activeTool === tool.id}
+            aria-keyshortcuts={tool.shortcut}
           >
-            <span className="tool-icon">{tool.icon}</span>
+            <span className="tool-icon" aria-hidden="true">{tool.icon}</span>
             <span className="tool-name">{tool.label}</span>
-            <span className="tool-shortcut">[{tool.shortcut}]</span>
+            <span className="tool-shortcut" aria-hidden="true">[{tool.shortcut}]</span>
           </button>
         ))}
       </div>
@@ -127,12 +131,13 @@ const Toolbar: React.FC<ToolbarProps> = ({
           style={{ cursor: 'pointer' }}
           title="When on, switching themes keeps any tiles you've already painted in their original style instead of restyling them. Lets you combine terrain styles on one map. Off by default — newly painted tiles always use the currently selected theme."
         >
-          <span className="tool-icon">🎨</span>
+          <span className="tool-icon" aria-hidden="true">🎨</span>
           <span className="tool-name">Preserve</span>
           <input
             type="checkbox"
             checked={preserveOnThemeSwitch}
             onChange={onTogglePreserveOnThemeSwitch}
+            aria-label="Preserve existing tiles when switching themes"
             style={{ margin: 0 }}
           />
         </label>
@@ -140,10 +145,13 @@ const Toolbar: React.FC<ToolbarProps> = ({
           type="button"
           className="tool-btn"
           onClick={onOpenGenerateMap}
-          title="Procedurally generate a random map (dungeon, terrain, cavern, …) in the current theme. Replaces the current map; tile / fog changes can be undone."
+          title="Procedurally generate a random map (dungeon, terrain, cavern, …) in the current theme. Replaces the current map; tile / fog changes can be undone. [G]"
+          aria-label="Generate map"
+          aria-keyshortcuts="G"
         >
-          <span className="tool-icon">🎲</span>
+          <span className="tool-icon" aria-hidden="true">🎲</span>
           <span className="tool-name">Generate</span>
+          <span className="tool-shortcut" aria-hidden="true">[G]</span>
         </button>
       </div>
 
@@ -158,13 +166,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
               : 'Show Fog has no effect until fog-of-war is enabled. Switch to the Player view to enable fog and reveal/hide cells.'
           }
         >
-          <span className="tool-icon">🌫</span>
+          <span className="tool-icon" aria-hidden="true">🌫</span>
           <span className="tool-name">Show Fog</span>
           <input
             type="checkbox"
             checked={gmShowFog}
             onChange={onToggleGmShowFog}
             disabled={!fogEnabled}
+            aria-label="Show fog preview overlay"
             style={{ margin: 0 }}
           />
         </label>
@@ -176,9 +185,12 @@ const Toolbar: React.FC<ToolbarProps> = ({
           {ALL_TILE_TYPES.map(tileType => (
             <button
               key={tileType}
+              type="button"
               className={`tile-btn ${activeTile === tileType ? 'active' : ''}`}
               onClick={() => onSetTile(tileType)}
               title={tileLabel(tileType)}
+              aria-label={`${tileLabel(tileType)} tile`}
+              aria-pressed={activeTile === tileType}
             >
               <TilePreview type={tileType} size={22} themeId={themeId} />
               <span className="tile-btn-label">{tileLabel(tileType)}</span>
