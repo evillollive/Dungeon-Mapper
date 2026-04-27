@@ -75,8 +75,19 @@ export function exportMapSVG(
 
   const isFogged = (x: number, y: number) => fogActive && !!fog?.[y]?.[x];
 
-  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">`;
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">`;
   svg += `<rect width="${svgW}" height="${svgH}" fill="${theme.tileColors['empty']}"/>`;
+
+  // Background image layer (behind tiles).
+  if (map.backgroundImage) {
+    const bg = map.backgroundImage;
+    // We don't know the natural dimensions from the data URL alone, so
+    // we embed the image at its natural size and let the SVG scale
+    // attribute handle sizing. The scale factor applied is relative to
+    // 1 image-pixel = 1 SVG-user-unit (which equals 1 canvas pixel at
+    // the tile's base tileSize).
+    svg += `<image xlink:href="${bg.dataUrl}" x="${bg.offsetX * tileSize}" y="${bg.offsetY * tileSize}" opacity="${bg.opacity}" transform="scale(${bg.scale})" style="image-rendering:auto"/>`;
+  }
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {

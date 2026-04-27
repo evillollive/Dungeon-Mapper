@@ -377,6 +377,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   // to the map on mouseup as a single fog edit.
   const [defogStroke, setDefogStroke] = useState<{ x: number; y: number }[] | null>(null);
   const lastDefogCellRef = useRef<{ x: number; y: number } | null>(null);
+  // Cached HTMLImageElement for the optional background image. Updated
+  // whenever map.backgroundImage.dataUrl changes so the main render
+  // effect can drawImage() without re-decoding every frame.
+  const bgImageRef = useRef<HTMLImageElement | null>(null);
+  const bgImageUrlRef = useRef<string | null>(null);
   // Token currently being dragged via the move-token tool. `offsetX/Y`
   // captures where inside the (possibly multi-cell) footprint the user
   // grabbed, so the token follows the cursor without snapping its
@@ -424,6 +429,34 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const fog = map.fog;
   const fogActive = (map.fogEnabled ?? false);
   const isPlayerView = viewMode === 'player';
+  const backgroundImage = map.backgroundImage;
+
+  // Load the background image whenever the data URL changes. The decoded
+  // HTMLImageElement is cached in bgImageRef so the main render effect can
+  // drawImage() without re-decoding every frame. We track the URL in a
+  // separate ref to avoid re-loading when only offset/scale/opacity change.
+  const [bgImageReady, setBgImageReady] = useState(false);
+  useEffect(() => {
+    const dataUrl = backgroundImage?.dataUrl ?? null;
+    if (dataUrl === bgImageUrlRef.current) return;
+    bgImageUrlRef.current = dataUrl;
+    if (!dataUrl) {
+      bgImageRef.current = null;
+      setBgImageReady(false);
+      return;
+    }
+    const img = new Image();
+    img.onload = () => {
+      bgImageRef.current = img;
+      setBgImageReady(true);
+    };
+    img.onerror = () => {
+      bgImageRef.current = null;
+      setBgImageReady(false);
+    };
+    setBgImageReady(false);
+    img.src = dataUrl;
+  }, [backgroundImage?.dataUrl]);
 
   // Notes positioned on a fogged cell are hidden from the player view so a
   // visible note number doesn't leak the existence of a hidden room.
@@ -457,6 +490,24 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
     ctx.fillStyle = printMode ? PRINT_BG : SCREEN_BG;
     ctx.fillRect(0, 0, w, h);
+
+    // Background image layer — rendered behind the tile grid so GMs can
+    // trace over an imported battlemap. Hidden in print mode.
+    const bgImg = bgImageRef.current;
+    if (bgImg && backgroundImage && !printMode) {
+      ctx.save();
+      ctx.globalAlpha = backgroundImage.opacity;
+      const imgW = bgImg.naturalWidth * backgroundImage.scale;
+      const imgH = bgImg.naturalHeight * backgroundImage.scale;
+      ctx.drawImage(
+        bgImg,
+        backgroundImage.offsetX * tileSize,
+        backgroundImage.offsetY * tileSize,
+        imgW,
+        imgH
+      );
+      ctx.restore();
+    }
 
     for (let y = 0; y < meta.height; y++) {
       for (let x = 0; x < meta.width; x++) {
@@ -678,7 +729,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       drawMarker(ctx, ghost, tileSize);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady]);
 
   // Minimap render
   useEffect(() => {
