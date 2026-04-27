@@ -11,6 +11,9 @@ export const dungeonTheme: TileTheme = {
     { id: 'empty', label: 'Void' }, { id: 'floor', label: 'Flagstone' }, { id: 'wall', label: 'Stone Wall' },
     { id: 'door-h', label: 'Iron Door (H)' }, { id: 'door-v', label: 'Iron Door (V)' },
     { id: 'secret-door', label: 'Secret Door' },
+    { id: 'locked-door-h', label: 'Locked Iron Door (H)' }, { id: 'locked-door-v', label: 'Locked Iron Door (V)' },
+    { id: 'trapped-door-h', label: 'Trapped Iron Door (H)' }, { id: 'trapped-door-v', label: 'Trapped Iron Door (V)' },
+    { id: 'portcullis', label: 'Iron Portcullis' }, { id: 'archway', label: 'Stone Archway' }, { id: 'barricade', label: 'Wooden Barricade' },
     { id: 'stairs-up', label: 'Stairs Up' }, { id: 'stairs-down', label: 'Stairs Down' },
     { id: 'water', label: 'Underground Pool' }, { id: 'pillar', label: 'Pillar' },
     { id: 'trap', label: 'Trap' }, { id: 'treasure', label: 'Treasure' }, { id: 'start', label: 'Entrance' },
@@ -21,6 +24,9 @@ export const dungeonTheme: TileTheme = {
     empty: '#0f0f1c', floor: '#8a7a60', wall: '#3a3a3a',
     'door-h': '#6b4f1d', 'door-v': '#6b4f1d',
     'secret-door': '#3a3a3a',
+    'locked-door-h': '#5a3a0d', 'locked-door-v': '#5a3a0d',
+    'trapped-door-h': '#6b1a1a', 'trapped-door-v': '#6b1a1a',
+    portcullis: '#4a4a4a', archway: '#7a6a50', barricade: '#5a4020',
     'stairs-up': '#7a9e7e', 'stairs-down': '#5a7a5e',
     water: '#1a4f7a', pillar: '#5a5a5a', trap: '#8e1e1e',
     treasure: '#d4af37', start: '#2e8b57',
@@ -105,6 +111,126 @@ export const dungeonTheme: TileTheme = {
         ctx.lineTo(cx, cy - 4);
         ctx.moveTo(cx, cy + 4);
         ctx.lineTo(cx, py + s - 2);
+        ctx.stroke();
+        break;
+      }
+
+      case 'locked-door-h': {
+        ctx.fillStyle = '#c8a84b';
+        ctx.fillRect(px + 2, cy - 2, s - 4, 4);
+        ctx.strokeStyle = '#c8a84b';
+        ctx.beginPath();
+        ctx.moveTo(px + 2, cy);
+        ctx.lineTo(px + s - 2, cy);
+        ctx.stroke();
+        // Lock symbol
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath();
+        ctx.arc(cx, cy - 1, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(cx - 1.5, cy, 3, 3);
+        break;
+      }
+
+      case 'locked-door-v': {
+        ctx.fillStyle = '#c8a84b';
+        ctx.fillRect(cx - 2, py + 2, 4, s - 4);
+        ctx.strokeStyle = '#c8a84b';
+        ctx.beginPath();
+        ctx.moveTo(cx, py + 2);
+        ctx.lineTo(cx, py + s - 2);
+        ctx.stroke();
+        // Lock symbol
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath();
+        ctx.arc(cx, cy - 1, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(cx - 1.5, cy, 3, 3);
+        break;
+      }
+
+      case 'trapped-door-h': {
+        ctx.fillStyle = '#c8a84b';
+        ctx.fillRect(px + 2, cy - 2, s - 4, 4);
+        ctx.strokeStyle = '#c8a84b';
+        ctx.beginPath();
+        ctx.moveTo(px + 2, cy);
+        ctx.lineTo(px + s - 2, cy);
+        ctx.stroke();
+        // Red danger X
+        ctx.strokeStyle = '#ff4444';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
+        break;
+      }
+
+      case 'trapped-door-v': {
+        ctx.fillStyle = '#c8a84b';
+        ctx.fillRect(cx - 2, py + 2, 4, s - 4);
+        ctx.strokeStyle = '#c8a84b';
+        ctx.beginPath();
+        ctx.moveTo(cx, py + 2);
+        ctx.lineTo(cx, py + s - 2);
+        ctx.stroke();
+        // Red danger X
+        ctx.strokeStyle = '#ff4444';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
+        break;
+      }
+
+      case 'portcullis': {
+        // Grid/grill pattern
+        ctx.strokeStyle = '#999';
+        ctx.lineWidth = 1.5;
+        const g = s * 0.3;
+        for (let i = -1; i <= 1; i++) {
+          ctx.beginPath();
+          ctx.moveTo(cx + i * g, py + 3);
+          ctx.lineTo(cx + i * g, py + s - 3);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(px + 3, cy + i * g);
+          ctx.lineTo(px + s - 3, cy + i * g);
+          ctx.stroke();
+        }
+        break;
+      }
+
+      case 'archway': {
+        // Two pillars with an arc
+        ctx.fillStyle = '#a09070';
+        ctx.fillRect(px + 3, cy, 4, s / 2 - 2);
+        ctx.fillRect(px + s - 7, cy, 4, s / 2 - 2);
+        ctx.strokeStyle = '#a09070';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s / 2 - 5, Math.PI, 0);
+        ctx.stroke();
+        break;
+      }
+
+      case 'barricade': {
+        // Crossed wooden planks
+        ctx.fillStyle = '#7a6040';
+        ctx.fillRect(px + 2, py + 2, s - 4, s - 4);
+        ctx.strokeStyle = '#3a2010';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(px + 3, py + 3);
+        ctx.lineTo(px + s - 3, py + s - 3);
+        ctx.moveTo(px + s - 3, py + 3);
+        ctx.lineTo(px + 3, py + s - 3);
         ctx.stroke();
         break;
       }

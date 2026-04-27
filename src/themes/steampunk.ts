@@ -8,6 +8,9 @@ export const steampunkTheme: TileTheme = {
     { id: 'empty', label: 'Soot' }, { id: 'floor', label: 'Iron Plate' }, { id: 'wall', label: 'Gear Wall' },
     { id: 'door-h', label: 'Valve Door (H)' }, { id: 'door-v', label: 'Valve Door (V)' },
     { id: 'secret-door', label: 'Concealed Hatch' },
+    { id: 'locked-door-h', label: 'Locked Valve Door (H)' }, { id: 'locked-door-v', label: 'Locked Valve Door (V)' },
+    { id: 'trapped-door-h', label: 'Trapped Valve Door (H)' }, { id: 'trapped-door-v', label: 'Trapped Valve Door (V)' },
+    { id: 'portcullis', label: 'Steam Gate' }, { id: 'archway', label: 'Pipe Archway' }, { id: 'barricade', label: 'Gear Barricade' },
     { id: 'stairs-up', label: 'Gantry Up' }, { id: 'stairs-down', label: 'Gantry Down' },
     { id: 'water', label: 'Steam Pipe' }, { id: 'pillar', label: 'Piston' },
     { id: 'trap', label: 'Pressure Plate' }, { id: 'treasure', label: 'Contraption' }, { id: 'start', label: 'Engine' },
@@ -18,6 +21,9 @@ export const steampunkTheme: TileTheme = {
     empty: '#1a0e00', floor: '#6b4d2a', wall: '#4a3010',
     'door-h': '#b87333', 'door-v': '#b87333',
     'secret-door': '#4a3010',
+    'locked-door-h': '#a06030', 'locked-door-v': '#a06030',
+    'trapped-door-h': '#b85020', 'trapped-door-v': '#b85020',
+    portcullis: '#706050', archway: '#c09050', barricade: '#8a6a30',
     'stairs-up': '#8a7040', 'stairs-down': '#6a5030',
     water: '#1a4a3a', pillar: '#8b6914', trap: '#cc4400',
     treasure: '#d4af37', start: '#5a9040',
@@ -119,6 +125,134 @@ export const steampunkTheme: TileTheme = {
         ctx.beginPath();
         ctx.arc(cx, cy, 2, 0, Math.PI * 2);
         ctx.stroke();
+        break;
+      }
+
+      case 'locked-door-h': {
+        ctx.strokeStyle = '#b87333';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px + 2, cy - 3, s - 4, 6);
+        ctx.fillStyle = '#3a2010';
+        ctx.fillRect(cx - 2, cy - 3, 4, 6);
+        ctx.strokeStyle = '#e0a060';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+        ctx.stroke();
+        // Lock
+        ctx.strokeStyle = '#ffe080';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 2, 2.5, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#ffe080';
+        ctx.fillRect(cx - 2.5, cy - 1, 5, 4);
+        break;
+      }
+
+      case 'locked-door-v': {
+        ctx.strokeStyle = '#b87333';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(cx - 3, py + 2, 6, s - 4);
+        ctx.fillStyle = '#3a2010';
+        ctx.fillRect(cx - 3, cy - 2, 6, 4);
+        ctx.strokeStyle = '#e0a060';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = '#ffe080';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 2, 2.5, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#ffe080';
+        ctx.fillRect(cx - 2.5, cy - 1, 5, 4);
+        break;
+      }
+
+      case 'trapped-door-h': {
+        ctx.strokeStyle = '#b87333';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px + 2, cy - 3, s - 4, 6);
+        ctx.fillStyle = '#3a2010';
+        ctx.fillRect(cx - 2, cy - 3, 4, 6);
+        // Danger X
+        ctx.strokeStyle = '#ff4400';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
+        break;
+      }
+
+      case 'trapped-door-v': {
+        ctx.strokeStyle = '#b87333';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(cx - 3, py + 2, 6, s - 4);
+        ctx.fillStyle = '#3a2010';
+        ctx.fillRect(cx - 3, cy - 2, 6, 4);
+        ctx.strokeStyle = '#ff4400';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
+        break;
+      }
+
+      case 'portcullis': {
+        // Steam gate — heavy brass grill
+        ctx.strokeStyle = '#b87333';
+        ctx.lineWidth = 1.5;
+        const bars = 4;
+        for (let i = 1; i < bars; i++) {
+          const bx = px + i * (s / bars);
+          ctx.beginPath();
+          ctx.moveTo(bx, py + 2);
+          ctx.lineTo(bx, py + s - 2);
+          ctx.stroke();
+        }
+        for (let i = 1; i < 3; i++) {
+          const by = py + i * (s / 3);
+          ctx.beginPath();
+          ctx.moveTo(px + 2, by);
+          ctx.lineTo(px + s - 2, by);
+          ctx.stroke();
+        }
+        break;
+      }
+
+      case 'archway': {
+        // Pipe archway — two pistons with a curved pipe
+        ctx.fillStyle = '#8a6a30';
+        ctx.fillRect(px + 3, cy, s * 0.15, s / 2 - 2);
+        ctx.fillRect(px + s - 3 - s * 0.15, cy, s * 0.15, s / 2 - 2);
+        ctx.strokeStyle = '#e0a060';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.32, Math.PI, 0);
+        ctx.stroke();
+        break;
+      }
+
+      case 'barricade': {
+        // Gear barricade — crossed brass beams
+        ctx.strokeStyle = '#b87333';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(px + 3, py + 3);
+        ctx.lineTo(px + s - 3, py + s - 3);
+        ctx.moveTo(px + s - 3, py + 3);
+        ctx.lineTo(px + 3, py + s - 3);
+        ctx.stroke();
+        ctx.fillStyle = '#8a6a30';
+        ctx.fillRect(px + 2, cy - 1.5, s - 4, 3);
         break;
       }
 

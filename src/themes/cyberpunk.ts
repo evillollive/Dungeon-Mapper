@@ -8,6 +8,9 @@ export const cyberpunkTheme: TileTheme = {
     { id: 'empty', label: 'Dead Zone' }, { id: 'floor', label: 'Street' }, { id: 'wall', label: 'Barrier' },
     { id: 'door-h', label: 'Shutter (H)' }, { id: 'door-v', label: 'Shutter (V)' },
     { id: 'secret-door', label: 'Cloaked Panel' },
+    { id: 'locked-door-h', label: 'Locked Shutter (H)' }, { id: 'locked-door-v', label: 'Locked Shutter (V)' },
+    { id: 'trapped-door-h', label: 'Trapped Shutter (H)' }, { id: 'trapped-door-v', label: 'Trapped Shutter (V)' },
+    { id: 'portcullis', label: 'Security Gate' }, { id: 'archway', label: 'Neon Arch' }, { id: 'barricade', label: 'Debris Barrier' },
     { id: 'stairs-up', label: 'Ramp Up' }, { id: 'stairs-down', label: 'Ramp Down' },
     { id: 'water', label: 'Acid Pool' }, { id: 'pillar', label: 'Terminal' },
     { id: 'trap', label: 'Turret' }, { id: 'treasure', label: 'Chip Cache' }, { id: 'start', label: 'Spawn' },
@@ -18,6 +21,9 @@ export const cyberpunkTheme: TileTheme = {
     empty: '#000005', floor: '#0a0a1a', wall: '#0d0d1e',
     'door-h': '#ff00ff', 'door-v': '#ff00ff',
     'secret-door': '#0d0d1e',
+    'locked-door-h': '#cc00cc', 'locked-door-v': '#cc00cc',
+    'trapped-door-h': '#ff3300', 'trapped-door-v': '#ff3300',
+    portcullis: '#8800ff', archway: '#00ffcc', barricade: '#ff6600',
     'stairs-up': '#00ffff', 'stairs-down': '#00cccc',
     water: '#002244', pillar: '#1a001a', trap: '#ff0000',
     treasure: '#ffff00', start: '#00ff00',
@@ -97,6 +103,142 @@ export const cyberpunkTheme: TileTheme = {
         ctx.fillStyle = '#ff00ff22';
         ctx.fillRect(cx - 3, py + 2, 6, (s - 4) / 2 - 1);
         ctx.fillRect(cx - 3, cy + 1, 6, (s - 4) / 2 - 1);
+        break;
+      }
+
+      case 'locked-door-h': {
+        ctx.strokeStyle = '#cc00cc';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px + 2, cy - 3, (s - 4) / 2 - 1, 6);
+        ctx.strokeRect(cx + 1, cy - 3, (s - 4) / 2 - 1, 6);
+        ctx.fillStyle = '#cc00cc22';
+        ctx.fillRect(px + 2, cy - 3, (s - 4) / 2 - 1, 6);
+        ctx.fillRect(cx + 1, cy - 3, (s - 4) / 2 - 1, 6);
+        // Lock symbol
+        ctx.strokeStyle = '#ffff00';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 2, 2, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#ffff00';
+        ctx.fillRect(cx - 2, cy - 1, 4, 3);
+        break;
+      }
+
+      case 'locked-door-v': {
+        ctx.strokeStyle = '#cc00cc';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(cx - 3, py + 2, 6, (s - 4) / 2 - 1);
+        ctx.strokeRect(cx - 3, cy + 1, 6, (s - 4) / 2 - 1);
+        ctx.fillStyle = '#cc00cc22';
+        ctx.fillRect(cx - 3, py + 2, 6, (s - 4) / 2 - 1);
+        ctx.fillRect(cx - 3, cy + 1, 6, (s - 4) / 2 - 1);
+        ctx.strokeStyle = '#ffff00';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 2, 2, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#ffff00';
+        ctx.fillRect(cx - 2, cy - 1, 4, 3);
+        break;
+      }
+
+      case 'trapped-door-h': {
+        ctx.strokeStyle = '#ff3300';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px + 2, cy - 3, (s - 4) / 2 - 1, 6);
+        ctx.strokeRect(cx + 1, cy - 3, (s - 4) / 2 - 1, 6);
+        ctx.fillStyle = '#ff330022';
+        ctx.fillRect(px + 2, cy - 3, (s - 4) / 2 - 1, 6);
+        ctx.fillRect(cx + 1, cy - 3, (s - 4) / 2 - 1, 6);
+        // Danger X
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
+        break;
+      }
+
+      case 'trapped-door-v': {
+        ctx.strokeStyle = '#ff3300';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(cx - 3, py + 2, 6, (s - 4) / 2 - 1);
+        ctx.strokeRect(cx - 3, cy + 1, 6, (s - 4) / 2 - 1);
+        ctx.fillStyle = '#ff330022';
+        ctx.fillRect(cx - 3, py + 2, 6, (s - 4) / 2 - 1);
+        ctx.fillRect(cx - 3, cy + 1, 6, (s - 4) / 2 - 1);
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
+        break;
+      }
+
+      case 'portcullis': {
+        ctx.strokeStyle = '#8800ff';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+          const lx = px + 3 + i * ((s - 6) / 3);
+          ctx.beginPath();
+          ctx.moveTo(lx, py + 2);
+          ctx.lineTo(lx, py + s - 2);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 3; i++) {
+          const ly = py + 4 + i * ((s - 8) / 2);
+          ctx.beginPath();
+          ctx.moveTo(px + 2, ly);
+          ctx.lineTo(px + s - 2, ly);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = '#8800ff44';
+        ctx.lineWidth = 3;
+        ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
+        break;
+      }
+
+      case 'archway': {
+        ctx.fillStyle = '#00ffcc';
+        ctx.fillRect(px + 2, cy, s * 0.15, s / 2 - 2);
+        ctx.fillRect(px + s - 2 - s * 0.15, cy, s * 0.15, s / 2 - 2);
+        ctx.strokeStyle = '#00ffcc';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.32, Math.PI, 0);
+        ctx.stroke();
+        ctx.strokeStyle = '#00ffcc44';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.32, Math.PI, 0);
+        ctx.stroke();
+        break;
+      }
+
+      case 'barricade': {
+        ctx.strokeStyle = '#ff6600';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(px + 3, py + 3);
+        ctx.lineTo(px + s - 3, py + s - 3);
+        ctx.moveTo(px + s - 3, py + 3);
+        ctx.lineTo(px + 3, py + s - 3);
+        ctx.stroke();
+        ctx.strokeStyle = '#ff660044';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(px + 3, py + 3);
+        ctx.lineTo(px + s - 3, py + s - 3);
+        ctx.moveTo(px + s - 3, py + 3);
+        ctx.lineTo(px + 3, py + s - 3);
+        ctx.stroke();
         break;
       }
 
