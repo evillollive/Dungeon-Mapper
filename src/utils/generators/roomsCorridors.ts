@@ -327,8 +327,9 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   // single source of truth for `water` / `pillar` tile placement. The
   // RNG-consumption order matches the legacy in-line code so existing
   // seeds reproduce identically: water-count is sampled first (and
-  // only when there's at least one eligible room, matching the early
-  // return in `placeWaterFeatures`), the engine's `centered` strategy
+  // only when there's at least one eligible room — the same early
+  // return the legacy in-line water pass had), the engine's `centered`
+  // strategy
   // then shuffles the eligible list and stamps; pillars follow with
   // the `grid` strategy whose `eligible` closure consumes the same
   // per-room `rng.chance(PILLAR_CHANCE_NON_SUGGESTED)` rolls.

@@ -31,17 +31,19 @@ export interface CorridorRoom {
   h: number;
 }
 
-export type DoorType = 'door-h' | 'door-v';
+/**
+ * Internal door-axis discriminator used only by `pickExit`'s return value
+ * so callers can be type-checked when they need to distinguish horizontal
+ * vs vertical perimeter openings. The door engine, which is the sole
+ * consumer of door tiles, re-derives orientation from grid geometry, so
+ * this is not part of the public corridor-strategy contract.
+ */
+type DoorType = 'door-h' | 'door-v';
 
 /** A perimeter cell that should be carved through the wall after `outlineWalls`. */
 export interface CorridorBridge {
   x: number;
   y: number;
-  /** Door axis hint — the door engine doesn't actually use this today
-   *  (it re-derives orientation from the surrounding tiles), but it's
-   *  kept here so strategies can express their intent and so future
-   *  consumers have it. */
-  type: DoorType;
 }
 
 export interface CorridorContext {
@@ -300,8 +302,8 @@ function carveLBetween(
   else cells = ctx.rng.chance() ? opt1 : opt2;
   for (const c of cells) setCell(ctx.grid, c.x, c.y, 'floor');
   return [
-    { x: ra.door.x, y: ra.door.y, type: ra.door.type },
-    { x: rb.door.x, y: rb.door.y, type: rb.door.type },
+    { x: ra.door.x, y: ra.door.y },
+    { x: rb.door.x, y: rb.door.y },
   ];
 }
 
@@ -319,8 +321,8 @@ function carveZBetween(
   const cells = zCorridorCells(ra.exit.x, ra.exit.y, rb.exit.x, rb.exit.y, ctx.rng);
   for (const c of cells) setCell(ctx.grid, c.x, c.y, 'floor');
   return [
-    { x: ra.door.x, y: ra.door.y, type: ra.door.type },
-    { x: rb.door.x, y: rb.door.y, type: rb.door.type },
+    { x: ra.door.x, y: ra.door.y },
+    { x: rb.door.x, y: rb.door.y },
   ];
 }
 
