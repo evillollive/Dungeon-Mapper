@@ -48,8 +48,11 @@ export function useGlobalShortcuts(actions: ShortcutActions): KeyBinding[] {
     // The dispatch object is captured into the binding closures once.
     // Each method calls through `actionsRef.current` at invocation time
     // (i.e. when the user presses the key), never during render.
-    /* eslint-disable react-hooks/refs -- the ref is read at action-invoke
-       time inside the keydown handler, not during component render. */
+    /* eslint-disable react-hooks/refs -- the dispatch wrapper is built
+       during render, but each method defers reading `actionsRef.current`
+       until invocation time inside the keydown handler. Building the
+       wrapper once keeps the global keydown listener stable across
+       renders. */
     const dispatch: ShortcutActions = {
       setActiveTool:    t => actionsRef.current.setActiveTool(t),
       undo:             () => actionsRef.current.undo(),

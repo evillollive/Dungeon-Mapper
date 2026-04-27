@@ -1020,7 +1020,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     else if (e.key === 'ArrowDown') { e.preventDefault(); setPan(p => ({ x: p.x, y: p.y - step })); }
   }, []);
 
-  const canvasAriaLabel = `Map canvas: ${meta.name || 'Untitled'}, ${meta.width}×${meta.height} tiles, ${activeTool} tool active. Use arrow keys to pan; press question mark for keyboard shortcuts.`;
+  const canvasAriaLabel = useMemo(
+    () => `Map canvas: ${meta.name || 'Untitled'}, ${meta.width}×${meta.height} tiles, ${activeTool} tool active. Use arrow keys to pan; press question mark for keyboard shortcuts.`,
+    [meta.name, meta.width, meta.height, activeTool]
+  );
 
   return (
     <div className="canvas-wrapper" ref={containerRef}>

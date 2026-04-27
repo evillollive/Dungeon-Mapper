@@ -168,7 +168,7 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
     {
       id: 'view.uiScaleDown',
       category: 'View',
-      keys: 'Ctrl+−',
+      keys: 'Ctrl+-',
       description: 'Decrease UI scale',
       match: e => isCtrlOrMeta(e) && !e.altKey && (e.key === '-' || e.key === '_'),
       action: actions.uiScaleDown,
@@ -186,7 +186,7 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
     {
       id: 'canvas.zoomOut',
       category: 'Canvas',
-      keys: '−',
+      keys: '-',
       description: 'Zoom out',
       match: e => isPlainKey(e) && (e.key === '-' || e.key === '_'),
       action: actions.zoomOut,
