@@ -70,6 +70,18 @@ export interface MapCanvasHandle {
   getCanvas: () => HTMLCanvasElement | null;
   /** Pan the viewport so the given tile coordinate is centered on screen. */
   centerOnTile: (tileX: number, tileY: number) => void;
+  /** Zoom in by one step (matches the in-canvas + button). */
+  zoomIn: () => void;
+  /** Zoom out by one step (matches the in-canvas - button). */
+  zoomOut: () => void;
+  /** Reset zoom to 100% and recenter the viewport. */
+  zoomReset: () => void;
+  /** Fit the entire map into the visible viewport. */
+  fitToScreen: () => void;
+  /** Pan the viewport by a delta in pixels (positive dx = right, dy = down). */
+  panBy: (dx: number, dy: number) => void;
+  /** Move keyboard focus to the canvas (so arrow-key panning works). */
+  focus: () => void;
 }
 
 const MINIMAP_MAX_W = 160;
@@ -270,6 +282,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   // grabbed, so the token follows the cursor without snapping its
   // top-left to the cursor cell.
   const draggingTokenRef = useRef<{ id: number; lastX: number; lastY: number; offsetX: number; offsetY: number } | null>(null);
+  // Forward reference for the canvas's `fitToScreen` action so the
+  // imperative handle (defined before `handleFitToScreen` is in scope) can
+  // dispatch to the latest implementation.
+  const handleFitToScreenRef = useRef<(() => void) | null>(null);
 
   useImperativeHandle(ref, () => ({
     getCanvas: () => canvasRef.current,
@@ -280,6 +296,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         y: (height / 2 - (ty + 0.5)) * zoom * ts,
       });
     },
+    zoomIn: () => setZoom(z => Math.min(4, z + 0.25)),
+    zoomOut: () => setZoom(z => Math.max(0.25, z - 0.25)),
+    zoomReset: () => { setZoom(1); setPan({ x: 0, y: 0 }); },
+    fitToScreen: () => handleFitToScreenRef.current?.(),
+    panBy: (dx: number, dy: number) => setPan(prev => ({ x: prev.x + dx, y: prev.y + dy })),
+    focus: () => canvasRef.current?.focus(),
   }), [map.meta, zoom]);
 
   // Forward selection changes to the parent so features outside the canvas
@@ -554,18 +576,38 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   // Selection keyboard handler
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if (activeTool === 'select' && selection) {
-        if (e.key === 'Delete' || e.key === 'Backspace') {
-          const eraseList: { x: number; y: number }[] = [];
-          for (let y = selection.y; y < selection.y + selection.h; y++) {
-            for (let x = selection.x; x < selection.x + selection.w; x++) {
-              eraseList.push({ x, y });
-            }
+      if (activeTool !== 'select' || !selection) return;
+      // Don't fire when the user is typing into a text field or focused on
+      // a control (e.g. a header button or <select>) — Backspace there
+      // would otherwise wipe their selection from a totally unrelated
+      // interaction. Limit the handler to when the body or the canvas
+      // itself has focus.
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const tag = target.tagName;
+        if (
+          tag === 'INPUT' ||
+          tag === 'TEXTAREA' ||
+          tag === 'SELECT' ||
+          tag === 'BUTTON' ||
+          target.isContentEditable
+        ) return;
+        // Skip when a modal dialog is open so cancellation/confirmation
+        // keys in the modal don't double-fire here.
+        if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+      }
+      if (e.key === 'Delete' || e.key === 'Backspace') {
+        e.preventDefault();
+        const eraseList: { x: number; y: number }[] = [];
+        for (let y = selection.y; y < selection.y + selection.h; y++) {
+          for (let x = selection.x; x < selection.x + selection.w; x++) {
+            eraseList.push({ x, y });
           }
-          onEraseTiles(eraseList);
-        } else if (e.key === 'Escape') {
-          setSelection(null);
         }
+        onEraseTiles(eraseList);
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setSelection(null);
       }
     };
     window.addEventListener('keydown', handler);
@@ -947,6 +989,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setPan({ x: 0, y: -controlsH / 2 });
   }, [meta.width, meta.height, tileSize]);
 
+  // Keep the forwarded fit-to-screen ref pointing at the latest closure so
+  // the imperative handle can invoke it without depending on declaration order.
+  useEffect(() => {
+    handleFitToScreenRef.current = handleFitToScreen;
+  }, [handleFitToScreen]);
+
   const cursorStyle = activeTool === 'fill' ? 'cell'
     : activeTool === 'note' ? 'copy'
     : activeTool === 'select' ? 'default'
@@ -961,6 +1009,22 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         || activeTool === 'token-monster-lg' ? 'copy'
     : 'crosshair';
 
+  const handleCanvasKeyDown = useCallback((e: React.KeyboardEvent<HTMLCanvasElement>) => {
+    // Arrow keys pan the viewport while the canvas itself has focus.
+    // Holding Shift increases the step. Other keys bubble so the global
+    // shortcut handler can pick them up.
+    const step = e.shiftKey ? 64 : 16;
+    if (e.key === 'ArrowLeft')      { e.preventDefault(); setPan(p => ({ x: p.x + step, y: p.y })); }
+    else if (e.key === 'ArrowRight'){ e.preventDefault(); setPan(p => ({ x: p.x - step, y: p.y })); }
+    else if (e.key === 'ArrowUp')   { e.preventDefault(); setPan(p => ({ x: p.x, y: p.y + step })); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); setPan(p => ({ x: p.x, y: p.y - step })); }
+  }, []);
+
+  const canvasAriaLabel = useMemo(
+    () => `Map canvas: ${meta.name || 'Untitled'}, ${meta.width}×${meta.height} tiles, ${activeTool} tool active. Use arrow keys to pan; press question mark for keyboard shortcuts.`,
+    [meta.name, meta.width, meta.height, activeTool]
+  );
+
   return (
     <div className="canvas-wrapper" ref={containerRef}>
       <div className="canvas-viewport" ref={viewportRef}>
@@ -973,6 +1037,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         >
           <canvas
             ref={canvasRef}
+            tabIndex={0}
+            role="application"
+            aria-label={canvasAriaLabel}
             style={{
               cursor: cursorStyle,
               display: 'block',
@@ -983,19 +1050,20 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
             onMouseLeave={handleMouseLeave}
             onContextMenu={e => e.preventDefault()}
             onWheel={handleWheel}
+            onKeyDown={handleCanvasKeyDown}
           />
         </div>
       </div>
-      <div className="zoom-controls" title="Hold Shift + scroll to pan around the map">
-        <button onClick={() => setZoom(z => Math.min(4, z + 0.25))}>+</button>
-        <span>{Math.round(zoom * 100)}%</span>
-        <button onClick={() => setZoom(z => Math.max(0.25, z - 0.25))}>-</button>
-        <button onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}>Reset</button>
-        <button onClick={handleFitToScreen} title="Fit map to screen">Fit</button>
-        <span className="zoom-hint">⇧+wheel: pan</span>
+      <div className="zoom-controls" role="group" aria-label="Map zoom controls" title="Hold Shift + scroll to pan around the map">
+        <button type="button" onClick={() => setZoom(z => Math.min(4, z + 0.25))} aria-label="Zoom in" aria-keyshortcuts="+">+</button>
+        <span aria-live="off" aria-atomic="true">{Math.round(zoom * 100)}%</span>
+        <button type="button" onClick={() => setZoom(z => Math.max(0.25, z - 0.25))} aria-label="Zoom out" aria-keyshortcuts="-">-</button>
+        <button type="button" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} aria-label="Reset zoom to 100%" aria-keyshortcuts="0">Reset</button>
+        <button type="button" onClick={handleFitToScreen} title="Fit map to screen" aria-label="Fit map to screen" aria-keyshortcuts="1">Fit</button>
+        <span className="zoom-hint" aria-hidden="true">⇧+wheel: pan</span>
       </div>
       {mousePos && (
-        <div className="coord-display">
+        <div className="coord-display" aria-hidden="true">
           X: {mousePos.x} &nbsp; Y: {mousePos.y}
         </div>
       )}
@@ -1004,6 +1072,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         className="minimap-canvas"
         onClick={handleMinimapClick}
         title="Minimap - click to pan"
+        aria-label="Minimap — click to pan the main viewport"
       />
     </div>
   );

@@ -4,15 +4,17 @@ import Toolbar from './components/Toolbar';
 import PlayerToolbar from './components/PlayerToolbar';
 import NotesPanel from './components/NotesPanel';
 import InitiativePanel from './components/InitiativePanel';
-import MapHeader from './components/MapHeader';
+import MapHeader, { type MapHeaderHandle } from './components/MapHeader';
 import GenerateMapDialog from './components/GenerateMapDialog';
+import ShortcutsHelp from './components/ShortcutsHelp';
 import type { GeneratedMap } from './utils/generators';
 import { useMapState } from './hooks/useMapState';
 import { useDrawingTool } from './hooks/useDrawingTool';
+import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
 import { exportMapSVG } from './utils/export';
 import { isTokenFogged } from './utils/tokenVisibility';
-import { getTheme } from './themes/index';
-import type { ViewMode } from './types/map';
+import { getTheme, THEME_LIST } from './themes/index';
+import { ALL_TILE_TYPES, type ViewMode } from './types/map';
 import './App.css';
 
 const UI_SCALE_STORAGE_KEY = 'dungeon-mapper:ui-scale';
@@ -122,6 +124,7 @@ function App() {
   } = useDrawingTool();
 
   const canvasRef = useRef<MapCanvasHandle>(null);
+  const headerRef = useRef<MapHeaderHandle>(null);
   const themeId = map.meta.theme ?? 'dungeon';
   const [printMode, setPrintMode] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(loadInitialViewMode);
@@ -131,6 +134,13 @@ function App() {
   );
   const [gmShowFog, setGmShowFog] = useState<boolean>(loadInitialGmShowFog);
   const [showGenerateDialog, setShowGenerateDialog] = useState<boolean>(false);
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState<boolean>(false);
+  // Polite live-region message announced to screen readers when the user
+  // performs an action whose visual feedback is the canvas (e.g. undo,
+  // theme switch, view-mode toggle). Cleared automatically a moment
+  // later so the same message can be announced again if the user
+  // repeats the action.
+  const [statusMessage, setStatusMessage] = useState<string>('');
   // Latest selection rectangle painted with the Select tool (in tile
   // coordinates), mirrored from `MapCanvas` so the Generate Map dialog can
   // offer "Generate into selection" as a target region. `null` when no
@@ -145,6 +155,41 @@ function App() {
   const [drawColor, setDrawColor] = useState<string>('#dc2626');
   const [drawWidth, setDrawWidth] = useState<number>(0.25);
 
+  // Briefly announce a status message via the polite live region. The
+  // automatic blank-out makes repeated identical announcements (e.g. two
+  // consecutive Ctrl+Z presses) get re-read by screen readers.
+  const announce = useCallback((message: string) => {
+    setStatusMessage('');
+    // Defer to the next tick so the empty string is committed first; the
+    // live region fires only when its text actually changes.
+    requestAnimationFrame(() => setStatusMessage(message));
+  }, []);
+
+  // Wrap undo/redo so the announcement happens whenever the user invokes
+  // them — including via the global keyboard shortcut.
+  const handleUndo = useCallback(() => {
+    undo();
+    announce('Undid last action');
+  }, [undo, announce]);
+  const handleRedo = useCallback(() => {
+    redo();
+    announce('Redid last action');
+  }, [redo, announce]);
+  const handleTogglePrintMode = useCallback(() => {
+    setPrintMode(prev => {
+      const next = !prev;
+      announce(next ? 'Print mode on' : 'Print mode off');
+      return next;
+    });
+  }, [announce]);
+  const handleToggleGmShowFogAnnounced = useCallback(() => {
+    setGmShowFog(prev => {
+      const next = !prev;
+      announce(next ? 'Show fog preview on' : 'Show fog preview off');
+      return next;
+    });
+  }, [announce]);
+
   // When switching view modes, snap the active tool to a sensible default
   // for that mode so the user isn't left holding a tool the new toolbar
   // doesn't expose. Fog tools (reveal/hide) live on the player toolbar
@@ -153,6 +198,7 @@ function App() {
     setViewMode(prev => {
       const next: ViewMode = prev === 'gm' ? 'player' : 'gm';
       setActiveTool(next === 'player' ? 'pdraw' : 'paint');
+      announce(next === 'player' ? 'Switched to Player view' : 'Switched to GM view');
       try {
         window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, next);
       } catch {
@@ -160,7 +206,7 @@ function App() {
       }
       return next;
     });
-  }, [setActiveTool]);
+  }, [setActiveTool, announce]);
 
   const fogEnabled = map.fogEnabled ?? false;
   const handleToggleFogEnabled = useCallback(() => {
@@ -169,7 +215,6 @@ function App() {
   const handleResetFog = useCallback(() => fillAllFog(true), [fillAllFog]);
   const handleClearFog = useCallback(() => fillAllFog(false), [fillAllFog]);
   const handleClearPlayerDrawings = useCallback(() => clearAnnotations('player'), [clearAnnotations]);
-  const handleToggleGmShowFog = useCallback(() => setGmShowFog(p => !p), []);
 
   // When a token is placed from the player view, prompt for a name so the
   // new entry shows up in the Initiative panel with something meaningful
@@ -221,9 +266,55 @@ function App() {
         generateMap(result.tiles, result.width, result.height, result.notes, suggestedName);
       }
       setShowGenerateDialog(false);
+      announce('Map generated');
     },
-    [generateMap, applyGeneratedRegion]
+    [generateMap, applyGeneratedRegion, announce]
   );
+
+  const handleSetTheme = useCallback((next: string, preserveExisting?: boolean) => {
+    setTheme(next, preserveExisting);
+    const themeName = THEME_LIST.find(t => t.id === next)?.name ?? next;
+    announce(`Theme switched to ${themeName}`);
+  }, [setTheme, announce]);
+
+  // Cycle the active theme by `direction` (+1 next, -1 previous), wrapping
+  // around at the ends of the alphabetised theme list. Driven by the T /
+  // Shift+T global shortcuts; preserves the current preserve-existing
+  // setting so users who've opted in keep their hand-painted tiles.
+  const cycleTheme = useCallback((direction: 1 | -1) => {
+    const idx = THEME_LIST.findIndex(t => t.id === themeId);
+    const start = idx >= 0 ? idx : 0;
+    const len = THEME_LIST.length;
+    const next = THEME_LIST[((start + direction) % len + len) % len];
+    handleSetTheme(next.id, preserveOnThemeSwitch);
+  }, [themeId, preserveOnThemeSwitch, handleSetTheme]);
+
+  // Cycle the active palette tile by `direction`. Wraps around the
+  // displayed palette (`ALL_TILE_TYPES`); used by the [/] shortcuts so
+  // keyboard users can change paint targets without reaching for the
+  // mouse.
+  const cycleActiveTile = useCallback((direction: 1 | -1) => {
+    const idx = ALL_TILE_TYPES.indexOf(activeTile);
+    const start = idx >= 0 ? idx : 0;
+    const len = ALL_TILE_TYPES.length;
+    const next = ALL_TILE_TYPES[((start + direction) % len + len) % len];
+    setActiveTile(next);
+  }, [activeTile, setActiveTile]);
+
+  const adjustUIScale = useCallback((direction: 1 | -1) => {
+    setUIScale(prev => {
+      const idx = UI_SCALE_OPTIONS.indexOf(prev as typeof UI_SCALE_OPTIONS[number]);
+      // Fall back to the default index if the current scale was loaded
+      // from storage outside the supported set.
+      const start = idx >= 0 ? idx : UI_SCALE_OPTIONS.indexOf(DEFAULT_UI_SCALE);
+      const nextIdx = Math.max(0, Math.min(UI_SCALE_OPTIONS.length - 1, start + direction));
+      const next = UI_SCALE_OPTIONS[nextIdx];
+      if (next !== prev) {
+        announce(`UI scale ${Math.round(next * 100)}%`);
+      }
+      return next;
+    });
+  }, [announce]);
 
   // Persist the preserve-on-theme-switch preference across sessions.
   useEffect(() => {
@@ -278,23 +369,46 @@ function App() {
     exportMapSVG(map, theme, getTheme, { viewMode });
   }, [map, themeId, viewMode]);
 
-  // Undo/Redo keyboard shortcuts
+  // Auto-clear the polite live-region message a second after announcing
+  // it, so the same string can be announced again on the next action.
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA') return;
-      if (e.ctrlKey || e.metaKey) {
-        if (e.key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
-        else if (e.key === 'y' || (e.key === 'z' && e.shiftKey)) { e.preventDefault(); redo(); }
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [undo, redo]);
+    if (!statusMessage) return;
+    const id = window.setTimeout(() => setStatusMessage(''), 1500);
+    return () => window.clearTimeout(id);
+  }, [statusMessage]);
+
+  // Centralised global keyboard shortcuts. The hook owns one keydown
+  // listener and dispatches to the wired actions; the registry it returns
+  // also feeds the in-app help overlay.
+  const shortcutBindings = useGlobalShortcuts({
+    setActiveTool,
+    undo: handleUndo,
+    redo: handleRedo,
+    togglePrintMode: handleTogglePrintMode,
+    toggleViewMode: switchViewMode,
+    openGenerateMap: handleOpenGenerateMap,
+    showShortcuts: () => setShowShortcutsHelp(true),
+    triggerNewMap: () => headerRef.current?.triggerNew(),
+    triggerImport: () => headerRef.current?.triggerImport(),
+    triggerExportJSON: () => headerRef.current?.triggerExportJSON(),
+    triggerExportPNG: () => headerRef.current?.triggerExportPNG(),
+    triggerExportSVG: handleExportSVG,
+    cycleTheme,
+    cycleActiveTile,
+    zoomIn: () => canvasRef.current?.zoomIn(),
+    zoomOut: () => canvasRef.current?.zoomOut(),
+    zoomReset: () => canvasRef.current?.zoomReset(),
+    fitToScreen: () => canvasRef.current?.fitToScreen(),
+    uiScaleUp: () => adjustUIScale(1),
+    uiScaleDown: () => adjustUIScale(-1),
+    isGmView: () => viewMode === 'gm',
+  });
 
   return (
     <div className="app">
+      <a className="skip-link" href="#dm-canvas-area">Skip to map canvas</a>
       <MapHeader
+        ref={headerRef}
         map={map}
         onSetName={setMapName}
         onResize={resizeMap}
@@ -303,51 +417,56 @@ function App() {
         onNew={newMap}
         onLoad={loadMapData}
         onExportSVG={handleExportSVG}
-        onUndo={undo}
-        onRedo={redo}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
         canUndo={canUndo}
         canRedo={canRedo}
         printMode={printMode}
-        onTogglePrintMode={() => setPrintMode(p => !p)}
+        onTogglePrintMode={handleTogglePrintMode}
         uiScale={uiScale}
         uiScaleOptions={UI_SCALE_OPTIONS}
         onSetUIScale={setUIScale}
         getCanvas={() => canvasRef.current?.getCanvas() ?? null}
         viewMode={viewMode}
         onToggleViewMode={switchViewMode}
+        onShowShortcuts={() => setShowShortcutsHelp(true)}
       />
       <div className="app-body">
         {viewMode === 'gm' ? (
-          <Toolbar
-            activeTool={activeTool}
-            activeTile={activeTile}
-            themeId={themeId}
-            onSetTool={setActiveTool}
-            onSetTile={setActiveTile}
-            onSetTheme={setTheme}
-            preserveOnThemeSwitch={preserveOnThemeSwitch}
-            onTogglePreserveOnThemeSwitch={() => setPreserveOnThemeSwitch(p => !p)}
-            fogEnabled={fogEnabled}
-            gmShowFog={gmShowFog}
-            onToggleGmShowFog={handleToggleGmShowFog}
-            onOpenGenerateMap={handleOpenGenerateMap}
-          />
+          <nav aria-label="GM tools">
+            <Toolbar
+              activeTool={activeTool}
+              activeTile={activeTile}
+              themeId={themeId}
+              onSetTool={setActiveTool}
+              onSetTile={setActiveTile}
+              onSetTheme={handleSetTheme}
+              preserveOnThemeSwitch={preserveOnThemeSwitch}
+              onTogglePreserveOnThemeSwitch={() => setPreserveOnThemeSwitch(p => !p)}
+              fogEnabled={fogEnabled}
+              gmShowFog={gmShowFog}
+              onToggleGmShowFog={handleToggleGmShowFogAnnounced}
+              onOpenGenerateMap={handleOpenGenerateMap}
+            />
+          </nav>
         ) : (
-          <PlayerToolbar
-            activeTool={activeTool}
-            onSetTool={setActiveTool}
-            drawColor={drawColor}
-            onSetDrawColor={setDrawColor}
-            drawWidth={drawWidth}
-            onSetDrawWidth={setDrawWidth}
-            onClearPlayerDrawings={handleClearPlayerDrawings}
-            fogEnabled={fogEnabled}
-            onToggleFogEnabled={handleToggleFogEnabled}
-            onResetFog={handleResetFog}
-            onClearFog={handleClearFog}
-          />
+          <nav aria-label="Player tools">
+            <PlayerToolbar
+              activeTool={activeTool}
+              onSetTool={setActiveTool}
+              drawColor={drawColor}
+              onSetDrawColor={setDrawColor}
+              drawWidth={drawWidth}
+              onSetDrawWidth={setDrawWidth}
+              onClearPlayerDrawings={handleClearPlayerDrawings}
+              fogEnabled={fogEnabled}
+              onToggleFogEnabled={handleToggleFogEnabled}
+              onResetFog={handleResetFog}
+              onClearFog={handleClearFog}
+            />
+          </nav>
         )}
-        <main className="canvas-area">
+        <main id="dm-canvas-area" className="canvas-area" aria-label="Map canvas area">
           <MapCanvas
             ref={canvasRef}
             map={map}
@@ -377,7 +496,7 @@ function App() {
           />
         </main>
         {viewMode === 'gm' && (
-          <aside className="right-panel">
+          <aside className="right-panel" aria-label="Initiative and notes">
             <InitiativePanel
               tokens={map.tokens ?? []}
               initiative={map.initiative ?? []}
@@ -399,7 +518,7 @@ function App() {
           </aside>
         )}
         {viewMode === 'player' && (
-          <aside className="right-panel">
+          <aside className="right-panel" aria-label="Initiative and notes">
             <InitiativePanel
               // Hide tokens whose footprint touches any fogged cell from
               // the player initiative list so the panel doesn't leak the
@@ -438,6 +557,14 @@ function App() {
           </aside>
         )}
       </div>
+      <div
+        className="sr-only"
+        role="status"
+        aria-live="polite"
+        aria-atomic="true"
+      >
+        {statusMessage}
+      </div>
       {showGenerateDialog && viewMode === 'gm' && (
         <GenerateMapDialog
           themeId={themeId}
@@ -447,6 +574,12 @@ function App() {
           selection={selection}
           onCancel={handleCancelGenerateMap}
           onGenerate={handleGenerateMap}
+        />
+      )}
+      {showShortcutsHelp && (
+        <ShortcutsHelp
+          bindings={shortcutBindings}
+          onClose={() => setShowShortcutsHelp(false)}
         />
       )}
     </div>

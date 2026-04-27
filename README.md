@@ -140,7 +140,12 @@ The **Algorithm** dropdown selects the generator. Opening the dialog pre-selects
 
 ## Keyboard Shortcuts
 
-Shortcuts fire whenever the focus is not in a text field:
+Shortcuts fire whenever the focus is not in a text field, drop-down, or
+modal dialog. Press <kbd>?</kbd> at any time (or click **❓ Shortcuts**
+in the header) to bring up the in-app reference, which is generated from
+the same registry these shortcuts are defined in.
+
+### Tools
 
 | Shortcut | Action |
 | --- | --- |
@@ -153,12 +158,97 @@ Shortcuts fire whenever the focus is not in a text field:
 | `S` | Select tool |
 | `V` | Reveal fog (drag-rectangle, fog must be enabled) |
 | `H` | Hide fog (drag-rectangle, fog must be enabled) |
-| `Ctrl+Z` | Undo (up to 50 steps) |
-| `Ctrl+Y` *or* `Ctrl+Shift+Z` | Redo |
-| `Delete` *or* `Backspace` | Clear tiles inside the active selection |
-| `Esc` | Clear the active selection (Select tool) or close the Generate dialog |
+
+### View
+
+| Shortcut | Action |
+| --- | --- |
+| `Shift+P` | Toggle Print / B&W mode |
+| `Shift+V` | Toggle GM ↔ Player view |
+| `T` / `Shift+T` | Cycle to next / previous theme (GM view) |
+| `[` / `]` | Cycle to previous / next tile in the palette (GM view) |
+| `Ctrl+=` *or* `Ctrl++` | Increase UI scale |
+| `Ctrl+-` | Decrease UI scale |
+
+### Canvas
+
+| Shortcut | Action |
+| --- | --- |
+| `+` / `-` | Zoom in / out |
+| `0` | Reset zoom to 100% |
+| `1` | Fit map to screen |
+| Arrow keys | Pan the canvas (focus the canvas first by clicking it or via the **Skip to map canvas** link) |
 | `Shift` + mouse wheel | Zoom in / out (Caps Lock also enables wheel zoom without `Shift`) |
 | Right-click drag | Pan the canvas |
+
+### Edit
+
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl+Z` | Undo (up to 50 steps) |
+| `Ctrl+Y` *or* `Ctrl+Shift+Z` | Redo |
+| `Delete` *or* `Backspace` | Clear tiles inside the active selection (Select tool) |
+| `Esc` | Clear the active selection or close the open dialog |
+
+### File
+
+| Shortcut | Action |
+| --- | --- |
+| `G` | Open the Generate Map dialog (GM view) |
+| `Ctrl+Alt+N` *or* `Ctrl+N` | New map (with confirmation) |
+| `Ctrl+O` | Import map from JSON |
+| `Ctrl+S` | Export map as JSON |
+| `Ctrl+Shift+S` | Export map as PNG |
+| `Ctrl+Alt+S` | Export map as SVG |
+
+### Help
+
+| Shortcut | Action |
+| --- | --- |
+| `?` | Show the keyboard-shortcuts overlay |
+
+> Some browsers reserve `Ctrl+N`, `Ctrl+O`, and `Ctrl+S` for their own
+> "new window", "open file", and "save page" actions and will not deliver
+> them to the page. The header buttons (**New**, **↑ Import**, **↓ JSON**)
+> and the documented alternates (`Ctrl+Alt+N` for **New**) work as a
+> fallback in those browsers.
+
+## Accessibility
+
+Dungeon Mapper is designed to be usable from the keyboard alone and to
+expose enough semantic information for screen readers to navigate the
+editor confidently:
+
+- **Single-listener keyboard registry.** Every global shortcut listed
+  above is owned by `useGlobalShortcuts`, which automatically suppresses
+  shortcuts while you're typing in a text field, drop-down, or modal
+  dialog so single-letter tool keys never fire from the wrong context.
+- **Skip link.** A "Skip to map canvas" link is the first focusable
+  element on the page, so keyboard users don't have to tab through the
+  header on every visit.
+- **Landmarks.** The header (`<header>`), tool sidebar (`<nav>`), map
+  area (`<main>`), and side panels (`<aside>`) are real landmark
+  elements with accessible names so screen-reader rotors can jump
+  between regions.
+- **Toggle state.** Every toggle button (Print, GM/Player view, Show
+  Fog, Preserve theme, the active tool, the active palette tile, the
+  pen color and brush size) carries `aria-pressed` so assistive
+  technology reports its on/off state.
+- **Shortcut hints.** Buttons with a hotkey advertise it via
+  `aria-keyshortcuts`, and tooltips show the same key in `[brackets]`
+  for sighted users.
+- **Polite live region.** Undo / redo, theme switch, view-mode swap,
+  print-mode toggle, and "Map generated" announcements are surfaced via
+  an `aria-live="polite"` status region so the actions are audible
+  without checking the canvas.
+- **Focus visibility.** All interactive controls (header buttons, tool
+  buttons, palette tiles, drop-downs, zoom controls, the canvas itself)
+  expose a high-contrast `:focus-visible` ring that is shown only for
+  keyboard users.
+- **Print mode.** A high-contrast monochrome rendering of the map is
+  available via the **🖨 Print** button (`Shift+P`) for users who need
+  the highest possible contrast or want to print the map.
+
 
 ## Saving, Exporting & Importing
 
