@@ -8,6 +8,9 @@ export const moderncityTheme: TileTheme = {
     { id: 'empty', label: 'Lot' }, { id: 'floor', label: 'Sidewalk' }, { id: 'wall', label: 'Building' },
     { id: 'door-h', label: 'Doorway (H)' }, { id: 'door-v', label: 'Doorway (V)' },
     { id: 'secret-door', label: 'Hidden Door' },
+    { id: 'locked-door-h', label: 'Locked Doorway (H)' }, { id: 'locked-door-v', label: 'Locked Doorway (V)' },
+    { id: 'trapped-door-h', label: 'Trapped Doorway (H)' }, { id: 'trapped-door-v', label: 'Trapped Doorway (V)' },
+    { id: 'portcullis', label: 'Security Gate' }, { id: 'archway', label: 'Open Entry' }, { id: 'barricade', label: 'Road Barrier' },
     { id: 'stairs-up', label: 'Stairs Up' }, { id: 'stairs-down', label: 'Stairs Down' },
     { id: 'water', label: 'Fountain' }, { id: 'pillar', label: 'Lamp Post' },
     { id: 'trap', label: 'Manhole' }, { id: 'treasure', label: 'ATM' }, { id: 'start', label: 'Bus Stop' },
@@ -18,6 +21,9 @@ export const moderncityTheme: TileTheme = {
     empty: '#3a3a3a', floor: '#b8b8b8', wall: '#6c6c6c',
     'door-h': '#4a90c2', 'door-v': '#4a90c2',
     'secret-door': '#6c6c6c',
+    'locked-door-h': '#3a78a8', 'locked-door-v': '#3a78a8',
+    'trapped-door-h': '#c24545', 'trapped-door-v': '#c24545',
+    portcullis: '#4a4a4a', archway: '#8ab8d8', barricade: '#d89030',
     'stairs-up': '#cfcfcf', 'stairs-down': '#9a9a9a',
     water: '#4ea7d8', pillar: '#2a2a2a', trap: '#3a3a3a',
     treasure: '#1f7a3a', start: '#d24545',
@@ -127,6 +133,140 @@ export const moderncityTheme: TileTheme = {
         ctx.fillStyle = '#222222';
         ctx.fillRect(cx - 1, cy - 2, 2, 1);
         ctx.fillRect(cx - 1, cy + 1, 2, 1);
+        break;
+      }
+
+      case 'locked-door-h': {
+        ctx.fillStyle = '#cfe6f4';
+        ctx.fillRect(px + 2, cy - 3, s - 4, 6);
+        ctx.strokeStyle = '#2a4a5a';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 2, cy - 3, s - 4, 6);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 3);
+        ctx.lineTo(cx, cy + 3);
+        ctx.stroke();
+        ctx.strokeStyle = '#1a4a8a';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 2, 2, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#1a4a8a';
+        ctx.fillRect(cx - 2, cy - 1, 4, 3);
+        break;
+      }
+
+      case 'locked-door-v': {
+        ctx.fillStyle = '#cfe6f4';
+        ctx.fillRect(cx - 3, py + 2, 6, s - 4);
+        ctx.strokeStyle = '#2a4a5a';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx - 3, py + 2, 6, s - 4);
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy);
+        ctx.lineTo(cx + 3, cy);
+        ctx.stroke();
+        ctx.strokeStyle = '#1a4a8a';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 2, 2, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#1a4a8a';
+        ctx.fillRect(cx - 2, cy - 1, 4, 3);
+        break;
+      }
+
+      case 'trapped-door-h': {
+        ctx.fillStyle = '#cfe6f4';
+        ctx.fillRect(px + 2, cy - 3, s - 4, 6);
+        ctx.strokeStyle = '#2a4a5a';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 2, cy - 3, s - 4, 6);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 3);
+        ctx.lineTo(cx, cy + 3);
+        ctx.stroke();
+        ctx.strokeStyle = '#c24545';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
+        break;
+      }
+
+      case 'trapped-door-v': {
+        ctx.fillStyle = '#cfe6f4';
+        ctx.fillRect(cx - 3, py + 2, 6, s - 4);
+        ctx.strokeStyle = '#2a4a5a';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx - 3, py + 2, 6, s - 4);
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy);
+        ctx.lineTo(cx + 3, cy);
+        ctx.stroke();
+        ctx.strokeStyle = '#c24545';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
+        break;
+      }
+
+      case 'portcullis': {
+        ctx.strokeStyle = '#3a3a3a';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+          const lx = px + 3 + i * ((s - 6) / 3);
+          ctx.beginPath();
+          ctx.moveTo(lx, py + 2);
+          ctx.lineTo(lx, py + s - 2);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 3; i++) {
+          const ly = py + 4 + i * ((s - 8) / 2);
+          ctx.beginPath();
+          ctx.moveTo(px + 2, ly);
+          ctx.lineTo(px + s - 2, ly);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = '#1a1a1a';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
+        break;
+      }
+
+      case 'archway': {
+        ctx.fillStyle = '#6c6c6c';
+        ctx.fillRect(px + 2, cy, s * 0.15, s / 2 - 2);
+        ctx.fillRect(px + s - 2 - s * 0.15, cy, s * 0.15, s / 2 - 2);
+        ctx.strokeStyle = '#4a90c2';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.32, Math.PI, 0);
+        ctx.stroke();
+        break;
+      }
+
+      case 'barricade': {
+        ctx.strokeStyle = '#d89030';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(px + 3, py + 3);
+        ctx.lineTo(px + s - 3, py + s - 3);
+        ctx.moveTo(px + s - 3, py + 3);
+        ctx.lineTo(px + 3, py + s - 3);
+        ctx.stroke();
+        ctx.strokeStyle = '#ff0000';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.2, 0, Math.PI * 2);
+        ctx.stroke();
         break;
       }
 

@@ -100,6 +100,79 @@ export function drawTileOverlay(
       break;
     }
 
+    /* ---- Locked Doors: "L" with a diagonal strikethrough ---- */
+    case 'locked-door-h':
+    case 'locked-door-v': {
+      const fontSize = Math.max(6, Math.floor(s * 0.5));
+      ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = fg;
+      ctx.fillText('L', cx, cy + 1);
+      ctx.strokeStyle = fg;
+      ctx.lineWidth = Math.max(1, s * 0.08);
+      ctx.beginPath();
+      ctx.moveTo(px + s * 0.2, py + s * 0.8);
+      ctx.lineTo(px + s * 0.8, py + s * 0.2);
+      ctx.stroke();
+      break;
+    }
+
+    /* ---- Trapped Doors: "!" with a diagonal strikethrough ---- */
+    case 'trapped-door-h':
+    case 'trapped-door-v': {
+      const fontSize = Math.max(6, Math.floor(s * 0.5));
+      ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = fg;
+      ctx.fillText('!', cx, cy + 1);
+      ctx.strokeStyle = fg;
+      ctx.lineWidth = Math.max(1, s * 0.08);
+      ctx.beginPath();
+      ctx.moveTo(px + s * 0.2, py + s * 0.8);
+      ctx.lineTo(px + s * 0.8, py + s * 0.2);
+      ctx.stroke();
+      break;
+    }
+
+    /* ---- Portcullis: "#" grid symbol ---- */
+    case 'portcullis': {
+      const fontSize = Math.max(6, Math.floor(s * 0.55));
+      ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = fg;
+      ctx.fillText('#', cx, cy + 1);
+      break;
+    }
+
+    /* ---- Archway: inverted "U" arch shape ---- */
+    case 'archway': {
+      ctx.strokeStyle = fg;
+      ctx.lineWidth = Math.max(1, s * 0.08);
+      ctx.beginPath();
+      ctx.moveTo(px + s * 0.25, py + s * 0.8);
+      ctx.lineTo(px + s * 0.25, py + s * 0.35);
+      ctx.arc(cx, py + s * 0.35, s * 0.25, Math.PI, 0);
+      ctx.lineTo(px + s * 0.75, py + s * 0.8);
+      ctx.stroke();
+      break;
+    }
+
+    /* ---- Barricade: "X" crossbars ---- */
+    case 'barricade': {
+      ctx.strokeStyle = fg;
+      ctx.lineWidth = Math.max(1.5, s * 0.1);
+      ctx.beginPath();
+      ctx.moveTo(px + s * 0.2, py + s * 0.2);
+      ctx.lineTo(px + s * 0.8, py + s * 0.8);
+      ctx.moveTo(px + s * 0.8, py + s * 0.2);
+      ctx.lineTo(px + s * 0.2, py + s * 0.8);
+      ctx.stroke();
+      break;
+    }
+
     /* ---- Stairs Up: upward-pointing triangle ---- */
     case 'stairs-up': {
       const fontSize = Math.max(6, Math.floor(s * 0.55));

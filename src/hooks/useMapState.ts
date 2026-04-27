@@ -73,6 +73,25 @@ interface HistorySnapshot {
   height: number;
 }
 
+/**
+ * Internal clipboard buffer for copy/paste operations within the map.
+ * Stored in a module-level variable (not React state) so it persists
+ * across renders but doesn't trigger unnecessary re-renders.
+ */
+interface ClipboardBuffer {
+  tiles: Tile[][];
+  notes: MapNote[];
+  width: number;
+  height: number;
+}
+
+let clipboard: ClipboardBuffer | null = null;
+
+/** Returns the current clipboard buffer, if any. */
+export function getClipboard(): ClipboardBuffer | null {
+  return clipboard;
+}
+
 export function useMapState() {
   const [map, setMap] = useState<DungeonMap>(createDefaultMap);
   const [nextNoteId, setNextNoteId] = useState(1);
@@ -755,6 +774,137 @@ export function useMapState() {
     });
   }, [debouncedSave]);
 
+  /**
+   * Copy the contents of the given selection rectangle into the internal
+   * clipboard buffer. Tiles and notes within the rectangle are captured
+   * with their positions relative to the selection origin.
+   */
+  const copySelection = useCallback((sel: { x: number; y: number; w: number; h: number }) => {
+    const { tiles: mapTiles, notes: mapNotes, meta } = map;
+    const bufTiles: Tile[][] = [];
+    for (let dy = 0; dy < sel.h; dy++) {
+      const row: Tile[] = [];
+      for (let dx = 0; dx < sel.w; dx++) {
+        const ty = sel.y + dy;
+        const tx = sel.x + dx;
+        if (ty >= 0 && ty < meta.height && tx >= 0 && tx < meta.width) {
+          row.push({ ...mapTiles[ty][tx] });
+        } else {
+          row.push({ type: 'empty' });
+        }
+      }
+      bufTiles.push(row);
+    }
+    // Capture notes whose anchor falls inside the rectangle, with
+    // positions rebased to the selection's top-left corner.
+    const bufNotes: MapNote[] = mapNotes
+      .filter(n =>
+        n.x >= sel.x && n.x < sel.x + sel.w &&
+        n.y >= sel.y && n.y < sel.y + sel.h
+      )
+      .map(n => ({ ...n, x: n.x - sel.x, y: n.y - sel.y }));
+    clipboard = { tiles: bufTiles, notes: bufNotes, width: sel.w, height: sel.h };
+  }, [map]);
+
+  /**
+   * Cut the selection: copy to clipboard then erase the selected region.
+   */
+  const cutSelection = useCallback((sel: { x: number; y: number; w: number; h: number }) => {
+    // Copy first.
+    copySelection(sel);
+    // Then erase the region (including removing notes inside it).
+    setMap(prev => {
+      pushHistory(prev);
+      const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
+      for (let dy = 0; dy < sel.h; dy++) {
+        const ty = sel.y + dy;
+        if (ty < 0 || ty >= prev.meta.height) continue;
+        for (let dx = 0; dx < sel.w; dx++) {
+          const tx = sel.x + dx;
+          if (tx < 0 || tx >= prev.meta.width) continue;
+          newTiles[ty][tx] = { type: 'empty' };
+        }
+      }
+      const notesToRemove = new Set(
+        prev.notes
+          .filter(n =>
+            n.x >= sel.x && n.x < sel.x + sel.w &&
+            n.y >= sel.y && n.y < sel.y + sel.h
+          )
+          .map(n => n.id)
+      );
+      // Clear noteId references from tiles that pointed at removed notes.
+      for (let y = 0; y < prev.meta.height; y++) {
+        for (let x = 0; x < prev.meta.width; x++) {
+          if (newTiles[y][x].noteId !== undefined && notesToRemove.has(newTiles[y][x].noteId!)) {
+            const next = { ...newTiles[y][x] };
+            delete next.noteId;
+            newTiles[y][x] = next;
+          }
+        }
+      }
+      const updatedNotes = prev.notes.filter(n => !notesToRemove.has(n.id));
+      const updated: DungeonMap = { ...prev, tiles: newTiles, notes: updatedNotes };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [copySelection, debouncedSave]);
+
+  /**
+   * Paste the clipboard buffer at the given position on the map. Notes
+   * in the clipboard are remapped to fresh ids so they don't collide
+   * with existing map notes. This is a single undoable step.
+   */
+  const pasteClipboard = useCallback((ox: number, oy: number) => {
+    if (!clipboard) return;
+    const buf = clipboard;
+    setMap(prev => {
+      pushHistory(prev);
+      const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
+      // Build a fresh id mapping for pasted notes.
+      const idOffset = nextIdAfter(prev.notes) - 1;
+      const idMap = new Map<number, number>();
+      for (const n of buf.notes) idMap.set(n.id, n.id + idOffset);
+      for (let dy = 0; dy < buf.height; dy++) {
+        const ty = oy + dy;
+        if (ty < 0 || ty >= prev.meta.height) continue;
+        for (let dx = 0; dx < buf.width; dx++) {
+          const tx = ox + dx;
+          if (tx < 0 || tx >= prev.meta.width) continue;
+          const src = buf.tiles[dy][dx];
+          const next: Tile = { type: src.type };
+          // Preserve the per-tile theme override so a pasted tile keeps
+          // its original visual style in mixed-theme maps.
+          if (src.theme) next.theme = src.theme;
+          if (src.noteId !== undefined) {
+            const remapped = idMap.get(src.noteId);
+            if (remapped !== undefined) next.noteId = remapped;
+          }
+          newTiles[ty][tx] = next;
+        }
+      }
+      const remappedNotes: MapNote[] = buf.notes.map(n => ({
+        ...n,
+        id: n.id + idOffset,
+        x: n.x + ox,
+        y: n.y + oy,
+      }));
+      // Filter out pasted notes that fall outside the map boundaries.
+      const validNotes = remappedNotes.filter(
+        n => n.x >= 0 && n.x < prev.meta.width && n.y >= 0 && n.y < prev.meta.height
+      );
+      const updatedNotes = [...prev.notes, ...validNotes];
+      const updated: DungeonMap = { ...prev, tiles: newTiles, notes: updatedNotes };
+      debouncedSave(updated);
+      return updated;
+    });
+    // Bump the note-id allocator past the ids we just assigned.
+    if (buf.notes.length > 0) {
+      const highestGen = nextIdAfter(buf.notes) - 1;
+      setNextNoteId(prev => prev + highestGen);
+    }
+  }, [debouncedSave]);
+
   return {
     map,
     selectedNoteId,
@@ -795,5 +945,9 @@ export function useMapState() {
     addAnnotation,
     removeAnnotation,
     clearAnnotations,
+    // Clipboard
+    copySelection,
+    cutSelection,
+    pasteClipboard,
   };
 }

@@ -16,6 +16,9 @@ export const ancientTheme: TileTheme = {
     { id: 'empty', label: 'Sand' }, { id: 'floor', label: 'Flagstone' }, { id: 'wall', label: 'Carved Wall' },
     { id: 'door-h', label: 'Stone Slab (H)' }, { id: 'door-v', label: 'Stone Slab (V)' },
     { id: 'secret-door', label: 'Hidden Glyph' },
+    { id: 'locked-door-h', label: 'Locked Carved Door (H)' }, { id: 'locked-door-v', label: 'Locked Carved Door (V)' },
+    { id: 'trapped-door-h', label: 'Trapped Carved Door (H)' }, { id: 'trapped-door-v', label: 'Trapped Carved Door (V)' },
+    { id: 'portcullis', label: 'Stone Portcullis' }, { id: 'archway', label: 'Temple Arch' }, { id: 'barricade', label: 'Stone Barricade' },
     { id: 'stairs-up', label: 'Steps Up' }, { id: 'stairs-down', label: 'Steps Down' },
     { id: 'water', label: 'Reflecting Pool' }, { id: 'pillar', label: 'Pillar' },
     { id: 'trap', label: 'Cursed Glyph' }, { id: 'treasure', label: 'Sarcophagus' }, { id: 'start', label: 'Obelisk' },
@@ -28,6 +31,9 @@ export const ancientTheme: TileTheme = {
     empty: '#2a2114', floor: '#cdb27a', wall: '#8a6a3a',
     'door-h': '#a48050', 'door-v': '#a48050',
     'secret-door': '#8a6a3a',
+    'locked-door-h': '#8a6030', 'locked-door-v': '#8a6030',
+    'trapped-door-h': '#8a2e1e', 'trapped-door-v': '#8a2e1e',
+    portcullis: '#7a6a4a', archway: '#c8b080', barricade: '#6a5a3a',
     'stairs-up': '#bfa570', 'stairs-down': '#9a7e4a',
     water: '#2a7a8a', pillar: '#c8b88a',
     trap: '#a02e1e', treasure: '#b89048', start: '#3a2a1a',
@@ -118,6 +124,129 @@ export const ancientTheme: TileTheme = {
         ctx.strokeStyle = '#5a3a18';
         ctx.lineWidth = 0.5;
         ctx.strokeRect(cx - 3, py + 2, 6, s - 4);
+        break;
+      }
+
+      case 'locked-door-h': {
+        ctx.fillStyle = '#8a6838';
+        ctx.fillRect(px + 2, cy - 3, s - 4, 6);
+        ctx.fillStyle = '#e0c060';
+        ctx.fillRect(px + 2, cy - 1, s - 4, 2);
+        ctx.strokeStyle = '#5a3a18';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(px + 2, cy - 3, s - 4, 6);
+        ctx.strokeStyle = '#e0c060';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 2, 2, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#e0c060';
+        ctx.fillRect(cx - 2, cy - 1, 4, 3);
+        break;
+      }
+
+      case 'locked-door-v': {
+        ctx.fillStyle = '#8a6838';
+        ctx.fillRect(cx - 3, py + 2, 6, s - 4);
+        ctx.fillStyle = '#e0c060';
+        ctx.fillRect(cx - 1, py + 2, 2, s - 4);
+        ctx.strokeStyle = '#5a3a18';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(cx - 3, py + 2, 6, s - 4);
+        ctx.strokeStyle = '#e0c060';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 2, 2, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#e0c060';
+        ctx.fillRect(cx - 2, cy - 1, 4, 3);
+        break;
+      }
+
+      case 'trapped-door-h': {
+        ctx.fillStyle = '#8a6838';
+        ctx.fillRect(px + 2, cy - 3, s - 4, 6);
+        ctx.fillStyle = '#e0c060';
+        ctx.fillRect(px + 2, cy - 1, s - 4, 2);
+        ctx.strokeStyle = '#5a3a18';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(px + 2, cy - 3, s - 4, 6);
+        ctx.strokeStyle = '#cc3322';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
+        break;
+      }
+
+      case 'trapped-door-v': {
+        ctx.fillStyle = '#8a6838';
+        ctx.fillRect(cx - 3, py + 2, 6, s - 4);
+        ctx.fillStyle = '#e0c060';
+        ctx.fillRect(cx - 1, py + 2, 2, s - 4);
+        ctx.strokeStyle = '#5a3a18';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(cx - 3, py + 2, 6, s - 4);
+        ctx.strokeStyle = '#cc3322';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
+        break;
+      }
+
+      case 'portcullis': {
+        ctx.strokeStyle = '#5a3a18';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+          const lx = px + 3 + i * ((s - 6) / 3);
+          ctx.beginPath();
+          ctx.moveTo(lx, py + 2);
+          ctx.lineTo(lx, py + s - 2);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 3; i++) {
+          const ly = py + 4 + i * ((s - 8) / 2);
+          ctx.beginPath();
+          ctx.moveTo(px + 2, ly);
+          ctx.lineTo(px + s - 2, ly);
+          ctx.stroke();
+        }
+        ctx.strokeStyle = '#e0c060';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
+        break;
+      }
+
+      case 'archway': {
+        ctx.fillStyle = '#8a6a3a';
+        ctx.fillRect(px + 2, cy, s * 0.15, s / 2 - 2);
+        ctx.fillRect(px + s - 2 - s * 0.15, cy, s * 0.15, s / 2 - 2);
+        ctx.strokeStyle = '#e0c060';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.32, Math.PI, 0);
+        ctx.stroke();
+        break;
+      }
+
+      case 'barricade': {
+        ctx.strokeStyle = '#5a3a18';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(px + 3, py + 3);
+        ctx.lineTo(px + s - 3, py + s - 3);
+        ctx.moveTo(px + s - 3, py + 3);
+        ctx.lineTo(px + 3, py + s - 3);
+        ctx.stroke();
+        ctx.fillStyle = '#e0c060';
+        ctx.fillRect(cx - 1, cy - 1, 2, 2);
         break;
       }
 

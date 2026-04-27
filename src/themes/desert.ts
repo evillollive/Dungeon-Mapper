@@ -8,6 +8,9 @@ export const desertTheme: TileTheme = {
     { id: 'empty', label: 'Open Sands' }, { id: 'floor', label: 'Sand' }, { id: 'wall', label: 'Sandstone' },
     { id: 'door-h', label: 'Tomb Door (H)' }, { id: 'door-v', label: 'Tomb Door (V)' },
     { id: 'secret-door', label: 'Hidden Chamber' },
+    { id: 'locked-door-h', label: 'Locked Tomb Door (H)' }, { id: 'locked-door-v', label: 'Locked Tomb Door (V)' },
+    { id: 'trapped-door-h', label: 'Trapped Tomb Door (H)' }, { id: 'trapped-door-v', label: 'Trapped Tomb Door (V)' },
+    { id: 'portcullis', label: 'Sand Gate' }, { id: 'archway', label: 'Desert Arch' }, { id: 'barricade', label: 'Sand Barricade' },
     { id: 'stairs-up', label: 'Steps Up' }, { id: 'stairs-down', label: 'Steps Down' },
     { id: 'water', label: 'Oasis' }, { id: 'pillar', label: 'Cactus' },
     { id: 'trap', label: 'Quicksand' }, { id: 'treasure', label: 'Relic' }, { id: 'start', label: 'Caravan' },
@@ -18,6 +21,9 @@ export const desertTheme: TileTheme = {
     empty: '#6b4a1a', floor: '#e8c878', wall: '#a86a32',
     'door-h': '#7a4a20', 'door-v': '#7a4a20',
     'secret-door': '#a86a32',
+    'locked-door-h': '#6a4018', 'locked-door-v': '#6a4018',
+    'trapped-door-h': '#8b3a14', 'trapped-door-v': '#8b3a14',
+    portcullis: '#8a6a32', archway: '#c8a058', barricade: '#7a5a20',
     'stairs-up': '#c8a058', 'stairs-down': '#a07a40',
     water: '#3a9ec8', pillar: '#3a7a3a',
     trap: '#8b6914', treasure: '#d4af37', start: '#c83838',
@@ -135,6 +141,125 @@ export const desertTheme: TileTheme = {
         ctx.moveTo(cx - 3, cy);
         ctx.lineTo(cx + 3, cy);
         ctx.stroke();
+        break;
+      }
+
+      case 'locked-door-h': {
+        ctx.fillStyle = '#7a4a20';
+        ctx.fillRect(px + 2, cy - 3, s - 4, 6);
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 2, cy - 3, s - 4, 6);
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 3);
+        ctx.lineTo(cx, cy + 3);
+        ctx.stroke();
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 2, 2, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#d4af37';
+        ctx.fillRect(cx - 2, cy - 1, 4, 3);
+        break;
+      }
+
+      case 'locked-door-v': {
+        ctx.fillStyle = '#7a4a20';
+        ctx.fillRect(cx - 3, py + 2, 6, s - 4);
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx - 3, py + 2, 6, s - 4);
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy);
+        ctx.lineTo(cx + 3, cy);
+        ctx.stroke();
+        ctx.strokeStyle = '#d4af37';
+        ctx.beginPath();
+        ctx.arc(cx, cy - 2, 2, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#d4af37';
+        ctx.fillRect(cx - 2, cy - 1, 4, 3);
+        break;
+      }
+
+      case 'trapped-door-h': {
+        ctx.fillStyle = '#7a4a20';
+        ctx.fillRect(px + 2, cy - 3, s - 4, 6);
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + 2, cy - 3, s - 4, 6);
+        ctx.strokeStyle = '#cc4422';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
+        break;
+      }
+
+      case 'trapped-door-v': {
+        ctx.fillStyle = '#7a4a20';
+        ctx.fillRect(cx - 3, py + 2, 6, s - 4);
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(cx - 3, py + 2, 6, s - 4);
+        ctx.strokeStyle = '#cc4422';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
+        break;
+      }
+
+      case 'portcullis': {
+        ctx.strokeStyle = '#6b3d10';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+          const lx = px + 3 + i * ((s - 6) / 3);
+          ctx.beginPath();
+          ctx.moveTo(lx, py + 2);
+          ctx.lineTo(lx, py + s - 2);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 3; i++) {
+          const ly = py + 4 + i * ((s - 8) / 2);
+          ctx.beginPath();
+          ctx.moveTo(px + 2, ly);
+          ctx.lineTo(px + s - 2, ly);
+          ctx.stroke();
+        }
+        break;
+      }
+
+      case 'archway': {
+        ctx.fillStyle = '#a86a32';
+        ctx.fillRect(px + 2, cy, s * 0.15, s / 2 - 2);
+        ctx.fillRect(px + s - 2 - s * 0.15, cy, s * 0.15, s / 2 - 2);
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.32, Math.PI, 0);
+        ctx.stroke();
+        break;
+      }
+
+      case 'barricade': {
+        ctx.strokeStyle = '#8b6914';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(px + 3, py + 3);
+        ctx.lineTo(px + s - 3, py + s - 3);
+        ctx.moveTo(px + s - 3, py + 3);
+        ctx.lineTo(px + 3, py + s - 3);
+        ctx.stroke();
+        ctx.fillStyle = '#6b4a1a';
+        ctx.fillRect(cx - 1, cy - 1, 2, 2);
         break;
       }
 

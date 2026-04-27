@@ -11,6 +11,9 @@ export const castleTheme: TileTheme = {
     { id: 'empty', label: 'Courtyard' }, { id: 'floor', label: 'Stone Tile' }, { id: 'wall', label: 'Battlement' },
     { id: 'door-h', label: 'Oak Door (H)' }, { id: 'door-v', label: 'Oak Door (V)' },
     { id: 'secret-door', label: 'Hidden Passage' },
+    { id: 'locked-door-h', label: 'Locked Oak Door (H)' }, { id: 'locked-door-v', label: 'Locked Oak Door (V)' },
+    { id: 'trapped-door-h', label: 'Trapped Oak Door (H)' }, { id: 'trapped-door-v', label: 'Trapped Oak Door (V)' },
+    { id: 'portcullis', label: 'Castle Portcullis' }, { id: 'archway', label: 'Stone Archway' }, { id: 'barricade', label: 'Wooden Barricade' },
     { id: 'stairs-up', label: 'Stairs Up' }, { id: 'stairs-down', label: 'Stairs Down' },
     { id: 'water', label: 'Moat' }, { id: 'pillar', label: 'Column' },
     { id: 'trap', label: 'Murder Hole' }, { id: 'treasure', label: 'Royal Hoard' }, { id: 'start', label: 'Great Hall' },
@@ -21,6 +24,9 @@ export const castleTheme: TileTheme = {
     empty: '#1f1a14', floor: '#d8c9a3', wall: '#b89a6a',
     'door-h': '#5a3a1a', 'door-v': '#5a3a1a',
     'secret-door': '#b89a6a',
+    'locked-door-h': '#4a2a10', 'locked-door-v': '#4a2a10',
+    'trapped-door-h': '#5a1515', 'trapped-door-v': '#5a1515',
+    portcullis: '#555555', archway: '#7a7060', barricade: '#5a4020',
     'stairs-up': '#c8b88a', 'stairs-down': '#a89868',
     water: '#2a6a9e', pillar: '#9a8a6a',
     trap: '#8e1e1e', treasure: '#d4af37', start: '#a0202a',
@@ -113,6 +119,143 @@ export const castleTheme: TileTheme = {
         ctx.fillStyle = '#e0c060';
         ctx.fillRect(cx - 3, py + 2, 6, 3);
         ctx.fillRect(cx - 3, py + s - 5, 6, 3);
+        break;
+      }
+
+      case 'locked-door-h': {
+        // Heavy oak plank with lock
+        ctx.fillStyle = '#5a3a1a';
+        ctx.fillRect(px + 2, cy - 3, s - 4, 6);
+        ctx.strokeStyle = '#3a2410';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 3);
+        ctx.lineTo(cx, cy + 3);
+        ctx.stroke();
+        ctx.fillStyle = '#e0c060';
+        ctx.fillRect(px + 2, cy - 3, 3, 6);
+        ctx.fillRect(px + s - 5, cy - 3, 3, 6);
+        // Lock symbol
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath();
+        ctx.arc(cx, cy - 1, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(cx - 1.5, cy, 3, 3);
+        break;
+      }
+
+      case 'locked-door-v': {
+        ctx.fillStyle = '#5a3a1a';
+        ctx.fillRect(cx - 3, py + 2, 6, s - 4);
+        ctx.strokeStyle = '#3a2410';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy);
+        ctx.lineTo(cx + 3, cy);
+        ctx.stroke();
+        ctx.fillStyle = '#e0c060';
+        ctx.fillRect(cx - 3, py + 2, 6, 3);
+        ctx.fillRect(cx - 3, py + s - 5, 6, 3);
+        // Lock symbol
+        ctx.fillStyle = '#1a1a1a';
+        ctx.beginPath();
+        ctx.arc(cx, cy - 1, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(cx - 1.5, cy, 3, 3);
+        break;
+      }
+
+      case 'trapped-door-h': {
+        ctx.fillStyle = '#5a3a1a';
+        ctx.fillRect(px + 2, cy - 3, s - 4, 6);
+        ctx.strokeStyle = '#3a2410';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 3);
+        ctx.lineTo(cx, cy + 3);
+        ctx.stroke();
+        ctx.fillStyle = '#e0c060';
+        ctx.fillRect(px + 2, cy - 3, 3, 6);
+        ctx.fillRect(px + s - 5, cy - 3, 3, 6);
+        // Red danger X
+        ctx.strokeStyle = '#ff4444';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx - 4, cy - 4);
+        ctx.lineTo(cx + 4, cy + 4);
+        ctx.moveTo(cx + 4, cy - 4);
+        ctx.lineTo(cx - 4, cy + 4);
+        ctx.stroke();
+        break;
+      }
+
+      case 'trapped-door-v': {
+        ctx.fillStyle = '#5a3a1a';
+        ctx.fillRect(cx - 3, py + 2, 6, s - 4);
+        ctx.strokeStyle = '#3a2410';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy);
+        ctx.lineTo(cx + 3, cy);
+        ctx.stroke();
+        ctx.fillStyle = '#e0c060';
+        ctx.fillRect(cx - 3, py + 2, 6, 3);
+        ctx.fillRect(cx - 3, py + s - 5, 6, 3);
+        // Red danger X
+        ctx.strokeStyle = '#ff4444';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(cx - 4, cy - 4);
+        ctx.lineTo(cx + 4, cy + 4);
+        ctx.moveTo(cx + 4, cy - 4);
+        ctx.lineTo(cx - 4, cy + 4);
+        ctx.stroke();
+        break;
+      }
+
+      case 'portcullis': {
+        // Heavy castle gate grid
+        ctx.strokeStyle = '#aaa';
+        ctx.lineWidth = 2;
+        const g = s * 0.3;
+        for (let i = -1; i <= 1; i++) {
+          ctx.beginPath();
+          ctx.moveTo(cx + i * g, py + 3);
+          ctx.lineTo(cx + i * g, py + s - 3);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(px + 3, cy + i * g);
+          ctx.lineTo(px + s - 3, cy + i * g);
+          ctx.stroke();
+        }
+        break;
+      }
+
+      case 'archway': {
+        // Stone pillars with ornate arc
+        ctx.fillStyle = '#c8b88a';
+        ctx.fillRect(px + 3, cy, 5, s / 2 - 2);
+        ctx.fillRect(px + s - 8, cy, 5, s / 2 - 2);
+        ctx.strokeStyle = '#d8c8a0';
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s / 2 - 5, Math.PI, 0);
+        ctx.stroke();
+        break;
+      }
+
+      case 'barricade': {
+        // Crossed wooden planks
+        ctx.fillStyle = '#7a6040';
+        ctx.fillRect(px + 2, py + 2, s - 4, s - 4);
+        ctx.strokeStyle = '#3a2010';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(px + 3, py + 3);
+        ctx.lineTo(px + s - 3, py + s - 3);
+        ctx.moveTo(px + s - 3, py + 3);
+        ctx.lineTo(px + 3, py + s - 3);
+        ctx.stroke();
         break;
       }
 

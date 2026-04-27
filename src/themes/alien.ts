@@ -11,6 +11,9 @@ export const alienTheme: TileTheme = {
     { id: 'empty', label: 'Sky' }, { id: 'floor', label: 'Spore Bed' }, { id: 'wall', label: 'Fungal Wall' },
     { id: 'door-h', label: 'Membrane (H)' }, { id: 'door-v', label: 'Membrane (V)' },
     { id: 'secret-door', label: 'Hidden Burrow' },
+    { id: 'locked-door-h', label: 'Locked Membrane (H)' }, { id: 'locked-door-v', label: 'Locked Membrane (V)' },
+    { id: 'trapped-door-h', label: 'Trapped Membrane (H)' }, { id: 'trapped-door-v', label: 'Trapped Membrane (V)' },
+    { id: 'portcullis', label: 'Chitin Gate' }, { id: 'archway', label: 'Nerve Arch' }, { id: 'barricade', label: 'Growth Barricade' },
     { id: 'stairs-up', label: 'Tendril Up' }, { id: 'stairs-down', label: 'Tendril Down' },
     { id: 'water', label: 'Acid Pool' }, { id: 'pillar', label: 'Crystal Spire' },
     { id: 'trap', label: 'Spore Burst' }, { id: 'treasure', label: 'Crystal Cluster' }, { id: 'start', label: 'Landing Site' },
@@ -21,6 +24,9 @@ export const alienTheme: TileTheme = {
     empty: '#0a0418', floor: '#3a1f4a', wall: '#5a2a6a',
     'door-h': '#c040ff', 'door-v': '#c040ff',
     'secret-door': '#5a2a6a',
+    'locked-door-h': '#9030cc', 'locked-door-v': '#9030cc',
+    'trapped-door-h': '#cc40aa', 'trapped-door-v': '#cc40aa',
+    portcullis: '#4a6a3a', archway: '#60c8b0', barricade: '#8a6a2a',
     'stairs-up': '#9affc8', 'stairs-down': '#5acc8a',
     water: '#7aff3a', pillar: '#d8a0ff',
     trap: '#ffe040', treasure: '#ff60d0', start: '#40ffe0',
@@ -113,6 +119,132 @@ export const alienTheme: TileTheme = {
         ctx.beginPath();
         ctx.ellipse(cx, cy, 4, (s - 4) / 2, 0, 0, Math.PI * 2);
         ctx.stroke();
+        break;
+      }
+
+      case 'locked-door-h': {
+        ctx.fillStyle = '#9030cc';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, (s - 4) / 2, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ff80ff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // Lock symbol
+        ctx.strokeStyle = '#ffe040';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 2, 2.5, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#ffe040';
+        ctx.fillRect(cx - 2.5, cy - 1, 5, 4);
+        break;
+      }
+
+      case 'locked-door-v': {
+        ctx.fillStyle = '#9030cc';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, 4, (s - 4) / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ff80ff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.strokeStyle = '#ffe040';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 2, 2.5, Math.PI, 0);
+        ctx.stroke();
+        ctx.fillStyle = '#ffe040';
+        ctx.fillRect(cx - 2.5, cy - 1, 5, 4);
+        break;
+      }
+
+      case 'trapped-door-h': {
+        ctx.fillStyle = '#cc40aa';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, (s - 4) / 2, 4, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ff80ff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        // Danger X
+        ctx.strokeStyle = '#ff3030';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
+        break;
+      }
+
+      case 'trapped-door-v': {
+        ctx.fillStyle = '#cc40aa';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, 4, (s - 4) / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#ff80ff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        ctx.strokeStyle = '#ff3030';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3);
+        ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3);
+        ctx.lineTo(cx - 3, cy + 3);
+        ctx.stroke();
+        break;
+      }
+
+      case 'portcullis': {
+        // Chitin gate — grid of organic bars
+        ctx.strokeStyle = '#7aaa5a';
+        ctx.lineWidth = 1.5;
+        const bars = 4;
+        for (let i = 1; i < bars; i++) {
+          const bx = px + i * (s / bars);
+          ctx.beginPath();
+          ctx.moveTo(bx, py + 2);
+          ctx.lineTo(bx, py + s - 2);
+          ctx.stroke();
+        }
+        for (let i = 1; i < 3; i++) {
+          const by = py + i * (s / 3);
+          ctx.beginPath();
+          ctx.moveTo(px + 2, by);
+          ctx.lineTo(px + s - 2, by);
+          ctx.stroke();
+        }
+        break;
+      }
+
+      case 'archway': {
+        // Nerve arch — two pillars with organic arc
+        ctx.fillStyle = '#60c8b0';
+        ctx.fillRect(px + 3, cy, s * 0.15, s / 2 - 2);
+        ctx.fillRect(px + s - 3 - s * 0.15, cy, s * 0.15, s / 2 - 2);
+        ctx.strokeStyle = '#80e8d0';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.32, Math.PI, 0);
+        ctx.stroke();
+        break;
+      }
+
+      case 'barricade': {
+        // Growth barricade — crossed organic beams
+        ctx.strokeStyle = '#b0903a';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(px + 3, py + 3);
+        ctx.lineTo(px + s - 3, py + s - 3);
+        ctx.moveTo(px + s - 3, py + 3);
+        ctx.lineTo(px + 3, py + s - 3);
+        ctx.stroke();
+        ctx.fillStyle = '#8a6a2a';
+        ctx.fillRect(px + 2, cy - 1.5, s - 4, 3);
         break;
       }
 

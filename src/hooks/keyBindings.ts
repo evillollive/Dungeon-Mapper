@@ -77,6 +77,12 @@ export interface ShortcutActions {
    *  GM-only, so the bindings short-circuit when the player toolbar is
    *  active. */
   isGmView: () => boolean;
+  /** Copy the current selection to clipboard (Ctrl+C). */
+  copySelection: () => void;
+  /** Cut the current selection to clipboard (Ctrl+X). */
+  cutSelection: () => void;
+  /** Paste clipboard contents at the current selection position (Ctrl+V). */
+  pasteClipboard: () => void;
 }
 
 const isPlainKey = (e: KeyboardEvent) =>
@@ -239,6 +245,30 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
         (e.shiftKey && e.key.toLowerCase() === 'z')
       ),
       action: actions.redo,
+    },
+    {
+      id: 'edit.copy',
+      category: 'Edit',
+      keys: 'Ctrl+C',
+      description: 'Copy selection to clipboard',
+      match: e => isCtrlOrMeta(e) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'c',
+      action: actions.copySelection,
+    },
+    {
+      id: 'edit.cut',
+      category: 'Edit',
+      keys: 'Ctrl+X',
+      description: 'Cut selection to clipboard',
+      match: e => isCtrlOrMeta(e) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'x',
+      action: actions.cutSelection,
+    },
+    {
+      id: 'edit.paste',
+      category: 'Edit',
+      keys: 'Ctrl+V',
+      description: 'Paste clipboard at selection / cursor',
+      match: e => isCtrlOrMeta(e) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'v',
+      action: actions.pasteClipboard,
     },
 
     // ── File ──

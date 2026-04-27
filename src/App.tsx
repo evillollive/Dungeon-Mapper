@@ -8,7 +8,7 @@ import MapHeader, { type MapHeaderHandle } from './components/MapHeader';
 import GenerateMapDialog from './components/GenerateMapDialog';
 import ShortcutsHelp from './components/ShortcutsHelp';
 import type { GeneratedMap } from './utils/generators';
-import { useMapState } from './hooks/useMapState';
+import { useMapState, getClipboard } from './hooks/useMapState';
 import { useDrawingTool } from './hooks/useDrawingTool';
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
 import { exportMapSVG } from './utils/export';
@@ -114,6 +114,9 @@ function App() {
     addAnnotation,
     removeAnnotation,
     clearAnnotations,
+    copySelection,
+    cutSelection,
+    pasteClipboard,
   } = useMapState();
 
   const {
@@ -154,6 +157,10 @@ function App() {
   // persisted on the map; they're a per-session preference.
   const [drawColor, setDrawColor] = useState<string>('#dc2626');
   const [drawWidth, setDrawWidth] = useState<number>(0.25);
+  // Track clipboard state for the paste preview overlay on the canvas.
+  // Updated after every copy/cut so the canvas knows whether a paste
+  // preview should be rendered and how large the buffer is.
+  const [clipboardInfo, setClipboardInfo] = useState<{ w: number; h: number } | null>(null);
 
   // Briefly announce a status message via the polite live region. The
   // automatic blank-out makes repeated identical announcements (e.g. two
@@ -377,6 +384,33 @@ function App() {
     return () => window.clearTimeout(id);
   }, [statusMessage]);
 
+  // Clipboard handlers for copy / cut / paste within the selection.
+  // `selection` holds the current user-painted rectangle (if any) — see
+  // the useState + onSelectionChange wiring below. Copy and cut require
+  // an active selection; paste places at the selection's top-left (or the
+  // top-left of the map when no selection is active).
+  const handleCopySelection = useCallback(() => {
+    if (!selection) return;
+    copySelection(selection);
+    const buf = getClipboard();
+    if (buf) setClipboardInfo({ w: buf.width, h: buf.height });
+    announce('Selection copied');
+  }, [selection, copySelection, announce]);
+
+  const handleCutSelection = useCallback(() => {
+    if (!selection) return;
+    cutSelection(selection);
+    const buf = getClipboard();
+    if (buf) setClipboardInfo({ w: buf.width, h: buf.height });
+    announce('Selection cut');
+  }, [selection, cutSelection, announce]);
+
+  const handlePasteClipboard = useCallback(() => {
+    const origin = selection ?? { x: 0, y: 0 };
+    pasteClipboard(origin.x, origin.y);
+    announce('Pasted from clipboard');
+  }, [selection, pasteClipboard, announce]);
+
   // Centralised global keyboard shortcuts. The hook owns one keydown
   // listener and dispatches to the wired actions; the registry it returns
   // also feeds the in-app help overlay.
@@ -402,6 +436,9 @@ function App() {
     uiScaleUp: () => adjustUIScale(1),
     uiScaleDown: () => adjustUIScale(-1),
     isGmView: () => viewMode === 'gm',
+    copySelection: handleCopySelection,
+    cutSelection: handleCutSelection,
+    pasteClipboard: handlePasteClipboard,
   });
 
   return (
@@ -493,6 +530,8 @@ function App() {
             onAddAnnotation={addAnnotation}
             onRemoveAnnotation={removeAnnotation}
             onSelectionChange={setSelection}
+            hasClipboard={clipboardInfo != null}
+            clipboardSize={clipboardInfo}
           />
         </main>
         {viewMode === 'gm' && (

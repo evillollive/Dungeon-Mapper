@@ -80,7 +80,14 @@ function isConnectivityPassable(t: TileType): boolean {
     isDoorPassageNeighbor(t) ||
     t === 'door-h' ||
     t === 'door-v' ||
-    t === 'secret-door'
+    t === 'secret-door' ||
+    t === 'locked-door-h' ||
+    t === 'locked-door-v' ||
+    t === 'trapped-door-h' ||
+    t === 'trapped-door-v' ||
+    t === 'portcullis' ||
+    t === 'archway' ||
+    t === 'barricade'
   );
 }
 

@@ -1,5 +1,8 @@
 export type TileType =
   | 'empty' | 'floor' | 'wall' | 'door-h' | 'door-v' | 'secret-door'
+  | 'locked-door-h' | 'locked-door-v'
+  | 'trapped-door-h' | 'trapped-door-v'
+  | 'portcullis' | 'archway' | 'barricade'
   | 'stairs-up' | 'stairs-down' | 'water' | 'pillar'
   | 'trap' | 'treasure' | 'start';
 
@@ -146,6 +149,13 @@ export const TILE_LABELS: Record<TileType, string> = {
   'door-h': 'Door (H)',
   'door-v': 'Door (V)',
   'secret-door': 'Secret Door',
+  'locked-door-h': 'Locked Door (H)',
+  'locked-door-v': 'Locked Door (V)',
+  'trapped-door-h': 'Trapped Door (H)',
+  'trapped-door-v': 'Trapped Door (V)',
+  portcullis: 'Portcullis',
+  archway: 'Archway',
+  barricade: 'Barricade',
   'stairs-up': 'Stairs Up',
   'stairs-down': 'Stairs Down',
   water: 'Water',
@@ -162,6 +172,9 @@ export const TILE_LABELS: Record<TileType, string> = {
 // the map. Use the Erase tool to clear a tile back to empty.
 export const ALL_TILE_TYPES: TileType[] = [
   'floor', 'wall', 'door-h', 'door-v', 'secret-door',
+  'locked-door-h', 'locked-door-v',
+  'trapped-door-h', 'trapped-door-v',
+  'portcullis', 'archway', 'barricade',
   'stairs-up', 'stairs-down', 'water', 'pillar',
   'trap', 'treasure', 'start',
 ];
