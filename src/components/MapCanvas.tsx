@@ -64,6 +64,10 @@ interface MapCanvasProps {
    * "Generate into selection" toggle in the Generate Map dialog.
    */
   onSelectionChange?: (selection: { x: number; y: number; w: number; h: number } | null) => void;
+  /** Whether the internal clipboard has content to paste. */
+  hasClipboard?: boolean;
+  /** Width/height of the clipboard buffer (for preview overlay sizing). */
+  clipboardSize?: { w: number; h: number } | null;
 }
 
 export interface MapCanvasHandle {
@@ -254,6 +258,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   onAddAnnotation,
   onRemoveAnnotation,
   onSelectionChange,
+  hasClipboard,
+  clipboardSize,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -528,7 +534,33 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke]);
+
+    // Paste preview — when the clipboard has content and the select tool
+    // is active, draw a translucent dashed outline at the mouse position
+    // (or the selection origin) showing where the paste will land.
+    if (hasClipboard && clipboardSize && activeTool === 'select' && mousePos) {
+      ctx.save();
+      ctx.strokeStyle = '#22d3ee';
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.globalAlpha = 0.7;
+      ctx.strokeRect(
+        mousePos.x * tileSize,
+        mousePos.y * tileSize,
+        clipboardSize.w * tileSize,
+        clipboardSize.h * tileSize
+      );
+      ctx.setLineDash([]);
+      ctx.fillStyle = 'rgba(34, 211, 238, 0.12)';
+      ctx.fillRect(
+        mousePos.x * tileSize,
+        mousePos.y * tileSize,
+        clipboardSize.w * tileSize,
+        clipboardSize.h * tileSize
+      );
+      ctx.restore();
+    }
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos]);
 
   // Minimap render
   useEffect(() => {

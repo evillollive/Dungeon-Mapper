@@ -75,6 +75,9 @@ export function useGlobalShortcuts(actions: ShortcutActions): KeyBinding[] {
       uiScaleUp:        () => actionsRef.current.uiScaleUp(),
       uiScaleDown:      () => actionsRef.current.uiScaleDown(),
       isGmView:         () => actionsRef.current.isGmView(),
+      copySelection:    () => actionsRef.current.copySelection(),
+      cutSelection:     () => actionsRef.current.cutSelection(),
+      pasteClipboard:   () => actionsRef.current.pasteClipboard(),
     };
     return buildKeyBindings(dispatch);
     /* eslint-enable react-hooks/refs */
