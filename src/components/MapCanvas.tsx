@@ -5,6 +5,7 @@ import { getTheme } from '../themes/index';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from '../utils/tokenVisibility';
+import { ICON_BY_ID } from '../utils/iconLibrary';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
 // evoking traditional engineering / quad-ruled graph paper regardless of theme.
@@ -19,6 +20,18 @@ const SCREEN_GRID = '#5fb8c9';
 // grey wash so the GM can see *what* is fogged without losing the map.
 const FOG_PLAYER_FILL = '#6b7280';
 const FOG_GM_FILL = 'rgba(107, 114, 128, 0.55)';
+
+// Cache parsed Path2D objects for icon rendering. Keyed by icon id.
+const iconPath2DCache = new Map<string, Path2D>();
+function getIconPath2D(iconId: string): Path2D | null {
+  const cached = iconPath2DCache.get(iconId);
+  if (cached) return cached;
+  const def = ICON_BY_ID.get(iconId);
+  if (!def) return null;
+  const p = new Path2D(def.path);
+  iconPath2DCache.set(iconId, p);
+  return p;
+}
 
 interface MapCanvasProps {
   map: DungeonMap;
@@ -179,14 +192,29 @@ function drawToken(
   ctx.strokeStyle = '#1a1a2e';
   ctx.stroke();
 
-  // Foreground glyph: emoji icon if provided, otherwise the first letter
-  // of the label (or the token kind).
-  const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
-  ctx.fillStyle = '#ffffff';
-  ctx.font = `bold ${Math.max(8, tileSize * size * 0.5)}px "Courier New", monospace`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(glyph, px, py + 0.5);
+  // Foreground glyph: library icon SVG path if the token's icon field
+  // matches a library id, otherwise emoji icon or the first letter of the
+  // label (or the token kind).
+  const iconPath = token.icon ? getIconPath2D(token.icon) : null;
+  if (iconPath) {
+    // Render the library SVG path. The paths use a 512×512 coordinate
+    // space, so we scale and translate to fit inside the token circle.
+    const iconSize = radius * 1.5; // SVG icon drawn at 75% of diameter
+    const scale = iconSize / 512;
+    ctx.save();
+    ctx.translate(px - iconSize / 2, py - iconSize / 2);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill(iconPath);
+    ctx.restore();
+  } else {
+    const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
+    ctx.fillStyle = '#ffffff';
+    ctx.font = `bold ${Math.max(8, tileSize * size * 0.5)}px "Courier New", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(glyph, px, py + 0.5);
+  }
   ctx.restore();
 }
 

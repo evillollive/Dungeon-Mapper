@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Token, ViewMode } from '../types/map';
 import { TOKEN_KIND_COLORS } from '../types/map';
+import { ICON_BY_ID } from '../utils/iconLibrary';
 
 /**
  * Right-hand-side panel showing the active turn order. Tokens are listed in
@@ -136,9 +137,26 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
               <span className="initiative-order">{idx + 1}</span>
               <span
                 className="initiative-swatch"
-                style={{ background: token.color ?? TOKEN_KIND_COLORS[token.kind] }}
+                style={{
+                  background: token.color ?? TOKEN_KIND_COLORS[token.kind],
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
                 title={token.kind}
-              />
+              >
+                {(() => {
+                  const iconDef = token.icon ? ICON_BY_ID.get(token.icon) : undefined;
+                  if (iconDef) {
+                    return (
+                      <svg viewBox="0 0 512 512" width={12} height={12} aria-hidden="true">
+                        <path d={iconDef.path} fill="#ffffff" />
+                      </svg>
+                    );
+                  }
+                  return null;
+                })()}
+              </span>
               {editingId === token.id ? (
                 <input
                   className="initiative-input"

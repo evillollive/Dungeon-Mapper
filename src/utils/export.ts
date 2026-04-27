@@ -1,6 +1,7 @@
 import type { DungeonMap, ViewMode } from '../types/map';
 import { TOKEN_KIND_COLORS } from '../types/map';
 import type { TileTheme } from '../themes/index';
+import { ICON_BY_ID } from './iconLibrary';
 
 export function exportMapJSON(map: DungeonMap): void {
   const json = JSON.stringify(map, null, 2);
@@ -146,9 +147,20 @@ export function exportMapSVG(
     const tcy = token.y * tileSize + (tileSize * sz) / 2;
     const r = tileSize * sz * 0.42;
     const fill = token.color ?? TOKEN_KIND_COLORS[token.kind];
-    const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
     svg += `<circle cx="${tcx}" cy="${tcy}" r="${r}" fill="${fill}" stroke="#1a1a2e" stroke-width="${Math.max(1, tileSize * sz * 0.08)}"/>`;
-    svg += `<text x="${tcx}" y="${tcy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * sz * 0.5)}" font-family="monospace" fill="#ffffff" font-weight="bold">${escapeXML(glyph)}</text>`;
+    // If the token has a library icon, render the SVG path; otherwise fall
+    // back to a text glyph.
+    const iconDef = token.icon ? ICON_BY_ID.get(token.icon) : undefined;
+    if (iconDef) {
+      const iconSize = r * 1.5;
+      const scale = iconSize / 512;
+      const ox = tcx - iconSize / 2;
+      const oy = tcy - iconSize / 2;
+      svg += `<g transform="translate(${ox},${oy}) scale(${scale})"><path d="${iconDef.path}" fill="#ffffff"/></g>`;
+    } else {
+      const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
+      svg += `<text x="${tcx}" y="${tcy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * sz * 0.5)}" font-family="monospace" fill="#ffffff" font-weight="bold">${escapeXML(glyph)}</text>`;
+    }
   }
 
   // Fog overlay. Player exports paint opaque grey so hidden content is

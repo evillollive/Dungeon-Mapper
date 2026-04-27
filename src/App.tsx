@@ -4,6 +4,7 @@ import Toolbar from './components/Toolbar';
 import PlayerToolbar from './components/PlayerToolbar';
 import NotesPanel from './components/NotesPanel';
 import InitiativePanel from './components/InitiativePanel';
+import IconPicker from './components/IconPicker';
 import MapHeader, { type MapHeaderHandle } from './components/MapHeader';
 import GenerateMapDialog from './components/GenerateMapDialog';
 import ShortcutsHelp from './components/ShortcutsHelp';
@@ -14,7 +15,7 @@ import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
 import { exportMapSVG } from './utils/export';
 import { isTokenFogged } from './utils/tokenVisibility';
 import { getTheme, THEME_LIST } from './themes/index';
-import { ALL_TILE_TYPES, type ViewMode, type MarkerShape } from './types/map';
+import { ALL_TILE_TYPES, type ViewMode, type MarkerShape, type TokenKind } from './types/map';
 import './App.css';
 
 const UI_SCALE_STORAGE_KEY = 'dungeon-mapper:ui-scale';
@@ -164,6 +165,12 @@ function App() {
   const [markerShape, setMarkerShape] = useState<MarkerShape>('circle');
   const [markerColor, setMarkerColor] = useState<string>('#dc2626');
   const [markerSize, setMarkerSize] = useState<number>(2);
+  // Icon picker dialog state. When a token is placed and the user should
+  // pick an icon, we store the pending token details and show the picker.
+  const [showIconPicker, setShowIconPicker] = useState(false);
+  const pendingTokenRef = useRef<{
+    kind: TokenKind; x: number; y: number; label?: string; size?: number;
+  } | null>(null);
   // Track clipboard state for the paste preview overlay on the canvas.
   // Updated after every copy/cut so the canvas knows whether a paste
   // preview should be rendered and how large the buffer is.
@@ -230,26 +237,46 @@ function App() {
   const handleClearFog = useCallback(() => fillAllFog(false), [fillAllFog]);
   const handleClearPlayerDrawings = useCallback(() => clearAnnotations('player'), [clearAnnotations]);
 
-  // When a token is placed from the player view, prompt for a name so the
-  // new entry shows up in the Initiative panel with something meaningful
-  // (and the player isn't stuck reading "P3" / "M7" auto-labels). The GM
-  // skips the prompt — they place tokens during prep and rename later.
+  // When a token is placed, prompt for name (player view) then open the
+  // icon picker so the user can choose an icon for the token.
   const handleAddToken = useCallback(
     (kind: Parameters<typeof addToken>[0], x: number, y: number, _label?: string, size?: number) => {
+      let label: string | undefined;
       if (viewMode === 'player') {
         const defaultName = kind.charAt(0).toUpperCase() + kind.slice(1);
         const raw = window.prompt(`Name for this ${kind}?`, defaultName);
-        // Cancel aborts placement entirely. Empty string falls back to the
-        // hook's auto-label so we don't add a blank-named entry.
         if (raw === null) return;
         const trimmed = raw.trim();
-        addToken(kind, x, y, trimmed.length > 0 ? trimmed : undefined, size);
-      } else {
-        addToken(kind, x, y, undefined, size);
+        label = trimmed.length > 0 ? trimmed : undefined;
       }
+      // Store the pending token and open the icon picker.
+      pendingTokenRef.current = { kind, x, y, label, size };
+      setShowIconPicker(true);
     },
-    [addToken, viewMode]
+    [viewMode]
   );
+
+  const handleIconSelected = useCallback((iconId: string) => {
+    setShowIconPicker(false);
+    const pending = pendingTokenRef.current;
+    if (!pending) return;
+    pendingTokenRef.current = null;
+    const tokenId = addToken(pending.kind, pending.x, pending.y, pending.label, pending.size);
+    // If the user selected a library icon, update the token with it.
+    if (iconId && tokenId != null) {
+      updateToken(tokenId, { icon: iconId });
+    }
+  }, [addToken, updateToken]);
+
+  const handleIconPickerCancel = useCallback(() => {
+    setShowIconPicker(false);
+    // Still place the token even if the user cancels — just without a
+    // library icon (falls back to emoji/letter).
+    const pending = pendingTokenRef.current;
+    if (!pending) return;
+    pendingTokenRef.current = null;
+    addToken(pending.kind, pending.x, pending.y, pending.label, pending.size);
+  }, [addToken]);
 
   const handleRenameToken = useCallback((id: number, label: string) => {
     updateToken(id, { label });
@@ -640,6 +667,11 @@ function App() {
           onClose={() => setShowShortcutsHelp(false)}
         />
       )}
+      <IconPicker
+        open={showIconPicker}
+        onSelect={handleIconSelected}
+        onCancel={handleIconPickerCancel}
+      />
     </div>
   );
 }
