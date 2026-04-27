@@ -81,12 +81,14 @@ export function exportMapSVG(
   // Background image layer (behind tiles).
   if (map.backgroundImage) {
     const bg = map.backgroundImage;
-    // We don't know the natural dimensions from the data URL alone, so
-    // we embed the image at its natural size and let the SVG scale
-    // attribute handle sizing. The scale factor applied is relative to
-    // 1 image-pixel = 1 SVG-user-unit (which equals 1 canvas pixel at
-    // the tile's base tileSize).
-    svg += `<image xlink:href="${bg.dataUrl}" x="${bg.offsetX * tileSize}" y="${bg.offsetY * tileSize}" opacity="${bg.opacity}" transform="scale(${bg.scale})" style="image-rendering:auto"/>`;
+    const imgX = bg.offsetX * tileSize;
+    const imgY = bg.offsetY * tileSize;
+    // Escape the data URL for safe XML embedding (quotes and angle
+    // brackets could break the SVG structure).
+    const safeHref = escapeXML(bg.dataUrl);
+    // Use a group transform so scale applies relative to the image's
+    // own origin rather than (0,0), which would shift the position.
+    svg += `<g transform="translate(${imgX},${imgY}) scale(${bg.scale})" opacity="${bg.opacity}"><image xlink:href="${safeHref}" x="0" y="0" style="image-rendering:auto"/></g>`;
   }
 
   for (let y = 0; y < height; y++) {
