@@ -42,6 +42,14 @@ export interface GenerateContext {
    * unlabeled, matching the legacy behavior.
    */
   labelRooms?: boolean;
+  /**
+   * Optional id of the corridor strategy to use (e.g. `'straight-l'`,
+   * `'mst'`, `'loops'`, `'winding'`). Only the rooms-and-corridors
+   * generator interprets this — other generators ignore it. Unknown /
+   * missing values fall back to the default strategy, which reproduces
+   * the legacy output exactly so existing seeds are unaffected.
+   */
+  corridorStrategy?: string;
 }
 
 /** A generator's output — pre-built tile grid plus optional notes. */

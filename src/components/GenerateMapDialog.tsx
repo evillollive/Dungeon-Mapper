@@ -10,6 +10,11 @@ import {
 } from '../utils/generators';
 import { MAX_DENSITY, MIN_DENSITY } from '../utils/generators/common';
 import {
+  CORRIDOR_STRATEGY_LIST,
+  DEFAULT_CORRIDOR_STRATEGY_ID,
+  getCorridorStrategy,
+} from '../utils/generators/corridorEngine';
+import {
   getDefaultTileMix,
   getTileMixSliders,
   type TileMixSliderSpec,
@@ -172,6 +177,16 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
   const showLabelRoomsToggle =
     generatorId === 'rooms-and-corridors' && themeSupportsRoomLabels(themeId);
 
+  // Corridor-shaping algorithm. Only the rooms-and-corridors generator
+  // honors this; for other generators the value is ignored. The default
+  // (`'straight-l'`) reproduces the legacy in-line behavior so existing
+  // seeds keep producing identical maps until the user picks otherwise.
+  const [corridorStrategyId, setCorridorStrategyId] = useState<string>(
+    DEFAULT_CORRIDOR_STRATEGY_ID
+  );
+  const showCorridorStrategy = generatorId === 'rooms-and-corridors';
+  const corridorStrategy = getCorridorStrategy(corridorStrategyId);
+
   // True when the current selection is large enough to host a generator
   // run. Falls back to false (and disables the toggle) when no selection
   // is active or the rectangle is too small to be useful.
@@ -236,6 +251,7 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
         themeId,
         tileMix,
         labelRooms: showLabelRoomsToggle ? labelRooms : false,
+        corridorStrategy: showCorridorStrategy ? corridorStrategyId : undefined,
       });
       const suggestedName = `Generated ${generator.name}`;
       if (intoSelection && selection) {
@@ -310,6 +326,25 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
           </select>
         </label>
         <p className="generate-dialog-description">{generator.description}</p>
+
+        {showCorridorStrategy && (
+          <>
+            <label className="generate-dialog-row">
+              <span>Corridor style</span>
+              <select
+                value={corridorStrategyId}
+                onChange={e => setCorridorStrategyId(e.target.value)}
+              >
+                {CORRIDOR_STRATEGY_LIST.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </label>
+            <p className="generate-dialog-description">
+              {corridorStrategy.description}
+            </p>
+          </>
+        )}
 
         <div className="generate-dialog-row generate-dialog-grid-2">
           <label>

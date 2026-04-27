@@ -1,17 +1,18 @@
-import type { MapNote, Tile, TileType } from '../../types/map';
+import type { Tile, TileType } from '../../types/map';
 import {
   collectCells,
   clampDensity,
   DIRS_4,
   getCell,
   makeTypeGrid,
-  reorderNotesReadingOrder,
   setCell,
   type TypeGrid,
   typeGridToTiles,
 } from './common';
+import { applyDecorations } from './decorationEngine';
 import { assignAreaKinds, detectAreas, getOpenAreaPalette, type DetectedArea, type NaturalAreaKind } from './naturalAreas';
-import { getOpenTerrainFlavor, poiLabelFor, poiLabelIsRoom } from './poi';
+import { getOpenTerrainFlavor } from './poi';
+import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotesEngine';
 import { makeRng, type Rng } from './random';
 import type { GenerateContext, GeneratedMap } from './types';
 
@@ -70,29 +71,46 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
   }
 
   // A couple of small water pools — fewer and smaller than the wall blobs
-  // so the map still feels traversable.
+  // so the map still feels traversable. Sprinkle standing-stones / boulders
+  // across remaining floor afterwards. Both go through the decoration
+  // engine so all `water` / `pillar` writes share a single owner / contract.
+  // Wall-blob terrain above stays inline because it defines the map's
+  // basic structure (runs first, may overwrite anything) rather than
+  // decorating an existing layout.
   const waterBlobs = ov.water !== undefined
     ? Math.max(0, Math.round((area * Math.max(0, ov.water) / 8) * d))
     : Math.max(1, Math.round((area / 250) * d));
-  for (let i = 0; i < waterBlobs; i++) {
-    paintBlob(grid, rng, rng.int(0, width - 1), rng.int(0, height - 1), rng.int(4, 12), 'water');
-  }
-
-  // Sprinkle individual boulders / standing stones across remaining floor.
   const pillarCount = ov.pillar !== undefined
     ? Math.max(0, Math.round(area * Math.max(0, ov.pillar) * d))
     : Math.max(2, Math.round((area / 120) * d));
-  for (let i = 0; i < pillarCount; i++) {
-    const x = rng.int(0, width - 1);
-    const y = rng.int(0, height - 1);
-    if (getCell(grid, x, y) === 'floor') setCell(grid, x, y, 'pillar');
-  }
+  applyDecorations(grid, rng, [
+    {
+      kind: 'blobs',
+      tile: 'water',
+      width,
+      height,
+      count: waterBlobs,
+      sizeMin: 4,
+      sizeMax: 12,
+      // Open-terrain blobs historically overwrote anything they touched
+      // (matching `paintBlob`); keep that contract so existing seeds
+      // reproduce identically.
+      overwrite: true,
+    },
+    {
+      kind: 'scatter',
+      tile: 'pillar',
+      width,
+      height,
+      count: pillarCount,
+    },
+  ]);
 
   // Place a `start` and treasure caches on floor cells. Pick the start
   // near a corner so there's room to explore outward. Track POI cells so
   // we can attach auto-named MapNote entries (theme-flavored) below.
   const corner = { x: rng.int(1, Math.max(1, Math.floor(width / 4))), y: rng.int(1, Math.max(1, Math.floor(height / 4))) };
-  const pois: { x: number; y: number; type: 'start' | 'treasure' | 'trap' }[] = [];
+  const pois: PoiPlacement[] = [];
   let placedStart = false;
   for (let r = 0; r < 6 && !placedStart; r++) {
     for (let dy = -r; dy <= r && !placedStart; dy++) {
@@ -171,102 +189,34 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
     : [];
 
   const tiles: Tile[][] = typeGridToTiles(grid);
-  const notes: MapNote[] = [];
-  const counts = new Map<string, number>();
-  for (const p of pois) counts.set(p.type, (counts.get(p.type) ?? 0) + 1);
-  const seen = new Map<string, number>();
-  for (let i = 0; i < pois.length; i++) {
-    const p = pois[i];
-    const total = counts.get(p.type) ?? 1;
-    const idx = (seen.get(p.type) ?? 0) + 1;
-    seen.set(p.type, idx);
-    const id = i + 1;
-    // Open-terrain labeled areas own the room-tag (analogous to carved
-    // rooms in the dungeon generator), so a POI sitting inside a
-    // labeled area keeps `kind: 'poi'` even if its theme label happens
-    // to name a room. The cell-set lookup below handles that.
-    const insideLabeledArea = keptAreas.some(a =>
-      a.cells.some(c => c.x === p.x && c.y === p.y)
-    );
-    const labelIsRoom = poiLabelIsRoom(themeId, p.type, 'open-terrain');
-    const kind: 'room' | 'poi' = labelIsRoom && !insideLabeledArea ? 'room' : 'poi';
-    notes.push({
-      id,
-      x: p.x,
-      y: p.y,
-      label: poiLabelFor(themeId, p.type, total > 1 ? idx : undefined, 'open-terrain'),
-      description: '',
-      kind,
-    });
-    if (tiles[p.y]?.[p.x]) tiles[p.y][p.x] = { ...tiles[p.y][p.x], noteId: id };
-  }
 
-  // Append one MapNote per detected natural area (kind: 'room') so the
-  // notes panel lists "Clearing", "Watering Hole", etc. Anchored on
-  // the centroid (always an interior cell) and falling back to any
-  // unannotated cell in the area when the centroid already carries a
-  // POI noteId — same pattern as the cavern generator.
-  if (keptAreas.length > 0) {
-    const kindCounts = new Map<string, number>();
-    for (const k of areaKinds) {
-      if (!k) continue;
-      kindCounts.set(k.label, (kindCounts.get(k.label) ?? 0) + 1);
-    }
-    const kindSeen = new Map<string, number>();
-    let nextId = notes.reduce((m, n) => Math.max(m, n.id), 0) + 1;
-    for (let i = 0; i < keptAreas.length; i++) {
-      const k = areaKinds[i];
-      if (!k) continue;
-      const total = kindCounts.get(k.label) ?? 1;
-      const ord = (kindSeen.get(k.label) ?? 0) + 1;
-      kindSeen.set(k.label, ord);
-      const label = total > 1 ? `${k.label} ${ord}` : k.label;
-      const a = keptAreas[i];
-      let ax = a.centroid.x;
-      let ay = a.centroid.y;
-      if (tiles[ay]?.[ax]?.noteId !== undefined) {
-        // Compute the fractional geometric mean of the area cells so
-        // distance ties are broken toward the true visual center,
-        // avoiding scan-order bias (always picking the top-left cell).
-        // For symmetric areas the fractional mean may coincide with an
-        // integer cell, leaving ties among 4-neighbors; break those by
-        // preferring the cell on the centroid row (|dy| smallest) then
-        // centroid column (|dx| smallest).
-        let sx = 0;
-        let sy = 0;
-        for (const c of a.cells) { sx += c.x; sy += c.y; }
-        const mx = sx / a.cells.length;
-        const my = sy / a.cells.length;
-        let bestDist = Infinity;
-        let bestAbsDy = Infinity;
-        let bestAbsDx = Infinity;
-        for (const c of a.cells) {
-          if (tiles[c.y]?.[c.x]?.noteId !== undefined) continue;
-          const dx = c.x - mx;
-          const dy = c.y - my;
-          const dist = dx * dx + dy * dy;
-          const absDy = Math.abs(dy);
-          const absDx = Math.abs(dx);
-          if (
-            dist < bestDist ||
-            (dist === bestDist && absDy < bestAbsDy) ||
-            (dist === bestDist && absDy === bestAbsDy && absDx < bestAbsDx)
-          ) {
-            bestDist = dist;
-            bestAbsDy = absDy;
-            bestAbsDx = absDx;
-            ax = c.x;
-            ay = c.y;
-          }
-        }
-      }
-      const id = nextId++;
-      notes.push({ id, x: ax, y: ay, label, description: '', kind: 'room' });
-      if (tiles[ay]?.[ax] && tiles[ay][ax].noteId === undefined) {
-        tiles[ay][ax] = { ...tiles[ay][ax], noteId: id };
-      }
-    }
-  }
+  // Hand the placed POIs and the labeled natural areas to the POI /
+  // Notes engine, which is the single source of truth for `MapNote`
+  // creation and tile `noteId` stamping. It builds POI notes (with
+  // duplicate-label suffixing and the room-vs-poi `kind` decision
+  // against the labeled areas, so a POI inside a Clearing keeps
+  // `kind: 'poi'` and only the Clearing note owns the room
+  // designation), then appends one room-kind note per detected area
+  // anchored on the centroid (or the closest unannotated cell to the
+  // area's fractional geometric center when the centroid is taken).
+  // Open-terrain leaves `validAnchorTypes` undefined so any unannotated
+  // cell in the area's open footprint can host the note — matching the
+  // legacy behavior where an area note may sit on a water/pillar tile.
+  const regions: LabeledRegion[] = keptAreas.flatMap((a, i) => {
+    const k = areaKinds[i];
+    if (!k) return [];
+    return [{
+      label: k.label,
+      preferredAnchor: { x: a.centroid.x, y: a.centroid.y },
+      cells: a.cells,
+    }];
+  });
+  const notes = applyPoiNotes(tiles, {
+    pois,
+    themeId,
+    generatorId: 'open-terrain',
+    regions,
+  });
 
-  return { tiles, notes: reorderNotesReadingOrder(tiles, notes), width, height };
+  return { tiles, notes, width, height };
 }

@@ -1,20 +1,22 @@
-import type { MapNote, Tile, TileType } from '../../types/map';
+import type { Tile, TileType } from '../../types/map';
 import {
-  bfsDistances,
   clampDensity,
   collectCells,
   DIRS_8,
   getCell,
   makeTypeGrid,
   outlineWalls,
-  reorderNotesReadingOrder,
   setCell,
   type TypeGrid,
   typeGridToTiles,
 } from './common';
+import { applyDecorations } from './decorationEngine';
 import { assignAreaKinds, detectAreas, getCavernAreaPalette, type DetectedArea, type NaturalAreaKind } from './naturalAreas';
-import { getCavernFlavor, poiLabelFor, poiLabelIsRoom } from './poi';
+import { getCavernFlavor } from './poi';
+import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotesEngine';
+import { largestRegion } from './connectivity';
 import { makeRng, type Rng } from './random';
+import { placeStairs } from './stairsEngine';
 import type { GenerateContext, GeneratedMap } from './types';
 
 /** Count the number of `wall` neighbors (8-connected) around `(x, y)`. */
@@ -26,40 +28,6 @@ function wallNeighbors(grid: TypeGrid, x: number, y: number): number {
     if (t === 'wall' || t === 'empty') n++;
   }
   return n;
-}
-
-/**
- * Carve a small puddle of `water` onto floor cells with a random walk,
- * preserving any non-floor tile already on the grid (start, stairs,
- * walls). Used by `paintWaterPools`.
- */
-function carveWaterPool(grid: TypeGrid, rng: Rng, cx: number, cy: number, size: number): void {
-  let x = cx;
-  let y = cy;
-  for (let i = 0; i < size; i++) {
-    if (getCell(grid, x, y) === 'floor') setCell(grid, x, y, 'water');
-    const [dx, dy] = rng.pick([[1, 0], [-1, 0], [0, 1], [0, -1]] as const);
-    x += dx;
-    y += dy;
-  }
-}
-
-/**
- * Sprinkle a few water pools across the cavern's floor. Centers are
- * picked from the existing floor pool so puddles always start in
- * reachable space; the random walk may bleed onto adjacent walls but
- * the in-bounds check in `carveWaterPool` skips non-floor cells, so the
- * cave outline stays intact.
- */
-function paintWaterPools(grid: TypeGrid, rng: Rng, count: number, avgSize: number): void {
-  if (count <= 0) return;
-  const floors = collectCells(grid, 'floor');
-  if (floors.length === 0) return;
-  for (let i = 0; i < count; i++) {
-    const c = floors[rng.int(0, floors.length - 1)];
-    const size = Math.max(1, Math.round(avgSize * (0.6 + rng.next() * 0.8)));
-    carveWaterPool(grid, rng, c.x, c.y, size);
-  }
 }
 
 /**
@@ -166,32 +134,7 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
 
   // Find the largest connected floor region and erase the rest so there
   // are no orphaned pockets the player can never reach.
-  const visited: boolean[][] = Array.from({ length: height }, () =>
-    Array.from({ length: width }, () => false)
-  );
-  let bestRegion: { x: number; y: number }[] = [];
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      if (grid[y][x] !== 'floor' || visited[y][x]) continue;
-      // Flood-fill this region.
-      const region: { x: number; y: number }[] = [];
-      const stack: [number, number][] = [[x, y]];
-      visited[y][x] = true;
-      while (stack.length > 0) {
-        const [cx, cy] = stack.pop()!;
-        region.push({ x: cx, y: cy });
-        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]] as const) {
-          const nx = cx + dx;
-          const ny = cy + dy;
-          if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
-          if (visited[ny][nx] || grid[ny][nx] !== 'floor') continue;
-          visited[ny][nx] = true;
-          stack.push([nx, ny]);
-        }
-      }
-      if (region.length > bestRegion.length) bestRegion = region;
-    }
-  }
+  const bestRegion = largestRegion(grid, t => t === 'floor');
 
   // Rebuild the grid: every cell becomes empty unless it's part of the
   // chosen region. Then outline walls so the cavern reads correctly.
@@ -204,8 +147,8 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
   // Place the start at the first cell of the largest region and the
   // stairs-down at the farthest reachable floor. If the region is too
   // small to host both, just drop the start.
-  const placeStairs = ov.stairsDown !== undefined ? ov.stairsDown >= 0.5 : flavor.placeStairsDown;
-  const pois: { x: number; y: number; type: 'start' | 'stairs-down' | 'stairs-up' | 'treasure' | 'trap' }[] = [];
+  const placeStairsFlag = ov.stairsDown !== undefined ? ov.stairsDown >= 0.5 : flavor.placeStairsDown;
+  const pois: PoiPlacement[] = [];
   if (bestRegion.length === 0) {
     // Degenerate cave (the smoothing wiped everything) — return an
     // empty map so the caller still has a valid grid + notes shape.
@@ -215,29 +158,22 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
   const start = bestRegion[0];
   setCell(grid, start.x, start.y, 'start');
   pois.push({ x: start.x, y: start.y, type: 'start' });
-  if (placeStairs) {
-    const { farthest } = bfsDistances(grid, start.x, start.y, t =>
-      t === 'floor' || t === 'start' || t === 'water'
-    );
-    if (farthest.d > 0 && getCell(grid, farthest.x, farthest.y) === 'floor') {
-      setCell(grid, farthest.x, farthest.y, 'stairs-down');
-      pois.push({ x: farthest.x, y: farthest.y, type: 'stairs-down' });
-      // Place stairs-up adjacent to stairs-down so the pair reads as a
-      // connected stairwell.
-      for (const [dx, dy] of [[0, -1], [0, 1], [-1, 0], [1, 0]] as const) {
-        if (getCell(grid, farthest.x + dx, farthest.y + dy) === 'floor') {
-          setCell(grid, farthest.x + dx, farthest.y + dy, 'stairs-up');
-          pois.push({ x: farthest.x + dx, y: farthest.y + dy, type: 'stairs-up' });
-          break;
-        }
-      }
-    }
+  if (placeStairsFlag) {
+    const stairs = placeStairs(grid, start.x, start.y, {
+      // Cavern allows BFS to traverse pools so stairs can land deep
+      // inside a water-filled chamber when that's the farthest point.
+      passable: t => t === 'floor' || t === 'start' || t === 'water',
+    });
+    if (stairs.down) pois.push({ x: stairs.down.x, y: stairs.down.y, type: 'stairs-down' });
+    if (stairs.up) pois.push({ x: stairs.up.x, y: stairs.up.y, type: 'stairs-up' });
   }
 
   // Carve water pools before chamber detection so the "Underground
   // Pool" archetype can match chambers that contain water. Pool count
   // / size scale with density × the theme's water multiplier; the user
-  // can take it to 0 with the slider for a dry cave.
+  // can take it to 0 with the slider for a dry cave. Routed through the
+  // decoration engine so all `water` writes (here + in rooms-and-
+  // corridors + in open-terrain) share a single owner / contract.
   const totalFloorArea = Math.max(1, bestRegion.length);
   const defaultWaterFraction = 0.025 * d * flavor.waterMultiplier;
   const waterFraction = ov.water !== undefined ? Math.max(0, ov.water) : defaultWaterFraction;
@@ -246,7 +182,18 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
   // spawn dozens of micro-puddles on a small map.
   const avgPoolSize = 8;
   const waterPoolCount = Math.max(0, Math.min(12, Math.round(waterTargetCells / avgPoolSize)));
-  paintWaterPools(grid, rng, waterPoolCount, avgPoolSize);
+  if (waterPoolCount > 0) {
+    const seedFloors = collectCells(grid, 'floor');
+    if (seedFloors.length > 0) {
+      applyDecorations(grid, rng, [{
+        kind: 'pools',
+        tile: 'water',
+        seedCandidates: seedFloors,
+        count: waterPoolCount,
+        avgSize: avgPoolSize,
+      }]);
+    }
+  }
 
   // Detect labeled chambers. The "areas" slider is a target count: we
   // first detect every interior pocket that satisfies the radius +
@@ -317,114 +264,33 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
   placePois(Math.min(trapCount, floors.length), 'trap');
 
   const tiles: Tile[][] = typeGridToTiles(grid);
-  const notes: MapNote[] = [];
-  // Suffix duplicate POI types ("Treasure 1", "Treasure 2", …) so the
-  // notes panel shows distinct entries when multiple caches are placed.
-  const counts = new Map<string, number>();
-  for (const p of pois) counts.set(p.type, (counts.get(p.type) ?? 0) + 1);
-  const seen = new Map<string, number>();
-  for (let i = 0; i < pois.length; i++) {
-    const p = pois[i];
-    const total = counts.get(p.type) ?? 1;
-    const ord = (seen.get(p.type) ?? 0) + 1;
-    seen.set(p.type, ord);
-    const id = i + 1;
-    // POI labels in cavern variants don't claim `isRoom`, so kind here
-    // resolves to 'poi'; the chamber notes appended below are the
-    // room-tagged ones for caverns. We still call poiLabelIsRoom for
-    // forward-compat with future generator label tables.
-    const insideLabeledArea = areaIdByCell.has(p.y * width + p.x);
-    const labelIsRoom = poiLabelIsRoom(themeId, p.type, 'cavern');
-    const kind: 'room' | 'poi' = labelIsRoom && !insideLabeledArea ? 'room' : 'poi';
-    notes.push({
-      id,
-      x: p.x,
-      y: p.y,
-      label: poiLabelFor(themeId, p.type, total > 1 ? ord : undefined, 'cavern'),
-      description: '',
-      kind,
-    });
-    if (tiles[p.y]?.[p.x]) tiles[p.y][p.x] = { ...tiles[p.y][p.x], noteId: id };
-  }
 
-  // Append one MapNote per detected chamber, anchored on its centroid
-  // (which is guaranteed to be one of the chamber's interior cells).
-  // If the centroid already carries a POI noteId we leave the tile
-  // alone (the note still appears in the panel, just without a
-  // tile-side link) so the POI's own note stays the primary anchor.
-  if (keptAreas.length > 0) {
-    const kindCounts = new Map<string, number>();
-    for (const k of areaKinds) {
-      if (!k) continue;
-      kindCounts.set(k.label, (kindCounts.get(k.label) ?? 0) + 1);
-    }
-    const kindSeen = new Map<string, number>();
-    let nextId = notes.reduce((m, n) => Math.max(m, n.id), 0) + 1;
-    for (let i = 0; i < keptAreas.length; i++) {
-      const kind = areaKinds[i];
-      if (!kind) continue;
-      const total = kindCounts.get(kind.label) ?? 1;
-      const ord = (kindSeen.get(kind.label) ?? 0) + 1;
-      kindSeen.set(kind.label, ord);
-      const label = total > 1 ? `${kind.label} ${ord}` : kind.label;
-      // Prefer the centroid; fall back to the closest chamber cell to
-      // the centroid that isn't already an anchored POI tile. Using the
-      // nearest cell (rather than the first in array order) keeps the
-      // note close to the area's visual center so reading-order
-      // numbering stays spatially coherent.
-      const area = keptAreas[i];
-      let ax = area.centroid.x;
-      let ay = area.centroid.y;
-      if (tiles[ay]?.[ax]?.noteId !== undefined) {
-        // Compute the fractional geometric mean of the area cells so
-        // distance ties are broken toward the true visual center,
-        // avoiding scan-order bias (always picking the top-left cell).
-        // For symmetric areas the fractional mean may coincide with an
-        // integer cell, leaving ties among 4-neighbors; break those by
-        // preferring the cell on the centroid row (|dy| smallest) then
-        // centroid column (|dx| smallest).
-        let sx = 0;
-        let sy = 0;
-        for (const c of area.cells) { sx += c.x; sy += c.y; }
-        const mx = sx / area.cells.length;
-        const my = sy / area.cells.length;
-        let bestDist = Infinity;
-        let bestAbsDy = Infinity;
-        let bestAbsDx = Infinity;
-        for (const c of area.cells) {
-          if (tiles[c.y]?.[c.x]?.noteId !== undefined) continue;
-          const dx = c.x - mx;
-          const dy = c.y - my;
-          const dist = dx * dx + dy * dy;
-          const absDy = Math.abs(dy);
-          const absDx = Math.abs(dx);
-          if (
-            dist < bestDist ||
-            (dist === bestDist && absDy < bestAbsDy) ||
-            (dist === bestDist && absDy === bestAbsDy && absDx < bestAbsDx)
-          ) {
-            bestDist = dist;
-            bestAbsDy = absDy;
-            bestAbsDx = absDx;
-            ax = c.x;
-            ay = c.y;
-          }
-        }
-      }
-      const id = nextId++;
-      notes.push({
-        id,
-        x: ax,
-        y: ay,
-        label,
-        description: '',
-        kind: 'room',
-      });
-      if (tiles[ay]?.[ax] && tiles[ay][ax].noteId === undefined) {
-        tiles[ay][ax] = { ...tiles[ay][ax], noteId: id };
-      }
-    }
-  }
+  // Hand the placed POIs and the labeled chambers to the POI / Notes
+  // engine, which is the single source of truth for `MapNote` creation
+  // and tile `noteId` stamping. It builds POI notes (with duplicate-
+  // label suffixing and the room-vs-poi `kind` decision against the
+  // labeled chambers), then appends one room-kind note per detected
+  // chamber anchored on the centroid (or the closest unannotated cell
+  // to the area's fractional geometric center when the centroid is
+  // taken). Cavern leaves `validAnchorTypes` undefined so any
+  // unannotated cell in the chamber's open footprint can host the note
+  // — matching the legacy behavior where a chamber note may sit on a
+  // water/treasure tile.
+  const regions: LabeledRegion[] = keptAreas.flatMap((area, i) => {
+    const kind = areaKinds[i];
+    if (!kind) return [];
+    return [{
+      label: kind.label,
+      preferredAnchor: { x: area.centroid.x, y: area.centroid.y },
+      cells: area.cells,
+    }];
+  });
+  const notes = applyPoiNotes(tiles, {
+    pois,
+    themeId,
+    generatorId: 'cavern',
+    regions,
+  });
 
-  return { tiles, notes: reorderNotesReadingOrder(tiles, notes), width, height };
+  return { tiles, notes, width, height };
 }
