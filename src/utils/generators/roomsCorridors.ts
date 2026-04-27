@@ -9,6 +9,10 @@ import {
   type TypeGrid,
   typeGridToTiles,
 } from './common';
+import {
+  getCorridorStrategy,
+  type CorridorBridge,
+} from './corridorEngine';
 import { applyDoors } from './doorEngine';
 import { applyDecorations, type Decoration } from './decorationEngine';
 import { getRoomsCorridorsFlavor } from './poi';
@@ -33,8 +37,6 @@ interface Room {
    *  the active theme has no room palette or labeling is disabled. */
   kind?: RoomKind;
 }
-
-type DoorType = 'door-h' | 'door-v';
 
 /**
  * Clamp the optional `roomSize` tile-mix multiplier to a sane range
@@ -70,114 +72,11 @@ function carveRoom(grid: TypeGrid, r: Room): void {
   }
 }
 
-/**
- * Enumerate the cells of an L-shaped corridor between (ax, ay) and (bx, by).
- * `horizontalFirst` controls which leg comes first.
- */
-function corridorCells(
-  ax: number,
-  ay: number,
-  bx: number,
-  by: number,
-  horizontalFirst: boolean
-): { x: number; y: number }[] {
-  const out: { x: number; y: number }[] = [];
-  if (horizontalFirst) {
-    for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) out.push({ x, y: ay });
-    for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) out.push({ x: bx, y });
-  } else {
-    for (let y = Math.min(ay, by); y <= Math.max(ay, by); y++) out.push({ x: ax, y });
-    for (let x = Math.min(ax, bx); x <= Math.max(ax, bx); x++) out.push({ x, y: by });
-  }
-  return out;
-}
-
-/**
- * Count how many cells of a corridor path land inside the *interior* of any
- * room not in `skip`. Used to prefer L-bends that don't slice through
- * unrelated rooms (which is what produced the open, half-walled rooms in
- * the previous algorithm).
- */
-function countRoomCrossings(
-  cells: { x: number; y: number }[],
-  rooms: Room[],
-  skip: Set<number>
-): number {
-  let n = 0;
-  for (const c of cells) {
-    for (let i = 0; i < rooms.length; i++) {
-      if (skip.has(i)) continue;
-      const r = rooms[i];
-      if (c.x >= r.x && c.x < r.x + r.w && c.y >= r.y && c.y < r.y + r.h) {
-        n++;
-        break;
-      }
-    }
-  }
-  return n;
-}
-
-/**
- * Pick a single doorway on `room` facing `target`. Returns:
- *  - `door`: the wall cell on `room`'s perimeter that should become a door
- *    tile (lies between the room's interior and the corridor).
- *  - `exit`: the floor cell one step further out, where the corridor
- *    actually starts. Carving from `exit` (rather than the room center) is
- *    what keeps the room's four walls intact.
- *
- * The side is chosen by the dominant axis between room centers, with the
- * other three sides as fallbacks if the preferred exit would fall outside
- * the map bounds.
- */
-function pickExit(
-  room: Room,
-  target: Room,
-  rng: Rng,
-  width: number,
-  height: number
-): {
-  exit: { x: number; y: number };
-  door: { x: number; y: number; type: DoorType };
-} {
-  const tc = roomCenter(target);
-  const rc = roomCenter(room);
-  const dx = tc.x - rc.x;
-  const dy = tc.y - rc.y;
-  type Side = 'e' | 'w' | 's' | 'n';
-  const order: Side[] = Math.abs(dx) >= Math.abs(dy)
-    ? [dx >= 0 ? 'e' : 'w', dy >= 0 ? 's' : 'n', dx >= 0 ? 'w' : 'e', dy >= 0 ? 'n' : 's']
-    : [dy >= 0 ? 's' : 'n', dx >= 0 ? 'e' : 'w', dy >= 0 ? 'n' : 's', dx >= 0 ? 'w' : 'e'];
-
-  for (const side of order) {
-    let doorX: number, doorY: number, exitX: number, exitY: number;
-    let type: DoorType;
-    if (side === 'e' || side === 'w') {
-      // Door sits on the east or west wall; traversal is east-west → door-v.
-      doorX = side === 'e' ? room.x + room.w : room.x - 1;
-      exitX = side === 'e' ? doorX + 1 : doorX - 1;
-      const ey = rng.int(room.y, room.y + room.h - 1);
-      doorY = ey;
-      exitY = ey;
-      type = 'door-v';
-    } else {
-      // Door on the north or south wall; traversal is north-south → door-h.
-      doorY = side === 's' ? room.y + room.h : room.y - 1;
-      exitY = side === 's' ? doorY + 1 : doorY - 1;
-      const ex = rng.int(room.x, room.x + room.w - 1);
-      doorX = ex;
-      exitX = ex;
-      type = 'door-h';
-    }
-    if (exitX >= 1 && exitX < width - 1 && exitY >= 1 && exitY < height - 1) {
-      return { exit: { x: exitX, y: exitY }, door: { x: doorX, y: doorY, type } };
-    }
-  }
-
-  // Fallback (only triggers for rooms wedged against the map border): aim
-  // straight at the room center so connectivity is at least preserved.
-  const c = roomCenter(room);
-  return { exit: c, door: { x: c.x, y: c.y, type: 'door-v' } };
-}
+// Corridor planning (room-pair topology + L/Z carving) lives in
+// `corridorEngine.ts`. Generators select a strategy via
+// `GenerateContext.corridorStrategy`; the default `'straight-l'`
+// reproduces the legacy in-line code byte-for-byte, including RNG
+// consumption order, so existing seeds keep producing identical maps.
 
 // Door, secret-door, and narrow-entrance handling lives in `doorEngine.ts`
 // and is invoked once at the very end of `generateRoomsCorridors`. Keeping
@@ -365,39 +264,23 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
 
   for (const r of rooms) carveRoom(grid, r);
 
-  // Connect each room to the previous one with an L-shaped corridor. To
-  // keep rooms looking like real rooms (four intact walls + a door),
-  // corridors are routed between *perimeter doorway* cells of each room
-  // rather than between room centers — that way the carve never tears
-  // through a room's interior. We also try both L-bends and pick the one
-  // that crosses the fewest other rooms' interiors, so corridors mostly
-  // run along the outside of rooms instead of straight through them.
-  // The connectivity graph remains a path (room i ↔ room i+1), so the
-  // dungeon is still fully connected.
+  // Connect rooms by delegating to the configured corridor strategy.
+  // The default `'straight-l'` strategy reproduces the legacy in-line
+  // behavior byte-for-byte (consecutive room pairs + L-bends, picking
+  // the bend that crosses the fewest unrelated rooms, randomly tie-
+  // breaking) so existing seeds keep producing identical maps. Other
+  // strategies (MST, loops, winding) change the topology and/or
+  // corridor shape but still emit valid single-cell perimeter bridges
+  // the door engine can reason about.
   //
-  // The wall cell between each room and its corridor (`pickExit().door`)
-  // is carved as `floor` here so `outlineWalls` doesn't seal the room
-  // off from the corridor. The door engine (invoked at the end) walks
-  // every room's perimeter, identifies these openings, and decides
-  // where (if anywhere) actual door tiles should go.
-  const corridorBridges: { x: number; y: number }[] = [];
-  for (let i = 1; i < rooms.length; i++) {
-    const a = pickExit(rooms[i - 1], rooms[i], rng, width, height);
-    const b = pickExit(rooms[i], rooms[i - 1], rng, width, height);
-    const skip = new Set([i - 1, i]);
-    const opt1 = corridorCells(a.exit.x, a.exit.y, b.exit.x, b.exit.y, true);
-    const opt2 = corridorCells(a.exit.x, a.exit.y, b.exit.x, b.exit.y, false);
-    const c1 = countRoomCrossings(opt1, rooms, skip);
-    const c2 = countRoomCrossings(opt2, rooms, skip);
-    // Tie-break randomly so seeds with no crossings on either bend stay varied.
-    let cells: { x: number; y: number }[];
-    if (c1 < c2) cells = opt1;
-    else if (c2 < c1) cells = opt2;
-    else cells = rng.chance() ? opt1 : opt2;
-    for (const c of cells) setCell(grid, c.x, c.y, 'floor');
-    corridorBridges.push({ x: a.door.x, y: a.door.y });
-    corridorBridges.push({ x: b.door.x, y: b.door.y });
-  }
+  // The wall cell between each room and its corridor (a strategy
+  // bridge) is carved as `floor` here so `outlineWalls` doesn't seal
+  // the room off from the corridor. The door engine (invoked at the
+  // end) walks every room's perimeter, identifies these openings, and
+  // decides where (if anywhere) actual door tiles should go.
+  const strategy = getCorridorStrategy(ctx.corridorStrategy);
+  const corridorPlan = strategy.plan({ rooms, grid, width, height, rng });
+  const corridorBridges: CorridorBridge[] = corridorPlan.bridges;
 
   outlineWalls(grid);
   // Bridge each room to its adjacent corridor with a single floor cell
