@@ -142,6 +142,22 @@
 }
 
 /* ── Toolbar ─────────────────────────────────────────────── */
+/* The left-side toolbar is wrapped in a <nav> for accessibility. As a
+   grid item the <nav> stretches to the row height, but without these
+   constraints its child .toolbar would grow to its content height and
+   the existing `overflow-y: auto` on .toolbar would never engage,
+   leaving lower tools unreachable. Mirror the right-panel's pattern. */
+.app-body > nav {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+.app-body > nav > .toolbar {
+  flex: 1;
+  min-height: 0;
+}
+
 .toolbar {
   display: flex;
   flex-direction: column;
