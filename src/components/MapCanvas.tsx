@@ -199,7 +199,7 @@ function drawToken(
   if (iconPath) {
     // Render the library SVG path. The paths use a 512×512 coordinate
     // space, so we scale and translate to fit inside the token circle.
-    const iconSize = radius * 1.5; // SVG icon drawn at 75% of diameter
+    const iconSize = radius * 1.5; // Icon drawn at 75% of diameter
     const scale = iconSize / 512;
     ctx.save();
     ctx.translate(px - iconSize / 2, py - iconSize / 2);

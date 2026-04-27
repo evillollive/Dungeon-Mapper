@@ -285,7 +285,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
                   height: 18,
                   background: c,
                   border: '1px solid #2d3561',
-                  borderRadius: markerShape === 'circle' ? '50%' : 0,
                 }}
               />
             </button>

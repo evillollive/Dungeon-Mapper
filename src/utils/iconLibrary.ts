@@ -255,7 +255,7 @@ export const ICONS: IconDef[] = [
     path: 'M160 48v416h32V304l192-64V48l-192 64V48h-32zm32 80l160-52v128l-160 52V128z',
   },
   {
-    id: 'trap-icon',
+    id: 'beartrap',
     name: 'Bear Trap',
     category: 'Environment',
     path: 'M176 128l-64 128h48l-48 96 96-64v48l48-80 48 80v-48l96 64-48-96h48l-64-128h-48l-16-48h-48l-16 48h-32zm80 64a48 48 0 110 96 48 48 0 010-96z',

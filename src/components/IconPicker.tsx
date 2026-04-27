@@ -16,12 +16,12 @@ const IconPicker: React.FC<IconPickerProps> = ({ open, onSelect, onCancel }) => 
   const inputRef = useRef<HTMLInputElement>(null);
   const wasOpenRef = useRef(false);
 
-  // Reset state when transitioning from closed → open. We read the ref to
-  // decide whether to reset and only focus the input via rAF (an external
-  // side-effect that belongs in an effect).
+  // Reset state when transitioning from closed → open. Focus the search
+  // input when the dialog opens via rAF (an external side-effect that
+  // belongs in an effect).
   useEffect(() => {
     if (open && !wasOpenRef.current) {
-      // Focus the search input after mount.
+      // Focus the search input when the dialog opens.
       requestAnimationFrame(() => inputRef.current?.focus());
     }
     wasOpenRef.current = open;
