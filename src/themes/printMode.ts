@@ -125,6 +125,96 @@ export function drawPrintTile(
       break;
     }
 
+    case 'locked-door-h': {
+      // Horizontal locked door: door bars with "L" glyph for "locked".
+      ctx.fillStyle = PRINT_FG;
+      const wallH = Math.max(2, s * 0.15);
+      ctx.fillRect(px, cy - wallH / 2, s * 0.2, wallH);
+      ctx.fillRect(px + s * 0.8, cy - wallH / 2, s * 0.2, wallH);
+      drawLetter('L');
+      drawStrikethrough('diagonal');
+      break;
+    }
+
+    case 'locked-door-v': {
+      ctx.fillStyle = PRINT_FG;
+      const wallW = Math.max(2, s * 0.15);
+      ctx.fillRect(cx - wallW / 2, py, wallW, s * 0.2);
+      ctx.fillRect(cx - wallW / 2, py + s * 0.8, wallW, s * 0.2);
+      drawLetter('L');
+      drawStrikethrough('diagonal');
+      break;
+    }
+
+    case 'trapped-door-h': {
+      // Horizontal trapped door: door bars with "!" glyph.
+      ctx.fillStyle = PRINT_FG;
+      const wallH2 = Math.max(2, s * 0.15);
+      ctx.fillRect(px, cy - wallH2 / 2, s * 0.2, wallH2);
+      ctx.fillRect(px + s * 0.8, cy - wallH2 / 2, s * 0.2, wallH2);
+      drawLetter('!');
+      drawStrikethrough('diagonal');
+      break;
+    }
+
+    case 'trapped-door-v': {
+      ctx.fillStyle = PRINT_FG;
+      const wallW2 = Math.max(2, s * 0.15);
+      ctx.fillRect(cx - wallW2 / 2, py, wallW2, s * 0.2);
+      ctx.fillRect(cx - wallW2 / 2, py + s * 0.8, wallW2, s * 0.2);
+      drawLetter('!');
+      drawStrikethrough('diagonal');
+      break;
+    }
+
+    case 'portcullis': {
+      // Grid pattern — vertical and horizontal bars.
+      ctx.strokeStyle = PRINT_FG;
+      ctx.lineWidth = Math.max(1, s * 0.08);
+      const m = s * 0.15;
+      for (let i = 0; i < 3; i++) {
+        const lx = px + m + i * ((s - 2 * m) / 2);
+        ctx.beginPath(); ctx.moveTo(lx, py + m); ctx.lineTo(lx, py + s - m); ctx.stroke();
+      }
+      for (let i = 0; i < 3; i++) {
+        const ly = py + m + i * ((s - 2 * m) / 2);
+        ctx.beginPath(); ctx.moveTo(px + m, ly); ctx.lineTo(px + s - m, ly); ctx.stroke();
+      }
+      break;
+    }
+
+    case 'archway': {
+      // Two pillars with an arc: open passageway.
+      ctx.strokeStyle = PRINT_FG;
+      ctx.lineWidth = Math.max(1.5, s * 0.08);
+      ctx.beginPath();
+      ctx.moveTo(px + s * 0.2, py + s * 0.85);
+      ctx.lineTo(px + s * 0.2, py + s * 0.35);
+      ctx.arc(cx, py + s * 0.35, s * 0.3, Math.PI, 0);
+      ctx.lineTo(px + s * 0.8, py + s * 0.85);
+      ctx.stroke();
+      break;
+    }
+
+    case 'barricade': {
+      // Crossed planks forming an X.
+      ctx.strokeStyle = PRINT_FG;
+      ctx.lineWidth = Math.max(2, s * 0.12);
+      ctx.beginPath();
+      ctx.moveTo(px + s * 0.15, py + s * 0.15);
+      ctx.lineTo(px + s * 0.85, py + s * 0.85);
+      ctx.moveTo(px + s * 0.85, py + s * 0.15);
+      ctx.lineTo(px + s * 0.15, py + s * 0.85);
+      ctx.stroke();
+      // Small horizontal bar in center.
+      ctx.lineWidth = Math.max(1.5, s * 0.08);
+      ctx.beginPath();
+      ctx.moveTo(px + s * 0.25, cy);
+      ctx.lineTo(px + s * 0.75, cy);
+      ctx.stroke();
+      break;
+    }
+
     case 'stairs-up': {
       // Letter "U" with an up-arrow above it.
       const fontSize = Math.max(7, Math.floor(s * 0.55));
