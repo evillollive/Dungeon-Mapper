@@ -54,9 +54,23 @@ function nextIdAfter(items: { id: number }[] | undefined): number {
   return Math.max(...items.map(i => i.id)) + 1;
 }
 
+/**
+ * One revertible step in the undo/redo stack. Snapshots the parts of
+ * `DungeonMap` that user-driven mutations actually change: the tile grid,
+ * the fog grid, the notes list, and the map's logical dimensions. The
+ * dimensions are part of the snapshot so undoing a generation that
+ * resized the map (e.g. 32x32 → 60x40) restores `meta.width`/`meta.height`
+ * alongside the smaller `tiles` array, instead of leaving `meta` out of
+ * sync with `tiles`. Tokens and annotations are intentionally excluded
+ * because they are treated as live GM tools (see the comment near the
+ * fog/token mutations below).
+ */
 interface HistorySnapshot {
   tiles: Tile[][];
   fog: boolean[][];
+  notes: MapNote[];
+  width: number;
+  height: number;
 }
 
 export function useMapState() {
@@ -95,14 +109,13 @@ export function useMapState() {
 
   const MAX_HISTORY_SIZE = 50;
 
-  function pushHistory(currentTiles: Tile[][], currentFog: boolean[][] | undefined) {
+  function pushHistory(prev: DungeonMap) {
     const snap: HistorySnapshot = {
-      tiles: currentTiles,
-      fog: currentFog ?? createFogGrid(
-        currentTiles[0]?.length ?? 0,
-        currentTiles.length,
-        false
-      ),
+      tiles: prev.tiles,
+      fog: prev.fog ?? createFogGrid(prev.meta.width, prev.meta.height, false),
+      notes: prev.notes,
+      width: prev.meta.width,
+      height: prev.meta.height,
     };
     pastRef.current = [...pastRef.current.slice(-(MAX_HISTORY_SIZE - 1)), snap];
     futureRef.current = [];
@@ -112,7 +125,7 @@ export function useMapState() {
 
   const setTile = useCallback((x: number, y: number, type: TileType) => {
     setMap(prev => {
-      pushHistory(prev.tiles, prev.fog);
+      pushHistory(prev);
       const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
       if (y >= 0 && y < prev.meta.height && x >= 0 && x < prev.meta.width) {
         // Painting/erasing clears any per-tile theme override so the tile
@@ -133,7 +146,7 @@ export function useMapState() {
     setMap(prev => {
       const targetType = prev.tiles[y]?.[x]?.type;
       if (!targetType) return prev;
-      pushHistory(prev.tiles, prev.fog);
+      pushHistory(prev);
       const newTiles = floodFill(prev.tiles, x, y, targetType, fillType);
       const updated = { ...prev, tiles: newTiles };
       debouncedSave(updated);
@@ -143,7 +156,7 @@ export function useMapState() {
 
   const setTiles = useCallback((updates: { x: number; y: number; type: TileType }[]) => {
     setMap(prev => {
-      pushHistory(prev.tiles, prev.fog);
+      pushHistory(prev);
       const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
       for (const { x, y, type } of updates) {
         if (y >= 0 && y < prev.meta.height && x >= 0 && x < prev.meta.width) {
@@ -204,7 +217,7 @@ export function useMapState() {
 
   const clearMap = useCallback(() => {
     setMap(prev => {
-      pushHistory(prev.tiles, prev.fog);
+      pushHistory(prev);
       const updated = {
         ...prev,
         tiles: createEmptyGrid(prev.meta.width, prev.meta.height),
@@ -240,12 +253,13 @@ export function useMapState() {
   }, [debouncedSave]);
 
   /**
-   * Replace the map with procedurally-generated tiles. The previous tiles
-   * and fog grid are pushed onto the undo stack so the user can revert a
-   * generation; notes/tokens/annotations are reset (and not undoable, since
-   * the existing history only tracks tiles+fog), matching the behavior of
-   * `clearMap`. The current theme and tile size are preserved so the
-   * generated map renders in whatever style the user already picked.
+   * Replace the map with procedurally-generated tiles. The previous
+   * tiles, fog grid, notes, and map dimensions are pushed onto the undo
+   * stack so the user can fully revert a generation; tokens and
+   * annotations are reset (and not undoable, since they're treated as
+   * live GM tools), matching the behavior of `clearMap`. The current
+   * theme and tile size are preserved so the generated map renders in
+   * whatever style the user already picked.
    */
   const generateMap = useCallback((
     tiles: Tile[][],
@@ -255,7 +269,7 @@ export function useMapState() {
     name?: string
   ) => {
     setMap(prev => {
-      pushHistory(prev.tiles, prev.fog);
+      pushHistory(prev);
       const updated: DungeonMap = {
         ...prev,
         meta: { ...prev.meta, width, height, ...(name ? { name } : {}) },
@@ -298,7 +312,7 @@ export function useMapState() {
     const regionH = genTiles.length;
     const regionW = genTiles[0]?.length ?? 0;
     setMap(prev => {
-      pushHistory(prev.tiles, prev.fog);
+      pushHistory(prev);
       const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
       // Map the generator's local note ids (1..N) onto fresh ids that
       // don't collide with existing notes on this map. `idOffset` is the
@@ -364,6 +378,7 @@ export function useMapState() {
 
   const addNote = useCallback((x: number, y: number) => {
     setMap(prev => {
+      pushHistory(prev);
       const newNote: MapNote = {
         id: nextNoteId,
         x, y,
@@ -383,6 +398,13 @@ export function useMapState() {
 
   const updateNote = useCallback((id: number, label: string, description: string) => {
     setMap(prev => {
+      const existing = prev.notes.find(n => n.id === id);
+      // Bail out if nothing would change so editing a note's dialog and
+      // confirming without changes doesn't push a spurious undo entry.
+      if (!existing || (existing.label === label && existing.description === description)) {
+        return prev;
+      }
+      pushHistory(prev);
       const notes = prev.notes.map(n => n.id === id ? { ...n, label, description } : n);
       const updated = { ...prev, notes };
       debouncedSave(updated);
@@ -392,6 +414,8 @@ export function useMapState() {
 
   const deleteNote = useCallback((id: number) => {
     setMap(prev => {
+      if (!prev.notes.some(n => n.id === id)) return prev;
+      pushHistory(prev);
       const notes = prev.notes.filter(n => n.id !== id);
       const newTiles = prev.tiles.map(row =>
         row.map(t => t.noteId === id ? { ...t, noteId: undefined } : t)
@@ -435,7 +459,7 @@ export function useMapState() {
           })
         );
         if (mutated) {
-          pushHistory(prev.tiles, prev.fog);
+          pushHistory(prev);
           newTiles = stamped;
         }
       } else {
@@ -482,9 +506,18 @@ export function useMapState() {
         {
           tiles: prev.tiles,
           fog: prev.fog ?? createFogGrid(prev.meta.width, prev.meta.height, false),
+          notes: prev.notes,
+          width: prev.meta.width,
+          height: prev.meta.height,
         },
       ];
-      const updated = { ...prev, tiles: previous.tiles, fog: previous.fog };
+      const updated: DungeonMap = {
+        ...prev,
+        meta: { ...prev.meta, width: previous.width, height: previous.height },
+        tiles: previous.tiles,
+        fog: previous.fog,
+        notes: previous.notes,
+      };
       debouncedSave(updated);
       setCanUndo(pastRef.current.length > 0);
       setCanRedo(true);
@@ -502,9 +535,18 @@ export function useMapState() {
         {
           tiles: prev.tiles,
           fog: prev.fog ?? createFogGrid(prev.meta.width, prev.meta.height, false),
+          notes: prev.notes,
+          width: prev.meta.width,
+          height: prev.meta.height,
         },
       ];
-      const updated = { ...prev, tiles: next.tiles, fog: next.fog };
+      const updated: DungeonMap = {
+        ...prev,
+        meta: { ...prev.meta, width: next.width, height: next.height },
+        tiles: next.tiles,
+        fog: next.fog,
+        notes: next.notes,
+      };
       debouncedSave(updated);
       setCanUndo(true);
       setCanRedo(futureRef.current.length > 0);
@@ -532,7 +574,7 @@ export function useMapState() {
         }
       }
       if (!mutated) return prev;
-      pushHistory(prev.tiles, current);
+      pushHistory(prev);
       const updated = { ...prev, fog: newFog };
       debouncedSave(updated);
       return updated;
@@ -543,8 +585,7 @@ export function useMapState() {
     setMap(prev => {
       const w = prev.meta.width;
       const h = prev.meta.height;
-      const current = prev.fog ?? createFogGrid(w, h, false);
-      pushHistory(prev.tiles, current);
+      pushHistory(prev);
       const updated = { ...prev, fog: createFogGrid(w, h, hidden) };
       debouncedSave(updated);
       return updated;
