@@ -672,32 +672,40 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         : null;
 
       if (dynamicFogEnabled && playerVisible) {
-        // 3-state dynamic fog: hidden → explored (dimmed) → visible (clear)
+        // 3-state dynamic fog: hidden → explored (dimmed) → visible (clear).
+        // Two passes avoid per-cell save/restore overhead.
+        const exploredFill = isPlayerView ? EXPLORED_PLAYER_FILL : EXPLORED_GM_FILL;
+        const hiddenFill = isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
+
+        // Pass 1: explored (dimmed) cells.
+        ctx.save();
+        ctx.fillStyle = exploredFill;
         for (let y = 0; y < meta.height; y++) {
           for (let x = 0; x < meta.width; x++) {
             if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
-            // Cells manually revealed (fog[y][x] === false) stay revealed
-            // even in dynamic mode so the GM's manual reveals are respected.
             if (!fog[y]?.[x]) continue;
-            const key = `${x},${y}`;
-            const isVisible = playerVisible.has(key);
-            if (isVisible) continue; // fully clear — no overlay
-            const isExplored = explored?.[y]?.[x] ?? false;
-            if (isExplored) {
-              // Dimmed — player can see the map but it's shadowed.
-              ctx.save();
-              ctx.fillStyle = isPlayerView ? EXPLORED_PLAYER_FILL : EXPLORED_GM_FILL;
+            if (playerVisible.has(`${x},${y}`)) continue;
+            if (explored?.[y]?.[x]) {
               ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-              ctx.restore();
-            } else {
-              // Fully fogged — opaque in player view, translucent in GM.
-              ctx.save();
-              ctx.fillStyle = isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
-              ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-              ctx.restore();
             }
           }
         }
+        ctx.restore();
+
+        // Pass 2: fully hidden (never-seen) cells.
+        ctx.save();
+        ctx.fillStyle = hiddenFill;
+        for (let y = 0; y < meta.height; y++) {
+          for (let x = 0; x < meta.width; x++) {
+            if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
+            if (!fog[y]?.[x]) continue;
+            if (playerVisible.has(`${x},${y}`)) continue;
+            if (!(explored?.[y]?.[x])) {
+              ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+            }
+          }
+        }
+        ctx.restore();
       } else {
         // Classic 2-state fog: hidden (opaque/translucent) or revealed.
         ctx.save();

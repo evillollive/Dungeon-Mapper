@@ -22,12 +22,12 @@ export function isTokenFogged(
 
   if (playerVisible) {
     // Dynamic fog mode: token is visible if ALL of its cells are either
-    // currently visible or previously explored.
+    // currently visible, previously explored, or manually revealed.
     for (let dy = 0; dy < sz; dy++) {
       for (let dx = 0; dx < sz; dx++) {
         const cx = token.x + dx;
         const cy = token.y + dy;
-        // If the cell was manually revealed (fog === false), honour that.
+        // Skip cells already manually revealed (fog === false).
         if (!fog[cy]?.[cx]) continue;
         const key = `${cx},${cy}`;
         if (playerVisible.has(key)) continue;
