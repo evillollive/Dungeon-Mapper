@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-28
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 7.1, & 7.3 complete. Phase 5+ in planning.
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 7.1, & 7.3 complete. Phase 4.5 (art & visual polish) next.
 
 ---
 
@@ -154,6 +154,42 @@ Repo: davmillar/DavesMapper | Stack: PHP + jQuery
 
 ---
 
+## Part 3b: Competitor Art & Visual Style Analysis
+
+Our 13 themes currently share a uniform rendering approach: flat solid-color fills, thin geometric shapes, and a single hardcoded grid color (`#2d3561`) across all themes. This analysis identifies art techniques used by competitors to inform a visual upgrade.
+
+### Current Art Architecture
+
+Each theme implements `TileTheme.drawTile()` with Canvas 2D calls — `fillRect`, `arc`, `lineTo`, etc. No textures, gradients, patterns, or images are used. This is a strength (instant theme switching, perfect DPI scaling, no external assets) but also a limitation:
+
+- **Floor/wall tiles are visually identical** within a theme — no per-tile variation
+- **Doors, stairs, traps, treasure, start** look nearly the same across all 13 themes (colored bar, step pattern, X mark, rectangle, arrow)
+- **Grid stroke is the same dark blue** (`#2d3561`) in every theme, undermining immersion
+- **No depth effects** — walls and floors occupy the same visual plane
+- **Water rendering is identical** across themes (same wave lines, different base color)
+
+### Competitor Art Techniques
+
+| Competitor | Art Style | Key Techniques | Applicable to Us? |
+|---|---|---|---|
+| **Azgaar** | Rich SVG cartography | D3-powered contour lines, relief icon sprites via Poisson-disc sampling, terracing via color darkening, multiple color schemes, layered rendering | ✅ Study color palettes, terracing/depth, and layered rendering |
+| **Watabou** | Clean vector cartography | Flat colors with crisp outlines, minimal textures, diagrammatic building shapes, SVG output, limited but purposeful palette | ✅ Key inspiration — organic/soft look with clean lines |
+| **Mipui** | Ultra-minimal | Bold black wall-edge lines, flat white cells, monochrome icons, neutral palette | Already surpass this; wall-edge rendering is an interesting contrast |
+| **Donjon** | Classic B&W line-art | Solid fills, bold outlines, room numbers, TSR/AD&D aesthetic | Already more detailed than Donjon |
+| **Dave's Mapper** | Multi-artist hand-drawn PNGs | Pre-rendered tile images, edge-matching, community tile contributions | Different approach (image tiles); relevant to Phase 5.2 custom tiles |
+| **HexTML** | Hex-focused | Custom tile image uploads | Hex-focused; not directly applicable |
+
+### Key Findings
+
+1. **Azgaar and Watabou achieve a softer, more organic look** through subtle color gradients, outline-only rendering, and purposeful palette choices — not through complex textures or pre-made images
+2. **Canvas 2D has unused rendering features** that can achieve similar effects: `createPattern()`, `createLinearGradient()`/`createRadialGradient()`, `shadowBlur`/`shadowColor`, and `globalCompositeOperation` for glow/blend
+3. **Deterministic per-tile variation** via `hash(x, y)` can break visual monotony without per-cell state — subtly varying color, pattern rotation, or detail placement
+4. **Theme identity is strongest in floor, wall, and water** (the most-visible tiles) — the remaining tile types (doors, traps, treasure, etc.) are where themes look most alike
+5. **Grid color should match the theme palette** — warm amber for Castle, neon for Cyberpunk, earthy olive for Wilderness, etc.
+6. **Print mode must remain a B&W fallback** for all art upgrades — every new visual effect needs a clean monochrome equivalent
+
+---
+
 ## Part 4: Feature Implementation Roadmap
 
 ### ~~Phase 1: Core Editor Enhancements~~ ✅ COMPLETE
@@ -227,62 +263,73 @@ Advanced tactical features for live play.
   - Place tool with [I] shortcut; Remove tool; Clear All button — all in GM toolbar LIGHT section
   - Light source ghost preview (glow + dashed radius circle) follows cursor while tool is active
 
-### Phase 5: Collaboration & Sharing
+### Phase 4.5: Art & Visual Polish
 
-Transform from a single-device tool to a shared experience.
+Upgrade procedural tile rendering across all 13 themes simultaneously for stronger per-theme identity, richer visual detail, and a softer/more organic aesthetic inspired by Watabou and Azgaar. No new tile types — better-looking versions of existing ones. All upgrades must degrade cleanly to the existing B&W print mode.
 
-**5.1 — Shareable Map Links**
-- Cloud storage for maps (Firebase, Supabase, or similar)
-- Generate shareable URLs; read-only sharing gives Player View automatically
-- No registration required for viewing
-- Inspired by: Mipui's no-registration link sharing
+**4.5.1 — Foundation: Grid Colors, Tile Jitter, Wall Depth**
+- Per-theme grid line color via new `TileTheme.gridColor` field (default per theme; user-customisable via a grid color picker in the toolbar)
+- Deterministic per-tile color jitter using `hash(x, y)` — floors and walls subtly vary ±5–10% in lightness so no two tiles are pixel-identical
+- Wall shadow/depth effect — subtle drop shadows or 1px offset fills to make walls "pop" above the floor plane; theme-configurable intensity (e.g. Cyberpunk → neon glow, Dungeon → dark shadow, Starship → hard edge)
+- Performance: shadow effects auto-disabled above 96×96 maps if frame budget is exceeded; hash jitter and grid colors are essentially free
 
-**5.2 — Real-Time Collaboration**
-- Multi-user simultaneous editing via operation-based sync
-- GM edits tiles/fog; players move their tokens
-- Conflict resolution via operation ordering; presence indicators
-- Inspired by: Mipui (MIT — can adapt sync patterns freely)
-- Why: Single biggest feature gap vs. Mipui
+**4.5.2 — Theme Personality: Floors, Walls, Doors**
+- Theme-specific floor textures via Canvas patterns or procedural micro-detail:
+  - Dungeon: stone flagstone mortar lines
+  - Castle: checkerboard hall tiles (extend existing hint)
+  - Starship: deck plating seams (sub-grid lines)
+  - Wilderness: hash-seeded grass blade strokes
+  - Pirate: horizontal plank lines (already partially done — use as model)
+  - Cyberpunk: circuit-board traces (thin neon right-angle lines)
+  - Desert: stippled sand dots
+  - Alien: bioluminescent spore dots with subtle glow (extend existing)
+  - Modern City, Old West, Post-Apocalypse, Steampunk, Ancient: distinct material patterns
+- Theme-specific wall rendering — move beyond "solid rectangle with slight color variation":
+  - Dungeon: rough stone blocks with 2–3 horizontal mortar lines
+  - Castle: ashlar masonry with crenellation and horizontal mortar
+  - Starship: riveted bulkhead panels (corner rivets + center seam)
+  - Cyberpunk: holographic force-field shimmer (gradient stripe)
+  - Modern City: windowed building facade (already done — good model)
+  - Post-Apocalypse: cracked concrete with rebar
+  - Wilderness: dense foliage cluster (already done — good model)
+  - Others: unique material per theme
+- Theme-specific door rendering — move beyond "colored bar across the cell":
+  - Castle: iron-banded oak plank with visible hinges (partially done — extend)
+  - Starship: sliding blast door with chevron hazard stripes
+  - Cyberpunk: glitching holographic barrier
+  - Wilderness: wooden gate with crossbar
+  - Pirate: trapdoor hatch with ring pull
+  - Others: distinct door per theme
 
-**5.3 — Map Forking & Templates**
-- Fork/duplicate shared maps as starting points
-- Curated template library of pre-built maps
-- Community sharing gallery (longer-term)
+**4.5.3 — Iconic Tiles: Treasure, Traps, Start, Water**
+- Per-theme treasure/trap/start icons — currently the most generic tiles across themes:
+  - Treasure: Castle → crown outline, Pirate → skull chest, Cyberpunk → data chip, Starship → glowing core
+  - Trap: Wilderness → bear trap jaws, Starship → laser grid (already distinct), Cyberpunk → electric arc
+  - Start: Wilderness → campfire, Castle → banner, Starship → airlock hatch
+- Theme-specific water/liquid rendering — replace identical wave-lines-with-different-color:
+  - Dungeon: dark ripple pools
+  - Wilderness: flowing river with current lines
+  - Starship: coolant with bubbles
+  - Cyberpunk: toxic neon with shimmer
+  - Alien: acid with organic swirl pattern
+  - Desert: oasis with palm silhouette at edge
+- Optional fog edge feathering — soft 1–2px gradient at revealed/hidden boundaries to reduce hard grid edges
+- Print mode art pass — add cross-hatching for walls and stipple shading for water in B&W mode for a more polished cartographic look
 
-### Phase 6: Advanced Rendering & World Building
+### Phase 5: Multi-Level Dungeons & Customization
 
-Longer-term features that expand map richness.
+Features that extend dungeon mapping depth and personalization.
 
-**6.1 — Multi-Layer System**
-- Replace single tile grid with a layer stack (floor, walls, objects, GM overlay, annotations)
-- Per-layer visibility toggling; layer-specific tools
-- Why: Layers enable richer maps without tile-type limitations
-
-**6.2 — Multi-Level Dungeon Support**
+**5.1 — Multi-Level Dungeon Support** *(formerly 6.2)*
 - Link multiple maps as dungeon levels
 - Stairs connect specific cells between levels; level navigator UI
 - Why: Multi-floor dungeons are common but require manually managing separate files today
 
-**6.3 — Geomorphic Tile Assembly Mode**
-- Assemble pre-drawn tile art into seamless maps with edge-matching constraints
-- Bundle default geomorph tiles; allow custom tile uploads
-- Inspired by: Dave's Mapper (GPL — study concept only, reimplement)
+**5.2 — Custom Tile/Theme Creation** *(formerly 7.2)*
+- User-defined custom tile types with uploaded graphics
+- Custom theme builder with color picker and tile assignment
 
-**6.4 — World/Region Map Generator (New Generator)**
-- 5th generator for world-scale maps
-- Voronoi-based terrain with heightmap, biome assignment, river generation, political boundaries, settlement placement
-- Inspired by: Azgaar (MIT — can study algorithms freely)
-- Why: Most ambitious feature — positions us as a comprehensive mapping suite
-- **Note:** Depends on 6.1 (Multi-Layer) and likely 6.5 (SVG rendering) for usability at world scale
-
-**6.5 — SVG/Vector Rendering Option**
-- Optional SVG rendering mode alongside Canvas
-- Benefits: infinite zoom quality, better print output, CSS styling
-- Why: Canvas works for dungeon-scale; world-scale needs vector
-
-### Phase 7: Quality-of-Life & Polish
-
-Smaller features that improve the overall experience.
+### Completed Quality-of-Life Phases
 
 **~~7.1 — Print-Optimized Export~~** ✅ COMPLETE
 - ✅ Multi-DPI export (72, 150, 300 DPI) at 1 inch per tile cell
@@ -291,10 +338,6 @@ Smaller features that improve the overall experience.
 - ✅ Export dialog with view mode (GM/Player) and print mode toggles
 - ✅ Keyboard shortcut (Ctrl+Shift+P) and header button
 
-**7.2 — Custom Tile/Theme Creation**
-- User-defined custom tile types with uploaded graphics
-- Custom theme builder with color picker and tile assignment
-
 **~~7.3 — Measurement & Distance Tools~~** ✅ COMPLETE
 - ✅ Ruler/measurement tool showing distance in grid squares and feet (Chebyshev/D&D distance)
 - ✅ Circle, cone, and line measurement templates for spell areas
@@ -302,9 +345,23 @@ Smaller features that improve the overall experience.
 - ✅ Scale bar on exported maps (PNG print export)
 - ✅ Keyboard shortcut [M] for measure tool
 
-**7.4 — Map Search & Organization**
-- Map search/filter (if cloud storage added in Phase 5)
-- Tags, folders, or categories for organizing saved maps; recent maps list
+### Far Future
+
+Items that may be revisited someday but are not on the active roadmap. Most require backend infrastructure or a fundamentally different scope (world-scale mapping).
+
+**Collaboration & Sharing** *(requires backend)*
+- Shareable Map Links — cloud storage, shareable URLs, no-registration viewing
+- Real-Time Collaboration — multi-user editing via operation-based sync
+- Map Forking & Templates — fork shared maps, template library, community gallery
+
+**World Building & Advanced Rendering** *(different product scope)*
+- Multi-Layer System — replace single tile grid with a layer stack (floor, walls, objects, GM overlay); mainly needed as a prerequisite for world-scale mapping
+- World/Region Map Generator — Voronoi-based terrain, heightmap, biomes, rivers, political boundaries, settlements (inspired by Azgaar)
+- SVG/Vector Rendering — optional SVG mode for infinite zoom quality; mainly needed for world-scale maps
+
+**Specialized Features**
+- Geomorphic Tile Assembly — assemble pre-drawn tile art with edge-matching constraints (inspired by Dave's Mapper)
+- Map Search & Organization — tags, folders, categories for organizing saved maps (depends on cloud storage)
 
 ---
 
@@ -316,18 +373,10 @@ Smaller features that improve the overall experience.
 - ~~**Phase 7.3** — Measurement & Distance Tools~~ ✅
 - ~~**Phase 4.3** — Light Sources~~ ✅
 
-### Medium-Term — New Generation & Advanced Features
-- **Phase 6.2** — Multi-Level Dungeon Support *(high demand, moderate complexity)*
-- **Phase 7.2** — Custom Tile/Theme Creation
-
-### Long-Term Vision
-- **Phase 5.1–5.2** — Cloud Sharing & Real-Time Collaboration *(requires backend decision)*
-- **Phase 5.3** — Map Forking & Templates
-- **Phase 6.1** — Multi-Layer System *(biggest refactor; needed before 6.4)*
-- **Phase 6.3** — Geomorphic Tile Assembly
-- **Phase 6.4** — World/Region Map Generator *(most ambitious; depends on 6.1, probably 6.5)*
-- **Phase 6.5** — SVG/Vector Rendering Option
-- **Phase 7.4** — Map Search & Organization *(depends on Phase 5)*
+### Medium-Term — Active Roadmap
+- **Phase 4.5** — Art & Visual Polish *(high visual impact, no architectural changes, ships incrementally)*
+- **Phase 5.1** — Multi-Level Dungeon Support *(high demand, moderate complexity)*
+- **Phase 5.2** — Custom Tile/Theme Creation
 
 ---
 
@@ -338,23 +387,12 @@ Smaller features that improve the overall experience.
 | Algorithm | Study From | License Constraint |
 |---|---|---|
 | Voronoi + Lloyd relaxation | Azgaar (MIT) or Watabou (GPL—study only) | Reimplement; use `delaunator` npm package |
-| Operation-based sync | Mipui (MIT) | Can adapt freely |
-| Tile caching (DOM→PNG) | Mipui (MIT) | Can adapt freely |
 
-### Recommended New Dependencies (to investigate when implementing)
-
-| Feature | Candidate Library | Purpose |
-|---|---|---|
-| Voronoi/Delaunay | `delaunator` (ISC) | Town/world generation tessellation |
-| Label placement | `polylabel` (ISC) | Optimal text placement in polygons |
-| Collaboration backend | Firebase or Supabase | Real-time sync and cloud storage |
-| Icon set expansion | game-icons.net SVG set (CC-BY) | Additional token icons |
+*Note: Operation-based sync and tile caching algorithms (Mipui, MIT) remain relevant if collaboration features are ever pursued — see Far Future section.*
 
 ### Key Architectural Decisions Needed Before Starting
 
-1. **Canvas vs SVG vs Hybrid:** Current Canvas renderer works for dungeon-scale. World-scale maps (Phase 6.4) and multi-layer support (Phase 6.1) may push toward SVG or a hybrid. Decide before Phase 6.
-2. **Backend choice:** Cloud sharing (Phase 5) requires a backend. Firebase is proven (Mipui uses it) but creates vendor lock-in. Supabase is open-source alternative.
-3. **Layer architecture:** The multi-layer system (Phase 6.1) would be the biggest refactor. Plan the data model early so Phases 3–5 are compatible.
+1. **Canvas vs SVG vs Hybrid:** Current Canvas renderer works well for dungeon-scale. Only relevant if world-scale maps (Far Future) are ever pursued.
 
 ---
 
@@ -363,12 +401,39 @@ Smaller features that improve the overall experience.
 | Decision | Date | Rationale |
 |---|---|---|
 | No hex grid support | 2026-04-28 | Non-square tiles not desired; removes former Phase 3 entirely |
+| No backend / collaboration (far future) | 2026-04-28 | App stays client-only; cloud sharing, real-time collab, and map forking moved to far future — no backend infrastructure needed |
+| No world mapping (far future) | 2026-04-28 | World/region maps, multi-layer system, SVG rendering, and geomorphic tiles moved to far future — focus stays on dungeon-scale mapping |
+| Map organization deferred (far future) | 2026-04-28 | Map search/tags/folders depend on cloud storage; deferred alongside backend features |
 | Town generator as standalone phase | 2026-04-28 | Scope and algorithmic complexity warrants its own phase rather than being part of generation upgrades |
 | BSP over Voronoi for village gen | 2026-04-28 | BSP partitioning produces clean rectangular buildings that map well to the existing square-grid tile system; Voronoi deferred to world-map scale (Phase 6.4) |
+| Art upgrade all 13 themes simultaneously | 2026-04-28 | Avoids jarring quality gap between upgraded and non-upgraded themes; each sub-phase ships a consistent improvement across all themes |
+| Softer/organic art direction (Watabou/Azgaar inspired) | 2026-04-28 | Differentiates from Donjon's stark line-art and Mipui's ultra-minimal style; still procedural Canvas 2D (no external assets) |
+| Grid color picker with per-theme defaults | 2026-04-28 | Per-theme default grid color for immersion; user-customisable picker for flexibility; fits naturally with Phase 5.2 custom themes |
+| Art phase before Phase 5 | 2026-04-28 | Art improvements ship fast (no architectural changes), improve first impressions immediately, and the TileTheme interface extensions (gridColor) benefit Phase 5.2 custom themes |
+| Print mode as mandatory B&W fallback | 2026-04-28 | All art upgrades must degrade cleanly to the existing monochrome print renderer; no color-only differentiation |
+| Shadow/depth effects at artist discretion | 2026-04-28 | Canvas shadowBlur and gradient-based depth effects add polish but are expensive at scale; auto-disable above 96×96 if frame budget is exceeded |
 
 ---
 
 ## Changes History
+
+**2026-04-28 — Phase 4.5 added: Art & Visual Polish roadmap**
+- New Part 3b: Competitor Art & Visual Style Analysis — detailed review of Azgaar, Watabou, Mipui, Donjon, Dave's Mapper, and HexTML art approaches
+- New Phase 4.5 with 3 sub-phases: Foundation (grid colors, tile jitter, wall depth), Theme Personality (floors, walls, doors), Iconic Tiles (treasure, traps, start, water)
+- Art direction: softer/organic look inspired by Watabou and Azgaar, all 13 themes upgraded simultaneously
+- Grid color picker with per-theme defaults added to Phase 4.5.1
+- All art upgrades must degrade to B&W print mode
+- Shadow/depth effects auto-disable on large maps if frame budget exceeded
+- Phase 4.5 placed before Phase 5 in priority order
+- 6 new design decisions logged
+
+**2026-04-28 — Roadmap restructured: backend & world-mapping items moved to Far Future**
+- Former Phase 5 (Collaboration & Sharing: shareable links, real-time collab, map forking) moved to Far Future — app stays client-only with no backend
+- Former Phase 6.1 (Multi-Layer System), 6.3 (Geomorphic Tiles), 6.4 (World Map Generator), 6.5 (SVG Rendering) moved to Far Future — focus stays on dungeon-scale mapping
+- Former Phase 7.4 (Map Search & Organization) moved to Far Future — depends on cloud storage
+- Multi-Level Dungeon Support (formerly 6.2) and Custom Tile/Theme Creation (formerly 7.2) renumbered as Phase 5.1 and 5.2
+- Architecture notes simplified: removed backend-dependent libraries and decisions
+- Design decisions log updated with rationale
 
 **2026-04-28 — Phase 4.3 complete: Light Sources shipped**
 - `LightSource` data type (`id`, `x`, `y`, `radius`, `color`, `label`) persisted on `DungeonMap.lightSources[]`
