@@ -1,7 +1,7 @@
 import React from 'react';
-import type { ToolType, TileType, MarkerShape } from '../types/map';
+import type { ToolType, TileType, MarkerShape, MeasureShape } from '../types/map';
 import type { BackgroundImage } from '../types/map';
-import { ALL_TILE_TYPES, TILE_LABELS, MARKER_SHAPES, MARKER_COLORS, MARKER_SHAPE_LABELS } from '../types/map';
+import { ALL_TILE_TYPES, TILE_LABELS, MARKER_SHAPES, MARKER_COLORS, MARKER_SHAPE_LABELS, MEASURE_SHAPES, MEASURE_SHAPE_LABELS } from '../types/map';
 import { getTheme, THEME_LIST } from '../themes/index';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import TokenToolsSection from './TokenToolsSection';
@@ -39,6 +39,11 @@ interface ToolbarProps {
   onImportBackgroundImage: (bg: BackgroundImage) => void;
   onUpdateBackgroundImage: (patch: Partial<BackgroundImage>) => void;
   onClearBackgroundImage: () => void;
+  // Measure tool settings
+  measureShape: MeasureShape;
+  measureFeetPerCell: number;
+  onSetMeasureShape: (s: MeasureShape) => void;
+  onSetMeasureFeetPerCell: (n: number) => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -93,6 +98,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   markerShape, markerColor, markerSize, onSetMarkerShape, onSetMarkerColor,
   onSetMarkerSize, onClearMarkers,
   backgroundImage, onImportBackgroundImage, onUpdateBackgroundImage, onClearBackgroundImage,
+  measureShape, measureFeetPerCell, onSetMeasureShape, onSetMeasureFeetPerCell,
 }) => {
   const theme = getTheme(themeId);
   const bgFileRef = React.useRef<HTMLInputElement>(null);
@@ -208,6 +214,60 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <span className="tool-name">Sight</span>
           <span className="tool-shortcut" aria-hidden="true">[O]</span>
         </button>
+      </div>
+
+      <div className="toolbar-section">
+        <div className="toolbar-label">MEASURE</div>
+        <button
+          type="button"
+          className={`tool-btn ${activeTool === 'measure' ? 'active' : ''}`}
+          onClick={() => onSetTool('measure')}
+          title="Measure distance — click and drag to measure distance between two points. Choose shape for area templates (circle, cone, line). [M]"
+          aria-label="Measure tool"
+          aria-pressed={activeTool === 'measure'}
+          aria-keyshortcuts="M"
+        >
+          <span className="tool-icon" aria-hidden="true">📐</span>
+          <span className="tool-name">Measure</span>
+          <span className="tool-shortcut" aria-hidden="true">[M]</span>
+        </button>
+        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Shape</div>
+        <div style={{ display: 'flex', gap: 4 }}>
+          {MEASURE_SHAPES.map(s => (
+            <button
+              key={s}
+              type="button"
+              className={`tile-btn ${measureShape === s ? 'active' : ''}`}
+              onClick={() => onSetMeasureShape(s)}
+              title={MEASURE_SHAPE_LABELS[s]}
+              aria-label={`${MEASURE_SHAPE_LABELS[s]} measurement shape`}
+              aria-pressed={measureShape === s}
+              style={{ padding: 2, width: 'auto', fontSize: '0.6rem' }}
+            >
+              <span aria-hidden="true" style={{ fontSize: 14 }}>
+                {s === 'ruler' ? '📏' : s === 'circle' ? '⭕' : s === 'cone' ? '🔺' : '╱'}
+              </span>
+              <span className="tile-btn-label" style={{ fontSize: '0.55rem' }}>{MEASURE_SHAPE_LABELS[s]}</span>
+            </button>
+          ))}
+        </div>
+        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Scale</div>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          <input
+            type="number"
+            min={1}
+            max={100}
+            value={measureFeetPerCell}
+            onChange={e => {
+              const v = Number(e.target.value);
+              if (v >= 1 && v <= 100) onSetMeasureFeetPerCell(v);
+            }}
+            title={`Scale: ${measureFeetPerCell} ft per cell`}
+            aria-label="Feet per cell"
+            style={{ width: 48, textAlign: 'center', fontSize: '0.7rem' }}
+          />
+          <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>ft/cell</span>
+        </div>
       </div>
 
       <div className="toolbar-section">

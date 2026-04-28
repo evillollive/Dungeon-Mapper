@@ -123,6 +123,7 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       match: e => isPlainKey(e) && !e.shiftKey && e.key.toLowerCase() === 'o',
       action: actions.toggleFov,
     },
+    tool('tool.measure', 'm', 'Measure / Distance tool', 'measure'),
 
     // ── View ──
     {
@@ -386,4 +387,5 @@ export const TOOL_SHORTCUTS: Record<ToolType, string | undefined> = {
   marker: undefined,
   'remove-marker': undefined,
   fov: 'O',
+  measure: 'M',
 };

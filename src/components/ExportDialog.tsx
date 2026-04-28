@@ -13,18 +13,21 @@ interface ExportDialogProps {
   printMode: boolean;
   viewMode: ViewMode;
   onClose: () => void;
+  /** Feet per tile cell for the scale bar (0 = no scale bar). */
+  feetPerCell?: number;
 }
 
 /** Images above this pixel count trigger a performance warning. */
 const LARGE_IMAGE_THRESHOLD = 200_000_000;
 
 const ExportDialog: React.FC<ExportDialogProps> = ({
-  map, themeId, printMode, viewMode, onClose,
+  map, themeId, printMode, viewMode, onClose, feetPerCell = 0,
 }) => {
   const [dpi, setDpi] = useState<number>(300);
   const [pagePresetId, setPagePresetId] = useState<string>('none');
   const [usePrintMode, setUsePrintMode] = useState<boolean>(printMode);
   const [exportView, setExportView] = useState<ViewMode>(viewMode);
+  const [showScaleBar, setShowScaleBar] = useState<boolean>(feetPerCell > 0);
   const [exporting, setExporting] = useState(false);
 
   // Close on Escape.
@@ -62,12 +65,13 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
         themeId,
         printMode: usePrintMode,
         viewMode: exportView,
+        feetPerCell: showScaleBar ? feetPerCell : 0,
       };
       await exportHighResPNG(map, opts);
     } finally {
       setExporting(false);
     }
-  }, [dpi, pagePresetId, themeId, usePrintMode, exportView, map]);
+  }, [dpi, pagePresetId, themeId, usePrintMode, exportView, map, showScaleBar, feetPerCell]);
 
   return (
     <div
@@ -133,6 +137,16 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
             onChange={e => setUsePrintMode(e.target.checked)}
           />
           <span>Black &amp; White / Print mode</span>
+        </label>
+
+        {/* Scale bar toggle */}
+        <label className="generate-dialog-row generate-dialog-checkbox">
+          <input
+            type="checkbox"
+            checked={showScaleBar}
+            onChange={e => setShowScaleBar(e.target.checked)}
+          />
+          <span>Scale bar ({feetPerCell > 0 ? `${feetPerCell} ft/cell` : 'set ft/cell in Measure tool'})</span>
         </label>
 
         {/* Info summary */}

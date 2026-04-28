@@ -252,6 +252,8 @@ export interface HighResExportOptions {
   printMode: boolean;
   /** View mode (gm / player). */
   viewMode: ViewMode;
+  /** Feet per cell for scale bar. 0 = no scale bar. */
+  feetPerCell?: number;
 }
 
 /**
@@ -271,6 +273,7 @@ export async function exportHighResPNG(
     themeId: opts.themeId,
     printMode: opts.printMode,
     viewMode: opts.viewMode,
+    feetPerCell: opts.feetPerCell,
   });
 
   const baseName = map.meta.name.replace(/\s+/g, '_') || 'dungeon';
