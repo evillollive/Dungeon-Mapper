@@ -71,6 +71,13 @@ export interface GenerateContext {
    * rooms-and-corridors interprets this; other generators ignore it.
    */
   deadEndRemoval?: number;
+  /**
+   * When true (and `labelRooms` is also true), appends procedurally
+   * generated flavor-text names to room labels (e.g. "Crypt of the
+   * Crimson Veil" instead of just "Crypt"). Only rooms-and-corridors
+   * interprets this.
+   */
+  nameRooms?: boolean;
 }
 
 /** A generator's output — pre-built tile grid plus optional notes. */

@@ -18,6 +18,7 @@ import { applyDoors } from './doorEngine';
 import { applyDecorations, type Decoration } from './decorationEngine';
 import { getRoomsCorridorsFlavor } from './poi';
 import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotesEngine';
+import { generateRoomNameSuffix } from './nameGenerator';
 import { getRoomPalette, type RoomKind } from './roomKinds';
 import { makeRng, type Rng } from './random';
 import { placeStairs } from './stairsEngine';
@@ -327,6 +328,15 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   const hasPalette = !!(palette && palette.length > 0);
   if (hasPalette) {
     assignRoomKinds(rooms, palette!, rng);
+    // Optionally append procedurally generated flavor-text names.
+    if (ctx.nameRooms) {
+      for (const r of rooms) {
+        if (r.kind) {
+          const suffix = generateRoomNameSuffix(themeId, rng);
+          r.kind = { ...r.kind, label: `${r.kind.label} ${suffix}` };
+        }
+      }
+    }
   }
 
   // Pick the start in the first room and `stairs-down` at the farthest

@@ -205,6 +205,10 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
   const [deadEndRemoval, setDeadEndRemoval] = useState<number>(0);
   const showDeadEndRemoval = generatorId === 'rooms-and-corridors';
 
+  // Procedural room naming — appends flavor text to room kind labels.
+  const [nameRooms, setNameRooms] = useState<boolean>(false);
+  const showNameRooms = showLabelRoomsToggle && labelRooms;
+
   // True when the current selection is large enough to host a generator
   // run. Falls back to false (and disables the toggle) when no selection
   // is active or the rectangle is too small to be useful.
@@ -269,6 +273,7 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
         themeId,
         tileMix,
         labelRooms: showLabelRoomsToggle ? labelRooms : false,
+        nameRooms: showNameRooms ? nameRooms : false,
         corridorStrategy: showCorridorStrategy ? corridorStrategyId : undefined,
         corridorContinuity: showCorridorStrategy ? corridorContinuity : undefined,
         dungeonShape: showDungeonShape ? dungeonShapeId : undefined,
@@ -521,6 +526,19 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
             />
             <span>
               Label rooms with theme archetypes (e.g. Bridge, Great Hall)
+            </span>
+          </label>
+        )}
+
+        {showNameRooms && (
+          <label className="generate-dialog-row generate-dialog-checkbox">
+            <input
+              type="checkbox"
+              checked={nameRooms}
+              onChange={e => setNameRooms(e.target.checked)}
+            />
+            <span>
+              Add procedural names (e.g. Crypt of the Crimson Veil)
             </span>
           </label>
         )}
