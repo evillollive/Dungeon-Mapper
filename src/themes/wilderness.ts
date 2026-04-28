@@ -1,5 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
+import { jitterColor, drawWallDepth } from './artUtils';
 
 export const wildernessTheme: TileTheme = {
   id: 'wilderness',
@@ -28,12 +29,13 @@ export const wildernessTheme: TileTheme = {
     water: '#1e5f8e', pillar: '#6a4a2a', trap: '#8e1e1e',
     treasure: '#d4af37', start: '#50fa7b',
   },
+  gridColor: '#1a3a10',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
     ctx.fillRect(px, py, size, size);
-    ctx.strokeStyle = '#2d3561';
+    ctx.strokeStyle = this.gridColor;
     ctx.lineWidth = 0.5;
     ctx.strokeRect(px, py, size, size);
 
@@ -46,6 +48,8 @@ export const wildernessTheme: TileTheme = {
         break;
 
       case 'floor': {
+        ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
+        ctx.fillRect(px, py, size, size);
         ctx.fillStyle = '#2a6a1a';
         for (let i = 0; i < 4; i++) {
           const dx = px + 2 + (i * 31) % (s - 4);
@@ -56,6 +60,9 @@ export const wildernessTheme: TileTheme = {
       }
 
       case 'wall': {
+        ctx.fillStyle = jitterColor(this.tileColors[type], x, y, 0.06);
+        ctx.fillRect(px, py, size, size);
+        drawWallDepth(ctx, px, py, size, 'shadow', this.tileColors[type], 0.4);
         ctx.fillStyle = '#4a2a10';
         ctx.beginPath();
         ctx.arc(cx, cy, s * 0.28, 0, Math.PI * 2);

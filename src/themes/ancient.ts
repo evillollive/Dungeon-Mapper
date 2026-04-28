@@ -1,5 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
+import { jitterColor, drawWallDepth } from './artUtils';
 
 // Lost Civilization theme: a forgotten civilization's stone complex — sun-bleached
 // sandstone halls, carved hieroglyph-style walls, fluted pillars, toppled
@@ -38,6 +39,7 @@ export const ancientTheme: TileTheme = {
     water: '#2a7a8a', pillar: '#c8b88a',
     trap: '#a02e1e', treasure: '#b89048', start: '#3a2a1a',
   },
+  gridColor: '#4a3a20',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
     const px = x * size;
     const py = y * size;
@@ -46,7 +48,7 @@ export const ancientTheme: TileTheme = {
     ctx.fillStyle = color;
     ctx.fillRect(px, py, size, size);
 
-    ctx.strokeStyle = '#2d3561';
+    ctx.strokeStyle = this.gridColor;
     ctx.lineWidth = 0.5;
     ctx.strokeRect(px, py, size, size);
 
@@ -61,6 +63,8 @@ export const ancientTheme: TileTheme = {
         break;
 
       case 'floor': {
+        ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
+        ctx.fillRect(px, py, size, size);
         // Flagstone with a faint carved chevron — suggests worn engravings
         // underfoot without being a specific real-world glyph.
         ctx.strokeStyle = '#a88a52';
@@ -74,6 +78,9 @@ export const ancientTheme: TileTheme = {
       }
 
       case 'wall': {
+        ctx.fillStyle = jitterColor(color, x, y, 0.06);
+        ctx.fillRect(px, py, size, size);
+        drawWallDepth(ctx, px, py, size, 'shadow', color, 0.4);
         // Carved sandstone block with a darker mortar shadow and a small
         // chiseled square evoking a relief carving.
         ctx.fillStyle = '#7a5a2a';

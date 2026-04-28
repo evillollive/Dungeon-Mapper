@@ -1,5 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
+import { jitterColor, drawWallDepth } from './artUtils';
 
 export const moderncityTheme: TileTheme = {
   id: 'moderncity',
@@ -28,12 +29,13 @@ export const moderncityTheme: TileTheme = {
     water: '#4ea7d8', pillar: '#2a2a2a', trap: '#3a3a3a',
     treasure: '#1f7a3a', start: '#d24545',
   },
+  gridColor: '#2a2a2a',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
     ctx.fillRect(px, py, size, size);
-    ctx.strokeStyle = '#2a2a2a';
+    ctx.strokeStyle = this.gridColor;
     ctx.lineWidth = 0.5;
     ctx.strokeRect(px, py, size, size);
 
@@ -52,6 +54,8 @@ export const moderncityTheme: TileTheme = {
       }
 
       case 'floor': {
+        ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
+        ctx.fillRect(px, py, size, size);
         // Concrete sidewalk paneling: an L-shaped seam in the corner
         ctx.strokeStyle = '#8a8a8a';
         ctx.lineWidth = 0.5;
@@ -64,6 +68,9 @@ export const moderncityTheme: TileTheme = {
       }
 
       case 'wall': {
+        ctx.fillStyle = jitterColor(this.tileColors[type], x, y, 0.06);
+        ctx.fillRect(px, py, size, size);
+        drawWallDepth(ctx, px, py, size, 'hard-edge', this.tileColors[type], 0.5);
         // Brick/window facade: outer block + grid of windows
         ctx.fillStyle = '#4a4a4a';
         ctx.fillRect(px + 1, py + 1, s - 2, s - 2);

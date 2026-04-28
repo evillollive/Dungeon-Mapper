@@ -1,5 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
+import { jitterColor, drawWallDepth } from './artUtils';
 
 // Alien World theme: a strange, biological landscape — spongy spore beds,
 // fungal walls, glowing acid pools, towering crystal spires, and pulsing
@@ -31,12 +32,13 @@ export const alienTheme: TileTheme = {
     water: '#7aff3a', pillar: '#d8a0ff',
     trap: '#ffe040', treasure: '#ff60d0', start: '#40ffe0',
   },
+  gridColor: '#2d1a3a',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
     ctx.fillRect(px, py, size, size);
-    ctx.strokeStyle = '#2d1a3a';
+    ctx.strokeStyle = this.gridColor;
     ctx.lineWidth = 0.5;
     ctx.strokeRect(px, py, size, size);
 
@@ -49,6 +51,8 @@ export const alienTheme: TileTheme = {
         break;
 
       case 'floor': {
+        ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
+        ctx.fillRect(px, py, size, size);
         // Speckled spore bed: a few biolume dots scattered across the tile.
         ctx.fillStyle = '#7a3aaa';
         const dots: [number, number][] = [
@@ -63,6 +67,9 @@ export const alienTheme: TileTheme = {
       }
 
       case 'wall': {
+        ctx.fillStyle = jitterColor(this.tileColors[type], x, y, 0.06);
+        ctx.fillRect(px, py, size, size);
+        drawWallDepth(ctx, px, py, size, 'glow', '#c040ff', 0.5);
         // Fungal wall: bumpy organic mound rather than a clean rectangle.
         ctx.fillStyle = '#3a1850';
         ctx.fillRect(px + 2, py + 2, s - 4, s - 4);

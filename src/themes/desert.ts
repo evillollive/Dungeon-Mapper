@@ -1,5 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
+import { jitterColor, drawWallDepth } from './artUtils';
 
 export const desertTheme: TileTheme = {
   id: 'desert',
@@ -28,12 +29,13 @@ export const desertTheme: TileTheme = {
     water: '#3a9ec8', pillar: '#3a7a3a',
     trap: '#8b6914', treasure: '#d4af37', start: '#c83838',
   },
+  gridColor: '#6a5020',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
     ctx.fillRect(px, py, size, size);
-    ctx.strokeStyle = '#2d3561';
+    ctx.strokeStyle = this.gridColor;
     ctx.lineWidth = 0.5;
     ctx.strokeRect(px, py, size, size);
 
@@ -54,6 +56,8 @@ export const desertTheme: TileTheme = {
       }
 
       case 'floor': {
+        ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
+        ctx.fillRect(px, py, size, size);
         // Scattered sand grains and a faint ripple.
         ctx.fillStyle = '#c8a868';
         for (let i = 0; i < 5; i++) {
@@ -71,6 +75,9 @@ export const desertTheme: TileTheme = {
       }
 
       case 'wall': {
+        ctx.fillStyle = jitterColor(this.tileColors[type], x, y, 0.06);
+        ctx.fillRect(px, py, size, size);
+        drawWallDepth(ctx, px, py, size, 'shadow', this.tileColors[type], 0.4);
         // Sandstone bricks (offset rows).
         ctx.strokeStyle = '#6b3d10';
         ctx.lineWidth = 0.75;

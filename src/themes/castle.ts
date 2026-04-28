@@ -1,5 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
+import { jitterColor, drawWallDepth } from './artUtils';
 
 // Castle theme: an aboveground stone keep — polished sandstone halls, heavy
 // oak doors with gold hinges, crenellated battlement walls, a moat, and a
@@ -31,6 +32,7 @@ export const castleTheme: TileTheme = {
     water: '#2a6a9e', pillar: '#9a8a6a',
     trap: '#8e1e1e', treasure: '#d4af37', start: '#a0202a',
   },
+  gridColor: '#5a4a30',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
     const px = x * size;
     const py = y * size;
@@ -39,7 +41,7 @@ export const castleTheme: TileTheme = {
     ctx.fillStyle = color;
     ctx.fillRect(px, py, size, size);
 
-    ctx.strokeStyle = '#2d3561';
+    ctx.strokeStyle = this.gridColor;
     ctx.lineWidth = 0.5;
     ctx.strokeRect(px, py, size, size);
 
@@ -54,6 +56,8 @@ export const castleTheme: TileTheme = {
         break;
 
       case 'floor': {
+        ctx.fillStyle = jitterColor(color, x, y, 0.07);
+        ctx.fillRect(px, py, size, size);
         // Subtle checkerboard hint to evoke polished hall tiles.
         ctx.fillStyle = '#c0b088';
         ctx.fillRect(px + 2, py + 2, Math.max(2, s / 3), Math.max(2, s / 3));
@@ -62,6 +66,9 @@ export const castleTheme: TileTheme = {
       }
 
       case 'wall': {
+        ctx.fillStyle = jitterColor(color, x, y, 0.06);
+        ctx.fillRect(px, py, size, size);
+        drawWallDepth(ctx, px, py, size, 'shadow', color, 0.4);
         // Sandstone block with a darker mortar shadow and a crenellated top edge.
         ctx.fillStyle = '#9c7e4e';
         ctx.fillRect(px + 2, py + 2, s - 4, s - 4);

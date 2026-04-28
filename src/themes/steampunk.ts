@@ -1,5 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
+import { jitterColor, drawWallDepth } from './artUtils';
 
 export const steampunkTheme: TileTheme = {
   id: 'steampunk',
@@ -28,12 +29,13 @@ export const steampunkTheme: TileTheme = {
     water: '#1a4a3a', pillar: '#8b6914', trap: '#cc4400',
     treasure: '#d4af37', start: '#5a9040',
   },
+  gridColor: '#3a2810',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
     ctx.fillRect(px, py, size, size);
-    ctx.strokeStyle = '#2d3561';
+    ctx.strokeStyle = this.gridColor;
     ctx.lineWidth = 0.5;
     ctx.strokeRect(px, py, size, size);
 
@@ -46,6 +48,8 @@ export const steampunkTheme: TileTheme = {
         break;
 
       case 'floor': {
+        ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
+        ctx.fillRect(px, py, size, size);
         ctx.strokeStyle = '#4a3018';
         ctx.lineWidth = 0.5;
         ctx.beginPath();
@@ -58,6 +62,9 @@ export const steampunkTheme: TileTheme = {
       }
 
       case 'wall': {
+        ctx.fillStyle = jitterColor(this.tileColors[type], x, y, 0.06);
+        ctx.fillRect(px, py, size, size);
+        drawWallDepth(ctx, px, py, size, 'hard-edge', this.tileColors[type], 0.6);
         ctx.strokeStyle = '#b87333';
         ctx.lineWidth = 1;
         ctx.beginPath();

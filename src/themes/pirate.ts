@@ -1,5 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
+import { jitterColor, drawWallDepth } from './artUtils';
 
 export const pirateTheme: TileTheme = {
   id: 'pirate',
@@ -28,12 +29,13 @@ export const pirateTheme: TileTheme = {
     water: '#1e6890', pillar: '#3a2410',
     trap: '#2a2a2a', treasure: '#d4af37', start: '#c0c0c0',
   },
+  gridColor: '#2a1a0a',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
     ctx.fillRect(px, py, size, size);
-    ctx.strokeStyle = '#2d3561';
+    ctx.strokeStyle = this.gridColor;
     ctx.lineWidth = 0.5;
     ctx.strokeRect(px, py, size, size);
 
@@ -57,6 +59,8 @@ export const pirateTheme: TileTheme = {
       }
 
       case 'floor': {
+        ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
+        ctx.fillRect(px, py, size, size);
         // Wooden deck planks (horizontal boards with seams).
         ctx.strokeStyle = '#7a5530';
         ctx.lineWidth = 0.5;
@@ -76,6 +80,9 @@ export const pirateTheme: TileTheme = {
       }
 
       case 'wall': {
+        ctx.fillStyle = jitterColor(this.tileColors[type], x, y, 0.06);
+        ctx.fillRect(px, py, size, size);
+        drawWallDepth(ctx, px, py, size, 'shadow', this.tileColors[type], 0.5);
         // Curved hull planking.
         ctx.strokeStyle = '#3a1f08';
         ctx.lineWidth = 1;

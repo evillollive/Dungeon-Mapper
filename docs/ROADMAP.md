@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-28
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 7.1, & 7.3 complete. Phase 4.5 (art & visual polish) next.
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 7.1, & 7.3 complete. Phase 4.5.2 (theme personality: floors, walls, doors) next.
 
 ---
 
@@ -16,7 +16,7 @@ Dungeon-Mapper is a React + TypeScript + Vite single-page app with Canvas-based 
 - **Dead-end removal** with configurable fraction slider
 - **Richer door generation** with probabilistic type distribution (archway, locked, trapped, portcullis, barricade)
 - **Procedural name generation** (theme-aware, 13 themes)
-- 13 visual themes (Dungeon, Castle, Wilderness, Starship, etc.)
+- 13 visual themes (Dungeon, Castle, Wilderness, Starship, etc.) with **per-theme grid colors**, **tile color jitter**, and **wall depth effects**
 - Fog of War with per-cell reveal/hide, GM preview, and **Dynamic Fog** (3-state: hidden/explored/visible, auto-reveal from player tokens)
 - **Line-of-Sight / FOV** (recursive shadowcasting from any cell, wall occlusion, GM tool [O])
 - **Light Sources** (torch/lantern/magical presets with configurable radius and glow color, FOV-limited illumination interacts with dynamic fog, [I] shortcut)
@@ -267,11 +267,12 @@ Advanced tactical features for live play.
 
 Upgrade procedural tile rendering across all 13 themes simultaneously for stronger per-theme identity, richer visual detail, and a softer/more organic aesthetic inspired by Watabou and Azgaar. No new tile types — better-looking versions of existing ones. All upgrades must degrade cleanly to the existing B&W print mode.
 
-**4.5.1 — Foundation: Grid Colors, Tile Jitter, Wall Depth**
-- Per-theme grid line color via new `TileTheme.gridColor` field (default per theme; user-customisable via a grid color picker in the toolbar)
-- Deterministic per-tile color jitter using `hash(x, y)` — floors and walls subtly vary ±5–10% in lightness so no two tiles are pixel-identical
-- Wall shadow/depth effect — subtle drop shadows or 1px offset fills to make walls "pop" above the floor plane; theme-configurable intensity (e.g. Cyberpunk → neon glow, Dungeon → dark shadow, Starship → hard edge)
-- Performance: shadow effects auto-disabled above 96×96 maps if frame budget is exceeded; hash jitter and grid colors are essentially free
+**~~4.5.1 — Foundation: Grid Colors, Tile Jitter, Wall Depth~~** ✅ COMPLETE
+- ✅ Per-theme grid line color via new `TileTheme.gridColor` field (replaces hardcoded `#2d3561` in all 13 themes and the global grid pass in MapCanvas + renderMap)
+- ✅ Deterministic per-tile color jitter using `tileHash(x, y)` in `src/themes/artUtils.ts` — floors and walls subtly vary ±6–8% in lightness so no two tiles are pixel-identical
+- ✅ Wall shadow/depth effect via `drawWallDepth()` — three styles: `shadow` (Dungeon, Castle, Wilderness, Post-Apocalypse, Pirate, Desert, Ancient), `glow` (Cyberpunk, Starship, Alien), `hard-edge` (Modern City, Old West, Steampunk)
+- ✅ Shared art utilities in `src/themes/artUtils.ts`: `tileHash()`, `jitterColor()`, `drawWallDepth()`
+- Performance: hash jitter and grid colors are essentially free; shadow effects are lightweight Canvas 2D fills/strokes
 
 **4.5.2 — Theme Personality: Floors, Walls, Doors**
 - Theme-specific floor textures via Canvas patterns or procedural micro-detail:
@@ -374,7 +375,8 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - ~~**Phase 4.3** — Light Sources~~ ✅
 
 ### Medium-Term — Active Roadmap
-- **Phase 4.5** — Art & Visual Polish *(high visual impact, no architectural changes, ships incrementally)*
+- **Phase 4.5.2** — Theme Personality: Floors, Walls, Doors *(next sub-phase of art polish)*
+- **Phase 4.5.3** — Iconic Tiles: Treasure, Traps, Start, Water
 - **Phase 5.1** — Multi-Level Dungeon Support *(high demand, moderate complexity)*
 - **Phase 5.2** — Custom Tile/Theme Creation
 
@@ -416,6 +418,16 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 ---
 
 ## Changes History
+
+**2026-04-28 — Phase 4.5.1 complete: Foundation art polish shipped**
+- New `TileTheme.gridColor` field replaces hardcoded `#2d3561` grid color across all 13 themes
+- Per-theme grid colors: Dungeon `#2d3561`, Castle `#5a4a30`, Starship `#1a3050`, Alien `#2d1a3a`, Cyberpunk `#1a0a2a`, Wilderness `#1a3a10`, Old West `#3a2a18`, Steampunk `#3a2810`, Modern City `#2a2a2a`, Post-Apocalypse `#2a2018`, Pirate `#2a1a0a`, Desert `#6a5020`, Ancient `#4a3a20`
+- `SCREEN_GRID` constant removed from MapCanvas.tsx and renderMap.ts — global grid pass now uses `theme.gridColor`
+- New `src/themes/artUtils.ts` shared utility: `tileHash(x,y)` spatial hash, `jitterColor()` for ±6–8% lightness variation, `drawWallDepth()` with 3 styles (shadow/glow/hard-edge)
+- All 13 themes: floor tiles now use `jitterColor` for subtle per-cell color variation
+- All 13 themes: wall tiles now use `jitterColor` + `drawWallDepth` for visual depth (shadow for fantasy themes, neon glow for sci-fi, hard-edge for modern)
+- No changes to print mode — all art upgrades are screen-mode only
+- Priority order updated to show 4.5.2 as next
 
 **2026-04-28 — Phase 4.5 added: Art & Visual Polish roadmap**
 - New Part 3b: Competitor Art & Visual Style Analysis — detailed review of Azgaar, Watabou, Mipui, Donjon, Dave's Mapper, and HexTML art approaches

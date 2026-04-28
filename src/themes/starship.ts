@@ -1,5 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
+import { jitterColor, drawWallDepth } from './artUtils';
 
 // Starship theme: the interior of a deep-space vessel — riveted bulkheads,
 // metal deck plating, neon blast doors, and humming data cores. This carries
@@ -31,12 +32,13 @@ export const starshipTheme: TileTheme = {
     water: '#0066aa', pillar: '#334466', trap: '#ff0066',
     treasure: '#ff9900', start: '#00ffcc',
   },
+  gridColor: '#1a3050',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
     ctx.fillRect(px, py, size, size);
-    ctx.strokeStyle = '#2d3561';
+    ctx.strokeStyle = this.gridColor;
     ctx.lineWidth = 0.5;
     ctx.strokeRect(px, py, size, size);
 
@@ -49,6 +51,8 @@ export const starshipTheme: TileTheme = {
         break;
 
       case 'floor': {
+        ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
+        ctx.fillRect(px, py, size, size);
         ctx.strokeStyle = '#2a4060';
         ctx.lineWidth = 0.5;
         const step = Math.max(4, Math.floor(s / 4));
@@ -66,6 +70,9 @@ export const starshipTheme: TileTheme = {
       }
 
       case 'wall': {
+        ctx.fillStyle = jitterColor(this.tileColors[type], x, y, 0.06);
+        ctx.fillRect(px, py, size, size);
+        drawWallDepth(ctx, px, py, size, 'glow', '#00c8ff', 0.5);
         ctx.strokeStyle = '#00c8ff';
         ctx.lineWidth = 1;
         ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
