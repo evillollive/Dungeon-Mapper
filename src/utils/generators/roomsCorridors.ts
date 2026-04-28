@@ -20,6 +20,7 @@ import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotes
 import { getRoomPalette, type RoomKind } from './roomKinds';
 import { makeRng, type Rng } from './random';
 import { placeStairs } from './stairsEngine';
+import { getDungeonShape, rectFitsMask } from './shapeMask';
 import { DEFAULT_SECRET_DOOR_FRACTION } from './tileMix';
 import type { GenerateContext, GeneratedMap } from './types';
 
@@ -217,6 +218,12 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   const rng = makeRng(seed);
   const grid = makeTypeGrid(width, height, 'empty');
 
+  // Build the shape mask — constrains where rooms may be placed. The
+  // default 'rectangle' shape marks the entire interior as valid, so
+  // existing seeds produce identical output when no shape is specified.
+  const shape = getDungeonShape(ctx.dungeonShape);
+  const shapeMask = shape.mask(width, height);
+
   // Slider-driven overrides come in via `ctx.tileMix`; when a key is
   // absent we use the legacy formulas so unchanged sliders + no room
   // labels reproduce the previous output exactly. The dialog only
@@ -245,6 +252,7 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
     const x = rng.int(1, Math.max(1, width - w - 2));
     const y = rng.int(1, Math.max(1, height - h - 2));
     const candidate: Room = { x, y, w, h };
+    if (!rectFitsMask(shapeMask, x, y, w, h)) continue;
     if (rooms.some(r => rectsOverlap(r, candidate))) continue;
     rooms.push(candidate);
   }

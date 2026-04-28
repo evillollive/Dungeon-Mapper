@@ -19,6 +19,11 @@ import {
   getTileMixSliders,
   type TileMixSliderSpec,
 } from '../utils/generators/tileMix';
+import {
+  DEFAULT_DUNGEON_SHAPE,
+  DUNGEON_SHAPE_LIST,
+  getDungeonShape,
+} from '../utils/generators/shapeMask';
 import { themeSupportsRoomLabels } from '../utils/generators/roomKinds';
 
 interface GenerateMapDialogProps {
@@ -187,6 +192,12 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
   const showCorridorStrategy = generatorId === 'rooms-and-corridors';
   const corridorStrategy = getCorridorStrategy(corridorStrategyId);
 
+  // Dungeon shape — only rooms-and-corridors supports non-rectangular
+  // shapes. The default 'rectangle' reproduces the legacy behavior.
+  const [dungeonShapeId, setDungeonShapeId] = useState<string>(DEFAULT_DUNGEON_SHAPE);
+  const showDungeonShape = generatorId === 'rooms-and-corridors';
+  const dungeonShape = getDungeonShape(dungeonShapeId);
+
   // True when the current selection is large enough to host a generator
   // run. Falls back to false (and disables the toggle) when no selection
   // is active or the rectangle is too small to be useful.
@@ -252,6 +263,7 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
         tileMix,
         labelRooms: showLabelRoomsToggle ? labelRooms : false,
         corridorStrategy: showCorridorStrategy ? corridorStrategyId : undefined,
+        dungeonShape: showDungeonShape ? dungeonShapeId : undefined,
       });
       const suggestedName = `Generated ${generator.name}`;
       if (intoSelection && selection) {
@@ -342,6 +354,25 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
             </label>
             <p className="generate-dialog-description">
               {corridorStrategy.description}
+            </p>
+          </>
+        )}
+
+        {showDungeonShape && (
+          <>
+            <label className="generate-dialog-row">
+              <span>Dungeon shape</span>
+              <select
+                value={dungeonShapeId}
+                onChange={e => setDungeonShapeId(e.target.value)}
+              >
+                {DUNGEON_SHAPE_LIST.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </label>
+            <p className="generate-dialog-description">
+              {dungeonShape.description}
             </p>
           </>
         )}

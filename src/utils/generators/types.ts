@@ -50,6 +50,14 @@ export interface GenerateContext {
    * the legacy output exactly so existing seeds are unaffected.
    */
   corridorStrategy?: string;
+  /**
+   * Optional id of the dungeon shape to use (e.g. `'rectangle'`, `'circle'`,
+   * `'diamond'`). Only the rooms-and-corridors generator interprets this —
+   * other generators ignore it. The shape constrains where rooms can be
+   * placed by applying a boolean mask to the map grid. Unknown / missing
+   * values fall back to `'rectangle'` (full grid), preserving legacy output.
+   */
+  dungeonShape?: string;
 }
 
 /** A generator's output — pre-built tile grid plus optional notes. */
