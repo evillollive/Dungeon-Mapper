@@ -121,6 +121,9 @@ function App() {
     addMarker,
     removeMarker,
     clearMarkers,
+    setBackgroundImage,
+    clearBackgroundImage,
+    updateBackgroundImage,
   } = useMapState();
 
   const {
@@ -525,6 +528,10 @@ function App() {
               onSetMarkerColor={setMarkerColor}
               onSetMarkerSize={setMarkerSize}
               onClearMarkers={clearMarkers}
+              backgroundImage={map.backgroundImage}
+              onImportBackgroundImage={setBackgroundImage}
+              onUpdateBackgroundImage={updateBackgroundImage}
+              onClearBackgroundImage={clearBackgroundImage}
             />
           </nav>
         ) : (

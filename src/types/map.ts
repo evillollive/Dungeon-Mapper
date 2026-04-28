@@ -117,6 +117,25 @@ export interface AnnotationStroke {
   width: number;
 }
 
+/**
+ * An imported background image rendered behind the tile grid. Useful for
+ * tracing existing battlemaps or using pre-made art as a backdrop. The
+ * image data is stored as a data-URL so it round-trips through JSON
+ * export/import and IndexedDB auto-save.
+ */
+export interface BackgroundImage {
+  /** Base-64 data-URL of the imported image (PNG or JPEG). */
+  dataUrl: string;
+  /** Horizontal offset in tiles (can be fractional). */
+  offsetX: number;
+  /** Vertical offset in tiles (can be fractional). */
+  offsetY: number;
+  /** Scale factor (1 = 1 image pixel per tile pixel at current tileSize). */
+  scale: number;
+  /** Opacity 0–1 for blending under the tile grid. */
+  opacity: number;
+}
+
 export interface DungeonMap {
   meta: MapMeta;
   tiles: Tile[][];
@@ -142,6 +161,12 @@ export interface DungeonMap {
    * order and removed automatically when a token is removed from the map.
    */
   initiative?: number[];
+  /**
+   * Optional imported background image rendered behind the tile grid.
+   * Persisted with auto-save and JSON export so the background survives
+   * round-trips.
+   */
+  backgroundImage?: BackgroundImage;
 }
 
 export type ToolType =

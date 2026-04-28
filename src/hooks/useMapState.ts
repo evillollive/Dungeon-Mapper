@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { DungeonMap, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape } from '../types/map';
+import type { DungeonMap, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage } from '../types/map';
 import { createEmptyGrid, createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
 import { saveMap, loadMap, migrateFromLocalStorage } from '../utils/storage';
 import { reThemeNotes } from '../utils/reThemeNotes';
@@ -819,6 +819,34 @@ export function useMapState() {
     });
   }, [debouncedSave]);
 
+  // ---- Background image ----
+
+  const setBackgroundImage = useCallback((bg: BackgroundImage) => {
+    setMap(prev => {
+      const updated = { ...prev, backgroundImage: bg };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const clearBackgroundImage = useCallback(() => {
+    setMap(prev => {
+      if (!prev.backgroundImage) return prev;
+      const updated = { ...prev, backgroundImage: undefined };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const updateBackgroundImage = useCallback((patch: Partial<BackgroundImage>) => {
+    setMap(prev => {
+      if (!prev.backgroundImage) return prev;
+      const updated = { ...prev, backgroundImage: { ...prev.backgroundImage, ...patch } };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
   /**
    * Copy the contents of the given selection rectangle into the internal
    * clipboard buffer. Tiles and notes within the rectangle are captured
@@ -998,5 +1026,9 @@ export function useMapState() {
     addMarker,
     removeMarker,
     clearMarkers,
+    // Background image
+    setBackgroundImage,
+    clearBackgroundImage,
+    updateBackgroundImage,
   };
 }

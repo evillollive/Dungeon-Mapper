@@ -75,8 +75,21 @@ export function exportMapSVG(
 
   const isFogged = (x: number, y: number) => fogActive && !!fog?.[y]?.[x];
 
-  let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">`;
+  let svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">`;
   svg += `<rect width="${svgW}" height="${svgH}" fill="${theme.tileColors['empty']}"/>`;
+
+  // Background image layer (behind tiles).
+  if (map.backgroundImage) {
+    const bg = map.backgroundImage;
+    const imgX = bg.offsetX * tileSize;
+    const imgY = bg.offsetY * tileSize;
+    // Escape the data URL for safe XML embedding (quotes and angle
+    // brackets could break the SVG structure).
+    const safeHref = escapeXML(bg.dataUrl);
+    // Use a group transform so scale applies relative to the image's
+    // own origin rather than (0,0), which would shift the position.
+    svg += `<g transform="translate(${imgX},${imgY}) scale(${bg.scale})" opacity="${bg.opacity}"><image xlink:href="${safeHref}" x="0" y="0" style="image-rendering:auto"/></g>`;
+  }
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {

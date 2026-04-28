@@ -1,5 +1,6 @@
 import React from 'react';
 import type { ToolType, TileType, MarkerShape } from '../types/map';
+import type { BackgroundImage } from '../types/map';
 import { ALL_TILE_TYPES, TILE_LABELS, MARKER_SHAPES, MARKER_COLORS, MARKER_SHAPE_LABELS } from '../types/map';
 import { getTheme, THEME_LIST } from '../themes/index';
 import { drawTileOverlay } from '../themes/tileOverlays';
@@ -33,6 +34,11 @@ interface ToolbarProps {
   onSetMarkerColor: (c: string) => void;
   onSetMarkerSize: (s: number) => void;
   onClearMarkers: () => void;
+  // Background image
+  backgroundImage?: BackgroundImage;
+  onImportBackgroundImage: (bg: BackgroundImage) => void;
+  onUpdateBackgroundImage: (patch: Partial<BackgroundImage>) => void;
+  onClearBackgroundImage: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -86,8 +92,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
   fogEnabled, gmShowFog, onToggleGmShowFog, onOpenGenerateMap,
   markerShape, markerColor, markerSize, onSetMarkerShape, onSetMarkerColor,
   onSetMarkerSize, onClearMarkers,
+  backgroundImage, onImportBackgroundImage, onUpdateBackgroundImage, onClearBackgroundImage,
 }) => {
   const theme = getTheme(themeId);
+  const bgFileRef = React.useRef<HTMLInputElement>(null);
   const tileLabels = React.useMemo(() => {
     const map = new Map<TileType, string>();
     for (const t of theme.tiles) map.set(t.id, t.label);
@@ -304,6 +312,124 @@ const Toolbar: React.FC<ToolbarProps> = ({
           />
           <span style={{ fontSize: '0.7rem', minWidth: 16, textAlign: 'center' }}>{markerSize}</span>
         </div>
+      </div>
+
+      <div className="toolbar-section">
+        <div className="toolbar-label">BACKGROUND</div>
+        <input
+          ref={bgFileRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => {
+              const dataUrl = reader.result as string;
+              onImportBackgroundImage({
+                dataUrl,
+                offsetX: 0,
+                offsetY: 0,
+                scale: 1,
+                opacity: 0.5,
+              });
+            };
+            reader.readAsDataURL(file);
+            // Reset so the same file can be re-imported.
+            e.target.value = '';
+          }}
+        />
+        <button
+          type="button"
+          className="tool-btn"
+          onClick={() => bgFileRef.current?.click()}
+          title="Import a PNG/JPG image as a background layer behind the tile grid. Useful for tracing existing battlemaps."
+          aria-label="Import background image"
+        >
+          <span className="tool-icon" aria-hidden="true">🖼</span>
+          <span className="tool-name">Import</span>
+        </button>
+        {backgroundImage && (
+          <>
+            <button
+              type="button"
+              className="tool-btn"
+              onClick={onClearBackgroundImage}
+              title="Remove the background image."
+              aria-label="Remove background image"
+            >
+              <span className="tool-icon" aria-hidden="true">✕</span>
+              <span className="tool-name">Remove</span>
+            </button>
+            <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Opacity</div>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={Math.round(backgroundImage.opacity * 100)}
+                onChange={e => onUpdateBackgroundImage({ opacity: Number(e.target.value) / 100 })}
+                title={`Background opacity: ${Math.round(backgroundImage.opacity * 100)}%`}
+                aria-label="Background image opacity"
+                style={{ flex: 1 }}
+              />
+              <span style={{ fontSize: '0.7rem', minWidth: 24, textAlign: 'center' }}>
+                {Math.round(backgroundImage.opacity * 100)}%
+              </span>
+            </div>
+            <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Scale</div>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <input
+                type="range"
+                min={10}
+                max={500}
+                value={Math.round(backgroundImage.scale * 100)}
+                onChange={e => onUpdateBackgroundImage({ scale: Number(e.target.value) / 100 })}
+                title={`Background scale: ${Math.round(backgroundImage.scale * 100)}%`}
+                aria-label="Background image scale"
+                style={{ flex: 1 }}
+              />
+              <span style={{ fontSize: '0.7rem', minWidth: 28, textAlign: 'center' }}>
+                {Math.round(backgroundImage.scale * 100)}%
+              </span>
+            </div>
+            <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Offset X</div>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <input
+                type="range"
+                min={-50}
+                max={50}
+                step={0.5}
+                value={backgroundImage.offsetX}
+                onChange={e => onUpdateBackgroundImage({ offsetX: Number(e.target.value) })}
+                title={`Background X offset: ${backgroundImage.offsetX} tiles`}
+                aria-label="Background image X offset"
+                style={{ flex: 1 }}
+              />
+              <span style={{ fontSize: '0.7rem', minWidth: 24, textAlign: 'center' }}>
+                {backgroundImage.offsetX}
+              </span>
+            </div>
+            <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Offset Y</div>
+            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+              <input
+                type="range"
+                min={-50}
+                max={50}
+                step={0.5}
+                value={backgroundImage.offsetY}
+                onChange={e => onUpdateBackgroundImage({ offsetY: Number(e.target.value) })}
+                title={`Background Y offset: ${backgroundImage.offsetY} tiles`}
+                aria-label="Background image Y offset"
+                style={{ flex: 1 }}
+              />
+              <span style={{ fontSize: '0.7rem', minWidth: 24, textAlign: 'center' }}>
+                {backgroundImage.offsetY}
+              </span>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

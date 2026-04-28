@@ -8,16 +8,19 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 
 - **Grid editor** — configurable map from 8×8 up to 128×128 (selectable widths/heights: 8, 16, 24, 32, 48, 64, 96, 128), default 32×32
 - **Tile size** — selectable tile size (12, 16, 20, 24, 32 px), default 20 px
-- **12 paintable tile types** — Floor, Wall, Door (H/V), Secret Door, Stairs Up/Down, Water, Pillar, Trap, Treasure, Start (use the Erase tool to clear a tile back to empty)
+- **19 paintable tile types** — Floor, Wall, Door (H/V), Secret Door, Locked Door (H/V), Trapped Door (H/V), Portcullis, Archway, Barricade, Stairs Up/Down, Water, Pillar, Trap, Treasure, Start (use the Erase tool to clear a tile back to empty)
 - **13 preset theme modes** — Castle, Dungeon, Starship, Alien World, Lost Civilization, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City, Pirate, Desert (see [Preset Modes](#preset-modes) below)
 - **Graph-paper canvas** — light parchment background with cyan grid lines, evoking traditional engineering / quad-ruled graph paper
 - **Print mode** — toggle a high-contrast black-and-white renderer for printer-friendly output
 - **GM drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`
+- **Copy / Paste / Cut** — select a region with the Select tool, then `Ctrl+C` to copy, `Ctrl+X` to cut, `Ctrl+V` to paste tiles and notes at the selection origin with a live preview overlay
 - **Procedural map generation** — toolbar **🎲 Generate** opens a dialog with three algorithms (Rooms & Corridors, Open Terrain, Cavern), a deterministic seed, a density slider, per-generator tile-mix sliders, optional theme room labels, and an opt-in **Generate into selection** mode that stamps a generated map into an active selection rectangle without disturbing the rest of the map (see [Map Generation](#map-generation) below)
 - **Player view** — header **🛡 GM View / 👁 Player View** toggle swaps to a player-safe toolbar with a freehand drawing pen, an eraser, fog-of-war controls, and token tools (see [Player View](#player-view) below)
 - **Fog of war** — per-cell hidden / revealed flags with a Defog brush, Reveal `V` / Hide `H` drag-rectangles, Reset Fog (re-cover the map), Clear Fog (reveal everything), and an optional GM **🌫 Show Fog** preview overlay
-- **Tokens** — drop Player, NPC, and Monster tokens (small 1×1, medium 2×2, large 3×3) onto the map; Move Token to drag, Remove Token to delete
+- **Tokens with icon library** — drop Player, NPC, and Monster tokens (small 1×1, medium 2×2, large 3×3) onto the map with a searchable icon picker (30+ icons in 6 categories); Move Token to drag, Remove Token to delete
 - **Initiative panel** — a turn-order list in the right-hand sidebar that mirrors placed tokens; the GM can drag entries to reorder, rename them inline, or clear the list (see [Initiative](#initiative) below)
+- **Shape / area markers** — place colored shape overlays (circle, square, diamond) on the map for marking spell areas, hazard zones, and tactical effects; 8 color options with adjustable radius (see [Markers](#markers) below)
+- **Background image import** — import a PNG/JPG as a background layer behind the tile grid for tracing existing battlemaps; adjustable opacity, scale, and position (see [Background Image](#background-image) below)
 - **Player annotations** — freehand pen with eight color swatches and Thin / Medium / Thick brush widths; per-stroke eraser and a Clear All button
 - **Zoom & pan** — `+` / `-` / `Reset` / `Fit` controls along the bottom of the map; right-click drag to pan; mouse-wheel zoom while holding `Shift` (or with Caps Lock on)
 - **Undo / Redo** — up to 50 steps (`Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z`)
@@ -36,21 +39,21 @@ Dungeon Mapper ships with two kinds of presets: **theme modes** that re-skin the
 
 Each theme keeps the same underlying tile types but renames them and re-renders them with setting-appropriate glyphs and colors. Maps stay portable across themes — swapping themes restyles the whole map without losing any tile data. Enable the toolbar **🎨 Preserve** toggle if you want already-painted tiles to keep their original theme style when you switch themes (so you can blend, say, Wilderness terrain with a Dungeon crawl on a single map). The themes are listed alphabetically in the **🗺 Theme** dropdown.
 
-| Theme | Setting | Tile flavor (Floor / Wall / Door / Secret Door / Water / Pillar / Trap / Treasure / Start) |
+| Theme | Setting | Tile flavor (Floor / Wall / Door / Secret Door / Locked Door / Trapped Door / Portcullis / Archway / Barricade / Water / Pillar / Trap / Treasure / Start) |
 | --- | --- | --- |
-| **Alien World** | Otherworldly biological landscape | Spore Bed / Fungal Wall / Membrane / Hidden Burrow / Acid Pool / Crystal Spire / Spore Burst / Crystal Cluster / Landing Site |
-| **Castle** | Aboveground stone keep | Stone Tile / Battlement / Oak Door / Hidden Passage / Moat / Column / Murder Hole / Royal Hoard / Great Hall |
-| **Cyberpunk** | Neon-lit street grids | Street / Barrier / Shutter / Cloaked Panel / Acid Pool / Terminal / Turret / Chip Cache / Spawn |
-| **Desert** | Sun-baked sands and tombs | Sand / Sandstone / Tomb Door / Hidden Chamber / Oasis / Cactus / Quicksand / Relic / Caravan |
-| **Dungeon** *(default)* | Subterranean crawl | Flagstone / Stone Wall / Iron Door / Secret Door / Underground Pool / Pillar / Trap / Treasure / Entrance |
-| **Lost Civilization** | Ancient temple complex | Flagstone / Carved Wall / Stone Slab / Hidden Glyph / Reflecting Pool / Pillar / Cursed Glyph / Sarcophagus / Obelisk |
-| **Modern City** | Contemporary urban streets | Sidewalk / Building / Doorway / Hidden Door / Fountain / Lamp Post / Manhole / ATM / Bus Stop |
-| **Old West** | Frontier towns and saloons | Dirt / Plank Wall / Saloon Door / Hidden Passage / Water Trough / Post / Bear Trap / Gold / Entrance |
-| **Pirate** | Tall ships and hidden coves | Deck / Hull / Hatch / Smuggler Hatch / Bilge / Mast / Cannon / Booty / Anchor |
-| **Post-Apocalypse** | Ruined wastelands | Rubble / Ruins / Barricade / Hidden Stash / Toxic Pool / Rubble Pile / Landmine / Supplies / Shelter |
-| **Starship** | Deep-space vessel interiors | Deck / Bulkhead / Blast Door / Hidden Hatch / Coolant / Support / Laser Grid / Data Core / Airlock |
-| **Steampunk** | Industrial gear-and-steam works | Iron Plate / Gear Wall / Valve Door / Concealed Hatch / Steam Pipe / Piston / Pressure Plate / Contraption / Engine |
-| **Wilderness** | Outdoor overland maps | Grass / Trees / Gate / Hidden Path / River / Boulder / Snare / Cache / Camp |
+| **Alien World** | Otherworldly biological landscape | Spore Bed / Fungal Wall / Membrane / Hidden Burrow / Sealed Membrane / Enzyme Gate / Spore Valve / Pore / Thorn Barrier / Acid Pool / Crystal Spire / Spore Burst / Crystal Cluster / Landing Site |
+| **Castle** | Aboveground stone keep | Stone Tile / Battlement / Oak Door / Hidden Passage / Iron-Bound Door / Rigged Portcullis / Portcullis / Archway / Barricade / Moat / Column / Murder Hole / Royal Hoard / Great Hall |
+| **Cyberpunk** | Neon-lit street grids | Street / Barrier / Shutter / Cloaked Panel / Biometric Lock / Shock Door / Blast Shutter / Open Arch / Barricade / Acid Pool / Terminal / Turret / Chip Cache / Spawn |
+| **Desert** | Sun-baked sands and tombs | Sand / Sandstone / Tomb Door / Hidden Chamber / Sealed Tomb / Cursed Door / Stone Gate / Arch / Rubble Wall / Oasis / Cactus / Quicksand / Relic / Caravan |
+| **Dungeon** *(default)* | Subterranean crawl | Flagstone / Stone Wall / Iron Door / Secret Door / Locked Door / Trapped Door / Portcullis / Archway / Barricade / Underground Pool / Pillar / Trap / Treasure / Entrance |
+| **Lost Civilization** | Ancient temple complex | Flagstone / Carved Wall / Stone Slab / Hidden Glyph / Warded Seal / Glyph Trap Door / Rune Gate / Stone Arch / Rubble Wall / Reflecting Pool / Pillar / Cursed Glyph / Sarcophagus / Obelisk |
+| **Modern City** | Contemporary urban streets | Sidewalk / Building / Doorway / Hidden Door / Locked Entry / Alarmed Door / Security Gate / Open Entry / Barricade / Fountain / Lamp Post / Manhole / ATM / Bus Stop |
+| **Old West** | Frontier towns and saloons | Dirt / Plank Wall / Saloon Door / Hidden Passage / Locked Door / Trapped Door / Jailhouse Gate / Archway / Wagon Barricade / Water Trough / Post / Bear Trap / Gold / Entrance |
+| **Pirate** | Tall ships and hidden coves | Deck / Hull / Hatch / Smuggler Hatch / Chained Hatch / Rigged Hatch / Cargo Gate / Open Hatch / Barrel Barricade / Bilge / Mast / Cannon / Booty / Anchor |
+| **Post-Apocalypse** | Ruined wastelands | Rubble / Ruins / Barricade / Hidden Stash / Chained Door / Rigged Door / Scrap Gate / Broken Arch / Junk Wall / Toxic Pool / Rubble Pile / Landmine / Supplies / Shelter |
+| **Starship** | Deep-space vessel interiors | Deck / Bulkhead / Blast Door / Hidden Hatch / Mag-Locked Door / Booby-Trapped Hatch / Blast Shutter / Open Corridor / Debris Wall / Coolant / Support / Laser Grid / Data Core / Airlock |
+| **Steampunk** | Industrial gear-and-steam works | Iron Plate / Gear Wall / Valve Door / Concealed Hatch / Padlocked Gate / Pressure-Rigged Door / Steam Gate / Open Passage / Pipe Barricade / Steam Pipe / Piston / Pressure Plate / Contraption / Engine |
+| **Wilderness** | Outdoor overland maps | Grass / Trees / Gate / Hidden Path / Locked Gate / Snare Gate / Palisade Gate / Trellis / Brush Barricade / River / Boulder / Snare / Cache / Camp |
 
 ### Print mode
 
@@ -90,6 +93,7 @@ The Player toolbar exposes a freehand drawing tool for live table annotations:
 Drop tokens onto cells to track participants and threats:
 
 - **Player**, **NPC**, and **Monster** tokens. Monster tokens come in three footprints — Monster S (1×1), Monster M (2×2), and Monster L (3×3) — for varying creature sizes.
+- **Icon picker** — when placing a token, a searchable icon picker dialog opens with 30+ icons across 6 categories (Combat, Exploration, Characters, Creatures, Items, Magic). Choose an icon to display on the token, or cancel to use the default letter/emoji fallback.
 - **Move Token** — click and drag a token to relocate it.
 - **Remove** — click a token to delete it.
 
@@ -109,9 +113,44 @@ In **Player View** the panel is read-only — no rename, reorder, or clear. When
 
 The initiative order is persisted with the map (auto-save and JSON export).
 
+### Markers
+
+The GM toolbar's **MARKERS** section provides shape overlay tools for marking spell areas, hazard zones, and other tactical effects on the map:
+
+- **Place** — click on the map to drop a colored shape marker at the cursor position.
+- **Remove** — click an existing marker to delete it.
+- **Clear All** — remove every marker from the map.
+- **Shape** — choose between Circle, Square, and Diamond shapes.
+- **Color** — pick from 8 preset colors (red, orange, yellow, green, blue, purple, pink, dark grey).
+- **Radius** — adjust the marker size from 1 to 10 tiles using the slider.
+
+Markers are rendered with transparency so the underlying map remains visible. They appear above annotations but below tokens in the rendering order. A ghost preview follows the cursor when the Place tool is active. Markers are persisted with the map and included in PNG and SVG exports.
+
+### Copy, Cut & Paste
+
+The Select tool (`S`) supports clipboard operations on the selected region:
+
+- **Copy** (`Ctrl+C`) — copies all tiles and notes within the selection rectangle to an internal clipboard.
+- **Cut** (`Ctrl+X`) — copies the selection and then erases the original tiles.
+- **Paste** (`Ctrl+V`) — stamps the clipboard contents onto the map at the selection's top-left corner (or the map origin if no selection is active). A translucent dashed preview outline follows the cursor while the clipboard has content.
+
+Notes within the selection are remapped to fresh IDs on paste to avoid collisions. Per-tile theme overrides (from the "Preserve" toggle) are preserved through copy/paste.
+
+### Background Image
+
+The GM toolbar's **BACKGROUND** section lets you import an image to display behind the tile grid — useful for tracing existing battlemaps or using pre-made art as a backdrop:
+
+- **Import** — opens a file picker for PNG, JPEG, or WebP images. The image is loaded as a data URL and stored with the map.
+- **Remove** — clears the background image.
+- **Opacity** — controls the image transparency (0%–100%) so the grid and tiles remain visible on top.
+- **Scale** — resizes the image (10%–500%) relative to its natural size.
+- **Offset X / Y** — repositions the image in tile units (–50 to +50) to align it with the grid.
+
+The background image is hidden in Print mode. It is included in PNG exports (captured with the canvas) and SVG exports (embedded as a data URL). The image data is persisted with auto-save and JSON export/import.
+
 ## Map Generation
 
-The toolbar **🎲 Generate** button (in the **THEME** section of the GM toolbar) opens a procedural map-generation dialog. Generated maps use the standard tile types only (Floor, Wall, Door, Secret Door, Stairs, Water, Pillar, Trap, Treasure, Start) so the result is rendered in whatever theme the map currently uses — switching the theme afterwards restyles the generated map without losing any tile data.
+The toolbar **🎲 Generate** button (in the **THEME** section of the GM toolbar) opens a procedural map-generation dialog. Generated maps use the standard tile types (Floor, Wall, Door, Secret Door, Locked Door, Trapped Door, Portcullis, Archway, Barricade, Stairs, Water, Pillar, Trap, Treasure, Start) so the result is rendered in whatever theme the map currently uses — switching the theme afterwards restyles the generated map without losing any tile data.
 
 ### Algorithms
 
@@ -187,6 +226,9 @@ the same registry these shortcuts are defined in.
 | --- | --- |
 | `Ctrl+Z` | Undo (up to 50 steps) |
 | `Ctrl+Y` *or* `Ctrl+Shift+Z` | Redo |
+| `Ctrl+C` | Copy selection to clipboard (Select tool) |
+| `Ctrl+X` | Cut selection to clipboard (Select tool) |
+| `Ctrl+V` | Paste clipboard at selection origin (Select tool) |
 | `Delete` *or* `Backspace` | Clear tiles inside the active selection (Select tool) |
 | `Esc` | Clear the active selection or close the open dialog |
 
