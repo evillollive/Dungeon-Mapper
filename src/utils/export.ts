@@ -299,7 +299,7 @@ export async function exportHighResPNG(
       page.width = pageW;
       page.height = pageH;
       const pctx = page.getContext('2d')!;
-      // Fill with white so partial pages have a clean background.
+      // Fill with white so partial pages have a clean background (paper is white).
       pctx.fillStyle = '#ffffff';
       pctx.fillRect(0, 0, pageW, pageH);
       pctx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, sw, sh);

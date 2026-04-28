@@ -15,6 +15,9 @@ interface ExportDialogProps {
   onClose: () => void;
 }
 
+/** Images above this pixel count trigger a performance warning. */
+const LARGE_IMAGE_THRESHOLD = 200_000_000;
+
 const ExportDialog: React.FC<ExportDialogProps> = ({
   map, themeId, printMode, viewMode, onClose,
 }) => {
@@ -137,11 +140,11 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
           Output: <strong>{stats.pxW.toLocaleString()} × {stats.pxH.toLocaleString()} px</strong>
           {' '}({stats.inW}″ × {stats.inH}″ at {dpi} DPI)
           {stats.pages > 1 && (
-            <> — <strong>{stats.pages} page{stats.pages > 1 ? 's' : ''}</strong></>
+            <> — <strong>{stats.pages} pages</strong></>
           )}
         </div>
 
-        {stats.pxW * stats.pxH > 200_000_000 && (
+        {stats.pxW * stats.pxH > LARGE_IMAGE_THRESHOLD && (
           <div className="generate-dialog-warning" role="alert">
             ⚠️ Very large image ({Math.round(stats.pxW * stats.pxH / 1_000_000)}MP).
             This may take a moment and use significant memory.
