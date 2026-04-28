@@ -27,6 +27,10 @@ interface PlayerToolbarProps {
   onToggleFogEnabled: () => void;
   onResetFog: () => void;
   onClearFog: () => void;
+  /** Whether dynamic (token-driven) fog of war is active. */
+  dynamicFogEnabled: boolean;
+  onToggleDynamicFog: () => void;
+  onResetExplored: () => void;
 }
 
 const DRAW_TOOLS: { id: ToolType; label: string; icon: string; title: string }[] = [
@@ -54,6 +58,7 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
   drawWidth, onSetDrawWidth,
   onClearPlayerDrawings,
   fogEnabled, onToggleFogEnabled, onResetFog, onClearFog,
+  dynamicFogEnabled, onToggleDynamicFog, onResetExplored,
 }) => {
   return (
     <div className="toolbar">
@@ -123,6 +128,33 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
               <span className="tool-icon" aria-hidden="true">☀</span>
               <span className="tool-name">Clear Fog</span>
             </button>
+            <label
+              className={`tool-btn ${dynamicFogEnabled ? 'active' : ''}`}
+              style={{ cursor: 'pointer' }}
+              title="Dynamic fog — auto-reveal cells visible from player tokens. Explored areas stay dimmed."
+            >
+              <span className="tool-icon" aria-hidden="true">👁</span>
+              <span className="tool-name">Dynamic</span>
+              <input
+                type="checkbox"
+                checked={dynamicFogEnabled}
+                onChange={onToggleDynamicFog}
+                aria-label="Enable dynamic fog of war"
+                style={{ margin: 0 }}
+              />
+            </label>
+            {dynamicFogEnabled && (
+              <button
+                type="button"
+                className="tool-btn"
+                onClick={onResetExplored}
+                title="Clear explored memory — all explored cells return to fully fogged."
+                aria-label="Reset explored cells"
+              >
+                <span className="tool-icon" aria-hidden="true">🔄</span>
+                <span className="tool-name">Reset Explored</span>
+              </button>
+            )}
           </>
         )}
       </div>

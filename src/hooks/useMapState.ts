@@ -625,6 +625,42 @@ export function useMapState() {
     });
   }, [debouncedSave]);
 
+  const setDynamicFogEnabled = useCallback((enabled: boolean) => {
+    setMap(prev => {
+      if ((prev.dynamicFogEnabled ?? false) === enabled) return prev;
+      const patch: Partial<DungeonMap> = { dynamicFogEnabled: enabled };
+      // When enabling dynamic fog, ensure the explored grid exists.
+      if (enabled && !prev.explored) {
+        patch.explored = createFogGrid(prev.meta.width, prev.meta.height, false);
+      }
+      const updated = { ...prev, ...patch };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  /** Replace the explored grid (called by App.tsx after mergeExplored). */
+  const setExplored = useCallback((explored: boolean[][]) => {
+    setMap(prev => {
+      if (prev.explored === explored) return prev;
+      const updated = { ...prev, explored };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  /** Reset the explored grid (re-fog everything for dynamic fog). */
+  const resetExplored = useCallback(() => {
+    setMap(prev => {
+      const updated = {
+        ...prev,
+        explored: createFogGrid(prev.meta.width, prev.meta.height, false),
+      };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
   // ── Tokens ────────────────────────────────────────────────────────────
   // Tokens are not part of the tile/fog undo stack — they're treated as
   // lightweight overlays that can be added/moved/removed freely.
@@ -1006,6 +1042,9 @@ export function useMapState() {
     setFogCells,
     fillAllFog,
     setFogEnabled,
+    setDynamicFogEnabled,
+    setExplored,
+    resetExplored,
     // Tokens
     addToken,
     moveToken,

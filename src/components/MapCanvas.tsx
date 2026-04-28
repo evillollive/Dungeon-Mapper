@@ -20,6 +20,9 @@ const SCREEN_GRID = '#5fb8c9';
 // grey wash so the GM can see *what* is fogged without losing the map.
 const FOG_PLAYER_FILL = '#6b7280';
 const FOG_GM_FILL = 'rgba(107, 114, 128, 0.55)';
+/** Dimmed overlay for explored-but-not-visible cells in dynamic fog mode. */
+const EXPLORED_PLAYER_FILL = 'rgba(107, 114, 128, 0.55)';
+const EXPLORED_GM_FILL = 'rgba(107, 114, 128, 0.35)';
 
 // Cache parsed Path2D objects for icon rendering. Keyed by icon id.
 const iconPath2DCache = new Map<string, Path2D>();
@@ -102,6 +105,22 @@ interface MapCanvasProps {
    * App.tsx handles toggling the origin and recomputing visibility.
    */
   onFovClick?: (x: number, y: number) => void;
+  /**
+   * Whether dynamic fog of war is active. When `true`, the fog overlay
+   * uses 3-state rendering driven by `playerVisible` and `explored`.
+   */
+  dynamicFogEnabled?: boolean;
+  /**
+   * Set of `"x,y"` keys for cells currently in line-of-sight of at least
+   * one player token. These cells are rendered fully clear (no fog overlay).
+   */
+  playerVisible?: Set<string> | null;
+  /**
+   * Per-tile "explored" flags. Explored cells that are NOT currently
+   * visible are rendered with a dimmed (semi-transparent) fog overlay so
+   * the player can see the map layout but knows it's no longer in view.
+   */
+  explored?: boolean[][] | null;
 }
 
 export interface MapCanvasHandle {
@@ -373,6 +392,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   fovVisible,
   fovOrigin,
   onFovClick,
+  dynamicFogEnabled,
+  playerVisible,
+  explored,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -480,14 +502,22 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   // Notes positioned on a fogged cell are hidden from the player view so a
   // visible note number doesn't leak the existence of a hidden room.
   const visibleNotes = (fogActive && isPlayerView)
-    ? notes.filter(n => !(fog?.[n.y]?.[n.x]))
+    ? notes.filter(n => {
+        if (!(fog?.[n.y]?.[n.x])) return true;
+        if (dynamicFogEnabled) {
+          const key = `${n.x},${n.y}`;
+          if (playerVisible?.has(key)) return true;
+          if (explored?.[n.y]?.[n.x]) return true;
+        }
+        return false;
+      })
     : notes;
 
   // Tokens are hidden from players when *any* cell of their footprint sits
   // under fog — otherwise a multi-cell monster anchored on a fogged cell
   // could still be visible (or vice-versa) and leak the GM's prep.
   const visibleTokens = (fogActive && isPlayerView)
-    ? tokens.filter(t => !isTokenFogged(t, fog))
+    ? tokens.filter(t => !isTokenFogged(t, fog, dynamicFogEnabled ? playerVisible : undefined, explored))
     : tokens;
 
   // Main render
@@ -640,17 +670,56 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       const defogSkip = defogStroke
         ? new Set(defogStroke.map(c => `${c.x},${c.y}`))
         : null;
-      ctx.save();
-      ctx.fillStyle = isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
-      for (let y = 0; y < meta.height; y++) {
-        for (let x = 0; x < meta.width; x++) {
-          if (fog[y]?.[x]) {
+
+      if (dynamicFogEnabled && playerVisible) {
+        // 3-state dynamic fog: hidden → explored (dimmed) → visible (clear).
+        // Two passes avoid per-cell save/restore overhead.
+        const exploredFill = isPlayerView ? EXPLORED_PLAYER_FILL : EXPLORED_GM_FILL;
+        const hiddenFill = isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
+
+        // Pass 1: explored (dimmed) cells.
+        ctx.save();
+        ctx.fillStyle = exploredFill;
+        for (let y = 0; y < meta.height; y++) {
+          for (let x = 0; x < meta.width; x++) {
             if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
-            ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+            if (!fog[y]?.[x]) continue;
+            if (playerVisible.has(`${x},${y}`)) continue;
+            if (explored?.[y]?.[x]) {
+              ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+            }
           }
         }
+        ctx.restore();
+
+        // Pass 2: fully hidden (never-seen) cells.
+        ctx.save();
+        ctx.fillStyle = hiddenFill;
+        for (let y = 0; y < meta.height; y++) {
+          for (let x = 0; x < meta.width; x++) {
+            if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
+            if (!fog[y]?.[x]) continue;
+            if (playerVisible.has(`${x},${y}`)) continue;
+            if (!(explored?.[y]?.[x])) {
+              ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+            }
+          }
+        }
+        ctx.restore();
+      } else {
+        // Classic 2-state fog: hidden (opaque/translucent) or revealed.
+        ctx.save();
+        ctx.fillStyle = isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
+        for (let y = 0; y < meta.height; y++) {
+          for (let x = 0; x < meta.width; x++) {
+            if (fog[y]?.[x]) {
+              if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
+              ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+            }
+          }
+        }
+        ctx.restore();
       }
-      ctx.restore();
     }
 
     // FOV overlay. When fovVisible is provided, darken every cell that is
@@ -780,7 +849,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       drawMarker(ctx, ghost, tileSize);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored]);
 
   // Minimap render
   useEffect(() => {
