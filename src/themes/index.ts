@@ -7,6 +7,8 @@ export interface TileTheme {
   emptyTileId: TileType;
   cssVars: Record<string, string>;
   tileColors: Record<TileType, string>;
+  /** Per-theme grid line colour. Replaces the old hardcoded #2d3561. */
+  gridColor: string;
   drawTile(ctx: CanvasRenderingContext2D, id: TileType, x: number, y: number, size: number): void;
 }
 
