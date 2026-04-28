@@ -12,7 +12,7 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **13 preset theme modes** — Castle, Dungeon, Starship, Alien World, Lost Civilization, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City, Pirate, Desert (see [Preset Modes](#preset-modes) below)
 - **Graph-paper canvas** — light parchment background with cyan grid lines, evoking traditional engineering / quad-ruled graph paper
 - **Print mode** — toggle a high-contrast black-and-white renderer for printer-friendly output
-- **GM drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`, Line-of-Sight / FOV `O`
+- **GM drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`, Line-of-Sight / FOV `O`, Measure `M`, Light Source `I`
 - **Copy / Paste / Cut** — select a region with the Select tool, then `Ctrl+C` to copy, `Ctrl+X` to cut, `Ctrl+V` to paste tiles and notes at the selection origin with a live preview overlay
 - **Procedural map generation** — toolbar **🎲 Generate** opens a dialog with four algorithms (Rooms & Corridors, Open Terrain, Cavern, Village), a deterministic seed, a density slider, per-generator tile-mix sliders, corridor strategy and shape controls, optional theme room labels with procedural names, and an opt-in **Generate into selection** mode that stamps a generated map into an active selection rectangle without disturbing the rest of the map (see [Map Generation](#map-generation) below)
 - **Player view** — header **🛡 GM View / 👁 Player View** toggle swaps to a player-safe toolbar with a freehand drawing pen, an eraser, fog-of-war controls, and token tools (see [Player View](#player-view) below)
@@ -20,6 +20,8 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **Tokens with icon library** — drop Player, NPC, and Monster tokens (small 1×1, medium 2×2, large 3×3) onto the map with a searchable icon picker (30+ icons in 6 categories); Move Token to drag, Remove Token to delete
 - **Initiative panel** — a turn-order list in the right-hand sidebar that mirrors placed tokens; the GM can drag entries to reorder, rename them inline, or clear the list (see [Initiative](#initiative) below)
 - **Shape / area markers** — place colored shape overlays (circle, square, diamond) on the map for marking spell areas, hazard zones, and tactical effects; 8 color options with adjustable radius (see [Markers](#markers) below)
+- **Measure tool** — measure distances between cells in four shapes (ruler, circle, cone, line) with configurable feet-per-cell scale (default 5 ft); overlays are drawn in cyan with a distance readout pill (see [Measure](#measure) below)
+- **Light sources** — place light sources on the map from preset profiles (torch, lantern, magical, custom) with adjustable radius and color; integrates with dynamic fog to illuminate cells within range (see [Light Sources](#light-sources) below)
 - **Background image import** — import a PNG/JPG as a background layer behind the tile grid for tracing existing battlemaps; adjustable opacity, scale, and position (see [Background Image](#background-image) below)
 - **Player annotations** — freehand pen with eight color swatches and Thin / Medium / Thick brush widths; per-stroke eraser and a Clear All button
 - **Zoom & pan** — `+` / `-` / `Reset` / `Fit` controls along the bottom of the map; right-click drag to pan; mouse-wheel zoom while holding `Shift` (or with Caps Lock on)
@@ -129,6 +131,32 @@ The GM toolbar's **MARKERS** section provides shape overlay tools for marking sp
 
 Markers are rendered with transparency so the underlying map remains visible. They appear above annotations but below tokens in the rendering order. A ghost preview follows the cursor when the Place tool is active. Markers are persisted with the map and included in PNG and SVG exports.
 
+### Measure
+
+The GM toolbar's **MEASURE** section provides on-canvas distance measurement:
+
+- **Measure tool** (`M`) — click and drag on the map to measure the distance between two cells.
+- **Shape** — choose between four measurement shapes:
+  - **Ruler** — straight-line point-to-point distance.
+  - **Circle** — radial area from the origin point.
+  - **Cone** — conical projection from the origin.
+  - **Line** — linear path from the origin.
+- **Scale** — set the feet-per-cell value (default 5 ft, range 1–100) to match your game system's grid scale.
+
+Measurements are drawn as cyan overlays with a pill-shaped distance readout. Distances use Chebyshev (king-move) distance, matching the D&D 5e diagonal movement convention. Measurements are ephemeral — they are not saved with the map.
+
+### Light Sources
+
+The GM toolbar's **LIGHT** section lets you place light sources on the map for illumination effects:
+
+- **Place** (`I`) — click a cell to drop a light source at that position.
+- **Remove** — click an existing light source to delete it.
+- **Presets** — choose from four profiles: Torch (warm orange, 4-cell radius), Lantern (amber, 6-cell radius), Magical (violet, 8-cell radius), or Custom.
+- **Radius** — adjust the light radius from 1 to 20 cells.
+- **Color** — pick from 8 preset colors (torch orange, lantern amber, pale yellow, white, magical violet, arcane green, ice blue, infernal red).
+
+Light sources emit a soft glow overlay on the canvas and integrate with dynamic fog of war — cells illuminated by a light source are treated as visible when computing fog visibility. Light sources are persisted with the map (auto-save and JSON export).
+
 ### Copy, Cut & Paste
 
 The Select tool (`S`) supports clipboard operations on the selected region:
@@ -211,6 +239,8 @@ the same registry these shortcuts are defined in.
 | `V` | Reveal fog (drag-rectangle, fog must be enabled) |
 | `H` | Hide fog (drag-rectangle, fog must be enabled) |
 | `O` | Line-of-Sight / FOV tool — click a cell to see what is visible from it |
+| `M` | Measure / Distance tool — click and drag to measure distances |
+| `I` | Light Source tool — click a cell to place a light source (Illuminate) |
 
 ### View
 
@@ -295,13 +325,27 @@ editor confidently:
   `aria-keyshortcuts`, and tooltips show the same key in `[brackets]`
   for sighted users.
 - **Polite live region.** Undo / redo, theme switch, view-mode swap,
-  print-mode toggle, and "Map generated" announcements are surfaced via
-  an `aria-live="polite"` status region so the actions are audible
-  without checking the canvas.
+  print-mode toggle, zoom level changes, and "Map generated"
+  announcements are surfaced via an `aria-live="polite"` status region
+  so the actions are audible without checking the canvas.
 - **Focus visibility.** All interactive controls (header buttons, tool
-  buttons, palette tiles, drop-downs, zoom controls, the canvas itself)
+  buttons, palette tiles, drop-downs, zoom controls, the canvas, note
+  and initiative panel items, form inputs, and edit/delete buttons)
   expose a high-contrast `:focus-visible` ring that is shown only for
   keyboard users.
+- **Keyboard-navigable panels.** Room note and initiative panel entries
+  are keyboard-focusable with `Enter`/`Space` to select. Initiative
+  entries can be reordered with `Alt+Up`/`Alt+Down` arrow keys as a
+  keyboard alternative to drag-and-drop.
+- **Descriptive labels.** Note edit/delete buttons and initiative rename
+  buttons carry `aria-label` attributes that include the item name for
+  clear screen-reader identification. Form inputs in note editing have
+  explicit `aria-label` values. All range sliders and color pickers in
+  the toolbar include descriptive `aria-label` text.
+- **Modal dialogs.** All dialogs (Export, Generate Map, Icon Picker,
+  Shortcuts Help) use `role="dialog"` and `aria-modal="true"` with
+  `aria-label` or `aria-labelledby`. Global shortcuts are automatically
+  suppressed while a modal is open, and `Escape` dismisses any dialog.
 - **Print mode.** A high-contrast monochrome rendering of the map is
   available via the **🖨 Print** button (`Shift+P`) for users who need
   the highest possible contrast or want to print the map.

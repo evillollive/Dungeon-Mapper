@@ -257,10 +257,13 @@ export function useMapState() {
         // Clearing the map resets to a fully-fogged state, matching the
         // behavior of a fresh map.
         fog: createFogGrid(prev.meta.width, prev.meta.height, true),
+        explored: undefined,
+        dynamicFogEnabled: false,
         tokens: [],
         annotations: [],
         initiative: [],
         lightSources: [],
+        markers: [],
       };
       debouncedSave(updated);
       return updated;
@@ -269,6 +272,7 @@ export function useMapState() {
     nextTokenIdRef.current = 1;
     nextStrokeIdRef.current = 1;
     nextLightIdRef.current = 1;
+    nextMarkerIdRef.current = 1;
     setSelectedNoteId(null);
   }, [debouncedSave]);
 
@@ -284,6 +288,7 @@ export function useMapState() {
     nextTokenIdRef.current = 1;
     nextStrokeIdRef.current = 1;
     nextLightIdRef.current = 1;
+    nextMarkerIdRef.current = 1;
     setSelectedNoteId(null);
   }, [debouncedSave]);
 

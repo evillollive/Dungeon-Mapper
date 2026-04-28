@@ -1025,9 +1025,25 @@
 .tile-btn:focus-visible,
 .grid-select:focus-visible,
 .zoom-controls button:focus-visible,
-.minimap-canvas:focus-visible {
+.minimap-canvas:focus-visible,
+.note-edit-btn:focus-visible,
+.note-delete-btn:focus-visible,
+.note-save-btn:focus-visible,
+.note-cancel-btn:focus-visible,
+.add-note-btn:focus-visible,
+.initiative-edit-btn:focus-visible,
+.initiative-clear-btn:focus-visible,
+.note-item:focus-visible,
+.initiative-item:focus-visible,
+.map-name-input:focus-visible {
   outline: 2px solid #8a3a3a;
   outline-offset: 2px;
+}
+.note-input:focus-visible,
+.note-textarea:focus-visible,
+.initiative-input:focus-visible {
+  outline: 2px solid #8a3a3a;
+  outline-offset: 1px;
 }
 .canvas-transform-container canvas:focus-visible {
   /* The canvas sits inside a transformed wrapper, so an outline shifts

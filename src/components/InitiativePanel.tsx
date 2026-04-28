@@ -107,6 +107,10 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
                 isSelected ? 'selected' : '',
                 isDragOver ? 'drag-over' : '',
               ].filter(Boolean).join(' ')}
+              role="button"
+              tabIndex={0}
+              aria-label={`${token.label}, position ${idx + 1}${isGm ? '. Use Alt+Up/Down to reorder' : ''}`}
+              aria-pressed={isSelected}
               draggable={isGm && editingId !== token.id}
               onDragStart={isGm ? (e) => {
                 setDragIndex(idx);
@@ -133,6 +137,18 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
                 setDragOverIndex(null);
               } : undefined}
               onClick={() => onSelectToken(isSelected ? null : token.id)}
+              onKeyDown={e => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelectToken(isSelected ? null : token.id);
+                } else if (isGm && e.altKey && e.key === 'ArrowUp' && idx > 0) {
+                  e.preventDefault();
+                  onReorder(idx, idx - 1);
+                } else if (isGm && e.altKey && e.key === 'ArrowDown' && idx < entries.length - 1) {
+                  e.preventDefault();
+                  onReorder(idx, idx + 1);
+                }
+              }}
             >
               <span className="initiative-order">{idx + 1}</span>
               <span
@@ -179,6 +195,7 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
                   className="initiative-edit-btn"
                   onClick={e => { e.stopPropagation(); startEdit(token); }}
                   title="Rename"
+                  aria-label={`Rename ${token.label}`}
                 >✎</button>
               )}
             </div>

@@ -1813,7 +1813,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       </div>
       <div className="zoom-controls" role="group" aria-label="Map zoom controls" title="Hold Shift + scroll to pan around the map">
         <button type="button" onClick={() => setZoom(z => Math.min(4, z + 0.25))} aria-label="Zoom in" aria-keyshortcuts="+">+</button>
-        <span aria-live="off" aria-atomic="true">{Math.round(zoom * 100)}%</span>
+        <span aria-live="polite" aria-atomic="true">{Math.round(zoom * 100)}%</span>
         <button type="button" onClick={() => setZoom(z => Math.max(0.25, z - 0.25))} aria-label="Zoom out" aria-keyshortcuts="-">-</button>
         <button type="button" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} aria-label="Reset zoom to 100%" aria-keyshortcuts="0">Reset</button>
         <button type="button" onClick={handleFitToScreen} title="Fit map to screen" aria-label="Fit map to screen" aria-keyshortcuts="1">Fit</button>
