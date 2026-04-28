@@ -53,16 +53,35 @@ export const alienTheme: TileTheme = {
       case 'floor': {
         ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
         ctx.fillRect(px, py, size, size);
-        // Speckled spore bed: a few biolume dots scattered across the tile.
-        ctx.fillStyle = '#7a3aaa';
+        // Speckled spore bed: biolume dots with glow halos
         const dots: [number, number][] = [
           [0.25, 0.3], [0.7, 0.25], [0.4, 0.65], [0.75, 0.75], [0.2, 0.8],
         ];
+        const dotR = Math.max(0.6, s * 0.05);
         for (const [fx, fy] of dots) {
+          const dx = px + fx * s;
+          const dy = py + fy * s;
+          // Glow halo behind dot
+          ctx.fillStyle = '#7a3aaa33';
           ctx.beginPath();
-          ctx.arc(px + fx * s, py + fy * s, Math.max(0.6, s * 0.05), 0, Math.PI * 2);
+          ctx.arc(dx, dy, dotR * 2, 0, Math.PI * 2);
+          ctx.fill();
+          // Solid dot
+          ctx.fillStyle = '#7a3aaa';
+          ctx.beginPath();
+          ctx.arc(dx, dy, dotR, 0, Math.PI * 2);
           ctx.fill();
         }
+        // Organic vein line connecting some dots
+        ctx.strokeStyle = '#7a3aaa44';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px + dots[0][0] * s, py + dots[0][1] * s);
+        ctx.quadraticCurveTo(
+          px + dots[2][0] * s, py + dots[2][1] * s,
+          px + dots[3][0] * s, py + dots[3][1] * s,
+        );
+        ctx.stroke();
         break;
       }
 
@@ -70,14 +89,45 @@ export const alienTheme: TileTheme = {
         ctx.fillStyle = jitterColor(this.tileColors[type], x, y, 0.06);
         ctx.fillRect(px, py, size, size);
         drawWallDepth(ctx, px, py, size, 'glow', '#c040ff', 0.5);
-        // Fungal wall: bumpy organic mound rather than a clean rectangle.
+        // Fungal wall: bumpy organic mound
         ctx.fillStyle = '#3a1850';
         ctx.fillRect(px + 2, py + 2, s - 4, s - 4);
         ctx.fillStyle = '#7a3aaa';
+        const bumps: [number, number, number][] = [
+          [s * 0.3, s * 0.35, s * 0.18],
+          [s * 0.7, s * 0.4, s * 0.16],
+          [s * 0.5, s * 0.7, s * 0.2],
+        ];
         ctx.beginPath();
-        ctx.arc(px + s * 0.3, py + s * 0.35, s * 0.18, 0, Math.PI * 2);
-        ctx.arc(px + s * 0.7, py + s * 0.4, s * 0.16, 0, Math.PI * 2);
-        ctx.arc(px + s * 0.5, py + s * 0.7, s * 0.2, 0, Math.PI * 2);
+        for (const [bx, by, br] of bumps) {
+          ctx.arc(px + bx, py + by, br, 0, Math.PI * 2);
+        }
+        ctx.fill();
+        // Tendril lines radiating from bumps toward edges
+        ctx.strokeStyle = '#5a2870';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px + s * 0.3, py + s * 0.35);
+        ctx.quadraticCurveTo(px + s * 0.15, py + s * 0.2, px + 2, py + s * 0.1);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(px + s * 0.7, py + s * 0.4);
+        ctx.quadraticCurveTo(px + s * 0.85, py + s * 0.25, px + s - 2, py + 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(px + s * 0.5, py + s * 0.7);
+        ctx.quadraticCurveTo(px + s * 0.35, py + s * 0.85, px + 2, py + s - 2);
+        ctx.stroke();
+        // Tiny spore dots on tendrils
+        ctx.fillStyle = '#7a3aaa';
+        ctx.beginPath();
+        ctx.arc(px + s * 0.15, py + s * 0.2, 0.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px + s * 0.85, py + s * 0.25, 0.8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px + s * 0.35, py + s * 0.85, 0.8, 0, Math.PI * 2);
         ctx.fill();
         break;
       }
@@ -112,6 +162,22 @@ export const alienTheme: TileTheme = {
         ctx.beginPath();
         ctx.ellipse(cx, cy, (s - 4) / 2, 4, 0, 0, Math.PI * 2);
         ctx.stroke();
+        // Vein lines radiating from center
+        ctx.strokeStyle = '#ff80ff88';
+        ctx.lineWidth = 0.5;
+        const hRx = (s - 4) / 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx - hRx * 0.7, cy - 3);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + hRx * 0.6, cy - 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + hRx * 0.3, cy + 3);
+        ctx.stroke();
         break;
       }
 
@@ -125,6 +191,22 @@ export const alienTheme: TileTheme = {
         ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.ellipse(cx, cy, 4, (s - 4) / 2, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        // Vein lines radiating from center (rotated)
+        ctx.strokeStyle = '#ff80ff88';
+        ctx.lineWidth = 0.5;
+        const vRy = (s - 4) / 2;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx - 3, cy - vRy * 0.7);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx - 2, cy + vRy * 0.6);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy);
+        ctx.lineTo(cx + 3, cy + vRy * 0.3);
         ctx.stroke();
         break;
       }

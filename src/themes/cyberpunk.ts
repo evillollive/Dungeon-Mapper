@@ -1,6 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash } from './artUtils';
 
 export const cyberpunkTheme: TileTheme = {
   id: 'cyberpunk',
@@ -50,14 +50,33 @@ export const cyberpunkTheme: TileTheme = {
       case 'floor': {
         ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
         ctx.fillRect(px, py, size, size);
-        ctx.strokeStyle = '#1a1a40';
+        // Circuit-board traces
+        const fh = tileHash(x, y);
+        const traceOff = fh * s * 0.3;
+        ctx.strokeStyle = '#2a1a50';
         ctx.lineWidth = 0.5;
+        // Trace 1: L-shape offset by hash
         ctx.beginPath();
-        ctx.moveTo(px + 3, py + 3);
-        ctx.lineTo(px + s - 3, py + 3);
-        ctx.moveTo(px + 3, py + 3);
-        ctx.lineTo(px + 3, py + s - 3);
+        ctx.moveTo(px + 3, py + 3 + traceOff);
+        ctx.lineTo(px + s * 0.5, py + 3 + traceOff);
+        ctx.lineTo(px + s * 0.5, py + s - 3);
         ctx.stroke();
+        // Trace 2: inverted L
+        ctx.beginPath();
+        ctx.moveTo(px + s - 3, py + s * 0.4 + traceOff * 0.5);
+        ctx.lineTo(px + s * 0.65, py + s * 0.4 + traceOff * 0.5);
+        ctx.lineTo(px + s * 0.65, py + 3);
+        ctx.stroke();
+        // Trace 3: short horizontal stub
+        ctx.beginPath();
+        ctx.moveTo(px + 3, py + s - 4);
+        ctx.lineTo(px + s * 0.3, py + s - 4);
+        ctx.stroke();
+        // Pad at end of trace 1
+        ctx.fillStyle = '#2a1a50';
+        ctx.beginPath();
+        ctx.arc(px + s * 0.5, py + s - 3, 1.5, 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
 
@@ -71,6 +90,17 @@ export const cyberpunkTheme: TileTheme = {
         ctx.strokeStyle = '#ff00ff44';
         ctx.lineWidth = 3;
         ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
+        // Holographic shimmer scan-lines
+        const shimmerColors = ['#ff00ff33', '#cc00cc44', '#ff00ff33'];
+        for (let i = 0; i < shimmerColors.length; i++) {
+          const ly = py + 4 + i * ((s - 8) / 3);
+          ctx.strokeStyle = shimmerColors[i];
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(px + 3, ly);
+          ctx.lineTo(px + s - 3, ly);
+          ctx.stroke();
+        }
         break;
       }
 
@@ -99,6 +129,20 @@ export const cyberpunkTheme: TileTheme = {
         ctx.fillStyle = '#ff00ff22';
         ctx.fillRect(px + 2, cy - 3, (s - 4) / 2 - 1, 6);
         ctx.fillRect(cx + 1, cy - 3, (s - 4) / 2 - 1, 6);
+        // Glitch lines
+        ctx.strokeStyle = '#ff00ff44';
+        ctx.lineWidth = 0.5;
+        for (let gi = 0; gi < 3; gi++) {
+          const gy = cy - 2 + gi * 2;
+          ctx.beginPath();
+          ctx.moveTo(px + 3, gy);
+          ctx.lineTo(px + s - 3, gy);
+          ctx.stroke();
+        }
+        // Bright pixel dot shifted by tileHash
+        const dh = tileHash(x, y);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(px + 4 + dh * (s - 8), cy - 0.5, 1, 1);
         break;
       }
 
@@ -110,6 +154,20 @@ export const cyberpunkTheme: TileTheme = {
         ctx.fillStyle = '#ff00ff22';
         ctx.fillRect(cx - 3, py + 2, 6, (s - 4) / 2 - 1);
         ctx.fillRect(cx - 3, cy + 1, 6, (s - 4) / 2 - 1);
+        // Vertical glitch lines
+        ctx.strokeStyle = '#ff00ff44';
+        ctx.lineWidth = 0.5;
+        for (let gi = 0; gi < 3; gi++) {
+          const gx = cx - 2 + gi * 2;
+          ctx.beginPath();
+          ctx.moveTo(gx, py + 3);
+          ctx.lineTo(gx, py + s - 3);
+          ctx.stroke();
+        }
+        // Bright pixel dot shifted by tileHash
+        const dvh = tileHash(x, y);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(cx - 0.5, py + 4 + dvh * (s - 8), 1, 1);
         break;
       }
 
