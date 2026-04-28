@@ -1,6 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash } from './artUtils';
 
 export const pirateTheme: TileTheme = {
   id: 'pirate',
@@ -76,6 +76,22 @@ export const pirateTheme: TileTheme = {
         ctx.fillStyle = '#3a2410';
         ctx.fillRect(px + 2, py + 2, 1, 1);
         ctx.fillRect(px + s - 3, py + s - 3, 1, 1);
+        // Extra knot dots
+        ctx.fillStyle = '#5a3a18';
+        for (let i = 0; i < 2; i++) {
+          const kh = tileHash(x * 7 + i, y * 11 + i);
+          const kh2 = tileHash(x * 13 + i, y * 3 + i);
+          ctx.fillRect(px + 3 + kh * (s - 6), py + 3 + kh2 * (s - 6), 1, 1);
+        }
+        // Tiny wood grain line
+        ctx.strokeStyle = '#8a6540';
+        ctx.lineWidth = 0.3;
+        const gh = tileHash(x * 3, y * 7);
+        const gy = py + 3 + gh * (s - 6);
+        ctx.beginPath();
+        ctx.moveTo(px + 2, gy);
+        ctx.lineTo(px + s * 0.4, gy + 0.5);
+        ctx.stroke();
         break;
       }
 
@@ -92,6 +108,17 @@ export const pirateTheme: TileTheme = {
           ctx.moveTo(px + 1, wy);
           ctx.quadraticCurveTo(cx, wy + 2, px + s - 1, wy);
           ctx.stroke();
+        }
+        // Nail heads
+        ctx.fillStyle = '#2a2a2a';
+        for (let i = 0; i < 2; i++) {
+          const nh = tileHash(x * 5 + i, y * 9 + i);
+          const nh2 = tileHash(x * 11 + i, y * 7 + i);
+          const nx = px + 3 + nh * (s - 6);
+          const ny = py + 3 + nh2 * (s - 6);
+          ctx.beginPath();
+          ctx.arc(nx, ny, 0.7, 0, Math.PI * 2);
+          ctx.fill();
         }
         break;
       }
@@ -117,29 +144,50 @@ export const pirateTheme: TileTheme = {
       }
 
       case 'door-h': {
+        // Trapdoor hatch
         ctx.fillStyle = '#5a3a18';
         ctx.fillRect(px + 2, cy - 3, s - 4, 6);
         ctx.strokeStyle = '#c8a84b';
         ctx.lineWidth = 1;
         ctx.strokeRect(px + 2, cy - 3, s - 4, 6);
-        // Iron ring.
+        // Hatch outline
+        ctx.strokeStyle = '#3a2a0a';
+        ctx.lineWidth = 0.6;
+        ctx.strokeRect(cx - s * 0.15, cy - 2, s * 0.3, 4);
+        // Ring pull
         ctx.strokeStyle = '#888';
+        ctx.lineWidth = 0.8;
         ctx.beginPath();
         ctx.arc(cx, cy, 1.5, 0, Math.PI * 2);
         ctx.stroke();
+        // Hinge marks at edges
+        ctx.fillStyle = '#4a4a4a';
+        ctx.fillRect(px + 3, cy - 1, 1.5, 2);
+        ctx.fillRect(px + s - 4.5, cy - 1, 1.5, 2);
         break;
       }
 
       case 'door-v': {
+        // Trapdoor hatch (vertical)
         ctx.fillStyle = '#5a3a18';
         ctx.fillRect(cx - 3, py + 2, 6, s - 4);
         ctx.strokeStyle = '#c8a84b';
         ctx.lineWidth = 1;
         ctx.strokeRect(cx - 3, py + 2, 6, s - 4);
+        // Hatch outline
+        ctx.strokeStyle = '#3a2a0a';
+        ctx.lineWidth = 0.6;
+        ctx.strokeRect(cx - 2, cy - s * 0.15, 4, s * 0.3);
+        // Ring pull
         ctx.strokeStyle = '#888';
+        ctx.lineWidth = 0.8;
         ctx.beginPath();
         ctx.arc(cx, cy, 1.5, 0, Math.PI * 2);
         ctx.stroke();
+        // Hinge marks at edges
+        ctx.fillStyle = '#4a4a4a';
+        ctx.fillRect(cx - 1, py + 3, 2, 1.5);
+        ctx.fillRect(cx - 1, py + s - 4.5, 2, 1.5);
         break;
       }
 

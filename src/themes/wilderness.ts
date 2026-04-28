@@ -1,6 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash } from './artUtils';
 
 export const wildernessTheme: TileTheme = {
   id: 'wilderness',
@@ -50,11 +50,20 @@ export const wildernessTheme: TileTheme = {
       case 'floor': {
         ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
         ctx.fillRect(px, py, size, size);
-        ctx.fillStyle = '#2a6a1a';
-        for (let i = 0; i < 4; i++) {
-          const dx = px + 2 + (i * 31) % (s - 4);
-          const dy = py + 2 + (i * 17) % (s - 4);
-          ctx.fillRect(dx, dy, 1, 2);
+        // Hash-seeded grass blade strokes
+        const grassColors = ['#2a6a1a', '#4a8a2a'];
+        ctx.lineWidth = 0.8;
+        for (let i = 0; i < 6; i++) {
+          const h = tileHash(x * 7 + i, y * 13 + i);
+          const h2 = tileHash(x * 11 + i, y * 3 + i);
+          const bx = px + 2 + h * (s - 4);
+          const by = py + 2 + h2 * (s - 4);
+          const angle = (h * 2 - 1) * 0.6;
+          ctx.strokeStyle = grassColors[i % 2];
+          ctx.beginPath();
+          ctx.moveTo(bx, by);
+          ctx.lineTo(bx + Math.sin(angle) * 3, by - Math.cos(angle) * 3.5);
+          ctx.stroke();
         }
         break;
       }
@@ -71,6 +80,15 @@ export const wildernessTheme: TileTheme = {
         ctx.beginPath();
         ctx.arc(cx, cy - s * 0.1, s * 0.35, 0, Math.PI * 2);
         ctx.fill();
+        // Leaf highlights
+        ctx.fillStyle = '#3a8a1a';
+        for (let i = 0; i < 3; i++) {
+          const lh = tileHash(x * 5 + i, y * 9 + i);
+          const lh2 = tileHash(x * 9 + i, y * 5 + i);
+          const lx = cx + (lh * 2 - 1) * s * 0.25;
+          const ly = cy - s * 0.1 + (lh2 * 2 - 1) * s * 0.22;
+          ctx.fillRect(lx, ly, 1, 1);
+        }
         break;
       }
 
@@ -99,6 +117,17 @@ export const wildernessTheme: TileTheme = {
         ctx.strokeStyle = '#c8a84b';
         ctx.lineWidth = 1;
         ctx.strokeRect(px + 2, cy - 2, s - 4, 4);
+        // Crossbar
+        ctx.strokeStyle = '#6a4a20';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 3);
+        ctx.lineTo(cx, cy + 3);
+        ctx.stroke();
+        // Nail pegs
+        ctx.fillStyle = '#3a2a0a';
+        ctx.fillRect(cx - s * 0.2, cy - 0.5, 1, 1);
+        ctx.fillRect(cx + s * 0.2, cy - 0.5, 1, 1);
         break;
       }
 
@@ -108,6 +137,17 @@ export const wildernessTheme: TileTheme = {
         ctx.strokeStyle = '#c8a84b';
         ctx.lineWidth = 1;
         ctx.strokeRect(cx - 2, py + 2, 4, s - 4);
+        // Crossbar
+        ctx.strokeStyle = '#6a4a20';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy);
+        ctx.lineTo(cx + 3, cy);
+        ctx.stroke();
+        // Nail pegs
+        ctx.fillStyle = '#3a2a0a';
+        ctx.fillRect(cx - 0.5, cy - s * 0.2, 1, 1);
+        ctx.fillRect(cx - 0.5, cy + s * 0.2, 1, 1);
         break;
       }
 
