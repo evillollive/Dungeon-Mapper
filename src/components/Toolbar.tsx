@@ -195,6 +195,19 @@ const Toolbar: React.FC<ToolbarProps> = ({
             style={{ margin: 0 }}
           />
         </label>
+        <button
+          type="button"
+          className={`tool-btn ${activeTool === 'fov' ? 'active' : ''}`}
+          onClick={() => onSetTool(activeTool === 'fov' ? 'paint' : 'fov')}
+          title="Line of Sight — click a cell to visualize which cells are visible from that point, with walls blocking the view. Click the same cell again to clear. [O]"
+          aria-label="Line of Sight / FOV tool"
+          aria-pressed={activeTool === 'fov'}
+          aria-keyshortcuts="O"
+        >
+          <span className="tool-icon" aria-hidden="true">👁</span>
+          <span className="tool-name">Sight</span>
+          <span className="tool-shortcut" aria-hidden="true">[O]</span>
+        </button>
       </div>
 
       <div className="toolbar-section">

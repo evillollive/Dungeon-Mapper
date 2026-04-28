@@ -85,6 +85,8 @@ export interface ShortcutActions {
   cutSelection: () => void;
   /** Paste clipboard contents at the current selection position (Ctrl+V). */
   pasteClipboard: () => void;
+  /** Toggle the FOV / Line-of-Sight tool (O key). */
+  toggleFov: () => void;
 }
 
 const isPlainKey = (e: KeyboardEvent) =>
@@ -113,6 +115,14 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
     tool('tool.select', 's', 'Select tool',    'select'),
     tool('tool.reveal', 'v', 'Reveal fog (drag rectangle)', 'reveal'),
     tool('tool.hide',   'h', 'Hide fog (drag rectangle)',   'hide'),
+    {
+      id: 'tool.fov',
+      category: 'Tools',
+      keys: 'O',
+      description: 'Line-of-Sight / FOV tool — click a cell to see what is visible from it',
+      match: e => isPlainKey(e) && !e.shiftKey && e.key.toLowerCase() === 'o',
+      action: actions.toggleFov,
+    },
 
     // ── View ──
     {
@@ -375,4 +385,5 @@ export const TOOL_SHORTCUTS: Record<ToolType, string | undefined> = {
   'remove-token': undefined,
   marker: undefined,
   'remove-marker': undefined,
+  fov: 'O',
 };

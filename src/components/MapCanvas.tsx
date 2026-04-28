@@ -86,6 +86,22 @@ interface MapCanvasProps {
   hasClipboard?: boolean;
   /** Width/height of the clipboard buffer (for preview overlay sizing). */
   clipboardSize?: { w: number; h: number } | null;
+  /**
+   * Set of `"x,y"` keys representing cells visible from the current FOV
+   * origin. When non-null, a darkened overlay is painted on all cells NOT
+   * in this set. Computed externally via `computeFOV()`.
+   */
+  fovVisible?: Set<string> | null;
+  /**
+   * The FOV origin cell, rendered with a distinct marker so the user can
+   * see where the sight calculation originates. `null` when FOV is off.
+   */
+  fovOrigin?: { x: number; y: number } | null;
+  /**
+   * Called when the user clicks a cell while the FOV tool is active.
+   * App.tsx handles toggling the origin and recomputing visibility.
+   */
+  onFovClick?: (x: number, y: number) => void;
 }
 
 export interface MapCanvasHandle {
@@ -354,6 +370,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   onSelectionChange,
   hasClipboard,
   clipboardSize,
+  fovVisible,
+  fovOrigin,
+  onFovClick,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -634,6 +653,38 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.restore();
     }
 
+    // FOV overlay. When fovVisible is provided, darken every cell that is
+    // NOT in the visible set. Drawn after fog (so it stacks) but before
+    // ghost previews and selection outlines.
+    if (fovVisible) {
+      ctx.save();
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+      for (let y = 0; y < meta.height; y++) {
+        for (let x = 0; x < meta.width; x++) {
+          if (!fovVisible.has(`${x},${y}`)) {
+            ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+          }
+        }
+      }
+      ctx.restore();
+      // Draw a bright marker on the FOV origin cell so the user can see
+      // where the sight calculation is anchored.
+      if (fovOrigin) {
+        ctx.save();
+        const cx = (fovOrigin.x + 0.5) * tileSize;
+        const cy = (fovOrigin.y + 0.5) * tileSize;
+        const r = tileSize * 0.32;
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(250, 204, 21, 0.7)';
+        ctx.fill();
+        ctx.strokeStyle = '#b45309';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
     // Ghost preview for line/rect
     if (isDragging && dragStart && dragEnd && (activeTool === 'line' || activeTool === 'rect')) {
       const ghostPoints = activeTool === 'line'
@@ -729,7 +780,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       drawMarker(ctx, ghost, tileSize);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin]);
 
   // Minimap render
   useEffect(() => {
@@ -895,6 +946,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       }
       return;
     }
+    if (activeTool === 'fov') {
+      onFovClick?.(x, y);
+      return;
+    }
 
     // Player-only tools (drawing eraser).
     if (isPlayerView) {
@@ -930,7 +985,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     notes, selectedNoteId, isPlayerView, fogActive, fog, tokens, annotations,
     onAddToken, onRemoveToken, onRemoveAnnotation, meta.width, meta.height,
     onAddMarker, onRemoveMarker, markerShape, markerColor, markerSize, markers,
-    getFractionalCoords,
+    getFractionalCoords, onFovClick,
   ]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1224,6 +1279,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         || activeTool === 'token-monster-lg' ? 'copy'
     : activeTool === 'marker' ? 'copy'
     : activeTool === 'remove-marker' ? 'not-allowed'
+    : activeTool === 'fov' ? 'crosshair'
     : 'crosshair';
 
   const handleCanvasKeyDown = useCallback((e: React.KeyboardEvent<HTMLCanvasElement>) => {

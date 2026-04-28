@@ -15,6 +15,7 @@ import { useDrawingTool } from './hooks/useDrawingTool';
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
 import { exportMapSVG } from './utils/export';
 import { isTokenFogged } from './utils/tokenVisibility';
+import { computeFOV } from './utils/fov';
 import { getTheme, THEME_LIST } from './themes/index';
 import { ALL_TILE_TYPES, type ViewMode, type MarkerShape, type TokenKind } from './types/map';
 import './App.css';
@@ -180,6 +181,25 @@ function App() {
   // Updated after every copy/cut so the canvas knows whether a paste
   // preview should be rendered and how large the buffer is.
   const [clipboardInfo, setClipboardInfo] = useState<{ w: number; h: number } | null>(null);
+
+  // FOV / Line-of-Sight state. The origin is the cell the user clicked
+  // with the FOV tool; the visible set is recomputed whenever the origin
+  // or the tile grid changes.
+  const [fovOrigin, setFovOrigin] = useState<{ x: number; y: number } | null>(null);
+
+  const fovVisible = useMemo(() => {
+    if (!fovOrigin || activeTool !== 'fov') return null;
+    return computeFOV(map.tiles, fovOrigin.x, fovOrigin.y);
+  }, [fovOrigin, map.tiles, activeTool]);
+
+  // When the user clicks a cell with the FOV tool, toggle the origin on/off.
+  // Clicking the same cell again clears it; clicking a different cell moves it.
+  const handleFovClick = useCallback((x: number, y: number) => {
+    setFovOrigin(prev => {
+      if (prev && prev.x === x && prev.y === y) return null;
+      return { x, y };
+    });
+  }, []);
 
   // Briefly announce a status message via the polite live region. The
   // automatic blank-out makes repeated identical announcements (e.g. two
@@ -479,6 +499,11 @@ function App() {
     copySelection: handleCopySelection,
     cutSelection: handleCutSelection,
     pasteClipboard: handlePasteClipboard,
+    toggleFov: () => {
+      if (viewMode === 'gm') {
+        setActiveTool(prev => prev === 'fov' ? 'paint' : 'fov');
+      }
+    },
   });
 
   return (
@@ -589,6 +614,9 @@ function App() {
             onSelectionChange={setSelection}
             hasClipboard={clipboardInfo != null}
             clipboardSize={clipboardInfo}
+            fovVisible={fovVisible}
+            fovOrigin={activeTool === 'fov' ? fovOrigin : null}
+            onFovClick={handleFovClick}
           />
         </main>
         {viewMode === 'gm' && (

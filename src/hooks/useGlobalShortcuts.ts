@@ -79,6 +79,7 @@ export function useGlobalShortcuts(actions: ShortcutActions): KeyBinding[] {
       copySelection:    () => actionsRef.current.copySelection(),
       cutSelection:     () => actionsRef.current.cutSelection(),
       pasteClipboard:   () => actionsRef.current.pasteClipboard(),
+      toggleFov:        () => actionsRef.current.toggleFov(),
     };
     return buildKeyBindings(dispatch);
     /* eslint-enable react-hooks/refs */
