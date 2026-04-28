@@ -82,9 +82,21 @@ export function drawPrintTile(
     }
 
     case 'wall': {
-      // Solid black square — the strongest visual element on the map.
+      // Solid black fill with white cross-hatching for a polished cartographic
+      // look that prints cleanly at any DPI.
       ctx.fillStyle = PRINT_FG;
       ctx.fillRect(px, py, s, s);
+      // Cross-hatch: thin white diagonal lines overlaid on the solid fill.
+      ctx.strokeStyle = PRINT_BG;
+      ctx.lineWidth = Math.max(0.5, s * 0.04);
+      const step = Math.max(3, Math.round(s / 5));
+      ctx.beginPath();
+      for (let d = -s; d < s * 2; d += step) {
+        // Forward diagonals (\)
+        ctx.moveTo(px + d, py);
+        ctx.lineTo(px + d + s, py + s);
+      }
+      ctx.stroke();
       break;
     }
 
@@ -241,14 +253,29 @@ export function drawPrintTile(
     }
 
     case 'water': {
-      // Three stacked sine-like wave (~) rows.
+      // Stipple-shaded water with wave lines for a polished cartographic look.
+      // Light stipple fill first, then wave lines on top.
+      ctx.fillStyle = PRINT_FG;
+      const dotSpacing = Math.max(3, Math.round(s / 7));
+      for (let dy = 0; dy < s; dy += dotSpacing) {
+        for (let dx = 0; dx < s; dx += dotSpacing) {
+          // Offset every other row for a more organic pattern.
+          const offsetX = (Math.floor(dy / dotSpacing) % 2 === 0) ? 0 : dotSpacing * 0.5;
+          const dotX = px + dx + offsetX;
+          const dotY = py + dy;
+          if (dotX >= px && dotX <= px + s && dotY >= py && dotY <= py + s) {
+            ctx.fillRect(dotX, dotY, 1, 1);
+          }
+        }
+      }
+      // Wave lines on top.
       ctx.strokeStyle = PRINT_FG;
       ctx.lineWidth = Math.max(1, s * 0.06);
       const rows = 3;
       const startX = px + s * 0.15;
       const endX = px + s * 0.85;
       const span = endX - startX;
-      const segs = 4; // half-wavelengths across the tile
+      const segs = 4;
       const segW = span / segs;
       const amp = s * 0.07;
       for (let i = 0; i < rows; i++) {
