@@ -1,6 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash } from './artUtils';
 
 // Lost Civilization theme: a forgotten civilization's stone complex — sun-bleached
 // sandstone halls, carved hieroglyph-style walls, fluted pillars, toppled
@@ -65,6 +65,15 @@ export const ancientTheme: TileTheme = {
       case 'floor': {
         ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
         ctx.fillRect(px, py, size, size);
+        // Worn mortar grid
+        ctx.strokeStyle = '#a08040';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px + s * 0.15, cy);
+        ctx.lineTo(px + s * 0.85, cy);
+        ctx.moveTo(cx, py + s * 0.15);
+        ctx.lineTo(cx, py + s * 0.85);
+        ctx.stroke();
         // Flagstone with a faint carved chevron — suggests worn engravings
         // underfoot without being a specific real-world glyph.
         ctx.strokeStyle = '#a88a52';
@@ -92,6 +101,28 @@ export const ancientTheme: TileTheme = {
         ctx.fillStyle = '#5a3a18';
         const nw = Math.max(2, Math.floor(s / 5));
         ctx.fillRect(cx - nw / 2, cy - nw / 2, nw, nw);
+        // Horizontal mortar lines at 1/3 and 2/3
+        ctx.strokeStyle = '#5a3a18';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px + 2, py + Math.round(s / 3));
+        ctx.lineTo(px + s - 2, py + Math.round(s / 3));
+        ctx.moveTo(px + 2, py + Math.round(s * 2 / 3));
+        ctx.lineTo(px + s - 2, py + Math.round(s * 2 / 3));
+        ctx.stroke();
+        // Tiny carved diamond near a hash-picked corner
+        const wh = tileHash(x, y);
+        const dcx = wh < 0.25 ? px + 5 : wh < 0.5 ? px + s - 5 : wh < 0.75 ? px + 5 : px + s - 5;
+        const dcy = wh < 0.25 ? py + 5 : wh < 0.5 ? py + 5 : wh < 0.75 ? py + s - 5 : py + s - 5;
+        ctx.strokeStyle = '#a88450';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(dcx, dcy - 2);
+        ctx.lineTo(dcx + 2, dcy);
+        ctx.lineTo(dcx, dcy + 2);
+        ctx.lineTo(dcx - 2, dcy);
+        ctx.closePath();
+        ctx.stroke();
         break;
       }
 
@@ -120,6 +151,19 @@ export const ancientTheme: TileTheme = {
         ctx.strokeStyle = '#5a3a18';
         ctx.lineWidth = 0.5;
         ctx.strokeRect(px + 2, cy - 3, s - 4, 6);
+        // Tiny chevron/zigzag marks along top and bottom edges
+        ctx.strokeStyle = '#e0c060';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        for (let zx = px + 4; zx < px + s - 4; zx += 4) {
+          ctx.moveTo(zx, cy - 3);
+          ctx.lineTo(zx + 2, cy - 2);
+          ctx.lineTo(zx + 4, cy - 3);
+          ctx.moveTo(zx, cy + 3);
+          ctx.lineTo(zx + 2, cy + 2);
+          ctx.lineTo(zx + 4, cy + 3);
+        }
+        ctx.stroke();
         break;
       }
 
@@ -131,6 +175,19 @@ export const ancientTheme: TileTheme = {
         ctx.strokeStyle = '#5a3a18';
         ctx.lineWidth = 0.5;
         ctx.strokeRect(cx - 3, py + 2, 6, s - 4);
+        // Tiny chevron/zigzag marks along left and right edges
+        ctx.strokeStyle = '#e0c060';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        for (let zy = py + 4; zy < py + s - 4; zy += 4) {
+          ctx.moveTo(cx - 3, zy);
+          ctx.lineTo(cx - 2, zy + 2);
+          ctx.lineTo(cx - 3, zy + 4);
+          ctx.moveTo(cx + 3, zy);
+          ctx.lineTo(cx + 2, zy + 2);
+          ctx.lineTo(cx + 3, zy + 4);
+        }
+        ctx.stroke();
         break;
       }
 

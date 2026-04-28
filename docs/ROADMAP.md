@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-28
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 7.1, & 7.3 complete. Phase 4.5.2 (theme personality: floors, walls, doors) next.
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 7.1, & 7.3 complete. Phase 4.5.3 (iconic tiles: treasure, traps, start, water) next.
 
 ---
 
@@ -274,33 +274,36 @@ Upgrade procedural tile rendering across all 13 themes simultaneously for strong
 - ✅ Shared art utilities in `src/themes/artUtils.ts`: `tileHash()`, `jitterColor()`, `drawWallDepth()`
 - Performance: hash jitter and grid colors are essentially free; shadow effects are lightweight Canvas 2D fills/strokes
 
-**4.5.2 — Theme Personality: Floors, Walls, Doors**
-- Theme-specific floor textures via Canvas patterns or procedural micro-detail:
-  - Dungeon: stone flagstone mortar lines
-  - Castle: checkerboard hall tiles (extend existing hint)
-  - Starship: deck plating seams (sub-grid lines)
-  - Wilderness: hash-seeded grass blade strokes
-  - Pirate: horizontal plank lines (already partially done — use as model)
-  - Cyberpunk: circuit-board traces (thin neon right-angle lines)
-  - Desert: stippled sand dots
-  - Alien: bioluminescent spore dots with subtle glow (extend existing)
-  - Modern City, Old West, Post-Apocalypse, Steampunk, Ancient: distinct material patterns
-- Theme-specific wall rendering — move beyond "solid rectangle with slight color variation":
-  - Dungeon: rough stone blocks with 2–3 horizontal mortar lines
-  - Castle: ashlar masonry with crenellation and horizontal mortar
-  - Starship: riveted bulkhead panels (corner rivets + center seam)
-  - Cyberpunk: holographic force-field shimmer (gradient stripe)
-  - Modern City: windowed building facade (already done — good model)
-  - Post-Apocalypse: cracked concrete with rebar
-  - Wilderness: dense foliage cluster (already done — good model)
-  - Others: unique material per theme
-- Theme-specific door rendering — move beyond "colored bar across the cell":
-  - Castle: iron-banded oak plank with visible hinges (partially done — extend)
+**~~4.5.2 — Theme Personality: Floors, Walls, Doors~~** ✅ COMPLETE
+- ✅ Theme-specific floor textures via Canvas patterns or procedural micro-detail:
+  - Dungeon: stone flagstone mortar lines (3 mortar seams: 2 horizontal + 1 vertical offset by hash)
+  - Castle: full checkerboard hall tiles with cross seams (replaces subtle hint)
+  - Starship: deck plating seams with corner rivet dots + center panel mark
+  - Wilderness: hash-seeded grass blade strokes (5–6 angled blades per tile)
+  - Pirate: horizontal plank lines with wood knots + grain line
+  - Cyberpunk: circuit-board traces (3 neon right-angle paths + solder pad)
+  - Desert: stippled sand dots (8–10 per tile in 2 alternating shades)
+  - Alien: bioluminescent spore dots with glow halos + organic vein curve
+  - Modern City: concrete aggregate speckles; Old West: boot-print dashes; Post-Apocalypse: crack lines; Steampunk: corner rivet dots; Ancient: mortar grid with carved chevron
+- ✅ Theme-specific wall rendering — distinct material per theme:
+  - Dungeon: rough stone blocks with 2 horizontal + 1 vertical mortar seam
+  - Castle: ashlar masonry with horizontal mortar + row-offset vertical seams + crenel notch
+  - Starship: riveted bulkhead panels (4 corner rivets + center seam)
+  - Cyberpunk: holographic force-field shimmer (3 scan-lines in alternating alpha)
+  - Modern City: windowed building facade with entry mark
+  - Post-Apocalypse: cracked concrete with rebar line + diagonal crack
+  - Wilderness: dense foliage cluster with leaf highlights
+  - Old West: plank wall with nail dots; Steampunk: gear wall with inner hub + spokes; Pirate: hull planking with nail heads; Desert: sandstone bricks with erosion cracks; Ancient: carved relief blocks with mortar + diamond detail
+- ✅ Theme-specific door rendering — distinct door per theme:
+  - Castle: iron-banded oak plank with hinges + plank seam lines
   - Starship: sliding blast door with chevron hazard stripes
-  - Cyberpunk: glitching holographic barrier
-  - Wilderness: wooden gate with crossbar
-  - Pirate: trapdoor hatch with ring pull
-  - Others: distinct door per theme
+  - Cyberpunk: glitching holographic barrier with glitch lines + pixel dot
+  - Wilderness: wooden gate with crossbar + nail pegs
+  - Pirate: trapdoor hatch with ring pull + hinge marks
+  - Dungeon: iron-bound timber with band stripes + rivet; Alien: organic membrane with vein lines; Desert: tomb door with hieroglyph diamond accents; Modern City: glass door with push-bars; Old West: saloon door with louver slats; Steampunk: valve door with pressure gauge; Post-Apocalypse: barricade door with scrap metal bands + bolt; Ancient: stone slab with carved chevron marks
+- All rendering deterministic via `tileHash()` — no Math.random()
+- No changes to print mode — all art upgrades are screen-mode only
+- Performance: lightweight Canvas 2D calls only (thin lines, small dots/circles)
 
 **4.5.3 — Iconic Tiles: Treasure, Traps, Start, Water**
 - Per-theme treasure/trap/start icons — currently the most generic tiles across themes:
@@ -373,10 +376,10 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - ~~**Phase 4.2** — Dynamic Fog of War~~ ✅
 - ~~**Phase 7.3** — Measurement & Distance Tools~~ ✅
 - ~~**Phase 4.3** — Light Sources~~ ✅
+- ~~**Phase 4.5.2** — Theme Personality: Floors, Walls, Doors~~ ✅
 
 ### Medium-Term — Active Roadmap
-- **Phase 4.5.2** — Theme Personality: Floors, Walls, Doors *(next sub-phase of art polish)*
-- **Phase 4.5.3** — Iconic Tiles: Treasure, Traps, Start, Water
+- **Phase 4.5.3** — Iconic Tiles: Treasure, Traps, Start, Water *(next sub-phase of art polish)*
 - **Phase 5.1** — Multi-Level Dungeon Support *(high demand, moderate complexity)*
 - **Phase 5.2** — Custom Tile/Theme Creation
 
@@ -418,6 +421,14 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 ---
 
 ## Changes History
+
+**2026-04-28 — Phase 4.5.2 complete: Theme personality shipped**
+- All 13 themes: floor tiles upgraded with distinct per-theme micro-detail (flagstone mortar, checkerboard, deck plating rivets, grass blades, plank knots, circuit traces, sand stipple, spore glow, concrete aggregate, boot prints, iron rivets, rubble cracks, carved mortar grid)
+- All 13 themes: wall tiles upgraded with unique material rendering (stone blocks + mortar, ashlar masonry, riveted bulkheads, holographic shimmer, windowed facade + entry, cracked concrete + rebar, foliage highlights, plank nails, gear hub, hull nails, sandstone erosion, carved relief diamonds)
+- All 13 themes: door-h and door-v tiles upgraded with distinct door art (iron-banded timber, oak + plank seams, blast door chevrons, holographic glitch, membrane veins, gate crossbar, hatch ring pull, tomb hieroglyphs, glass push-bars, saloon louvers, valve gauge, barricade scrap, stone slab chevrons)
+- All detail rendering is deterministic via `tileHash()` — no runtime randomness
+- No changes to print mode — all art upgrades are screen-mode only
+- Priority order updated to show 4.5.3 as next
 
 **2026-04-28 — Phase 4.5.1 complete: Foundation art polish shipped**
 - New `TileTheme.gridColor` field replaces hardcoded `#2d3561` grid color across all 13 themes

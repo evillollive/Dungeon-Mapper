@@ -1,6 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash } from './artUtils';
 
 // Starship theme: the interior of a deep-space vessel — riveted bulkheads,
 // metal deck plating, neon blast doors, and humming data cores. This carries
@@ -66,6 +66,33 @@ export const starshipTheme: TileTheme = {
           ctx.lineTo(px + s, py + i * step);
           ctx.stroke();
         }
+        // Rivet dots at alternating corners based on tileHash
+        const h = tileHash(x, y);
+        ctx.fillStyle = '#2a4060';
+        if (h < 0.5) {
+          ctx.beginPath();
+          ctx.arc(px + 3, py + 3, 1, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(px + s - 3, py + s - 3, 1, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.beginPath();
+          ctx.arc(px + s - 3, py + 3, 1, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.beginPath();
+          ctx.arc(px + 3, py + s - 3, 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Subtle center panel mark (+ shape)
+        ctx.strokeStyle = '#2a4060';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 2, cy);
+        ctx.lineTo(cx + 2, cy);
+        ctx.moveTo(cx, cy - 2);
+        ctx.lineTo(cx, cy + 2);
+        ctx.stroke();
         break;
       }
 
@@ -78,6 +105,27 @@ export const starshipTheme: TileTheme = {
         ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
         ctx.fillStyle = '#0a1520';
         ctx.fillRect(px + 3, py + 3, s - 6, s - 6);
+        // Corner rivet dots
+        ctx.fillStyle = '#4a7090';
+        const rivetInset = 5;
+        const corners: [number, number][] = [
+          [px + rivetInset, py + rivetInset],
+          [px + s - rivetInset, py + rivetInset],
+          [px + rivetInset, py + s - rivetInset],
+          [px + s - rivetInset, py + s - rivetInset],
+        ];
+        for (const [rx, ry] of corners) {
+          ctx.beginPath();
+          ctx.arc(rx, ry, 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Center horizontal seam
+        ctx.strokeStyle = '#4a7090';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px + 4, cy);
+        ctx.lineTo(px + s - 4, cy);
+        ctx.stroke();
         break;
       }
 
@@ -105,6 +153,27 @@ export const starshipTheme: TileTheme = {
         ctx.lineWidth = 1.5;
         ctx.strokeRect(px + 2, cy - 3, (s - 4) / 2 - 2, 6);
         ctx.strokeRect(cx + 2, cy - 3, (s - 4) / 2 - 2, 6);
+        // Chevron hazard stripes on each door half
+        ctx.save();
+        ctx.strokeStyle = '#ff990066';
+        ctx.lineWidth = 1;
+        const halfW = (s - 4) / 2 - 2;
+        for (let hi = 0; hi < 2; hi++) {
+          const hx = hi === 0 ? px + 2 : cx + 2;
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(hx, cy - 3, halfW, 6);
+          ctx.clip();
+          for (let si = 0; si < 3; si++) {
+            const offset = hx + si * (halfW / 3);
+            ctx.beginPath();
+            ctx.moveTo(offset, cy - 3);
+            ctx.lineTo(offset + 6, cy + 3);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+        ctx.restore();
         break;
       }
 
@@ -116,6 +185,27 @@ export const starshipTheme: TileTheme = {
         ctx.lineWidth = 1.5;
         ctx.strokeRect(cx - 3, py + 2, 6, (s - 4) / 2 - 2);
         ctx.strokeRect(cx - 3, cy + 2, 6, (s - 4) / 2 - 2);
+        // Chevron hazard stripes on each door half (rotated)
+        ctx.save();
+        ctx.strokeStyle = '#ff990066';
+        ctx.lineWidth = 1;
+        const halfH = (s - 4) / 2 - 2;
+        for (let hi = 0; hi < 2; hi++) {
+          const hy = hi === 0 ? py + 2 : cy + 2;
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(cx - 3, hy, 6, halfH);
+          ctx.clip();
+          for (let si = 0; si < 3; si++) {
+            const offset = hy + si * (halfH / 3);
+            ctx.beginPath();
+            ctx.moveTo(cx - 3, offset);
+            ctx.lineTo(cx + 3, offset + 6);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+        ctx.restore();
         break;
       }
 

@@ -1,6 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash } from './artUtils';
 
 export const desertTheme: TileTheme = {
   id: 'desert',
@@ -58,13 +58,17 @@ export const desertTheme: TileTheme = {
       case 'floor': {
         ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
         ctx.fillRect(px, py, size, size);
-        // Scattered sand grains and a faint ripple.
-        ctx.fillStyle = '#c8a868';
-        for (let i = 0; i < 5; i++) {
-          const dx = px + 2 + (i * 37) % (s - 4);
-          const dy = py + 2 + (i * 23) % (s - 4);
+        // Stippled sand dots
+        const sandShades = ['#c8a868', '#b89858'];
+        for (let i = 0; i < 10; i++) {
+          const h = tileHash(x * 7 + i, y * 11 + i);
+          const h2 = tileHash(x * 13 + i, y * 3 + i);
+          const dx = px + 2 + h * (s - 4);
+          const dy = py + 2 + h2 * (s - 4);
+          ctx.fillStyle = sandShades[i % 2];
           ctx.fillRect(dx, dy, 1, 1);
         }
+        // Bottom ripple line
         ctx.strokeStyle = '#c8a868';
         ctx.lineWidth = 0.5;
         ctx.beginPath();
@@ -100,6 +104,19 @@ export const desertTheme: TileTheme = {
         ctx.moveTo(cx, py + (2 * s) / rows);
         ctx.lineTo(cx, py + s - 1);
         ctx.stroke();
+        // Erosion cracks
+        ctx.strokeStyle = '#4a2a08';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < 3; i++) {
+          const ch = tileHash(x * 7 + i, y * 11 + i);
+          const ch2 = tileHash(x * 13 + i, y * 5 + i);
+          const crx = px + 3 + ch * (s - 6);
+          const cry = py + 3 + ch2 * (s - 6);
+          ctx.beginPath();
+          ctx.moveTo(crx, cry);
+          ctx.lineTo(crx + 2, cry + 2);
+          ctx.stroke();
+        }
         break;
       }
 
@@ -135,6 +152,22 @@ export const desertTheme: TileTheme = {
         ctx.moveTo(cx, cy - 3);
         ctx.lineTo(cx, cy + 3);
         ctx.stroke();
+        // Hieroglyph diamond accents
+        ctx.fillStyle = '#d4af37';
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.18, cy);
+        ctx.lineTo(cx - s * 0.18 - 1.5, cy - 1.5);
+        ctx.lineTo(cx - s * 0.18, cy - 3);
+        ctx.lineTo(cx - s * 0.18 + 1.5, cy - 1.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(cx + s * 0.18, cy);
+        ctx.lineTo(cx + s * 0.18 - 1.5, cy - 1.5);
+        ctx.lineTo(cx + s * 0.18, cy - 3);
+        ctx.lineTo(cx + s * 0.18 + 1.5, cy - 1.5);
+        ctx.closePath();
+        ctx.fill();
         break;
       }
 
@@ -148,6 +181,22 @@ export const desertTheme: TileTheme = {
         ctx.moveTo(cx - 3, cy);
         ctx.lineTo(cx + 3, cy);
         ctx.stroke();
+        // Hieroglyph diamond accents
+        ctx.fillStyle = '#d4af37';
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - s * 0.18);
+        ctx.lineTo(cx - 1.5, cy - s * 0.18 - 1.5);
+        ctx.lineTo(cx, cy - s * 0.18 - 3);
+        ctx.lineTo(cx + 1.5, cy - s * 0.18 - 1.5);
+        ctx.closePath();
+        ctx.fill();
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + s * 0.18);
+        ctx.lineTo(cx - 1.5, cy + s * 0.18 - 1.5);
+        ctx.lineTo(cx, cy + s * 0.18 - 3);
+        ctx.lineTo(cx + 1.5, cy + s * 0.18 - 1.5);
+        ctx.closePath();
+        ctx.fill();
         break;
       }
 

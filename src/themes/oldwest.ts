@@ -1,6 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash } from './artUtils';
 
 export const oldwestTheme: TileTheme = {
   id: 'oldwest',
@@ -63,6 +63,14 @@ export const oldwestTheme: TileTheme = {
           const dy = py + 2 + (i * 23) % (s - 4);
           ctx.fillRect(dx, dy, 1, 1);
         }
+        // Boot print marks
+        const bh0 = tileHash(x, y);
+        const bh1 = tileHash(x + 5, y + 7);
+        ctx.fillStyle = '#8a6a40';
+        ctx.fillRect(px + 3 + bh0 * (s - 8), py + 3 + bh1 * (s - 8), 3, 1);
+        if (bh0 > 0.4) {
+          ctx.fillRect(px + 3 + bh1 * (s - 8), py + 5 + bh0 * (s - 10), 3, 1);
+        }
         break;
       }
 
@@ -80,6 +88,14 @@ export const oldwestTheme: TileTheme = {
           ctx.lineTo(px + s - 1, wy);
           ctx.stroke();
         }
+        // Nail dots
+        ctx.fillStyle = '#1a1a1a';
+        const nh0 = tileHash(x, y);
+        const nh1 = tileHash(x + 3, y + 5);
+        const nh2 = tileHash(x + 11, y + 13);
+        ctx.fillRect(px + 3 + nh0 * (s - 6), py + 3 + nh1 * (s - 6), 1, 1);
+        ctx.fillRect(px + 3 + nh1 * (s - 6), py + 3 + nh2 * (s - 6), 1, 1);
+        ctx.fillRect(px + 3 + nh2 * (s - 6), py + 3 + nh0 * (s - 6), 1, 1);
         break;
       }
 
@@ -112,6 +128,23 @@ export const oldwestTheme: TileTheme = {
         ctx.lineWidth = 1;
         ctx.strokeRect(px + 2, py + 2, (s - 4) / 2 - 1, s - 4);
         ctx.strokeRect(cx + 1, py + 2, (s - 4) / 2 - 1, s - 4);
+        // Louver slats inside each door panel
+        ctx.strokeStyle = '#4a2a10';
+        ctx.lineWidth = 0.5;
+        const leftMid = px + 2 + ((s - 4) / 2 - 1) / 2;
+        const rightMid = cx + 1 + ((s - 4) / 2 - 1) / 2;
+        const slat1y = py + 2 + (s - 4) * 0.35;
+        const slat2y = py + 2 + (s - 4) * 0.55;
+        ctx.beginPath();
+        ctx.moveTo(leftMid - 3, slat1y);
+        ctx.lineTo(leftMid + 3, slat1y);
+        ctx.moveTo(leftMid - 3, slat2y);
+        ctx.lineTo(leftMid + 3, slat2y);
+        ctx.moveTo(rightMid - 3, slat1y);
+        ctx.lineTo(rightMid + 3, slat1y);
+        ctx.moveTo(rightMid - 3, slat2y);
+        ctx.lineTo(rightMid + 3, slat2y);
+        ctx.stroke();
         break;
       }
 
@@ -123,6 +156,23 @@ export const oldwestTheme: TileTheme = {
         ctx.lineWidth = 1;
         ctx.strokeRect(px + 2, py + 2, s - 4, (s - 4) / 2 - 1);
         ctx.strokeRect(px + 2, cy + 1, s - 4, (s - 4) / 2 - 1);
+        // Louver slats inside each door panel (rotated)
+        ctx.strokeStyle = '#4a2a10';
+        ctx.lineWidth = 0.5;
+        const topMid = py + 2 + ((s - 4) / 2 - 1) / 2;
+        const botMid = cy + 1 + ((s - 4) / 2 - 1) / 2;
+        const slatV1x = px + 2 + (s - 4) * 0.35;
+        const slatV2x = px + 2 + (s - 4) * 0.55;
+        ctx.beginPath();
+        ctx.moveTo(slatV1x, topMid - 3);
+        ctx.lineTo(slatV1x, topMid + 3);
+        ctx.moveTo(slatV2x, topMid - 3);
+        ctx.lineTo(slatV2x, topMid + 3);
+        ctx.moveTo(slatV1x, botMid - 3);
+        ctx.lineTo(slatV1x, botMid + 3);
+        ctx.moveTo(slatV2x, botMid - 3);
+        ctx.lineTo(slatV2x, botMid + 3);
+        ctx.stroke();
         break;
       }
 

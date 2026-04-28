@@ -1,6 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash } from './artUtils';
 
 export const postapocalypseTheme: TileTheme = {
   id: 'postapocalypse',
@@ -71,6 +71,23 @@ export const postapocalypseTheme: TileTheme = {
           ctx.fillStyle = '#3a2a18';
           ctx.fillRect(dx, dy, 1, 1);
         }
+        // Crack lines
+        const ch0 = tileHash(x, y);
+        const ch1 = tileHash(x + 7, y + 3);
+        ctx.strokeStyle = '#3a2a18';
+        ctx.lineWidth = 0.5;
+        const angle0 = ch0 * Math.PI;
+        ctx.beginPath();
+        ctx.moveTo(px + s * 0.3, py + s * 0.4);
+        ctx.lineTo(px + s * 0.3 + Math.cos(angle0) * s * 0.3, py + s * 0.4 + Math.sin(angle0) * s * 0.25);
+        ctx.stroke();
+        if (ch1 > 0.4) {
+          const angle1 = ch1 * Math.PI;
+          ctx.beginPath();
+          ctx.moveTo(px + s * 0.6, py + s * 0.7);
+          ctx.lineTo(px + s * 0.6 + Math.cos(angle1) * s * 0.25, py + s * 0.7 + Math.sin(angle1) * s * 0.2);
+          ctx.stroke();
+        }
         break;
       }
 
@@ -89,6 +106,20 @@ export const postapocalypseTheme: TileTheme = {
         ctx.beginPath();
         ctx.moveTo(px + 3, py + 3);
         ctx.lineTo(px + s - 3, py + s - 3);
+        ctx.stroke();
+        // Rebar line
+        ctx.strokeStyle = '#8a4020';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(px + 3, py + s / 3);
+        ctx.lineTo(px + s - 3, py + s / 3);
+        ctx.stroke();
+        // Diagonal crack
+        ctx.strokeStyle = '#2a1a10';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px + s * 0.6, py + 2);
+        ctx.lineTo(px + s * 0.4, py + s * 0.5);
         ctx.stroke();
         break;
       }
@@ -126,6 +157,18 @@ export const postapocalypseTheme: TileTheme = {
         ctx.moveTo(px + 4, cy - 1);
         ctx.lineTo(px + s - 4, cy - 1);
         ctx.stroke();
+        // Scrap metal bands
+        ctx.strokeStyle = '#5a5a5a';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px + 4, cy + 2);
+        ctx.lineTo(px + s - 4, cy + 2);
+        ctx.moveTo(px + 6, cy - 2);
+        ctx.lineTo(px + s - 6, cy - 2);
+        ctx.stroke();
+        // Bolt mark
+        ctx.fillStyle = '#5a5a5a';
+        ctx.fillRect(cx - 1, cy, 2, 1);
         break;
       }
 
@@ -135,6 +178,18 @@ export const postapocalypseTheme: TileTheme = {
         ctx.strokeStyle = '#c08030';
         ctx.lineWidth = 1;
         ctx.strokeRect(cx - 3, py + 2, 6, s - 4);
+        // Scrap metal bands (rotated)
+        ctx.strokeStyle = '#5a5a5a';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx + 2, py + 4);
+        ctx.lineTo(cx + 2, py + s - 4);
+        ctx.moveTo(cx - 2, py + 6);
+        ctx.lineTo(cx - 2, py + s - 6);
+        ctx.stroke();
+        // Bolt mark
+        ctx.fillStyle = '#5a5a5a';
+        ctx.fillRect(cx, cy - 1, 1, 2);
         break;
       }
 

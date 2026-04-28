@@ -1,6 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash } from './artUtils';
 
 // Dungeon theme: a gritty subterranean crawl — damp stone walls, rough flagged
 // floors, iron-bound timber doors, and torchlit gold accents. This carries the
@@ -58,6 +58,18 @@ export const dungeonTheme: TileTheme = {
       case 'floor': {
         ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
         ctx.fillRect(px, py, size, size);
+        // Stone flagstone mortar lines
+        const fh = tileHash(x, y);
+        ctx.strokeStyle = '#5a4a30';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px, py + s * 0.35);
+        ctx.lineTo(px + s, py + s * 0.35);
+        ctx.moveTo(px, py + s * 0.7);
+        ctx.lineTo(px + s, py + s * 0.7);
+        ctx.moveTo(px + s * (0.3 + fh * 0.4), py);
+        ctx.lineTo(px + s * (0.3 + fh * 0.4), py + s);
+        ctx.stroke();
         // Subtle mortar fleck to suggest rough flagstones.
         ctx.fillStyle = '#2a2418';
         ctx.fillRect(cx - 1, cy - 1, 2, 2);
@@ -73,6 +85,20 @@ export const dungeonTheme: TileTheme = {
         ctx.fillStyle = '#4a4a4a';
         ctx.fillRect(px + 2, py + 2, s - 4, 2);
         ctx.fillRect(px + 2, py + 2, 2, s - 4);
+        // Rough stone block mortar lines
+        const wh = tileHash(x, y);
+        ctx.strokeStyle = '#2a2a2a';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px + 2, py + Math.round(s / 3));
+        ctx.lineTo(px + s - 2, py + Math.round(s / 3));
+        ctx.moveTo(px + 2, py + Math.round(s * 2 / 3));
+        ctx.lineTo(px + s - 2, py + Math.round(s * 2 / 3));
+        // Vertical mortar seam offset by hash
+        const vx = px + 2 + (s - 4) * (0.3 + wh * 0.4);
+        ctx.moveTo(vx, py + 2);
+        ctx.lineTo(vx, py + s - 2);
+        ctx.stroke();
         break;
       }
 
@@ -95,9 +121,25 @@ export const dungeonTheme: TileTheme = {
       case 'door-h': {
         ctx.fillStyle = '#c8a84b';
         ctx.fillRect(px + 2, cy - 2, s - 4, 4);
+        // Iron band stripes at 1/3 and 2/3
+        ctx.strokeStyle = '#3a3a3a';
+        ctx.lineWidth = 0.5;
+        const doorW = s - 4;
+        ctx.beginPath();
+        ctx.moveTo(px + 2 + doorW / 3, cy - 2);
+        ctx.lineTo(px + 2 + doorW / 3, cy + 2);
+        ctx.moveTo(px + 2 + doorW * 2 / 3, cy - 2);
+        ctx.lineTo(px + 2 + doorW * 2 / 3, cy + 2);
+        ctx.stroke();
+        // Rivet dot
+        ctx.fillStyle = '#555555';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 1, 0, Math.PI * 2);
+        ctx.fill();
         ctx.fillStyle = '#0f0f1c';
         ctx.fillRect(cx - 3, cy - 2, 6, 4);
         ctx.strokeStyle = '#c8a84b';
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(px + 2, cy);
         ctx.lineTo(cx - 4, cy);
@@ -110,9 +152,25 @@ export const dungeonTheme: TileTheme = {
       case 'door-v': {
         ctx.fillStyle = '#c8a84b';
         ctx.fillRect(cx - 2, py + 2, 4, s - 4);
+        // Iron band stripes at 1/3 and 2/3
+        const doorH = s - 4;
+        ctx.strokeStyle = '#3a3a3a';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - 2, py + 2 + doorH / 3);
+        ctx.lineTo(cx + 2, py + 2 + doorH / 3);
+        ctx.moveTo(cx - 2, py + 2 + doorH * 2 / 3);
+        ctx.lineTo(cx + 2, py + 2 + doorH * 2 / 3);
+        ctx.stroke();
+        // Rivet dot
+        ctx.fillStyle = '#555555';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 1, 0, Math.PI * 2);
+        ctx.fill();
         ctx.fillStyle = '#0f0f1c';
         ctx.fillRect(cx - 2, cy - 3, 4, 6);
         ctx.strokeStyle = '#c8a84b';
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(cx, py + 2);
         ctx.lineTo(cx, cy - 4);
