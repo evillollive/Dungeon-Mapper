@@ -130,7 +130,7 @@ export function useMapState() {
         syncIdsToLevel(ready.levels[idx]);
       }
     }).catch(() => {});
-   
+
   }, []);
 
   const debouncedSave = useCallback((proj: DungeonProject) => {
@@ -381,7 +381,7 @@ export function useMapState() {
     debouncedSave(proj);
     syncIdsToLevel(proj.levels[0]);
     setSelectedNoteId(null);
-   
+
   }, [debouncedSave]);
 
   const loadProjectData = useCallback((loaded: DungeonProject) => {
@@ -395,7 +395,7 @@ export function useMapState() {
     debouncedSave(proj);
     syncIdsToLevel(proj.levels[idx]);
     setSelectedNoteId(null);
-   
+
   }, [debouncedSave]);
 
   const addNote = useCallback((x: number, y: number) => {
@@ -950,7 +950,7 @@ export function useMapState() {
       setSelectedNoteId(null);
       return prev;
     });
-   
+
   }, [debouncedSave, activeLevelIndex]);
 
   const addLevel = useCallback((name?: string) => {
@@ -968,7 +968,7 @@ export function useMapState() {
       setSelectedNoteId(null);
       return updated;
     });
-   
+
   }, [debouncedSave]);
 
   const renameLevel = useCallback((idx: number, name: string) => {
@@ -1015,7 +1015,7 @@ export function useMapState() {
       setSelectedNoteId(null);
       return updated;
     });
-   
+
   }, [debouncedSave, activeLevelIndex]);
 
   const duplicateLevel = useCallback((idx: number) => {
@@ -1047,7 +1047,7 @@ export function useMapState() {
       setSelectedNoteId(null);
       return updated;
     });
-   
+
   }, [debouncedSave]);
 
   const reorderLevels = useCallback((fromIdx: number, toIdx: number) => {
