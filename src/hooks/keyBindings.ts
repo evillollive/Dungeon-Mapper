@@ -87,6 +87,10 @@ export interface ShortcutActions {
   pasteClipboard: () => void;
   /** Toggle the FOV / Line-of-Sight tool (O key). */
   toggleFov: () => void;
+  /** Cycle to the next dungeon level (PageDown). */
+  nextLevel: () => void;
+  /** Cycle to the previous dungeon level (PageUp). */
+  prevLevel: () => void;
 }
 
 const isPlainKey = (e: KeyboardEvent) =>
@@ -363,6 +367,24 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       description: 'Show keyboard shortcuts',
       match: e => isPlainKey(e) && e.shiftKey && (e.key === '?' || e.key === '/'),
       action: actions.showShortcuts,
+    },
+
+    // ── Levels ──
+    {
+      id: 'view.nextLevel',
+      category: 'View',
+      keys: 'PageDown',
+      description: 'Switch to the next dungeon level',
+      match: e => isPlainKey(e) && !e.shiftKey && e.key === 'PageDown',
+      action: actions.nextLevel,
+    },
+    {
+      id: 'view.prevLevel',
+      category: 'View',
+      keys: 'PageUp',
+      description: 'Switch to the previous dungeon level',
+      match: e => isPlainKey(e) && !e.shiftKey && e.key === 'PageUp',
+      action: actions.prevLevel,
     },
   ];
 }

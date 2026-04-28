@@ -1,15 +1,16 @@
 import React, { useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
-import type { DungeonMap } from '../types/map';
-import { exportMapJSON, importMapJSON, exportMapPNG } from '../utils/export';
+import type { DungeonMap, DungeonProject } from '../types/map';
+import { exportProjectJSON, importProjectJSON, exportMapPNG } from '../utils/export';
 
 interface MapHeaderProps {
   map: DungeonMap;
+  project: DungeonProject;
   onSetName: (name: string) => void;
   onResize: (w: number, h: number) => void;
   onSetTileSize: (size: number) => void;
   onClear: () => void;
   onNew: () => void;
-  onLoad: (map: DungeonMap) => void;
+  onLoadProject: (project: DungeonProject) => void;
   onExportSVG: () => void;
   onUndo: () => void;
   onRedo: () => void;
@@ -44,7 +45,7 @@ export interface MapHeaderHandle {
 const GRID_SIZES = [8, 16, 24, 32, 48, 64, 96, 128];
 
 const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
-  map, onSetName, onResize, onSetTileSize, onClear, onNew, onLoad,
+  map, project, onSetName, onResize, onSetTileSize, onClear, onNew, onLoadProject,
   onExportSVG, onUndo, onRedo, canUndo, canRedo, printMode, onTogglePrintMode,
   uiScale, uiScaleOptions, onSetUIScale, getCanvas,
   viewMode, onToggleViewMode, onShowShortcuts, onOpenExportDialog,
@@ -67,10 +68,10 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const loaded = await importMapJSON(file);
-      onLoad(loaded);
+      const loaded = await importProjectJSON(file);
+      onLoadProject(loaded);
     } catch (err) {
-      alert('Failed to import map: ' + (err as Error).message);
+      alert('Failed to import: ' + (err as Error).message);
     }
     e.target.value = '';
   };
@@ -81,7 +82,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
     exportMapPNG(canvas, map.meta.name);
   }, [getCanvas, map.meta.name]);
 
-  const handleExportJSON = useCallback(() => exportMapJSON(map), [map]);
+  const handleExportJSON = useCallback(() => exportProjectJSON(project), [project]);
 
   const triggerImport = useCallback(() => {
     fileInputRef.current?.click();
