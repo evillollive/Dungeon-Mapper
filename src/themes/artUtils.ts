@@ -12,10 +12,12 @@
 
 /**
  * Fast deterministic hash for tile coordinates → [0, 1).
- * Uses a variant of the "integer hash" technique; the result is stable
- * for any given (x, y) and uniformly distributed enough for visual jitter.
+ * Uses a variant of the "integer hash" technique with large prime
+ * multipliers for uniform distribution; the result is stable for any
+ * given (x, y) and uniformly distributed enough for visual jitter.
  */
 export function tileHash(x: number, y: number): number {
+  // Large primes chosen for good bit-mixing across 2D coordinates.
   let h = (x * 374761393 + y * 668265263) | 0;
   h = ((h ^ (h >> 13)) * 1274126177) | 0;
   h = (h ^ (h >> 16)) | 0;
@@ -27,7 +29,8 @@ export function tileHash(x: number, y: number): number {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Parse a 6-digit hex colour into [r, g, b] (0–255 each).
+ * Parse a 6-digit hex colour (e.g. `"#8a7a60"`) into [r, g, b] (0–255).
+ * Only 6-digit `#RRGGBB` format is supported; 3-digit shorthand is not.
  */
 function hexToRgb(hex: string): [number, number, number] {
   const h = hex.replace('#', '');
