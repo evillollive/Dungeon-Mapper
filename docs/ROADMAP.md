@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-28
-> **Status:** Phases 1, 2, 3, 4.1, & 7.1 complete. Phase 4.2+ in planning.
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, & 7.1 complete. Phase 4.3+ in planning.
 
 ---
 
@@ -17,7 +17,7 @@ Dungeon-Mapper is a React + TypeScript + Vite single-page app with Canvas-based 
 - **Richer door generation** with probabilistic type distribution (archway, locked, trapped, portcullis, barricade)
 - **Procedural name generation** (theme-aware, 13 themes)
 - 13 visual themes (Dungeon, Castle, Wilderness, Starship, etc.)
-- Fog of War with per-cell reveal/hide and GM preview
+- Fog of War with per-cell reveal/hide, GM preview, and **Dynamic Fog** (3-state: hidden/explored/visible, auto-reveal from player tokens)
 - **Line-of-Sight / FOV** (recursive shadowcasting from any cell, wall occlusion, GM tool [O])
 - Tokens & Initiative Tracking (player/NPC/monster with multi-cell footprints, **icon library with 30+ SVG icons**)
 - Notes & Annotations (room/poi kinds, theme-aware auto-labeling, **procedural name suffixes**)
@@ -199,15 +199,20 @@ A 4th generator type that is a unique differentiator — no competitor in our sp
   - Yellow origin marker for clear visual anchor
   - Works alongside fog overlay (FOV stacks on top)
 
+### ~~Phase 4.2: Dynamic Fog of War~~ ✅ COMPLETE
+
+- ✅ **4.2 — Dynamic Fog of War**
+  - Union FOV computed from all player tokens via recursive shadowcasting
+  - 3-state fog: hidden (opaque) → explored (dimmed) → visible (clear)
+  - Explored cells persist across token movement (persisted in map data)
+  - Manual fog tools (reveal/hide/defog) coexist with dynamic mode
+  - Toggle in Player toolbar with "Reset Explored" to clear exploration memory
+  - Notes, tokens, and initiative panel respect dynamic fog visibility
+  - Export renderer supports 3-state fog for print/PNG output
+
 ### Phase 4: Vision & Lighting System (continued)
 
 Advanced tactical features for live play.
-
-**4.2 — Dynamic Fog of War**
-- Connect FOV system to fog: auto-reveal cells visible from token positions
-- Track "explored" vs "visible" vs "hidden" states (3-state fog)
-- Explored cells show map but dimmed; visible cells fully lit
-- Why: Upgrades our manual fog reveal to an automated, game-aware system
 
 **4.3 — Light Sources**
 - Light source markers with configurable radius (torch, lantern, magical light)
@@ -297,7 +302,7 @@ Smaller features that improve the overall experience.
 
 ### Next Up — High-Value Tactical Features
 - ~~**Phase 4.1** — Line-of-Sight / FOV~~ ✅
-- **Phase 4.2** — Dynamic Fog of War *(builds on FOV, natural follow-up)*
+- ~~**Phase 4.2** — Dynamic Fog of War~~ ✅
 - **Phase 7.3** — Measurement & Distance Tools *(tactical play needs this)*
 
 ### Medium-Term — New Generation & Advanced Features
@@ -354,6 +359,16 @@ Smaller features that improve the overall experience.
 ---
 
 ## Changes History
+
+**2026-04-28 — Phase 4.2 complete: Dynamic Fog of War shipped**
+- Union FOV computed from all player-kind tokens via `computePlayerFOV()` in `src/utils/dynamicFog.ts`
+- 3-state fog rendering: hidden (opaque) → explored (dimmed/semi-transparent) → visible (clear)
+- `explored` boolean grid persisted on `DungeonMap` so exploration survives saves/reloads
+- `dynamicFogEnabled` toggle in Player toolbar; manual fog tools (reveal/hide/defog) still work alongside
+- "Reset Explored" button to clear exploration memory
+- Notes, tokens, and initiative panel all respect dynamic fog visibility states
+- Export renderer (`renderMap.ts`) supports 3-state fog for print/PNG output
+- Priority order updated to reflect Phase 4.2 completion
 
 **2026-04-28 — Phase 4.1 complete: Line-of-Sight / FOV shipped**
 - Recursive shadowcasting FOV algorithm in `src/utils/fov.ts` (8-octant sweep)

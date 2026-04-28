@@ -148,6 +148,22 @@ export interface DungeonMap {
   fog?: boolean[][];
   /** Whether fog is active for this map. Off by default. */
   fogEnabled?: boolean;
+  /**
+   * When `true`, fog is driven automatically by player-token FOV: cells
+   * visible from any player token are revealed, previously-seen cells are
+   * dimmed ("explored"), and unseen cells remain fully fogged. The manual
+   * fog tools still work alongside this mode. Optional for backward-compat;
+   * treat absent as `false`.
+   */
+  dynamicFogEnabled?: boolean;
+  /**
+   * Per-tile "explored" flags parallel to `tiles`. `true` means the cell
+   * has been seen at some point by a player token's FOV. Used only when
+   * `dynamicFogEnabled` is `true` to render the 3-state fog overlay
+   * (hidden → explored/dimmed → visible/clear). Optional; treat absent as
+   * "nothing explored yet".
+   */
+  explored?: boolean[][];
   /** Player / NPC / monster tokens placed on the map. */
   tokens?: Token[];
   /** Free-form pen strokes drawn over the map. */

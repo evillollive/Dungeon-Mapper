@@ -16,6 +16,7 @@ import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
 import { exportMapSVG } from './utils/export';
 import { isTokenFogged } from './utils/tokenVisibility';
 import { computeFOV } from './utils/fov';
+import { computePlayerFOV, mergeExplored } from './utils/dynamicFog';
 import { getTheme, THEME_LIST } from './themes/index';
 import { ALL_TILE_TYPES, type ViewMode, type MarkerShape, type TokenKind } from './types/map';
 import './App.css';
@@ -108,6 +109,9 @@ function App() {
     setFogCells,
     fillAllFog,
     setFogEnabled,
+    setDynamicFogEnabled,
+    setExplored,
+    resetExplored,
     addToken,
     moveToken,
     removeToken,
@@ -200,6 +204,35 @@ function App() {
       return { x, y };
     });
   }, []);
+
+  // ── Dynamic Fog of War ──────────────────────────────────────────────
+  // When dynamic fog is enabled, compute the union FOV from all player
+  // tokens and merge newly-visible cells into the persisted explored grid.
+  const dynamicFogEnabled = (map.dynamicFogEnabled ?? false) && (map.fogEnabled ?? false);
+  const playerVisible = useMemo(() => {
+    if (!dynamicFogEnabled) return null;
+    return computePlayerFOV(map.tiles, map.tokens ?? []);
+  }, [dynamicFogEnabled, map.tiles, map.tokens]);
+
+  // Whenever the visible set changes, merge into the explored grid so
+  // previously-seen cells stay marked even after tokens move away.
+  useEffect(() => {
+    if (!playerVisible || !dynamicFogEnabled) return;
+    const w = map.meta.width;
+    const h = map.meta.height;
+    const currentExplored = map.explored ?? Array.from({ length: h }, () => Array<boolean>(w).fill(false));
+    const merged = mergeExplored(currentExplored, playerVisible, w, h);
+    if (merged !== currentExplored) {
+      setExplored(merged);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playerVisible]);
+
+  const handleToggleDynamicFog = useCallback(() => {
+    setDynamicFogEnabled(!dynamicFogEnabled);
+  }, [dynamicFogEnabled, setDynamicFogEnabled]);
+
+  const handleResetExplored = useCallback(() => resetExplored(), [resetExplored]);
 
   // Briefly announce a status message via the polite live region. The
   // automatic blank-out makes repeated identical announcements (e.g. two
@@ -577,6 +610,9 @@ function App() {
               onToggleFogEnabled={handleToggleFogEnabled}
               onResetFog={handleResetFog}
               onClearFog={handleClearFog}
+              dynamicFogEnabled={dynamicFogEnabled}
+              onToggleDynamicFog={handleToggleDynamicFog}
+              onResetExplored={handleResetExplored}
             />
           </nav>
         )}
@@ -617,6 +653,9 @@ function App() {
             fovVisible={fovVisible}
             fovOrigin={activeTool === 'fov' ? fovOrigin : null}
             onFovClick={handleFovClick}
+            dynamicFogEnabled={dynamicFogEnabled}
+            playerVisible={playerVisible}
+            explored={map.explored}
           />
         </main>
         {viewMode === 'gm' && (
@@ -649,7 +688,7 @@ function App() {
               // existence of hidden enemies (matching MapCanvas).
               tokens={
                 fogEnabled
-                  ? (map.tokens ?? []).filter(t => !isTokenFogged(t, map.fog))
+                  ? (map.tokens ?? []).filter(t => !isTokenFogged(t, map.fog, dynamicFogEnabled ? playerVisible : undefined, map.explored))
                   : (map.tokens ?? [])
               }
               initiative={map.initiative ?? []}
@@ -669,7 +708,17 @@ function App() {
               // is also disabled by routing through no-op callbacks.
               notes={
                 fogEnabled
-                  ? map.notes.filter(n => !(map.fog?.[n.y]?.[n.x]))
+                  ? map.notes.filter(n => {
+                      // Manually revealed cells are always visible.
+                      if (!(map.fog?.[n.y]?.[n.x])) return true;
+                      // In dynamic fog mode, show notes in visible or explored cells.
+                      if (dynamicFogEnabled) {
+                        const key = `${n.x},${n.y}`;
+                        if (playerVisible?.has(key)) return true;
+                        if (map.explored?.[n.y]?.[n.x]) return true;
+                      }
+                      return false;
+                    })
                   : map.notes
               }
               selectedNoteId={selectedNoteId}

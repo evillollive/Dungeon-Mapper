@@ -20,6 +20,8 @@ const SCREEN_BG = '#f4f1e4';
 const SCREEN_GRID = '#5fb8c9';
 const FOG_PLAYER_FILL = '#6b7280';
 const FOG_GM_FILL = 'rgba(107, 114, 128, 0.55)';
+const EXPLORED_PLAYER_FILL = 'rgba(107, 114, 128, 0.55)';
+const EXPLORED_GM_FILL = 'rgba(107, 114, 128, 0.35)';
 
 export interface RenderMapOptions {
   /** Pixels per tile cell. At 300 DPI with 1 inch = 1 cell this is 300. */
@@ -94,7 +96,11 @@ export function renderMapToCanvas(
   // Notes
   const isFogged = (nx: number, ny: number) => fogActive && !!fog?.[ny]?.[nx];
   const visibleNotes = (fogActive && isPlayerView)
-    ? map.notes.filter(n => !isFogged(n.x, n.y))
+    ? map.notes.filter(n => {
+        if (!isFogged(n.x, n.y)) return true;
+        if (dynamicFogActive && map.explored?.[n.y]?.[n.x]) return true;
+        return false;
+      })
     : map.notes;
   for (const note of visibleNotes) {
     const px = note.x * tileSize + tileSize / 2;
@@ -138,8 +144,9 @@ export function renderMapToCanvas(
 
   // Tokens
   const tokens = map.tokens ?? [];
+  const dynamicFogActive = (map.dynamicFogEnabled ?? false) && fogActive;
   const visibleTokens = (fogActive && isPlayerView)
-    ? tokens.filter(t => !isTokenFogged(t, fog))
+    ? tokens.filter(t => !isTokenFogged(t, fog, undefined, dynamicFogActive ? map.explored : undefined))
     : tokens;
   for (const token of visibleTokens) {
     renderToken(ctx, token, tileSize);
@@ -148,16 +155,34 @@ export function renderMapToCanvas(
   // Fog overlay
   const renderFog = fogActive && fog;
   if (renderFog) {
-    ctx.save();
-    ctx.fillStyle = isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        if (fog[y]?.[x]) {
+    if (dynamicFogActive && map.explored) {
+      // 3-state fog for export: hidden (opaque) / explored (dimmed) / revealed (clear).
+      // Note: exported images don't have ephemeral playerVisible, so explored
+      // cells are rendered dimmed and unexplored fogged cells are opaque.
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          if (!fog[y]?.[x]) continue;
+          const isExplored = map.explored[y]?.[x] ?? false;
+          ctx.save();
+          ctx.fillStyle = isExplored
+            ? (isPlayerView ? EXPLORED_PLAYER_FILL : EXPLORED_GM_FILL)
+            : (isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL);
           ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+          ctx.restore();
         }
       }
+    } else {
+      ctx.save();
+      ctx.fillStyle = isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          if (fog[y]?.[x]) {
+            ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+          }
+        }
+      }
+      ctx.restore();
     }
-    ctx.restore();
   }
 
   return canvas;
