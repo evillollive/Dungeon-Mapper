@@ -1,5 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
+import { jitterColor, drawWallDepth } from './artUtils';
 
 export const oldwestTheme: TileTheme = {
   id: 'oldwest',
@@ -28,12 +29,13 @@ export const oldwestTheme: TileTheme = {
     water: '#3a7a9e', pillar: '#8b6914', trap: '#8b0000',
     treasure: '#d4af37', start: '#4a7a2a',
   },
+  gridColor: '#3a2a18',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
     ctx.fillRect(px, py, size, size);
-    ctx.strokeStyle = '#2d3561';
+    ctx.strokeStyle = this.gridColor;
     ctx.lineWidth = 0.5;
     ctx.strokeRect(px, py, size, size);
 
@@ -53,6 +55,8 @@ export const oldwestTheme: TileTheme = {
       }
 
       case 'floor': {
+        ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
+        ctx.fillRect(px, py, size, size);
         ctx.fillStyle = '#b09060';
         for (let i = 0; i < 5; i++) {
           const dx = px + 2 + (i * 37) % (s - 4);
@@ -63,6 +67,9 @@ export const oldwestTheme: TileTheme = {
       }
 
       case 'wall': {
+        ctx.fillStyle = jitterColor(this.tileColors[type], x, y, 0.06);
+        ctx.fillRect(px, py, size, size);
+        drawWallDepth(ctx, px, py, size, 'hard-edge', this.tileColors[type], 0.5);
         ctx.strokeStyle = '#4a2a10';
         ctx.lineWidth = 1;
         const planks = 3;

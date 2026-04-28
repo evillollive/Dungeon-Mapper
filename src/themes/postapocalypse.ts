@@ -1,5 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
+import { jitterColor, drawWallDepth } from './artUtils';
 
 export const postapocalypseTheme: TileTheme = {
   id: 'postapocalypse',
@@ -28,12 +29,13 @@ export const postapocalypseTheme: TileTheme = {
     water: '#2a4a1a', pillar: '#5a4a38', trap: '#8e3e1e',
     treasure: '#c09820', start: '#4a7a2a',
   },
+  gridColor: '#2a2018',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
     ctx.fillRect(px, py, size, size);
-    ctx.strokeStyle = '#2d3561';
+    ctx.strokeStyle = this.gridColor;
     ctx.lineWidth = 0.5;
     ctx.strokeRect(px, py, size, size);
 
@@ -53,6 +55,8 @@ export const postapocalypseTheme: TileTheme = {
       }
 
       case 'floor': {
+        ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
+        ctx.fillRect(px, py, size, size);
         ctx.strokeStyle = '#4a3a20';
         ctx.lineWidth = 0.5;
         ctx.beginPath();
@@ -71,6 +75,9 @@ export const postapocalypseTheme: TileTheme = {
       }
 
       case 'wall': {
+        ctx.fillStyle = jitterColor(this.tileColors[type], x, y, 0.06);
+        ctx.fillRect(px, py, size, size);
+        drawWallDepth(ctx, px, py, size, 'shadow', this.tileColors[type], 0.5);
         ctx.strokeStyle = '#6a5030';
         ctx.lineWidth = 1;
         ctx.beginPath();

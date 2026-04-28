@@ -1,5 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
+import { jitterColor, drawWallDepth } from './artUtils';
 
 export const cyberpunkTheme: TileTheme = {
   id: 'cyberpunk',
@@ -28,12 +29,13 @@ export const cyberpunkTheme: TileTheme = {
     water: '#002244', pillar: '#1a001a', trap: '#ff0000',
     treasure: '#ffff00', start: '#00ff00',
   },
+  gridColor: '#1a0a2a',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
     ctx.fillRect(px, py, size, size);
-    ctx.strokeStyle = '#2d3561';
+    ctx.strokeStyle = this.gridColor;
     ctx.lineWidth = 0.5;
     ctx.strokeRect(px, py, size, size);
 
@@ -46,6 +48,8 @@ export const cyberpunkTheme: TileTheme = {
         break;
 
       case 'floor': {
+        ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
+        ctx.fillRect(px, py, size, size);
         ctx.strokeStyle = '#1a1a40';
         ctx.lineWidth = 0.5;
         ctx.beginPath();
@@ -58,6 +62,9 @@ export const cyberpunkTheme: TileTheme = {
       }
 
       case 'wall': {
+        ctx.fillStyle = jitterColor(this.tileColors[type], x, y, 0.06);
+        ctx.fillRect(px, py, size, size);
+        drawWallDepth(ctx, px, py, size, 'glow', '#ff00ff', 0.6);
         ctx.strokeStyle = '#ff00ff';
         ctx.lineWidth = 1;
         ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
