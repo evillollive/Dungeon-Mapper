@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-28
-> **Status:** Phases 1, 2, 3, & 7.1 complete. Phase 4+ in planning.
+> **Status:** Phases 1, 2, 3, 4.1, & 7.1 complete. Phase 4.2+ in planning.
 
 ---
 
@@ -18,6 +18,7 @@ Dungeon-Mapper is a React + TypeScript + Vite single-page app with Canvas-based 
 - **Procedural name generation** (theme-aware, 13 themes)
 - 13 visual themes (Dungeon, Castle, Wilderness, Starship, etc.)
 - Fog of War with per-cell reveal/hide and GM preview
+- **Line-of-Sight / FOV** (recursive shadowcasting from any cell, wall occlusion, GM tool [O])
 - Tokens & Initiative Tracking (player/NPC/monster with multi-cell footprints, **icon library with 30+ SVG icons**)
 - Notes & Annotations (room/poi kinds, theme-aware auto-labeling, **procedural name suffixes**)
 - **Shape/Area Markers** (circle, square, diamond with colors and sizes)
@@ -66,7 +67,7 @@ Repo: amishne/mipui | Stack: Pure JavaScript + Firebase
 | Real-time collaboration | Multi-user editing via Firebase sync | ❌ |
 | No-registration sharing | Share map via URL, instant access | ❌ |
 | 8-layer rendering system | Floors, walls, images, separators, text, shapes, elevation, GM overlay | Partial (fog only) |
-| Vision/FOV (shadowcasting) | Line-of-sight calculation from any cell | ❌ |
+| Vision/FOV (shadowcasting) | Line-of-sight calculation from any cell | ✅ |
 | GM overlay layer | Hidden content visible only to GM | Partial (fog) |
 | 1000+ game icons (game-icons.net) | Searchable icon library for tokens | ✅ (30+ icons) |
 | Angled/oval wall drawing | Non-rectangular wall shapes | ❌ |
@@ -187,16 +188,20 @@ A 4th generator type that is a unique differentiator — no competitor in our sp
   - POI placement (start at gate, treasure, traps) with theme-aware labels
   - Full integration with POI/Notes engine for auto-labeled district notes
 
-### Phase 4: Vision & Lighting System
+### ~~Phase 4.1: Line-of-Sight / FOV~~ ✅ COMPLETE
+
+- ✅ **4.1 — Line-of-Sight / Field-of-View**
+  - Recursive shadowcasting algorithm (`src/utils/fov.ts`) for FOV from any cell
+  - 8-octant sweep with wall occlusion (walls, secret doors, pillars block sight)
+  - GM "Sight" tool (👁) in toolbar with keyboard shortcut [O]
+  - Click to set sight origin → darkened overlay on non-visible cells
+  - Click same cell to clear; switching tools auto-hides overlay
+  - Yellow origin marker for clear visual anchor
+  - Works alongside fog overlay (FOV stacks on top)
+
+### Phase 4: Vision & Lighting System (continued)
 
 Advanced tactical features for live play.
-
-**4.1 — Line-of-Sight / Field-of-View**
-- Implement shadowcasting algorithm for FOV calculation from any cell
-- Place a "sight origin" and calculate visible cells based on wall occlusion
-- Visualize with darkened non-visible areas
-- Inspired by: Mipui (MIT — can adapt freely)
-- Why: FOV is a killer feature for tactical play
 
 **4.2 — Dynamic Fog of War**
 - Connect FOV system to fog: auto-reveal cells visible from token positions
@@ -291,7 +296,7 @@ Smaller features that improve the overall experience.
 ## Part 5: Recommended Priority Order
 
 ### Next Up — High-Value Tactical Features
-- **Phase 4.1** — Line-of-Sight / FOV *(killer tactical feature)*
+- ~~**Phase 4.1** — Line-of-Sight / FOV~~ ✅
 - **Phase 4.2** — Dynamic Fog of War *(builds on FOV, natural follow-up)*
 - **Phase 7.3** — Measurement & Distance Tools *(tactical play needs this)*
 
@@ -317,7 +322,6 @@ Smaller features that improve the overall experience.
 
 | Algorithm | Study From | License Constraint |
 |---|---|---|
-| Shadowcasting FOV | Mipui (MIT) | Can adapt freely |
 | Voronoi + Lloyd relaxation | Azgaar (MIT) or Watabou (GPL—study only) | Reimplement; use `delaunator` npm package |
 | Operation-based sync | Mipui (MIT) | Can adapt freely |
 | Tile caching (DOM→PNG) | Mipui (MIT) | Can adapt freely |
@@ -350,6 +354,17 @@ Smaller features that improve the overall experience.
 ---
 
 ## Changes History
+
+**2026-04-28 — Phase 4.1 complete: Line-of-Sight / FOV shipped**
+- Recursive shadowcasting FOV algorithm in `src/utils/fov.ts` (8-octant sweep)
+- Walls, secret doors, and pillars block line of sight
+- GM "Sight" tool (👁) in toolbar with [O] keyboard shortcut
+- Click to set origin → darkened overlay on non-visible cells, yellow origin marker
+- Click same cell to clear; overlay auto-hides when switching tools
+- Stacks with existing fog overlay
+- Competitor table updated: Mipui Vision/FOV marked ✅
+- Shadowcasting removed from "clean-room reimplement" table (done)
+- Priority order updated to reflect Phase 4.1 completion
 
 **2026-04-28 — Phase 7.1 complete: Print-Optimized Export shipped**
 - Standalone `renderMapToCanvas()` utility for offscreen high-DPI rendering

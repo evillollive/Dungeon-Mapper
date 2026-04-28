@@ -183,7 +183,8 @@ export type ToolType =
   | 'token-player' | 'token-npc'
   | 'token-monster' | 'token-monster-md' | 'token-monster-lg'
   | 'move-token' | 'remove-token'
-  | 'marker' | 'remove-marker';
+  | 'marker' | 'remove-marker'
+  | 'fov';
 
 export type ViewMode = 'gm' | 'player';
 
