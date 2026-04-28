@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useMemo, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
-import type { DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape } from '../types/map';
+import type { DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource } from '../types/map';
 import { TOKEN_KIND_COLORS } from '../types/map';
 import { getTheme } from '../themes/index';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
@@ -125,6 +125,26 @@ interface MapCanvasProps {
   measureShape?: MeasureShape;
   /** Feet per tile cell for distance readout (default 5). */
   measureFeetPerCell?: number;
+  /**
+   * Light sources placed on the map. Each emits a warm glow overlay on the
+   * canvas and, when `dynamicFogEnabled` is true, contributes to the
+   * "visible" set so lit cells are shown without fog.
+   */
+  lightSources?: LightSource[];
+  /**
+   * Set of `"x,y"` keys for cells illuminated by at least one light source.
+   * Non-null only when dynamic fog is active; `null` otherwise so the
+   * renderer can skip the illumination pass cheaply.
+   */
+  lightVisible?: Set<string> | null;
+  /** Called when the user clicks a cell with the light tool. */
+  onAddLightSource?: (x: number, y: number) => void;
+  /** Called when the user clicks a light source cell with the remove-light tool. */
+  onRemoveLightSource?: (id: number) => void;
+  /** Current light radius (preview ghost). */
+  lightRadius?: number;
+  /** Current light glow color (preview ghost). */
+  lightColor?: string;
 }
 
 export interface MapCanvasHandle {
@@ -322,6 +342,79 @@ function drawMarker(
   ctx.restore();
 }
 
+/**
+ * Draw a warm glow halo for a light source. Uses a radial gradient that
+ * fades from the source's color at the origin to fully transparent at the
+ * illumination radius. The glow is composited with additive blending so
+ * multiple overlapping lights blend naturally rather than opaquely stacking.
+ */
+function drawLightGlow(
+  ctx: CanvasRenderingContext2D,
+  ls: LightSource,
+  tileSize: number,
+) {
+  const cx = (ls.x + 0.5) * tileSize;
+  const cy = (ls.y + 0.5) * tileSize;
+  const r = ls.radius * tileSize;
+
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-over';
+  const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+  grad.addColorStop(0,   hexToRgba(ls.color, 0.30));
+  grad.addColorStop(0.4, hexToRgba(ls.color, 0.16));
+  grad.addColorStop(1,   hexToRgba(ls.color, 0));
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+/** Draw the light source icon pinned to its origin cell. */
+function drawLightIcon(
+  ctx: CanvasRenderingContext2D,
+  ls: LightSource,
+  tileSize: number,
+) {
+  const cx = (ls.x + 0.5) * tileSize;
+  const cy = (ls.y + 0.5) * tileSize;
+  ctx.save();
+  ctx.font = `${Math.max(10, tileSize * 0.55)}px serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('🕯', cx, cy);
+  ctx.restore();
+}
+
+/**
+ * Convert a CSS hex color (`#rrggbb` or `#rgb`) to an rgba() string with
+ * the given alpha. Only the 6-digit form is common here so we handle both.
+ */
+function hexToRgba(hex: string, alpha: number): string {
+  const h = hex.replace('#', '');
+  let r: number, g: number, b: number;
+  if (h.length === 3) {
+    r = parseInt(h[0] + h[0], 16);
+    g = parseInt(h[1] + h[1], 16);
+    b = parseInt(h[2] + h[2], 16);
+  } else {
+    r = parseInt(h.substring(0, 2), 16);
+    g = parseInt(h.substring(2, 4), 16);
+    b = parseInt(h.substring(4, 6), 16);
+  }
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+/** Find the topmost light source whose origin cell matches (tx, ty). */
+function findLightSourceAt(lightSources: LightSource[] | undefined, tx: number, ty: number): LightSource | null {
+  if (!lightSources) return null;
+  for (let i = lightSources.length - 1; i >= 0; i--) {
+    const ls = lightSources[i];
+    if (ls.x === tx && ls.y === ty) return ls;
+  }
+  return null;
+}
+
 /** Hit-test markers at the given fractional tile coordinate. Returns the
  * top-most matching marker. */
 function findMarkerAt(markers: ShapeMarker[] | undefined, fx: number, fy: number): ShapeMarker | null {
@@ -401,6 +494,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   explored,
   measureShape = 'ruler',
   measureFeetPerCell = 5,
+  lightSources,
+  lightVisible,
+  onAddLightSource,
+  onRemoveLightSource,
+  lightRadius = 4,
+  lightColor = '#f97316',
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -601,6 +700,16 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.stroke();
     }
 
+    // Light source glow halos — rendered right after the grid lines so the
+    // warm overlay blends naturally with tile art. Glows are always visible
+    // to the GM and are shown in player view regardless of dynamic fog mode
+    // (the fog pass below still decides which cells are actually hidden).
+    if (!printMode && lightSources && lightSources.length > 0) {
+      for (const ls of lightSources) {
+        drawLightGlow(ctx, ls, tileSize);
+      }
+    }
+
     visibleNotes.forEach(note => {
       const px = note.x * tileSize + tileSize / 2;
       const py = note.y * tileSize + tileSize / 2;
@@ -645,6 +754,15 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       drawMarker(ctx, marker, tileSize);
     }
 
+    // Light source icons (candle emoji) are drawn on top of markers and
+    // annotations but still under tokens, so they remain identifiable
+    // while token glyphs stay legible.
+    if (!printMode && lightSources && lightSources.length > 0) {
+      for (const ls of lightSources) {
+        drawLightIcon(ctx, ls, tileSize);
+      }
+    }
+
     // Render tokens before fog so fogged cells in player mode genuinely
     // hide the tokens beneath them.
     for (const token of visibleTokens) {
@@ -679,7 +797,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
       if (dynamicFogEnabled && playerVisible) {
         // 3-state dynamic fog: hidden → explored (dimmed) → visible (clear).
-        // Two passes avoid per-cell save/restore overhead.
+        // Cells visible from player tokens OR illuminated by light sources
+        // are rendered clear (no overlay). Two passes avoid per-cell
+        // save/restore overhead.
         const exploredFill = isPlayerView ? EXPLORED_PLAYER_FILL : EXPLORED_GM_FILL;
         const hiddenFill = isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
 
@@ -691,6 +811,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
             if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
             if (!fog[y]?.[x]) continue;
             if (playerVisible.has(`${x},${y}`)) continue;
+            if (lightVisible?.has(`${x},${y}`)) continue;
             if (explored?.[y]?.[x]) {
               ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
             }
@@ -706,6 +827,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
             if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
             if (!fog[y]?.[x]) continue;
             if (playerVisible.has(`${x},${y}`)) continue;
+            if (lightVisible?.has(`${x},${y}`)) continue;
             if (!(explored?.[y]?.[x])) {
               ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
             }
@@ -1013,7 +1135,41 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       drawMarker(ctx, ghost, tileSize);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell]);
+    // Light source preview — when the light tool is active and the mouse is
+    // on the canvas, show a ghost glow at the cursor position so the user
+    // can see the illumination radius before placing the source.
+    if (activeTool === 'light' && mousePos) {
+      const ghost: LightSource = {
+        id: -1,
+        x: mousePos.x,
+        y: mousePos.y,
+        radius: lightRadius,
+        color: lightColor,
+        label: 'preview',
+      };
+      ctx.save();
+      ctx.globalAlpha = 0.6;
+      drawLightGlow(ctx, ghost, tileSize);
+      ctx.restore();
+      // Dashed radius circle outline
+      ctx.save();
+      ctx.strokeStyle = lightColor;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 3]);
+      ctx.globalAlpha = 0.5;
+      ctx.beginPath();
+      ctx.arc(
+        (mousePos.x + 0.5) * tileSize,
+        (mousePos.y + 0.5) * tileSize,
+        lightRadius * tileSize,
+        0,
+        Math.PI * 2,
+      );
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor]);
 
   // Minimap render
   useEffect(() => {
@@ -1183,6 +1339,15 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       onFovClick?.(x, y);
       return;
     }
+    if (activeTool === 'light') {
+      onAddLightSource?.(x, y);
+      return;
+    }
+    if (activeTool === 'remove-light') {
+      const ls = findLightSourceAt(lightSources, x, y);
+      if (ls) onRemoveLightSource?.(ls.id);
+      return;
+    }
 
     // Player-only tools (drawing eraser).
     if (isPlayerView) {
@@ -1218,7 +1383,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     notes, selectedNoteId, isPlayerView, fogActive, fog, tokens, annotations,
     onAddToken, onRemoveToken, onRemoveAnnotation, meta.width, meta.height,
     onAddMarker, onRemoveMarker, markerShape, markerColor, markerSize, markers,
-    getFractionalCoords, onFovClick,
+    getFractionalCoords, onFovClick, lightSources, onAddLightSource, onRemoveLightSource,
   ]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {

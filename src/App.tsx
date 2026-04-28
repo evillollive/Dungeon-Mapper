@@ -17,8 +17,9 @@ import { exportMapSVG } from './utils/export';
 import { isTokenFogged } from './utils/tokenVisibility';
 import { computeFOV } from './utils/fov';
 import { computePlayerFOV, mergeExplored } from './utils/dynamicFog';
+import { computeLightVisible } from './utils/lightSources';
 import { getTheme, THEME_LIST } from './themes/index';
-import { ALL_TILE_TYPES, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape } from './types/map';
+import { ALL_TILE_TYPES, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape, type LightSourcePreset, LIGHT_SOURCE_PRESETS } from './types/map';
 import './App.css';
 
 const UI_SCALE_STORAGE_KEY = 'dungeon-mapper:ui-scale';
@@ -130,6 +131,9 @@ function App() {
     setBackgroundImage,
     clearBackgroundImage,
     updateBackgroundImage,
+    addLightSource,
+    removeLightSource,
+    clearLightSources,
   } = useMapState();
 
   const {
@@ -178,6 +182,10 @@ function App() {
   // Measure tool settings — shape and scale (feet per cell).
   const [measureShape, setMeasureShape] = useState<MeasureShape>('ruler');
   const [measureFeetPerCell, setMeasureFeetPerCell] = useState<number>(5);
+  // Light source tool settings — preset, radius (cells), and glow color.
+  const [lightPreset, setLightPreset] = useState<LightSourcePreset>('torch');
+  const [lightRadius, setLightRadius] = useState<number>(LIGHT_SOURCE_PRESETS[0].radius);
+  const [lightColor, setLightColor] = useState<string>(LIGHT_SOURCE_PRESETS[0].color);
   // Icon picker dialog state. When a token is placed and the user should
   // pick an icon, we store the pending token details and show the picker.
   const [showIconPicker, setShowIconPicker] = useState(false);
@@ -217,19 +225,40 @@ function App() {
     return computePlayerFOV(map.tiles, map.tokens ?? []);
   }, [dynamicFogEnabled, map.tiles, map.tokens]);
 
+  // ── Light Sources ───────────────────────────────────────────────────
+  // Compute the union FOV from all placed light sources. When dynamic fog
+  // is enabled, `lightVisible` cells are treated as "visible" (clear) in
+  // the fog renderer, even without a player token in direct line-of-sight.
+  // When dynamic fog is off, `lightVisible` is used only for the canvas
+  // glow overlay — no fog is removed.
+  const lightVisible = useMemo(
+    () => computeLightVisible(map.tiles, map.lightSources),
+    [map.tiles, map.lightSources],
+  );
+
   // Whenever the visible set changes, merge into the explored grid so
   // previously-seen cells stay marked even after tokens move away.
+  // Light sources also contribute to explored so lit areas stay dimmed
+  // after a light source is removed.
   useEffect(() => {
-    if (!playerVisible || !dynamicFogEnabled) return;
+    if (!dynamicFogEnabled) return;
     const w = map.meta.width;
     const h = map.meta.height;
     const currentExplored = map.explored ?? Array.from({ length: h }, () => Array<boolean>(w).fill(false));
-    const merged = mergeExplored(currentExplored, playerVisible, w, h);
+
+    // Merge both player-visible and light-visible cells into explored.
+    let merged = currentExplored;
+    if (playerVisible) {
+      merged = mergeExplored(merged, playerVisible, w, h);
+    }
+    if (lightVisible) {
+      merged = mergeExplored(merged, lightVisible, w, h);
+    }
     if (merged !== currentExplored) {
       setExplored(merged);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerVisible]);
+  }, [playerVisible, lightVisible, dynamicFogEnabled]);
 
   const handleToggleDynamicFog = useCallback(() => {
     setDynamicFogEnabled(!dynamicFogEnabled);
@@ -601,6 +630,17 @@ function App() {
               measureFeetPerCell={measureFeetPerCell}
               onSetMeasureShape={setMeasureShape}
               onSetMeasureFeetPerCell={setMeasureFeetPerCell}
+              lightPreset={lightPreset}
+              lightRadius={lightRadius}
+              lightColor={lightColor}
+              onSetLightPreset={(preset) => {
+                setLightPreset(preset);
+                const p = LIGHT_SOURCE_PRESETS.find(p => p.id === preset);
+                if (p) { setLightRadius(p.radius); setLightColor(p.color); }
+              }}
+              onSetLightRadius={setLightRadius}
+              onSetLightColor={setLightColor}
+              onClearLightSources={clearLightSources}
             />
           </nav>
         ) : (
@@ -665,6 +705,12 @@ function App() {
             explored={map.explored}
             measureShape={measureShape}
             measureFeetPerCell={measureFeetPerCell}
+            lightSources={map.lightSources}
+            lightVisible={dynamicFogEnabled ? lightVisible : null}
+            onAddLightSource={(x, y) => addLightSource(x, y, lightRadius, lightColor, lightPreset)}
+            onRemoveLightSource={removeLightSource}
+            lightRadius={lightRadius}
+            lightColor={lightColor}
           />
         </main>
         {viewMode === 'gm' && (

@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-28
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 7.1, & 7.3 complete. Phase 4.3+ in planning.
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 7.1, & 7.3 complete. Phase 5+ in planning.
 
 ---
 
@@ -19,6 +19,7 @@ Dungeon-Mapper is a React + TypeScript + Vite single-page app with Canvas-based 
 - 13 visual themes (Dungeon, Castle, Wilderness, Starship, etc.)
 - Fog of War with per-cell reveal/hide, GM preview, and **Dynamic Fog** (3-state: hidden/explored/visible, auto-reveal from player tokens)
 - **Line-of-Sight / FOV** (recursive shadowcasting from any cell, wall occlusion, GM tool [O])
+- **Light Sources** (torch/lantern/magical presets with configurable radius and glow color, FOV-limited illumination interacts with dynamic fog, [I] shortcut)
 - Tokens & Initiative Tracking (player/NPC/monster with multi-cell footprints, **icon library with 30+ SVG icons**)
 - Notes & Annotations (room/poi kinds, theme-aware auto-labeling, **procedural name suffixes**)
 - **Shape/Area Markers** (circle, square, diamond with colors and sizes)
@@ -211,14 +212,20 @@ A 4th generator type that is a unique differentiator — no competitor in our sp
   - Notes, tokens, and initiative panel respect dynamic fog visibility
   - Export renderer supports 3-state fog for print/PNG output
 
-### Phase 4: Vision & Lighting System (continued)
+### ~~Phase 4: Vision & Lighting System (continued)~~ Phase 4 complete ✅
 
 Advanced tactical features for live play.
 
-**4.3 — Light Sources**
-- Light source markers with configurable radius (torch, lantern, magical light)
-- Light interacts with FOV (illuminated areas visible even without direct line of sight)
-- Why: Differentiation feature — most dungeon editors don't have lighting
+- ✅ **4.3 — Light Sources**
+  - `LightSource` data type persisted on `DungeonMap.lightSources[]`
+  - 4 presets: Torch (radius 4, orange), Lantern (radius 6, amber), Magical (radius 8, violet), Custom
+  - Configurable illumination radius (1–20 cells) and glow color (8 swatches)
+  - FOV-limited illumination: walls block light propagation via recursive shadowcasting (same algorithm as player/GM FOV)
+  - Warm radial-gradient glow overlay rendered on canvas in all view modes
+  - When Dynamic Fog is enabled: lit cells treated as "visible" (clear, no fog) just like player-token FOV — illuminated areas visible even without direct player line-of-sight
+  - Explored grid updated for lit cells — removing a light source leaves previously lit area as "explored" (dimmed) rather than snapping back to hidden
+  - Place tool with [I] shortcut; Remove tool; Clear All button — all in GM toolbar LIGHT section
+  - Light source ghost preview (glow + dashed radius circle) follows cursor while tool is active
 
 ### Phase 5: Collaboration & Sharing
 
@@ -303,13 +310,13 @@ Smaller features that improve the overall experience.
 
 ## Part 5: Recommended Priority Order
 
-### Next Up — High-Value Tactical Features
+### Next Up — Completed ✅
 - ~~**Phase 4.1** — Line-of-Sight / FOV~~ ✅
 - ~~**Phase 4.2** — Dynamic Fog of War~~ ✅
 - ~~**Phase 7.3** — Measurement & Distance Tools~~ ✅
+- ~~**Phase 4.3** — Light Sources~~ ✅
 
 ### Medium-Term — New Generation & Advanced Features
-- **Phase 4.3** — Light Sources *(builds on FOV/fog system)*
 - **Phase 6.2** — Multi-Level Dungeon Support *(high demand, moderate complexity)*
 - **Phase 7.2** — Custom Tile/Theme Creation
 
@@ -362,6 +369,18 @@ Smaller features that improve the overall experience.
 ---
 
 ## Changes History
+
+**2026-04-28 — Phase 4.3 complete: Light Sources shipped**
+- `LightSource` data type (`id`, `x`, `y`, `radius`, `color`, `label`) persisted on `DungeonMap.lightSources[]`
+- `computeLightVisible()` in `src/utils/lightSources.ts` computes union FOV from all light sources using the existing recursive shadowcasting engine — walls block light propagation exactly as they block sight
+- 4 presets in GM toolbar LIGHT section: Torch (radius 4, orange 🕯), Lantern (radius 6, amber 🔦), Magical (radius 8, violet ✨), Custom (💡) — each sets a sensible default radius and color with one click
+- Configurable radius slider (1–20 cells) and 8 color swatches (orange, amber, pale yellow, white, violet, arcane green, ice blue, infernal red)
+- Place Light tool with `[I]` keyboard shortcut; Remove Light tool; Clear All button
+- Ghost preview: warm glow + dashed radius circle follows cursor while Place tool is active
+- Dynamic fog integration: when `dynamicFogEnabled` is true, `lightVisible` cells are treated as "visible" (clear, no fog) alongside `playerVisible` cells — torches light up areas no player can directly see
+- Explored grid updated for lit cells in dynamic fog mode — previously lit areas remain "explored" (dimmed) after a light is removed
+- Warm radial-gradient halos and candle-emoji icons rendered on canvas in screen mode (hidden in print mode)
+- Priority order, feature inventory, and phase status updated
 
 **2026-04-28 — Phase 7.3 complete: Measurement & Distance Tools shipped**
 - Measure tool (`measure` ToolType) with [M] keyboard shortcut

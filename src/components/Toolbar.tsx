@@ -1,7 +1,7 @@
 import React from 'react';
-import type { ToolType, TileType, MarkerShape, MeasureShape } from '../types/map';
+import type { ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
 import type { BackgroundImage } from '../types/map';
-import { ALL_TILE_TYPES, TILE_LABELS, MARKER_SHAPES, MARKER_COLORS, MARKER_SHAPE_LABELS, MEASURE_SHAPES, MEASURE_SHAPE_LABELS } from '../types/map';
+import { ALL_TILE_TYPES, TILE_LABELS, MARKER_SHAPES, MARKER_COLORS, MARKER_SHAPE_LABELS, MEASURE_SHAPES, MEASURE_SHAPE_LABELS, LIGHT_SOURCE_PRESETS } from '../types/map';
 import { getTheme, THEME_LIST } from '../themes/index';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import TokenToolsSection from './TokenToolsSection';
@@ -44,6 +44,14 @@ interface ToolbarProps {
   measureFeetPerCell: number;
   onSetMeasureShape: (s: MeasureShape) => void;
   onSetMeasureFeetPerCell: (n: number) => void;
+  // Light source tool settings
+  lightPreset: LightSourcePreset;
+  lightRadius: number;
+  lightColor: string;
+  onSetLightPreset: (p: LightSourcePreset) => void;
+  onSetLightRadius: (r: number) => void;
+  onSetLightColor: (c: string) => void;
+  onClearLightSources: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -99,6 +107,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onSetMarkerSize, onClearMarkers,
   backgroundImage, onImportBackgroundImage, onUpdateBackgroundImage, onClearBackgroundImage,
   measureShape, measureFeetPerCell, onSetMeasureShape, onSetMeasureFeetPerCell,
+  lightPreset, lightRadius, lightColor, onSetLightPreset, onSetLightRadius, onSetLightColor, onClearLightSources,
 }) => {
   const theme = getTheme(themeId);
   const bgFileRef = React.useRef<HTMLInputElement>(null);
@@ -503,6 +512,112 @@ const Toolbar: React.FC<ToolbarProps> = ({
             </div>
           </>
         )}
+      </div>
+
+      <div className="toolbar-section">
+        <div className="toolbar-label">LIGHT</div>
+        <button
+          type="button"
+          className={`tool-btn ${activeTool === 'light' ? 'active' : ''}`}
+          onClick={() => onSetTool('light')}
+          title="Place a light source — click a cell to place a torch, lantern, or magical light. Illuminated cells are visible through fog when Dynamic Fog is enabled. [I]"
+          aria-label="Place light source"
+          aria-pressed={activeTool === 'light'}
+          aria-keyshortcuts="I"
+        >
+          <span className="tool-icon" aria-hidden="true">🕯</span>
+          <span className="tool-name">Place</span>
+          <span className="tool-shortcut" aria-hidden="true">[I]</span>
+        </button>
+        <button
+          type="button"
+          className={`tool-btn ${activeTool === 'remove-light' ? 'active' : ''}`}
+          onClick={() => onSetTool('remove-light')}
+          title="Remove a light source — click a cell containing a light to delete it."
+          aria-label="Remove light source"
+          aria-pressed={activeTool === 'remove-light'}
+        >
+          <span className="tool-icon" aria-hidden="true">✕</span>
+          <span className="tool-name">Remove</span>
+        </button>
+        <button
+          type="button"
+          className="tool-btn"
+          onClick={onClearLightSources}
+          title="Remove all light sources from the map."
+          aria-label="Clear all light sources"
+        >
+          <span className="tool-icon" aria-hidden="true">🗑</span>
+          <span className="tool-name">Clear All</span>
+        </button>
+        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Preset</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+          {LIGHT_SOURCE_PRESETS.map(p => (
+            <button
+              key={p.id}
+              type="button"
+              className={`tile-btn ${lightPreset === p.id ? 'active' : ''}`}
+              onClick={() => onSetLightPreset(p.id)}
+              title={`${p.label} — radius ${p.radius} cells`}
+              aria-label={`${p.label} light preset`}
+              aria-pressed={lightPreset === p.id}
+              style={{ padding: '2px 4px', width: 'auto' }}
+            >
+              <span aria-hidden="true" style={{ fontSize: 14 }}>{p.icon}</span>
+              <span className="tile-btn-label" style={{ fontSize: '0.55rem' }}>{p.label}</span>
+            </button>
+          ))}
+        </div>
+        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Radius</div>
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          <input
+            type="range"
+            min={1}
+            max={20}
+            value={lightRadius}
+            onChange={e => onSetLightRadius(Number(e.target.value))}
+            title={`Light radius: ${lightRadius} cells`}
+            aria-label="Light radius in cells"
+            style={{ flex: 1 }}
+          />
+          <span style={{ fontSize: '0.7rem', minWidth: 20, textAlign: 'center' }}>{lightRadius}</span>
+        </div>
+        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Color</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
+          {[
+            { color: '#f97316', label: 'Torch orange' },
+            { color: '#fbbf24', label: 'Lantern amber' },
+            { color: '#fef08a', label: 'Pale yellow' },
+            { color: '#ffffff', label: 'White' },
+            { color: '#a78bfa', label: 'Magical violet' },
+            { color: '#34d399', label: 'Arcane green' },
+            { color: '#60a5fa', label: 'Ice blue' },
+            { color: '#f87171', label: 'Infernal red' },
+          ].map(({ color, label }) => (
+            <button
+              key={color}
+              type="button"
+              className={`tile-btn ${lightColor === color ? 'active' : ''}`}
+              onClick={() => onSetLightColor(color)}
+              title={label}
+              aria-label={`Light color: ${label}`}
+              aria-pressed={lightColor === color}
+              style={{ padding: 2, width: 'auto', justifyContent: 'center' }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  display: 'inline-block',
+                  width: 18,
+                  height: 18,
+                  background: color,
+                  border: '1px solid #2d3561',
+                  borderRadius: '50%',
+                }}
+              />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

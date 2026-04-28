@@ -91,6 +91,42 @@ export interface ShapeMarker {
 }
 
 export const MARKER_SHAPES: MarkerShape[] = ['circle', 'square', 'diamond'];
+
+// ── Light Sources ──────────────────────────────────────────────────────────
+
+export type LightSourcePreset = 'torch' | 'lantern' | 'magical' | 'custom';
+
+export interface LightSource {
+  id: number;
+  /** Tile-aligned X coordinate of the light's origin cell. */
+  x: number;
+  /** Tile-aligned Y coordinate of the light's origin cell. */
+  y: number;
+  /** Illumination radius in cells (Chebyshev). */
+  radius: number;
+  /** Hex glow color rendered on the canvas (e.g. '#f97316'). */
+  color: string;
+  /** Display name shown in the toolbar and future UI. */
+  label: string;
+}
+
+/**
+ * Built-in light source presets. Each preset has a representative radius,
+ * colour, and display icon so the toolbar can offer one-click placement
+ * without requiring the user to dial in every value manually.
+ */
+export const LIGHT_SOURCE_PRESETS: {
+  id: LightSourcePreset;
+  label: string;
+  radius: number;
+  color: string;
+  icon: string;
+}[] = [
+  { id: 'torch',   label: 'Torch',   radius: 4, color: '#f97316', icon: '🕯' },
+  { id: 'lantern', label: 'Lantern', radius: 6, color: '#fbbf24', icon: '🔦' },
+  { id: 'magical', label: 'Magical', radius: 8, color: '#a78bfa', icon: '✨' },
+  { id: 'custom',  label: 'Custom',  radius: 5, color: '#ffffff', icon: '💡' },
+];
 export const MARKER_COLORS = [
   '#dc2626', '#f97316', '#eab308', '#22c55e',
   '#3b82f6', '#a855f7', '#ec4899', '#1f2937',
@@ -183,6 +219,15 @@ export interface DungeonMap {
    * round-trips.
    */
   backgroundImage?: BackgroundImage;
+  /**
+   * Light source markers placed on the map. Each light source projects an
+   * FOV-limited illumination radius that interacts with the dynamic fog
+   * system: when `dynamicFogEnabled` is `true`, cells inside a light
+   * source's field of view are treated as visible (clear) regardless of
+   * whether any player token can see them. Light sources are purely
+   * visual when dynamic fog is off. Optional; treat absent as no lights.
+   */
+  lightSources?: LightSource[];
 }
 
 export type ToolType =
@@ -201,7 +246,9 @@ export type ToolType =
   | 'move-token' | 'remove-token'
   | 'marker' | 'remove-marker'
   | 'fov'
-  | 'measure';
+  | 'measure'
+  // Light source tools — place and remove light source markers.
+  | 'light' | 'remove-light';
 
 export type ViewMode = 'gm' | 'player';
 
