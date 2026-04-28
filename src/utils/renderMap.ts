@@ -17,7 +17,6 @@ import { ICON_BY_ID } from './iconLibrary';
 
 // Screen-mode canvas styling (mirrored from MapCanvas.tsx).
 const SCREEN_BG = '#f4f1e4';
-const SCREEN_GRID = '#5fb8c9';
 const FOG_PLAYER_FILL = '#6b7280';
 const FOG_GM_FILL = 'rgba(107, 114, 128, 0.55)';
 const EXPLORED_PLAYER_FILL = 'rgba(107, 114, 128, 0.55)';
@@ -84,7 +83,7 @@ export function renderMapToCanvas(
   }
 
   // Grid lines
-  ctx.strokeStyle = printMode ? PRINT_GRID : SCREEN_GRID;
+  ctx.strokeStyle = printMode ? PRINT_GRID : theme.gridColor;
   ctx.lineWidth = Math.max(0.5, tileSize * 0.02);
   for (let y = 0; y <= height; y++) {
     ctx.beginPath();

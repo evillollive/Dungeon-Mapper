@@ -10,7 +10,6 @@ import { ICON_BY_ID } from '../utils/iconLibrary';
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
 // evoking traditional engineering / quad-ruled graph paper regardless of theme.
 const SCREEN_BG = '#f4f1e4';
-const SCREEN_GRID = '#5fb8c9';
 
 // Fog overlay colors. Player mode uses a fully opaque medium grey so hidden
 // content is genuinely hidden but the overlay reads as "fog" rather than a
@@ -685,7 +684,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       }
     }
 
-    ctx.strokeStyle = printMode ? PRINT_GRID : SCREEN_GRID;
+    ctx.strokeStyle = printMode ? PRINT_GRID : theme.gridColor;
     ctx.lineWidth = 0.5;
     for (let y = 0; y <= meta.height; y++) {
       ctx.beginPath();
