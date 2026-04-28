@@ -272,6 +272,73 @@ export function getOpenTerrainFlavor(themeId?: string): OpenTerrainFlavor {
  * those generators.
  */
 const GENERATOR_THEME_POI_LABELS: Record<string, Record<string, Partial<Record<TileType, PoiLabel>>>> = {
+  village: {
+    dungeon: {
+      start: 'Town Gate',
+      treasure: 'Stash',
+      trap: 'Snare',
+    },
+    castle: {
+      start: 'Castle Gate',
+      treasure: 'Coffer',
+      trap: 'Snare',
+    },
+    wilderness: {
+      start: 'Village Path',
+      treasure: 'Cache',
+      trap: 'Pit Trap',
+    },
+    desert: {
+      start: 'Oasis Gate',
+      treasure: 'Cache',
+      trap: 'Sand Pit',
+    },
+    oldwest: {
+      start: 'Trail',
+      treasure: 'Strongbox',
+      trap: 'Tripwire',
+    },
+    pirate: {
+      start: 'Harbor',
+      treasure: 'Buried Treasure',
+      trap: 'Snare',
+    },
+    moderncity: {
+      start: 'Main Entrance',
+      treasure: 'Safe',
+      trap: 'Alarm',
+    },
+    cyberpunk: {
+      start: 'Access Point',
+      treasure: 'Data Cache',
+      trap: 'ICE',
+    },
+    steampunk: {
+      start: 'Station Gate',
+      treasure: 'Gear Cache',
+      trap: 'Steam Vent',
+    },
+    starship: {
+      start: 'Docking Bay',
+      treasure: 'Cargo Cache',
+      trap: 'Hazard',
+    },
+    alien: {
+      start: 'Hive Entrance',
+      treasure: 'Relic',
+      trap: 'Spore Trap',
+    },
+    postapocalypse: {
+      start: 'Settlement Gate',
+      treasure: 'Scrap Cache',
+      trap: 'Snare',
+    },
+    ancient: {
+      start: 'City Gate',
+      treasure: 'Hoard',
+      trap: 'Cursed Glyph',
+    },
+  },
   cavern: {
     dungeon: {
       start: 'Cave Mouth',

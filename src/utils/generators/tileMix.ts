@@ -13,6 +13,7 @@
  * dialog code.
  */
 import { getOpenTerrainFlavor, getRoomsCorridorsFlavor } from './poi';
+import { getVillageFlavor } from './village';
 
 export const DEFAULT_SECRET_DOOR_FRACTION = 0.05;
 
@@ -342,10 +343,66 @@ export function getCavernDefaultMix(): Record<string, number> {
   };
 }
 
+/* ── Village ──────────────────────────────────────────────────── */
+
+export const VILLAGE_TILE_MIX_SLIDERS: TileMixSliderSpec[] = [
+  {
+    key: 'walls',
+    label: 'Town walls',
+    min: 0,
+    max: 1,
+    step: 1,
+    format: v => (v >= 0.5 ? 'on' : 'off'),
+    hint: 'Draw a defensive perimeter wall with gates around the settlement.',
+  },
+  {
+    key: 'buildingSize',
+    label: 'Building size',
+    min: 0.5,
+    max: 1.5,
+    step: 0.05,
+    format: v => `${v.toFixed(2)}×`,
+    hint: 'Scales building footprints. Lower = small cottages with wide streets; higher = large halls packed tightly.',
+  },
+  {
+    key: 'treasure',
+    label: 'Treasure',
+    min: 0,
+    max: 0.03,
+    step: 0.001,
+    format: fmtPct,
+    hint: '≈ share of floor cells holding a treasure stash.',
+  },
+  {
+    key: 'trap',
+    label: 'Traps / Hazards',
+    min: 0,
+    max: 0.02,
+    step: 0.001,
+    format: fmtPct,
+    hint: '≈ share of floor cells holding a trap or hazard.',
+  },
+];
+
+/**
+ * Default village mix. Walls default to the per-theme setting
+ * (medieval themes get walls, modern/outdoor themes don't).
+ */
+export function getVillageDefaultMix(themeId?: string): Record<string, number> {
+  const flavor = getVillageFlavor(themeId);
+  return {
+    walls: flavor.defaultWalls ? 1 : 0,
+    buildingSize: 1,
+    treasure: 0.01 * flavor.treasureMultiplier,
+    trap: 0.005 * flavor.trapMultiplier,
+  };
+}
+
 export const GENERATOR_TILE_MIX: Record<string, TileMixSliderSpec[]> = {
   'rooms-and-corridors': ROOMS_TILE_MIX_SLIDERS,
   'open-terrain': OPEN_TERRAIN_TILE_MIX_SLIDERS,
   cavern: CAVERN_TILE_MIX_SLIDERS,
+  village: VILLAGE_TILE_MIX_SLIDERS,
 };
 
 /**
@@ -372,6 +429,8 @@ export function getDefaultTileMix(generatorId: string, themeId?: string): Record
       return getOpenTerrainDefaultMix(themeId);
     case 'cavern':
       return getCavernDefaultMix();
+    case 'village':
+      return getVillageDefaultMix(themeId);
     default:
       return {};
   }

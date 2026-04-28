@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-28
-> **Status:** Phases 1 & 2 complete. Phase 3+ in planning.
+> **Status:** Phases 1, 2, & 3 complete. Phase 4+ in planning.
 
 ---
 
@@ -10,7 +10,7 @@
 Dungeon-Mapper is a React + TypeScript + Vite single-page app with Canvas-based rendering. It currently offers:
 
 - Square grid maps (8×8 to 128×128 tiles, **20 tile types**)
-- 3 procedural generators: Rooms & Corridors, Open Terrain, Cavern (all seeded/deterministic)
+- 4 procedural generators: Rooms & Corridors, Open Terrain, Cavern, **Village** (all seeded/deterministic)
 - **8 dungeon shape masks** (rectangle, circle, diamond, cross, L-shape, T-shape, hexagon, octagon)
 - **Corridor style control** with continuity slider (0%–100%) across 4 pluggable strategies
 - **Dead-end removal** with configurable fraction slider
@@ -48,7 +48,7 @@ Repo: Azgaar/Fantasy-Map-Generator | Stack: TypeScript + D3.js + Vite
 | Biome/climate simulation | Temperature, precipitation → biome assignment | ❌ |
 | Political boundaries & states | Procedural nations with territories | ❌ |
 | Culture & religion generation | Cultural spread and naming systems | ❌ |
-| Settlement/burg generation | Population-aware city placement | ❌ |
+| Settlement/burg generation | Population-aware city placement | ✅ (village generator) |
 | Procedural name generation | Culture-based naming for all entities | ✅ |
 | Route/road generation | Trade routes via pathfinding | ❌ |
 | SVG multi-layer rendering | 15+ toggleable map layers | ❌ |
@@ -114,10 +114,10 @@ Repo: watabou/TownGeneratorOS | Stack: Haxe + OpenFL
 | Feature | Description | We Have It? |
 |---|---|---|
 | Voronoi + Lloyd relaxation | Even, organic district generation | ❌ |
-| BSP building subdivision | Recursive room splitting with chaos control | ❌ |
-| A* corridor pathfinding | Optimal corridor routing between areas | ❌ |
-| Ward/district types (13+) | Market, Cathedral, Castle, Military, Slum, etc. | ❌ |
-| City wall & fortification generation | Defensive perimeters with gates/towers | ❌ |
+| BSP building subdivision | Recursive room splitting with chaos control | ✅ (village generator) |
+| A* corridor pathfinding | Optimal corridor routing between areas | Partial (BSP-sibling streets) |
+| Ward/district types (13+) | Market, Cathedral, Castle, Military, Slum, etc. | ✅ (13 theme palettes) |
+| City wall & fortification generation | Defensive perimeters with gates/towers | ✅ (village walls + gates) |
 | Polygon geometry library | Shrink, buffer, cut, intersection ops | ❌ |
 | Junction optimization | Automatic vertex merging and smoothing | ❌ |
 
@@ -170,21 +170,21 @@ All shipped items:
 - ✅ 2.4 — Richer Door Generation (probabilistic type distribution)
 - ✅ 2.6 — Procedural Name Generation (theme-aware, 13 themes)
 
-### Phase 3: Town/Settlement Generator
+### ~~Phase 3: Town/Settlement Generator~~ ✅ COMPLETE
 
 *Formerly Phase 2.5 — promoted to standalone phase given its scope and distinct algorithmic requirements.*
 
-A 4th generator type that would be a unique differentiator — no competitor in our space does both dungeon editing AND town generation.
+A 4th generator type that is a unique differentiator — no competitor in our space does both dungeon editing AND town generation.
 
-**3.1 — Town/Settlement Generator**
-- Use Voronoi partitioning with Lloyd relaxation for district/ward layout
-- BSP subdivision within wards for building footprints
-- A* pathfinding for street network connecting gates to center
-- Ward types map to our theme system (market, temple, barracks, residential, etc.)
-- Optional walls/fortifications
-- Inspired by: Watabou's TownGeneratorOS algorithms (study only — GPL, must reimplement from scratch)
-
-**Architectural note:** This introduces Voronoi tessellation and pathfinding algorithms we haven't used before. The `delaunator` (ISC license) npm package is a strong candidate for Voronoi/Delaunay computation. All Watabou-derived algorithms (BSP, A*) must be clean-room reimplemented due to GPL v3.
+- ✅ **3.1 — Town/Settlement Generator**
+  - BSP partitioning for district/ward layout with recursive splitting
+  - Building footprints carved inside BSP leaves with randomised insets
+  - Street network connecting sibling BSP nodes via L-shaped corridors
+  - Per-theme ward palettes (13 themes) mapping to district archetypes (Market, Temple, Barracks, etc.)
+  - Optional walls/fortifications with gates on each side
+  - Tile-mix sliders: town walls toggle, building size, treasure, traps
+  - POI placement (start at gate, treasure, traps) with theme-aware labels
+  - Full integration with POI/Notes engine for auto-labeled district notes
 
 ### Phase 4: Vision & Lighting System
 
@@ -294,7 +294,6 @@ Smaller features that improve the overall experience.
 - **Phase 7.3** — Measurement & Distance Tools *(tactical play needs this)*
 
 ### Medium-Term — New Generation & Advanced Features
-- **Phase 3.1** — Town/Settlement Generator *(unique differentiator, significant effort)*
 - **Phase 4.3** — Light Sources *(builds on FOV/fog system)*
 - **Phase 6.2** — Multi-Level Dungeon Support *(high demand, moderate complexity)*
 - **Phase 7.2** — Custom Tile/Theme Creation
@@ -318,8 +317,6 @@ Smaller features that improve the overall experience.
 |---|---|---|
 | Shadowcasting FOV | Mipui (MIT) | Can adapt freely |
 | Voronoi + Lloyd relaxation | Azgaar (MIT) or Watabou (GPL—study only) | Reimplement; use `delaunator` npm package |
-| A* pathfinding | Watabou (GPL—study only) | Reimplement from scratch |
-| BSP room subdivision | Watabou (GPL—study only) | Reimplement from scratch |
 | Operation-based sync | Mipui (MIT) | Can adapt freely |
 | Tile caching (DOM→PNG) | Mipui (MIT) | Can adapt freely |
 
@@ -346,10 +343,22 @@ Smaller features that improve the overall experience.
 |---|---|---|
 | No hex grid support | 2026-04-28 | Non-square tiles not desired; removes former Phase 3 entirely |
 | Town generator as standalone phase | 2026-04-28 | Scope and algorithmic complexity warrants its own phase rather than being part of generation upgrades |
+| BSP over Voronoi for village gen | 2026-04-28 | BSP partitioning produces clean rectangular buildings that map well to the existing square-grid tile system; Voronoi deferred to world-map scale (Phase 6.4) |
 
 ---
 
 ## Changes History
+
+**2026-04-28 — Phase 3 complete: Village Generator shipped**
+- New `village` generator added (4th generator type)
+- BSP-based district/building layout with street network
+- Per-theme ward palettes for 13 themes
+- Optional town walls with gates
+- Tile-mix sliders (walls, building size, treasure, traps)
+- Theme-aware POI labels for village context
+- Competitor tables updated (Watabou BSP/wards/walls, Azgaar settlements)
+- BSP/A* removed from "clean-room reimplement" table (done)
+- Priority order updated to reflect Phase 3 completion
 
 **2026-04-28 — Initial committed version (revised from chat-based plan)**
 - Part 1 updated to reflect all features shipped in Phases 1 & 2
