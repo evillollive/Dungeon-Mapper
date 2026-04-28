@@ -200,9 +200,25 @@ export type ToolType =
   | 'token-monster' | 'token-monster-md' | 'token-monster-lg'
   | 'move-token' | 'remove-token'
   | 'marker' | 'remove-marker'
-  | 'fov';
+  | 'fov'
+  | 'measure';
 
 export type ViewMode = 'gm' | 'player';
+
+/**
+ * Shape used by the Measure tool. 'ruler' measures point-to-point
+ * distance; the other shapes display spell/ability area templates.
+ */
+export type MeasureShape = 'ruler' | 'circle' | 'cone' | 'line';
+
+export const MEASURE_SHAPES: MeasureShape[] = ['ruler', 'circle', 'cone', 'line'];
+
+export const MEASURE_SHAPE_LABELS: Record<MeasureShape, string> = {
+  ruler: 'Ruler',
+  circle: 'Circle',
+  cone: 'Cone',
+  line: 'Line',
+};
 
 export const TOKEN_KIND_COLORS: Record<TokenKind, string> = {
   player: '#3b82f6',

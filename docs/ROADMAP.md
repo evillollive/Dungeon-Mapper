@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-28
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, & 7.1 complete. Phase 4.3+ in planning.
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 7.1, & 7.3 complete. Phase 4.3+ in planning.
 
 ---
 
@@ -22,6 +22,7 @@ Dungeon-Mapper is a React + TypeScript + Vite single-page app with Canvas-based 
 - Tokens & Initiative Tracking (player/NPC/monster with multi-cell footprints, **icon library with 30+ SVG icons**)
 - Notes & Annotations (room/poi kinds, theme-aware auto-labeling, **procedural name suffixes**)
 - **Shape/Area Markers** (circle, square, diamond with colors and sizes)
+- **Measurement & Distance Tools** (ruler, circle/cone/line templates, configurable ft/cell scale)
 - **Copy/Paste & Selection Operations** (Ctrl+C/V/X with preview overlay)
 - **Image Import / Background Layer** (PNG/JPG behind the grid)
 - Dual GM/Player views (Shift+V toggle)
@@ -133,7 +134,7 @@ Repo: davmillar/DavesMapper | Stack: PHP + jQuery
 | Community artist tile contributions | Multi-artist tile library system | ❌ |
 | Multiple map view modes | Open-edge, closed-edge, staggered, cube, side-view | ❌ |
 | Compact map serialization (base36) | Efficient encoding for sharing | ❌ |
-| Grid overlay options | 5ft/10ft square or hex grid | Partial (square only) |
+| Grid overlay options | 5ft/10ft square or hex grid | Partial (square + measure) |
 
 ---
 
@@ -287,10 +288,12 @@ Smaller features that improve the overall experience.
 - User-defined custom tile types with uploaded graphics
 - Custom theme builder with color picker and tile assignment
 
-**7.3 — Measurement & Distance Tools**
-- Ruler/measurement tool showing distance in grid units or feet
-- Cone, circle, and line measurement templates for spell areas
-- Scale bar on exported maps
+**~~7.3 — Measurement & Distance Tools~~** ✅ COMPLETE
+- ✅ Ruler/measurement tool showing distance in grid squares and feet (Chebyshev/D&D distance)
+- ✅ Circle, cone, and line measurement templates for spell areas
+- ✅ Configurable scale (feet per cell, default 5 ft)
+- ✅ Scale bar on exported maps (PNG print export)
+- ✅ Keyboard shortcut [M] for measure tool
 
 **7.4 — Map Search & Organization**
 - Map search/filter (if cloud storage added in Phase 5)
@@ -303,7 +306,7 @@ Smaller features that improve the overall experience.
 ### Next Up — High-Value Tactical Features
 - ~~**Phase 4.1** — Line-of-Sight / FOV~~ ✅
 - ~~**Phase 4.2** — Dynamic Fog of War~~ ✅
-- **Phase 7.3** — Measurement & Distance Tools *(tactical play needs this)*
+- ~~**Phase 7.3** — Measurement & Distance Tools~~ ✅
 
 ### Medium-Term — New Generation & Advanced Features
 - **Phase 4.3** — Light Sources *(builds on FOV/fog system)*
@@ -359,6 +362,16 @@ Smaller features that improve the overall experience.
 ---
 
 ## Changes History
+
+**2026-04-28 — Phase 7.3 complete: Measurement & Distance Tools shipped**
+- Measure tool (`measure` ToolType) with [M] keyboard shortcut
+- 4 measurement shapes: ruler (point-to-point), circle (radius template), cone (90° arc), line (1-cell-wide corridor)
+- Chebyshev distance calculation (D&D 5e style: diagonals count as 1 square)
+- Configurable feet-per-cell scale (default 5 ft) in toolbar
+- Distance readout overlay with dark pill background showing "N sq · N ft"
+- Scale bar on print-optimized PNG exports (toggle in Export dialog)
+- Cyan-themed measurement overlays with dashed borders for visual clarity
+- Priority order and feature inventory updated
 
 **2026-04-28 — Phase 4.2 complete: Dynamic Fog of War shipped**
 - Union FOV computed from all player-kind tokens via `computePlayerFOV()` in `src/utils/dynamicFog.ts`

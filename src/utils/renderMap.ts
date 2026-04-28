@@ -32,6 +32,12 @@ export interface RenderMapOptions {
   printMode?: boolean;
   /** GM or player view mode. Defaults to 'gm'. */
   viewMode?: ViewMode;
+  /**
+   * Feet per tile cell for the scale bar. When set (> 0), a scale bar is
+   * drawn in the bottom-right corner of the exported image. Default: 0
+   * (no scale bar).
+   */
+  feetPerCell?: number;
 }
 
 /**
@@ -43,7 +49,7 @@ export function renderMapToCanvas(
   map: DungeonMap,
   opts: RenderMapOptions,
 ): HTMLCanvasElement {
-  const { tileSize, themeId, printMode = false, viewMode = 'gm' } = opts;
+  const { tileSize, themeId, printMode = false, viewMode = 'gm', feetPerCell = 0 } = opts;
   const theme = getTheme(themeId);
   const { width, height } = map.meta;
   const isPlayerView = viewMode === 'player';
@@ -183,6 +189,48 @@ export function renderMapToCanvas(
       }
       ctx.restore();
     }
+  }
+
+  // Scale bar — bottom-right corner
+  if (feetPerCell > 0) {
+    // Choose a round number of cells for the scale bar (at least 1, at most
+    // 1/4 of the map width). Prefer lengths that produce round foot values.
+    const maxBarCells = Math.max(1, Math.floor(width / 4));
+    let barCells = 1;
+    for (const candidate of [10, 5, 4, 3, 2, 1]) {
+      if (candidate <= maxBarCells) { barCells = candidate; break; }
+    }
+    const barFeet = barCells * feetPerCell;
+    const barPx = barCells * tileSize;
+    const margin = tileSize * 0.5;
+    const barHeight = Math.max(4, tileSize * 0.12);
+    const fontSize = Math.max(10, tileSize * 0.35);
+    const barX = canvasW - margin - barPx;
+    const barY = canvasH - margin - barHeight;
+    const labelText = `${barFeet} ft`;
+
+    // Bar rectangle
+    ctx.save();
+    ctx.fillStyle = printMode ? '#000000' : '#1a1a2e';
+    ctx.fillRect(barX, barY, barPx, barHeight);
+    // End ticks
+    const tickH = barHeight * 2;
+    ctx.fillRect(barX, barY - (tickH - barHeight) / 2, Math.max(1, tileSize * 0.03), tickH);
+    ctx.fillRect(barX + barPx - Math.max(1, tileSize * 0.03), barY - (tickH - barHeight) / 2, Math.max(1, tileSize * 0.03), tickH);
+    // Label above bar
+    ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'bottom';
+    // Shadow for readability
+    ctx.fillStyle = printMode ? '#ffffff' : 'rgba(244, 241, 228, 0.85)';
+    const labelX = barX + barPx / 2;
+    const labelY = barY - barHeight * 0.3;
+    const textW = ctx.measureText(labelText).width;
+    const pad = fontSize * 0.25;
+    ctx.fillRect(labelX - textW / 2 - pad, labelY - fontSize - pad, textW + pad * 2, fontSize + pad * 2);
+    ctx.fillStyle = printMode ? '#000000' : '#1a1a2e';
+    ctx.fillText(labelText, labelX, labelY);
+    ctx.restore();
   }
 
   return canvas;

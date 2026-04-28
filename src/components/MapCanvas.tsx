@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useMemo, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
-import type { DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape } from '../types/map';
+import type { DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape } from '../types/map';
 import { TOKEN_KIND_COLORS } from '../types/map';
 import { getTheme } from '../themes/index';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
@@ -121,6 +121,10 @@ interface MapCanvasProps {
    * the player can see the map layout but knows it's no longer in view.
    */
   explored?: boolean[][] | null;
+  /** Shape for the measure tool overlay. */
+  measureShape?: MeasureShape;
+  /** Feet per tile cell for distance readout (default 5). */
+  measureFeetPerCell?: number;
 }
 
 export interface MapCanvasHandle {
@@ -395,6 +399,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   dynamicFogEnabled,
   playerVisible,
   explored,
+  measureShape = 'ruler',
+  measureFeetPerCell = 5,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -754,6 +760,164 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       }
     }
 
+    // ── Measure tool overlay ──────────────────────────────────────────
+    if (activeTool === 'measure' && isDragging && dragStart && dragEnd) {
+      const sx = (dragStart.x + 0.5) * tileSize;
+      const sy = (dragStart.y + 0.5) * tileSize;
+      const ex = (dragEnd.x + 0.5) * tileSize;
+      const ey = (dragEnd.y + 0.5) * tileSize;
+      const dx = dragEnd.x - dragStart.x;
+      const dy = dragEnd.y - dragStart.y;
+      // Chebyshev distance (D&D 5e default: each diagonal = 1 square)
+      const distCells = Math.max(Math.abs(dx), Math.abs(dy));
+      const distFeet = distCells * measureFeetPerCell;
+      const angle = Math.atan2(dy, dx);
+      const MEASURE_COLOR = '#22d3ee';
+      const MEASURE_FILL = 'rgba(34, 211, 238, 0.18)';
+
+      ctx.save();
+
+      if (measureShape === 'ruler') {
+        // Draw line from start to end with distance label
+        ctx.strokeStyle = MEASURE_COLOR;
+        ctx.lineWidth = 2.5;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Start and end dots
+        for (const [px, py] of [[sx, sy], [ex, ey]]) {
+          ctx.beginPath();
+          ctx.arc(px, py, tileSize * 0.18, 0, Math.PI * 2);
+          ctx.fillStyle = MEASURE_COLOR;
+          ctx.fill();
+        }
+      } else if (measureShape === 'circle') {
+        // Circle area template with radius = distance
+        const radiusPx = distCells * tileSize;
+        ctx.beginPath();
+        ctx.arc(sx, sy, radiusPx, 0, Math.PI * 2);
+        ctx.fillStyle = MEASURE_FILL;
+        ctx.fill();
+        ctx.strokeStyle = MEASURE_COLOR;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Origin dot
+        ctx.beginPath();
+        ctx.arc(sx, sy, tileSize * 0.18, 0, Math.PI * 2);
+        ctx.fillStyle = MEASURE_COLOR;
+        ctx.fill();
+
+        // Radius line
+        ctx.strokeStyle = MEASURE_COLOR;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(ex, ey);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      } else if (measureShape === 'cone') {
+        // 90° cone emanating from start toward end
+        const coneHalf = Math.PI / 4; // 45° each side = 90° total
+        const radiusPx = distCells * tileSize;
+        ctx.beginPath();
+        ctx.moveTo(sx, sy);
+        ctx.arc(sx, sy, radiusPx, angle - coneHalf, angle + coneHalf);
+        ctx.closePath();
+        ctx.fillStyle = MEASURE_FILL;
+        ctx.fill();
+        ctx.strokeStyle = MEASURE_COLOR;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Origin dot
+        ctx.beginPath();
+        ctx.arc(sx, sy, tileSize * 0.18, 0, Math.PI * 2);
+        ctx.fillStyle = MEASURE_COLOR;
+        ctx.fill();
+      } else if (measureShape === 'line') {
+        // Line template: 1-cell-wide line from start to end
+        const lineWidth = tileSize;
+        const perp = angle + Math.PI / 2;
+        const hw = lineWidth / 2;
+        const px1 = sx + Math.cos(perp) * hw;
+        const py1 = sy + Math.sin(perp) * hw;
+        const px2 = sx - Math.cos(perp) * hw;
+        const py2 = sy - Math.sin(perp) * hw;
+        const px3 = ex - Math.cos(perp) * hw;
+        const py3 = ey - Math.sin(perp) * hw;
+        const px4 = ex + Math.cos(perp) * hw;
+        const py4 = ey + Math.sin(perp) * hw;
+        ctx.beginPath();
+        ctx.moveTo(px1, py1);
+        ctx.lineTo(px4, py4);
+        ctx.lineTo(px3, py3);
+        ctx.lineTo(px2, py2);
+        ctx.closePath();
+        ctx.fillStyle = MEASURE_FILL;
+        ctx.fill();
+        ctx.strokeStyle = MEASURE_COLOR;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Start and end dots
+        for (const [px, py] of [[sx, sy], [ex, ey]]) {
+          ctx.beginPath();
+          ctx.arc(px, py, tileSize * 0.18, 0, Math.PI * 2);
+          ctx.fillStyle = MEASURE_COLOR;
+          ctx.fill();
+        }
+      }
+
+      // Distance label — always shown
+      if (distCells > 0) {
+        const midX = (sx + ex) / 2;
+        const midY = (sy + ey) / 2;
+        const labelText = `${distCells} sq · ${distFeet} ft`;
+        const fontSize = Math.max(12, tileSize * 0.4);
+        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        const textWidth = ctx.measureText(labelText).width;
+        const pad = fontSize * 0.35;
+        // Background pill
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        const pillX = midX - textWidth / 2 - pad;
+        const pillY = midY - fontSize / 2 - pad;
+        const pillW = textWidth + pad * 2;
+        const pillH = fontSize + pad * 2;
+        const pillR = Math.min(pillH / 2, 6);
+        ctx.beginPath();
+        ctx.moveTo(pillX + pillR, pillY);
+        ctx.lineTo(pillX + pillW - pillR, pillY);
+        ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + pillR);
+        ctx.lineTo(pillX + pillW, pillY + pillH - pillR);
+        ctx.quadraticCurveTo(pillX + pillW, pillY + pillH, pillX + pillW - pillR, pillY + pillH);
+        ctx.lineTo(pillX + pillR, pillY + pillH);
+        ctx.quadraticCurveTo(pillX, pillY + pillH, pillX, pillY + pillH - pillR);
+        ctx.lineTo(pillX, pillY + pillR);
+        ctx.quadraticCurveTo(pillX, pillY, pillX + pillR, pillY);
+        ctx.closePath();
+        ctx.fill();
+        // Label text
+        ctx.fillStyle = MEASURE_COLOR;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(labelText, midX, midY);
+      }
+
+      ctx.restore();
+    }
+
     // Ghost preview for line/rect
     if (isDragging && dragStart && dragEnd && (activeTool === 'line' || activeTool === 'rect')) {
       const ghostPoints = activeTool === 'line'
@@ -849,7 +1013,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       drawMarker(ctx, ghost, tileSize);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell]);
 
   // Minimap render
   useEffect(() => {
@@ -1095,7 +1259,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       return;
     }
 
-    if (activeTool === 'line' || activeTool === 'rect' || isFogDragTool) {
+    if (activeTool === 'line' || activeTool === 'rect' || activeTool === 'measure' || isFogDragTool) {
       if (coords) {
         setDragStart(coords);
         setDragEnd(coords);
@@ -1191,7 +1355,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       return;
     }
 
-    if ((activeTool === 'line' || activeTool === 'rect' || isFogDragTool) && isDragging && coords) {
+    if ((activeTool === 'line' || activeTool === 'rect' || activeTool === 'measure' || isFogDragTool) && isDragging && coords) {
       setDragEnd(coords);
     } else if (activeTool === 'select' && isDragging && coords && dragStart) {
       setDragEnd(coords);

@@ -18,7 +18,7 @@ import { isTokenFogged } from './utils/tokenVisibility';
 import { computeFOV } from './utils/fov';
 import { computePlayerFOV, mergeExplored } from './utils/dynamicFog';
 import { getTheme, THEME_LIST } from './themes/index';
-import { ALL_TILE_TYPES, type ViewMode, type MarkerShape, type TokenKind } from './types/map';
+import { ALL_TILE_TYPES, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape } from './types/map';
 import './App.css';
 
 const UI_SCALE_STORAGE_KEY = 'dungeon-mapper:ui-scale';
@@ -175,6 +175,9 @@ function App() {
   const [markerShape, setMarkerShape] = useState<MarkerShape>('circle');
   const [markerColor, setMarkerColor] = useState<string>('#dc2626');
   const [markerSize, setMarkerSize] = useState<number>(2);
+  // Measure tool settings — shape and scale (feet per cell).
+  const [measureShape, setMeasureShape] = useState<MeasureShape>('ruler');
+  const [measureFeetPerCell, setMeasureFeetPerCell] = useState<number>(5);
   // Icon picker dialog state. When a token is placed and the user should
   // pick an icon, we store the pending token details and show the picker.
   const [showIconPicker, setShowIconPicker] = useState(false);
@@ -594,6 +597,10 @@ function App() {
               onImportBackgroundImage={setBackgroundImage}
               onUpdateBackgroundImage={updateBackgroundImage}
               onClearBackgroundImage={clearBackgroundImage}
+              measureShape={measureShape}
+              measureFeetPerCell={measureFeetPerCell}
+              onSetMeasureShape={setMeasureShape}
+              onSetMeasureFeetPerCell={setMeasureFeetPerCell}
             />
           </nav>
         ) : (
@@ -656,6 +663,8 @@ function App() {
             dynamicFogEnabled={dynamicFogEnabled}
             playerVisible={playerVisible}
             explored={map.explored}
+            measureShape={measureShape}
+            measureFeetPerCell={measureFeetPerCell}
           />
         </main>
         {viewMode === 'gm' && (
@@ -762,6 +771,7 @@ function App() {
           printMode={printMode}
           viewMode={viewMode}
           onClose={() => setShowExportDialog(false)}
+          feetPerCell={measureFeetPerCell}
         />
       )}
       <IconPicker
