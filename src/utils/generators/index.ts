@@ -1,6 +1,7 @@
 import { generateRoomsCorridors } from './roomsCorridors';
 import { generateOpenTerrain } from './openTerrain';
 import { generateCavern } from './cavern';
+import { generateVillage } from './village';
 import type { MapGenerator } from './types';
 
 export type { GenerateContext, GeneratedMap, MapGenerator } from './types';
@@ -36,14 +37,24 @@ const cavern: MapGenerator = {
   generate: generateCavern,
 };
 
+const village: MapGenerator = {
+  id: 'village',
+  name: 'Village',
+  description:
+    'A settlement with buildings, streets, and optional walls. Uses BSP partitioning for organic district layout.',
+  preferredThemes: [],
+  generate: generateVillage,
+};
+
 export const GENERATOR_REGISTRY: Record<string, MapGenerator> = {
   [roomsCorridors.id]: roomsCorridors,
   [openTerrain.id]: openTerrain,
   [cavern.id]: cavern,
+  [village.id]: village,
 };
 
 /** Display order for the algorithm dropdown. */
-export const GENERATOR_LIST: MapGenerator[] = [roomsCorridors, openTerrain, cavern];
+export const GENERATOR_LIST: MapGenerator[] = [roomsCorridors, openTerrain, cavern, village];
 
 /**
  * Pick a sensible default generator for a given theme. Falls back to

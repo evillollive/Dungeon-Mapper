@@ -79,7 +79,7 @@ export interface LabeledRegion {
 export interface ApplyPoiNotesOptions {
   pois: PoiPlacement[];
   themeId?: string;
-  generatorId?: 'cavern' | 'open-terrain';
+  generatorId?: 'cavern' | 'open-terrain' | 'village';
   /** Labeled regions whose own room-kind notes will be appended after
    *  the POI notes. Empty / omitted = no region notes. */
   regions?: LabeledRegion[];
