@@ -106,7 +106,7 @@ function castOctant(
     for (let col = 0; col <= r; col++) {
       // Compute the slopes for this cell.
       const leftSlope = (col - 0.5) / (r + 0.5);
-      const rightSlope = (col + 0.5) / (r - 0.5);
+      const rightSlope = (col + 0.5) / (r - 0.5 || 1);
 
       if (startSlope < leftSlope) continue;
       if (endSlope > rightSlope) continue;
@@ -140,7 +140,7 @@ function castOctant(
           blocked = false;
           startSlope = nextStartSlope;
         }
-      } else if (cellOpaque && r < radius) {
+      } else if (cellOpaque) {
         // Hit a wall — recurse with the narrowed view, then record
         // the shadow for the remaining cells in this row.
         blocked = true;
