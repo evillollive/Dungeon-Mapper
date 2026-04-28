@@ -109,6 +109,33 @@ export function getRoomsTileMixSliders(themeId?: string): TileMixSliderSpec[] {
       format: fmtPct,
       hint: 'Fraction of remaining doors converted to hidden secret doors.',
     },
+    {
+      key: 'lockedDoors',
+      label: 'Locked Doors',
+      min: 0,
+      max: 0.5,
+      step: 0.05,
+      format: fmtPct,
+      hint: 'Fraction of remaining doors converted to locked doors.',
+    },
+    {
+      key: 'trappedDoors',
+      label: 'Trapped Doors',
+      min: 0,
+      max: 0.3,
+      step: 0.05,
+      format: fmtPct,
+      hint: 'Fraction of remaining doors converted to trapped doors.',
+    },
+    {
+      key: 'archways',
+      label: 'Archways / Portcullis',
+      min: 0,
+      max: 0.5,
+      step: 0.05,
+      format: fmtPct,
+      hint: 'Fraction of remaining doors converted to archways, portcullis, or barricades.',
+    },
   ];
 }
 
@@ -139,6 +166,9 @@ export function getRoomsDefaultMix(themeId?: string): Record<string, number> {
     trap: 0.02 * flavor.trapMultiplier,
     doors: 1,
     secretDoors: DEFAULT_SECRET_DOOR_FRACTION,
+    lockedDoors: 0,
+    trappedDoors: 0,
+    archways: 0,
   };
 }
 

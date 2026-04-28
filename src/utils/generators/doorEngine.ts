@@ -58,6 +58,12 @@ export interface ApplyDoorsOptions {
   doorKeepFraction?: number;
   /** Fraction of remaining doors to convert to secret doors. Default 0. */
   secretDoorFraction?: number;
+  /** Fraction of remaining doors to convert to locked doors. Default 0. */
+  lockedDoorFraction?: number;
+  /** Fraction of remaining doors to convert to trapped doors. Default 0. */
+  trappedDoorFraction?: number;
+  /** Fraction of remaining doors to convert to archways/portcullis/barricade. Default 0. */
+  archwayFraction?: number;
   /** Index of the player's start room in `rooms` (default 0). */
   startRoomIndex?: number;
 }
@@ -668,6 +674,118 @@ function convertSecretDoors(
 }
 
 /* ------------------------------------------------------------------ */
+/* Step G2: locked / trapped / archway conversion                      */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Convert a fraction of remaining `door-h`/`door-v` tiles into locked,
+ * trapped, or archway variants. Each conversion preserves the door's
+ * orientation (h→locked-door-h / trapped-door-h, v→locked-door-v /
+ * trapped-door-v). Archways, portcullis and barricades are orientation-
+ * agnostic. Skips the start room's doors for locked/trapped.
+ */
+function convertVariantDoors(
+  grid: TypeGrid,
+  rooms: readonly DoorEngineRoom[],
+  rng: Rng,
+  lockedFraction: number,
+  trappedFraction: number,
+  archwayFraction: number,
+  startRoomIndex: number
+): void {
+  const h = grid.length;
+  const w = grid[0]?.length ?? 0;
+  type Cell = { x: number; y: number; type: DoorType };
+  const doors: Cell[] = [];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const t = grid[y][x];
+      if (t === 'door-h' || t === 'door-v') {
+        doors.push({ x, y, type: t });
+      }
+    }
+  }
+  if (doors.length === 0) return;
+
+  // Shuffle so conversions are spatially random, not biased by scan order.
+  const shuffled = shuffleArray([...doors], rng);
+
+  // Determine the start room's perimeter cells so we can skip them for
+  // locked / trapped conversions (the player needs to get in).
+  const startPerim = new Set<string>();
+  if (startRoomIndex >= 0 && startRoomIndex < rooms.length) {
+    for (const side of ['n', 's', 'w', 'e'] as const) {
+      for (const c of perimeterCells(rooms[startRoomIndex], side)) {
+        startPerim.add(`${c.x},${c.y}`);
+      }
+    }
+  }
+
+  const total = shuffled.length;
+  const lockedTarget = Math.min(total, Math.round(total * Math.min(1, Math.max(0, lockedFraction))));
+  const trappedTarget = Math.min(total, Math.round(total * Math.min(1, Math.max(0, trappedFraction))));
+  const archwayTarget = Math.min(total, Math.round(total * Math.min(1, Math.max(0, archwayFraction))));
+
+  let converted = 0;
+  const maxConverts = total;
+
+  // Locked doors
+  for (const c of shuffled) {
+    if (converted >= maxConverts) break;
+    if (lockedTarget <= 0) break;
+    const t = grid[c.y][c.x];
+    if (t !== 'door-h' && t !== 'door-v') continue;
+    if (startPerim.has(`${c.x},${c.y}`)) continue;
+    const lockedType = t === 'door-h' ? 'locked-door-h' : 'locked-door-v';
+    grid[c.y][c.x] = lockedType;
+    converted++;
+    if (converted >= lockedTarget) break;
+  }
+
+  // Re-shuffle for trapped pass
+  const shuffled2 = shuffleArray(
+    shuffled.filter(c => {
+      const t = grid[c.y][c.x];
+      return t === 'door-h' || t === 'door-v';
+    }),
+    rng
+  );
+
+  converted = 0;
+  for (const c of shuffled2) {
+    if (converted >= trappedTarget) break;
+    const t = grid[c.y][c.x];
+    if (t !== 'door-h' && t !== 'door-v') continue;
+    if (startPerim.has(`${c.x},${c.y}`)) continue;
+    const trappedType = t === 'door-h' ? 'trapped-door-h' : 'trapped-door-v';
+    grid[c.y][c.x] = trappedType;
+    converted++;
+  }
+
+  // Archway / portcullis / barricade from remaining plain doors
+  const shuffled3 = shuffleArray(
+    shuffled.filter(c => {
+      const t = grid[c.y][c.x];
+      return t === 'door-h' || t === 'door-v';
+    }),
+    rng
+  );
+
+  converted = 0;
+  // Cycle through archway types for variety.
+  const archwayTypes: TileType[] = ['archway', 'portcullis', 'barricade'];
+  let archwayIdx = 0;
+  for (const c of shuffled3) {
+    if (converted >= archwayTarget) break;
+    const t = grid[c.y][c.x];
+    if (t !== 'door-h' && t !== 'door-v') continue;
+    grid[c.y][c.x] = archwayTypes[archwayIdx % archwayTypes.length];
+    archwayIdx++;
+    converted++;
+  }
+}
+
+/* ------------------------------------------------------------------ */
 /* Step H: dev-only assertion                                          */
 /* ------------------------------------------------------------------ */
 
@@ -785,6 +903,21 @@ export function applyDoors(
   // Step G: secret-door conversion.
   if (opts.secretDoorFraction && opts.secretDoorFraction > 0) {
     convertSecretDoors(grid, rooms, rng, opts.secretDoorFraction, startRoomIndex);
+  }
+
+  // Step G2: locked / trapped / archway variants.
+  const hasVariants =
+    (opts.lockedDoorFraction && opts.lockedDoorFraction > 0) ||
+    (opts.trappedDoorFraction && opts.trappedDoorFraction > 0) ||
+    (opts.archwayFraction && opts.archwayFraction > 0);
+  if (hasVariants) {
+    convertVariantDoors(
+      grid, rooms, rng,
+      opts.lockedDoorFraction ?? 0,
+      opts.trappedDoorFraction ?? 0,
+      opts.archwayFraction ?? 0,
+      startRoomIndex
+    );
   }
 
   // Step H: dev-only assertion.

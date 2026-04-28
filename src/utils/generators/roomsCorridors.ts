@@ -464,6 +464,9 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   applyDoors(grid, rooms, rng, {
     doorKeepFraction: ov.doors,
     secretDoorFraction: ov.secretDoors ?? DEFAULT_SECRET_DOOR_FRACTION,
+    lockedDoorFraction: ov.lockedDoors ?? 0,
+    trappedDoorFraction: ov.trappedDoors ?? 0,
+    archwayFraction: ov.archways ?? 0,
     startRoomIndex: 0,
   });
 
