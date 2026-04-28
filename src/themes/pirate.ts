@@ -341,17 +341,40 @@ export const pirateTheme: TileTheme = {
       }
 
       case 'water': {
-        ctx.strokeStyle = '#6abce8';
+        // Bilge water with wooden planks
+        // Horizontal plank lines
+        ctx.strokeStyle = '#6a4a28';
         ctx.lineWidth = 1;
-        for (let i = 0; i < 3; i++) {
-          const wy = py + 4 + i * (s / 3.5);
+        const plankCount = 3;
+        for (let i = 0; i < plankCount; i++) {
+          const plankY = py + 3 + i * ((s - 6) / (plankCount - 1));
           ctx.beginPath();
-          ctx.moveTo(px + 2, wy);
-          for (let wx = 0; wx < s - 4; wx += 4) {
-            ctx.quadraticCurveTo(px + 2 + wx + 1, wy - 2, px + 2 + wx + 2, wy);
-            ctx.quadraticCurveTo(px + 2 + wx + 3, wy + 2, px + 2 + wx + 4, wy);
+          ctx.moveTo(px + 1, plankY);
+          ctx.lineTo(px + s - 1, plankY);
+          ctx.stroke();
+        }
+        // Wavy blue water lines between planks (seeping water)
+        ctx.strokeStyle = '#6abce8';
+        ctx.lineWidth = 0.8;
+        for (let i = 0; i < plankCount - 1; i++) {
+          const baseY = py + 3 + i * ((s - 6) / (plankCount - 1));
+          const nextY = py + 3 + (i + 1) * ((s - 6) / (plankCount - 1));
+          const wy = (baseY + nextY) / 2;
+          const waveOff = tileHash(x + i * 3, y + i * 7) * 2;
+          ctx.beginPath();
+          ctx.moveTo(px + 3, wy);
+          for (let wx = 0; wx < s - 6; wx += 4) {
+            ctx.quadraticCurveTo(px + 3 + wx + 1, wy - 1.5 + waveOff, px + 3 + wx + 2, wy);
+            ctx.quadraticCurveTo(px + 3 + wx + 3, wy + 1.5 - waveOff, px + 3 + wx + 4, wy);
           }
           ctx.stroke();
+        }
+        // Knot dots on planks
+        ctx.fillStyle = '#4a3018';
+        for (let i = 0; i < 2; i++) {
+          const kx = px + 4 + tileHash(x * 7 + i, y * 11) * (s - 8);
+          const ky = py + 4 + tileHash(x * 11, y * 7 + i) * (s - 8);
+          ctx.fillRect(kx, ky, 1, 1);
         }
         break;
       }
@@ -366,50 +389,144 @@ export const pirateTheme: TileTheme = {
       }
 
       case 'trap': {
-        // Cannon: dark circle (muzzle) with carriage.
-        ctx.fillStyle = '#1a1a1a';
+        // Cannon — barrel with wheel and fuse
+        // Cannon barrel (slightly tapered rectangle pointing right)
+        ctx.fillStyle = '#2a2a2a';
+        const barrelX = cx - s * 0.28;
+        const barrelY = cy - s * 0.1;
+        const barrelW = s * 0.5;
+        const barrelH = s * 0.18;
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.28, 0, Math.PI * 2);
+        ctx.moveTo(barrelX, barrelY);
+        ctx.lineTo(barrelX + barrelW, barrelY + barrelH * 0.15);
+        ctx.lineTo(barrelX + barrelW, barrelY + barrelH * 0.85);
+        ctx.lineTo(barrelX, barrelY + barrelH);
+        ctx.closePath();
         ctx.fill();
-        ctx.fillStyle = '#5a3818';
-        ctx.fillRect(px + s * 0.2, cy + s * 0.2, s * 0.6, s * 0.15);
-        ctx.fillStyle = '#cc4422';
+        // Barrel highlight
+        ctx.strokeStyle = '#4a4a4a';
+        ctx.lineWidth = 0.5;
+        ctx.stroke();
+        // Muzzle opening
+        ctx.fillStyle = '#0a0a0a';
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.08, 0, Math.PI * 2);
+        ctx.arc(barrelX + barrelW, barrelY + barrelH / 2, barrelH * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+        // Wheel underneath
+        ctx.strokeStyle = '#5a3818';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx - s * 0.05, cy + s * 0.15, s * 0.08, 0, Math.PI * 2);
+        ctx.stroke();
+        // Wheel spokes
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.05 - s * 0.06, cy + s * 0.15);
+        ctx.lineTo(cx - s * 0.05 + s * 0.06, cy + s * 0.15);
+        ctx.moveTo(cx - s * 0.05, cy + s * 0.15 - s * 0.06);
+        ctx.lineTo(cx - s * 0.05, cy + s * 0.15 + s * 0.06);
+        ctx.stroke();
+        // Fuse line at the back end (red)
+        ctx.strokeStyle = '#cc4422';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(barrelX, barrelY + barrelH / 2);
+        ctx.quadraticCurveTo(barrelX - s * 0.08, barrelY - s * 0.05, barrelX - s * 0.12, barrelY - s * 0.1);
+        ctx.stroke();
+        // Spark at fuse tip
+        ctx.fillStyle = '#ff6622';
+        ctx.beginPath();
+        ctx.arc(barrelX - s * 0.12, barrelY - s * 0.1, 1, 0, Math.PI * 2);
         ctx.fill();
         break;
       }
 
       case 'treasure': {
-        // Treasure chest with X.
-        ctx.fillStyle = '#7a4a18';
-        ctx.fillRect(cx - s * 0.25, cy - s * 0.18, s * 0.5, s * 0.36);
+        // Skull-marked treasure chest
+        const chestW = s * 0.55;
+        const chestH = s * 0.4;
+        const chestX = cx - chestW / 2;
+        const chestY = cy - chestH / 2;
+        // Chest body (dark brown)
+        ctx.fillStyle = '#5a3818';
+        ctx.fillRect(chestX, chestY + chestH * 0.3, chestW, chestH * 0.7);
+        // Rounded top / lid
+        ctx.fillStyle = '#6a4828';
+        ctx.beginPath();
+        ctx.ellipse(cx, chestY + chestH * 0.3, chestW / 2, chestH * 0.3, 0, Math.PI, 0);
+        ctx.fill();
+        // Gold trim outlines
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect(chestX, chestY + chestH * 0.3, chestW, chestH * 0.7);
+        ctx.beginPath();
+        ctx.ellipse(cx, chestY + chestH * 0.3, chestW / 2, chestH * 0.3, 0, Math.PI, 0);
+        ctx.stroke();
+        // Gold band across middle
         ctx.fillStyle = '#d4af37';
-        ctx.fillRect(cx - s * 0.25, cy - s * 0.05, s * 0.5, s * 0.06);
-        ctx.strokeStyle = '#ffe080';
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(cx - s * 0.25, cy - s * 0.18, s * 0.5, s * 0.36);
+        ctx.fillRect(chestX, chestY + chestH * 0.28, chestW, 1.5);
+        // Skull emblem on front — small circle
+        ctx.fillStyle = '#e0d8c0';
+        ctx.beginPath();
+        ctx.arc(cx, cy + chestH * 0.15, s * 0.06, 0, Math.PI * 2);
+        ctx.fill();
+        // Crossed bones (two crossed lines below skull)
+        ctx.strokeStyle = '#e0d8c0';
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.07, cy + chestH * 0.25);
+        ctx.lineTo(cx + s * 0.07, cy + chestH * 0.38);
+        ctx.moveTo(cx + s * 0.07, cy + chestH * 0.25);
+        ctx.lineTo(cx - s * 0.07, cy + chestH * 0.38);
+        ctx.stroke();
         break;
       }
 
       case 'start': {
-        // Anchor.
+        // Anchor — vertical shaft, ring at top, curved flukes, rope
         ctx.strokeStyle = '#e0e0e0';
         ctx.lineWidth = 1.2;
+        // Ring at top
         ctx.beginPath();
-        ctx.arc(cx, py + s * 0.25, s * 0.08, 0, Math.PI * 2);
+        ctx.arc(cx, py + s * 0.2, s * 0.07, 0, Math.PI * 2);
+        ctx.stroke();
+        // Rope line from the ring
+        ctx.strokeStyle = '#c8a04b';
+        ctx.lineWidth = 0.7;
+        ctx.beginPath();
+        ctx.moveTo(cx + s * 0.07, py + s * 0.2);
+        ctx.quadraticCurveTo(cx + s * 0.2, py + s * 0.12, cx + s * 0.25, py + s * 0.08);
+        ctx.stroke();
+        // Vertical shaft
+        ctx.strokeStyle = '#e0e0e0';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(cx, py + s * 0.27);
+        ctx.lineTo(cx, py + s * 0.78);
+        ctx.stroke();
+        // Horizontal crossbar
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.2, py + s * 0.42);
+        ctx.lineTo(cx + s * 0.2, py + s * 0.42);
+        ctx.stroke();
+        // Curved flukes (hooks) at bottom
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(cx, py + s * 0.78);
+        ctx.quadraticCurveTo(cx - s * 0.25, py + s * 0.78, cx - s * 0.22, py + s * 0.62);
         ctx.stroke();
         ctx.beginPath();
-        ctx.moveTo(cx, py + s * 0.33);
-        ctx.lineTo(cx, py + s - 3);
+        ctx.moveTo(cx, py + s * 0.78);
+        ctx.quadraticCurveTo(cx + s * 0.25, py + s * 0.78, cx + s * 0.22, py + s * 0.62);
         ctx.stroke();
+        // Fluke tips (small pointed ends)
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(cx - s * 0.25, py + s - 3);
-        ctx.quadraticCurveTo(cx, py + s + s * 0.05, cx + s * 0.25, py + s - 3);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(cx - s * 0.18, py + s * 0.45);
-        ctx.lineTo(cx + s * 0.18, py + s * 0.45);
+        ctx.moveTo(cx - s * 0.22, py + s * 0.62);
+        ctx.lineTo(cx - s * 0.18, py + s * 0.58);
+        ctx.moveTo(cx + s * 0.22, py + s * 0.62);
+        ctx.lineTo(cx + s * 0.18, py + s * 0.58);
         ctx.stroke();
         break;
       }

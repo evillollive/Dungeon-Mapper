@@ -352,17 +352,45 @@ export const desertTheme: TileTheme = {
       }
 
       case 'water': {
-        // Oasis pool with palm shadow ripples.
+        // Oasis pool with palm silhouette
+        const h0 = tileHash(x, y);
+        // Irregular oval pool shape in blue
+        ctx.fillStyle = '#4ab8e0';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + s * 0.05, s * 0.35, s * 0.28, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Darker pool edge
+        ctx.strokeStyle = '#2a8ab0';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + s * 0.05, s * 0.35, s * 0.28, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        // Calm ripple inside
         ctx.strokeStyle = '#7accee';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 3; i++) {
-          const wy = py + 4 + i * (s / 3.5);
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + s * 0.05, s * 0.2, s * 0.14, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        // Palm tree silhouette — position varies by tileHash
+        const palmX = px + s * 0.2 + h0 * s * 0.15;
+        const palmBaseY = cy - s * 0.1;
+        ctx.strokeStyle = '#3a6a20';
+        ctx.lineWidth = 1.2;
+        // Curved trunk
+        ctx.beginPath();
+        ctx.moveTo(palmX, palmBaseY + s * 0.15);
+        ctx.quadraticCurveTo(palmX - s * 0.05, palmBaseY, palmX + s * 0.02, palmBaseY - s * 0.2);
+        ctx.stroke();
+        // Fronds (fan-shaped lines at top)
+        const tipX = palmX + s * 0.02;
+        const tipY = palmBaseY - s * 0.2;
+        ctx.strokeStyle = '#2a5a18';
+        ctx.lineWidth = 0.7;
+        for (let i = -2; i <= 2; i++) {
+          const angle = -Math.PI / 2 + i * 0.4;
           ctx.beginPath();
-          ctx.moveTo(px + 2, wy);
-          for (let wx = 0; wx < s - 4; wx += 4) {
-            ctx.quadraticCurveTo(px + 2 + wx + 1, wy - 2, px + 2 + wx + 2, wy);
-            ctx.quadraticCurveTo(px + 2 + wx + 3, wy + 2, px + 2 + wx + 4, wy);
-          }
+          ctx.moveTo(tipX, tipY);
+          ctx.lineTo(tipX + Math.cos(angle) * s * 0.12, tipY + Math.sin(angle) * s * 0.1);
           ctx.stroke();
         }
         break;
@@ -384,44 +412,115 @@ export const desertTheme: TileTheme = {
       }
 
       case 'trap': {
-        // Quicksand: concentric swirling arcs.
-        ctx.strokeStyle = '#5a3a08';
+        // Quicksand swirl — spiral pattern from center outward
+        const th = tileHash(x, y);
+        // Spiral (2-3 loops)
+        ctx.strokeStyle = '#6a4a10';
         ctx.lineWidth = 1;
-        for (let r = s * 0.12; r <= s * 0.32; r += s * 0.1) {
-          ctx.beginPath();
-          ctx.arc(cx, cy, r, 0.2 * Math.PI, 1.6 * Math.PI);
-          ctx.stroke();
+        ctx.beginPath();
+        const loops = 2.5 + th * 0.5;
+        const maxR = s * 0.35;
+        for (let a = 0; a < loops * Math.PI * 2; a += 0.15) {
+          const r = (a / (loops * Math.PI * 2)) * maxR;
+          const sx = cx + Math.cos(a) * r;
+          const sy = cy + Math.sin(a) * r;
+          if (a === 0) ctx.moveTo(sx, sy);
+          else ctx.lineTo(sx, sy);
+        }
+        ctx.stroke();
+        // Scattered sand dots around the outside
+        ctx.fillStyle = '#7a5a18';
+        for (let i = 0; i < 6; i++) {
+          const dh = tileHash(x * 5 + i, y * 9 + i);
+          const dh2 = tileHash(x * 11 + i, y * 3 + i);
+          const angle = dh * Math.PI * 2;
+          const dist = s * 0.35 + dh2 * s * 0.08;
+          ctx.fillRect(cx + Math.cos(angle) * dist, cy + Math.sin(angle) * dist, 1, 1);
         }
         break;
       }
 
       case 'treasure': {
-        // Ankh-style relic on a pedestal.
+        // Ankh relic on a pedestal
+        // Pedestal base
         ctx.fillStyle = '#8b6914';
-        ctx.fillRect(cx - s * 0.25, cy + s * 0.1, s * 0.5, s * 0.15);
+        ctx.fillRect(cx - s * 0.22, cy + s * 0.2, s * 0.44, s * 0.12);
+        // Pedestal top edge highlight
+        ctx.fillStyle = '#a07a20';
+        ctx.fillRect(cx - s * 0.22, cy + s * 0.2, s * 0.44, 1.5);
+        // Ankh — oval loop at top
+        ctx.strokeStyle = '#8a6020';
+        ctx.lineWidth = 1.2;
         ctx.fillStyle = '#d4af37';
         ctx.beginPath();
-        ctx.arc(cx, cy - s * 0.1, s * 0.12, 0, Math.PI * 2);
+        ctx.ellipse(cx, cy - s * 0.15, s * 0.08, s * 0.1, 0, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillRect(cx - 1, cy - s * 0.05, 2, s * 0.2);
-        ctx.fillRect(cx - s * 0.12, cy + s * 0.02, s * 0.24, 2);
+        ctx.stroke();
+        // Ankh hole (empty center of loop)
+        ctx.fillStyle = this.tileColors.treasure;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - s * 0.15, s * 0.04, s * 0.05, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // Vertical line down
+        ctx.fillStyle = '#d4af37';
+        ctx.fillRect(cx - 1, cy - s * 0.06, 2, s * 0.28);
+        // Horizontal crossbar
+        ctx.fillRect(cx - s * 0.1, cy + s * 0.02, s * 0.2, 2);
+        // Bronze outline on shaft
+        ctx.strokeStyle = '#8a6020';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(cx - 1, cy - s * 0.06, 2, s * 0.28);
         break;
       }
 
       case 'start': {
-        // Caravan tent: triangle.
+        // Caravan tent/camp — peaked roof, flag/pennant, ground lines
+        // Tent body (triangle with two slanting sides)
         ctx.fillStyle = '#c83838';
         ctx.beginPath();
-        ctx.moveTo(cx, py + 3);
-        ctx.lineTo(px + s - 3, py + s - 3);
-        ctx.lineTo(px + 3, py + s - 3);
+        ctx.moveTo(cx, py + 4);
+        ctx.lineTo(px + s - 4, py + s - 4);
+        ctx.lineTo(px + 4, py + s - 4);
         ctx.closePath();
         ctx.fill();
+        // Tent outline
+        ctx.strokeStyle = '#8a1818';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(cx, py + 4);
+        ctx.lineTo(px + s - 4, py + s - 4);
+        ctx.lineTo(px + 4, py + s - 4);
+        ctx.closePath();
+        ctx.stroke();
+        // Center pole line
         ctx.strokeStyle = '#f0e0a0';
         ctx.lineWidth = 0.5;
         ctx.beginPath();
-        ctx.moveTo(cx, py + 3);
-        ctx.lineTo(cx, py + s - 3);
+        ctx.moveTo(cx, py + 4);
+        ctx.lineTo(cx, py + s - 4);
+        ctx.stroke();
+        // Tent opening (darker V at bottom center)
+        ctx.fillStyle = '#6a1818';
+        ctx.beginPath();
+        ctx.moveTo(cx, py + s * 0.55);
+        ctx.lineTo(cx - s * 0.1, py + s - 4);
+        ctx.lineTo(cx + s * 0.1, py + s - 4);
+        ctx.closePath();
+        ctx.fill();
+        // Flag/pennant at the peak
+        ctx.fillStyle = '#f0e0a0';
+        ctx.beginPath();
+        ctx.moveTo(cx, py + 4);
+        ctx.lineTo(cx + s * 0.12, py + 2);
+        ctx.lineTo(cx + s * 0.06, py + 6);
+        ctx.closePath();
+        ctx.fill();
+        // Ground lines at base
+        ctx.strokeStyle = '#8b5a20';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px + 2, py + s - 3);
+        ctx.lineTo(px + s - 2, py + s - 3);
         ctx.stroke();
         break;
       }

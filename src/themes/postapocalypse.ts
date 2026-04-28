@@ -337,16 +337,35 @@ export const postapocalypseTheme: TileTheme = {
       }
 
       case 'water': {
+        // Toxic pool — concentric ring ripples, radiation dots, toxic shimmer
+        const h0 = tileHash(x, y);
+        // Concentric ripple rings in sickly green
         ctx.strokeStyle = '#50a030';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 2; i++) {
-          const wy = py + 5 + i * (s / 2.5);
+        ctx.lineWidth = 0.8;
+        for (let r = s * 0.1; r <= s * 0.38; r += s * 0.09) {
           ctx.beginPath();
-          ctx.moveTo(px + 2, wy);
-          for (let wx = 0; wx < s - 4; wx += 4) {
-            ctx.quadraticCurveTo(px + 2 + wx + 1, wy - 2, px + 2 + wx + 2, wy);
-            ctx.quadraticCurveTo(px + 2 + wx + 3, wy + 2, px + 2 + wx + 4, wy);
-          }
+          ctx.arc(cx + (h0 - 0.5) * s * 0.1, cy + (h0 - 0.5) * s * 0.08, r, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        // Radiation warning dots (bright green spots)
+        ctx.fillStyle = '#80ff40';
+        const dotCount = 2 + Math.floor(h0 * 2);
+        for (let i = 0; i < dotCount; i++) {
+          const dh = tileHash(x * 7 + i, y * 11 + i);
+          const dh2 = tileHash(x * 13 + i, y * 3 + i);
+          ctx.beginPath();
+          ctx.arc(px + 4 + dh * (s - 8), py + 4 + dh2 * (s - 8), 1, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Toxic shimmer — thin horizontal streaks
+        ctx.strokeStyle = '#60c04080';
+        ctx.lineWidth = 0.4;
+        for (let i = 0; i < 3; i++) {
+          const sy = py + 3 + tileHash(x + i * 5, y + i * 3) * (s - 6);
+          const sx = px + 2 + tileHash(x + i * 9, y + i * 7) * (s * 0.3);
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(sx + s * 0.35, sy);
           ctx.stroke();
         }
         break;
@@ -367,38 +386,117 @@ export const postapocalypseTheme: TileTheme = {
       }
 
       case 'trap': {
-        ctx.strokeStyle = '#cc4422';
-        ctx.lineWidth = 1.5;
+        // Landmine — partially buried circular disc with trigger pin
+        const th = tileHash(x, y);
+        // Dirt mound lines around the edges
+        ctx.strokeStyle = '#5a4a30';
+        ctx.lineWidth = 0.6;
+        for (let i = 0; i < 4; i++) {
+          const a = (i / 4) * Math.PI * 2 + th * 0.5;
+          const r1 = s * 0.3;
+          const r2 = s * 0.38;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(a) * r1, cy + Math.sin(a) * r1);
+          ctx.lineTo(cx + Math.cos(a) * r2, cy + Math.sin(a) * r2);
+          ctx.stroke();
+        }
+        // Buried disc (flattened oval, bottom half)
+        ctx.fillStyle = '#4a4a4a';
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.28, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.fillStyle = '#cc442233';
-        ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.28, 0, Math.PI * 2);
+        ctx.ellipse(cx, cy + s * 0.04, s * 0.22, s * 0.13, 0, 0, Math.PI);
         ctx.fill();
-        ctx.fillStyle = '#cc4422';
-        ctx.fillRect(cx - 1, cy - 1, 2, 2);
+        // Disc top half (lighter metal)
+        ctx.fillStyle = '#6a6a6a';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + s * 0.04, s * 0.22, s * 0.13, 0, Math.PI, Math.PI * 2);
+        ctx.fill();
+        // Disc outline
+        ctx.strokeStyle = '#3a3a3a';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + s * 0.04, s * 0.22, s * 0.13, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        // Trigger pin/prong sticking up from center
+        ctx.strokeStyle = '#888888';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + s * 0.04);
+        ctx.lineTo(cx, cy - s * 0.15);
+        ctx.stroke();
+        ctx.fillStyle = '#aaaaaa';
+        ctx.beginPath();
+        ctx.arc(cx, cy - s * 0.15, 1.2, 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
 
       case 'treasure': {
-        ctx.fillStyle = '#704a10';
-        ctx.fillRect(cx - s * 0.25, cy - s * 0.15, s * 0.5, s * 0.3);
-        ctx.fillStyle = '#c09820';
-        ctx.fillRect(cx - s * 0.25, cy - s * 0.22, s * 0.5, s * 0.12);
-        ctx.strokeStyle = '#e0c040';
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(cx - s * 0.25, cy - s * 0.22, s * 0.5, s * 0.37);
+        // Supply crate with X brace pattern
+        const crateW = s * 0.5;
+        const crateH = s * 0.4;
+        const crateX = cx - crateW / 2;
+        const crateY = cy - crateH / 2;
+        // Crate body (weathered brown)
+        ctx.fillStyle = '#7a6040';
+        ctx.fillRect(crateX, crateY, crateW, crateH);
+        // Lighter top edge
+        ctx.fillStyle = '#9a8060';
+        ctx.fillRect(crateX, crateY, crateW, crateH * 0.15);
+        // Crate outline
+        ctx.strokeStyle = '#4a3020';
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect(crateX, crateY, crateW, crateH);
+        // X brace pattern (two diagonal lines)
+        ctx.strokeStyle = '#5a4020';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(crateX + 1, crateY + 1);
+        ctx.lineTo(crateX + crateW - 1, crateY + crateH - 1);
+        ctx.moveTo(crateX + crateW - 1, crateY + 1);
+        ctx.lineTo(crateX + 1, crateY + crateH - 1);
+        ctx.stroke();
+        // Handle/latch on right side
+        ctx.strokeStyle = '#888888';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(crateX + crateW, cy - 1.5);
+        ctx.lineTo(crateX + crateW + 2, cy - 1.5);
+        ctx.lineTo(crateX + crateW + 2, cy + 1.5);
+        ctx.lineTo(crateX + crateW, cy + 1.5);
+        ctx.stroke();
         break;
       }
 
       case 'start': {
-        ctx.strokeStyle = '#5a9a3a';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(px + 3, py + 3, s - 6, s - 6);
-        ctx.fillStyle = '#5a9a3a';
-        ctx.fillRect(cx - 1, cy - s * 0.2, 2, s * 0.4);
-        ctx.fillRect(cx - s * 0.2, cy - 1, s * 0.4, 2);
+        // Shelter entrance — angled roof, support posts, doorway
+        // Roof (inverted V / chevron)
+        ctx.fillStyle = '#7a7a7a';
+        ctx.beginPath();
+        ctx.moveTo(cx, py + 3);
+        ctx.lineTo(px + s - 4, py + s * 0.4);
+        ctx.lineTo(px + 4, py + s * 0.4);
+        ctx.closePath();
+        ctx.fill();
+        // Rust accent on roof
+        ctx.strokeStyle = '#8a4a2a';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(cx, py + 3);
+        ctx.lineTo(px + s - 4, py + s * 0.4);
+        ctx.moveTo(cx, py + 3);
+        ctx.lineTo(px + 4, py + s * 0.4);
+        ctx.stroke();
+        // Two vertical support posts (concrete grey)
+        ctx.fillStyle = '#6a6a6a';
+        ctx.fillRect(px + s * 0.25 - 1, py + s * 0.4, 2, s * 0.5);
+        ctx.fillRect(px + s * 0.75 - 1, py + s * 0.4, 2, s * 0.5);
+        // Doorway opening (dark rectangle) in center
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(cx - s * 0.1, py + s * 0.5, s * 0.2, s * 0.4);
+        // Doorway border
+        ctx.strokeStyle = '#5a5a5a';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(cx - s * 0.1, py + s * 0.5, s * 0.2, s * 0.4);
         break;
       }
     }
