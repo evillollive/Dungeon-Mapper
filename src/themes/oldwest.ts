@@ -335,16 +335,32 @@ export const oldwestTheme: TileTheme = {
       }
 
       case 'water': {
-        ctx.strokeStyle = '#7ac8e8';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 2; i++) {
-          const wy = py + 5 + i * (s / 2.5);
+        // Water trough — wooden trough with water inside
+        const trW = s * 0.7;
+        const trH = s * 0.4;
+        const trX = cx - trW / 2;
+        const trY = cy - trH / 2;
+        // Side planks
+        ctx.fillStyle = '#6b3d1e';
+        ctx.fillRect(trX, trY, s * 0.08, trH);
+        ctx.fillRect(trX + trW - s * 0.08, trY, s * 0.08, trH);
+        // Bottom plank
+        ctx.fillRect(trX, trY + trH - s * 0.06, trW, s * 0.06);
+        // Water fill
+        ctx.fillStyle = '#7ac8e8';
+        ctx.fillRect(trX + s * 0.08, trY + s * 0.04, trW - s * 0.16, trH - s * 0.1);
+        // Ripple lines
+        ctx.strokeStyle = '#a0e0ff';
+        ctx.lineWidth = 0.5;
+        const rh = tileHash(x, y);
+        ctx.beginPath();
+        ctx.moveTo(trX + s * 0.12, cy - s * 0.04 + rh * 2);
+        ctx.quadraticCurveTo(cx, cy - s * 0.08 + rh * 2, trX + trW - s * 0.12, cy - s * 0.04 + rh * 2);
+        ctx.stroke();
+        if (rh > 0.3) {
           ctx.beginPath();
-          ctx.moveTo(px + 2, wy);
-          for (let wx = 0; wx < s - 4; wx += 4) {
-            ctx.quadraticCurveTo(px + 2 + wx + 1, wy - 2, px + 2 + wx + 2, wy);
-            ctx.quadraticCurveTo(px + 2 + wx + 3, wy + 2, px + 2 + wx + 4, wy);
-          }
+          ctx.moveTo(trX + s * 0.15, cy + s * 0.04);
+          ctx.quadraticCurveTo(cx, cy + s * 0.08, trX + trW - s * 0.15, cy + s * 0.04);
           ctx.stroke();
         }
         break;
@@ -360,41 +376,99 @@ export const oldwestTheme: TileTheme = {
       }
 
       case 'trap': {
-        ctx.strokeStyle = '#cc2222';
+        // Bear trap — circular base with two jaw arcs and zigzag teeth
+        ctx.strokeStyle = '#4a3a2a';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.28, 0, Math.PI * 2);
+        ctx.stroke();
+        // Upper jaw arc
+        ctx.strokeStyle = '#3a3030';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.3, 0, Math.PI * 2);
+        ctx.arc(cx, cy + s * 0.08, s * 0.22, Math.PI * 1.15, Math.PI * 1.85);
         ctx.stroke();
+        // Lower jaw arc
         ctx.beginPath();
-        ctx.moveTo(cx - s * 0.2, cy);
-        ctx.lineTo(cx + s * 0.2, cy);
+        ctx.arc(cx, cy - s * 0.08, s * 0.22, Math.PI * 0.15, Math.PI * 0.85);
+        ctx.stroke();
+        // Zigzag teeth on upper jaw
+        ctx.strokeStyle = '#5a4a3a';
+        ctx.lineWidth = 0.75;
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const tx = cx - s * 0.16 + i * s * 0.08;
+          ctx.moveTo(tx, cy - s * 0.12);
+          ctx.lineTo(tx + s * 0.04, cy - s * 0.06);
+        }
+        ctx.stroke();
+        // Zigzag teeth on lower jaw
+        ctx.beginPath();
+        for (let i = 0; i < 5; i++) {
+          const tx = cx - s * 0.16 + i * s * 0.08;
+          ctx.moveTo(tx, cy + s * 0.12);
+          ctx.lineTo(tx + s * 0.04, cy + s * 0.06);
+        }
         ctx.stroke();
         break;
       }
 
       case 'treasure': {
-        ctx.fillStyle = '#8b5a14';
-        ctx.fillRect(cx - s * 0.25, cy - s * 0.15, s * 0.5, s * 0.3);
-        ctx.fillStyle = '#d4af37';
-        ctx.fillRect(cx - s * 0.25, cy - s * 0.22, s * 0.5, s * 0.15);
-        ctx.strokeStyle = '#ffe080';
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(cx - s * 0.25, cy - s * 0.22, s * 0.5, s * 0.37);
+        // Gold nuggets — scattered irregular nuggets
+        const nh0 = tileHash(x, y);
+        const nh1 = tileHash(x + 3, y + 7);
+        const nh2 = tileHash(x + 11, y + 5);
+        const nh3 = tileHash(x + 7, y + 13);
+        const nuggets = [
+          { nx: cx - s * 0.15 + nh0 * s * 0.08, ny: cy - s * 0.1 + nh1 * s * 0.06, nr: s * 0.09 },
+          { nx: cx + s * 0.1 + nh1 * s * 0.06, ny: cy + s * 0.05 + nh2 * s * 0.06, nr: s * 0.07 },
+          { nx: cx - s * 0.05 + nh2 * s * 0.04, ny: cy + s * 0.15 + nh3 * s * 0.04, nr: s * 0.06 },
+          { nx: cx + s * 0.18 - nh3 * s * 0.06, ny: cy - s * 0.12 + nh0 * s * 0.04, nr: s * 0.08 },
+        ];
+        for (const nug of nuggets) {
+          ctx.fillStyle = '#d4af37';
+          ctx.beginPath();
+          ctx.arc(nug.nx, nug.ny, nug.nr, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#8b7520';
+          ctx.lineWidth = 0.75;
+          ctx.stroke();
+        }
         break;
       }
 
       case 'start': {
-        ctx.strokeStyle = '#6abf6a';
-        ctx.lineWidth = 1.5;
+        // Saloon swinging doors — two batwing door panels seen from above
+        const doorW = s * 0.28;
+        const doorH = s * 0.55;
+        const doorTop = cy - doorH / 2;
+        // Left door panel (angled inward)
+        ctx.fillStyle = '#8b5a2b';
+        ctx.save();
+        ctx.translate(cx - s * 0.02, doorTop);
+        ctx.rotate(-0.25);
+        ctx.fillRect(-doorW, 0, doorW, doorH);
+        ctx.strokeStyle = '#5a3818';
+        ctx.lineWidth = 0.75;
+        ctx.strokeRect(-doorW, 0, doorW, doorH);
+        ctx.restore();
+        // Right door panel (angled inward)
+        ctx.fillStyle = '#8b5a2b';
+        ctx.save();
+        ctx.translate(cx + s * 0.02, doorTop);
+        ctx.rotate(0.25);
+        ctx.fillRect(0, 0, doorW, doorH);
+        ctx.strokeStyle = '#5a3818';
+        ctx.lineWidth = 0.75;
+        ctx.strokeRect(0, 0, doorW, doorH);
+        ctx.restore();
+        // Hinge circles at top of each door
+        ctx.fillStyle = '#3a2a10';
         ctx.beginPath();
-        ctx.moveTo(cx, py + 3);
-        ctx.lineTo(cx, py + s - 3);
-        ctx.stroke();
-        ctx.fillStyle = '#6abf6a';
+        ctx.arc(cx - s * 0.04, doorTop + 2, 1.5, 0, Math.PI * 2);
+        ctx.fill();
         ctx.beginPath();
-        ctx.moveTo(cx - 3, py + 6);
-        ctx.lineTo(cx, py + 3);
-        ctx.lineTo(cx + 3, py + 6);
+        ctx.arc(cx + s * 0.04, doorTop + 2, 1.5, 0, Math.PI * 2);
         ctx.fill();
         break;
       }

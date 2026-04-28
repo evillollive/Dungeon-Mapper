@@ -355,7 +355,7 @@ export const moderncityTheme: TileTheme = {
       }
 
       case 'water': {
-        // Round plaza fountain
+        // Urban fountain — circular basin with inner ring and spray
         ctx.fillStyle = '#9a9a9a';
         ctx.beginPath();
         ctx.arc(cx, cy, s * 0.4, 0, Math.PI * 2);
@@ -364,13 +364,28 @@ export const moderncityTheme: TileTheme = {
         ctx.beginPath();
         ctx.arc(cx, cy, s * 0.32, 0, Math.PI * 2);
         ctx.fill();
+        // Inner ring
+        ctx.strokeStyle = '#8a8a8a';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.16, 0, Math.PI * 2);
+        ctx.stroke();
+        // Spray lines from center
         ctx.strokeStyle = '#cfe6f4';
         ctx.lineWidth = 0.75;
+        const sh = tileHash(x, y);
+        for (let i = 0; i < 4; i++) {
+          const angle = (i * Math.PI) / 2 + sh * 0.3;
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(cx + Math.cos(angle) * s * 0.12, cy + Math.sin(angle) * s * 0.12 - s * 0.08);
+          ctx.stroke();
+        }
+        // Center nozzle
+        ctx.fillStyle = '#8a8a8a';
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.18, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.fillStyle = '#cfe6f4';
-        ctx.fillRect(cx - 1, cy - 1, 2, 2);
+        ctx.arc(cx, cy, s * 0.04, 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
 
@@ -402,75 +417,115 @@ export const moderncityTheme: TileTheme = {
       }
 
       case 'trap': {
-        // Manhole cover
-        ctx.fillStyle = '#1f1f1f';
+        // Manhole cover — circle with grid pattern and grip slots
+        ctx.fillStyle = '#2a2a2a';
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.32, 0, Math.PI * 2);
+        ctx.arc(cx, cy, s * 0.34, 0, Math.PI * 2);
         ctx.fill();
         ctx.strokeStyle = '#5a5a5a';
-        ctx.lineWidth = 0.75;
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.32, 0, Math.PI * 2);
+        ctx.arc(cx, cy, s * 0.34, 0, Math.PI * 2);
         ctx.stroke();
-        // grate slots
-        ctx.strokeStyle = '#5a5a5a';
+        // Grid pattern — 2 horizontal + 2 vertical lines
+        ctx.strokeStyle = '#4a4a4a';
         ctx.lineWidth = 0.75;
-        for (let i = -2; i <= 2; i++) {
-          const ly = cy + i * 1.5;
-          ctx.beginPath();
-          ctx.moveTo(cx - s * 0.22, ly);
-          ctx.lineTo(cx + s * 0.22, ly);
-          ctx.stroke();
-        }
+        const gridOff = s * 0.1;
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.28, cy - gridOff);
+        ctx.lineTo(cx + s * 0.28, cy - gridOff);
+        ctx.moveTo(cx - s * 0.28, cy + gridOff);
+        ctx.lineTo(cx + s * 0.28, cy + gridOff);
+        ctx.moveTo(cx - gridOff, cy - s * 0.28);
+        ctx.lineTo(cx - gridOff, cy + s * 0.28);
+        ctx.moveTo(cx + gridOff, cy - s * 0.28);
+        ctx.lineTo(cx + gridOff, cy + s * 0.28);
+        ctx.stroke();
+        // Grip slots on opposite sides
+        ctx.fillStyle = '#5a5a5a';
+        ctx.fillRect(cx - s * 0.06, cy - s * 0.32, s * 0.12, s * 0.04);
+        ctx.fillRect(cx - s * 0.06, cy + s * 0.28, s * 0.12, s * 0.04);
         break;
       }
 
       case 'treasure': {
-        // ATM kiosk
-        ctx.fillStyle = '#0f3a1f';
-        ctx.fillRect(cx - s * 0.3, cy - s * 0.3, s * 0.6, s * 0.6);
-        ctx.strokeStyle = '#cfe6c4';
-        ctx.lineWidth = 0.75;
-        ctx.strokeRect(cx - s * 0.3, cy - s * 0.3, s * 0.6, s * 0.6);
-        // screen
-        ctx.fillStyle = '#9adfb0';
-        ctx.fillRect(cx - s * 0.22, cy - s * 0.22, s * 0.44, s * 0.22);
-        // keypad
-        ctx.fillStyle = '#cfcfcf';
+        // Bank safe/ATM — rectangle with dial and keypad
+        const safeW = s * 0.65;
+        const safeH = s * 0.55;
+        const safeX = cx - safeW / 2;
+        const safeY = cy - safeH / 2;
+        ctx.fillStyle = '#2a3a2a';
+        ctx.fillRect(safeX, safeY, safeW, safeH);
+        ctx.strokeStyle = '#6a8a6a';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(safeX, safeY, safeW, safeH);
+        // Circular dial/handle on the right
+        ctx.strokeStyle = '#9ab89a';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(safeX + safeW * 0.75, cy, s * 0.08, 0, Math.PI * 2);
+        ctx.stroke();
+        // Handle tick
+        ctx.beginPath();
+        ctx.moveTo(safeX + safeW * 0.75, cy);
+        ctx.lineTo(safeX + safeW * 0.75, cy - s * 0.06);
+        ctx.stroke();
+        // Keypad grid (3x2 dots) on the left
+        ctx.fillStyle = '#8aaa8a';
         for (let row = 0; row < 2; row++) {
           for (let col = 0; col < 3; col++) {
-            ctx.fillRect(cx - s * 0.18 + col * (s * 0.13), cy + s * 0.02 + row * (s * 0.1), s * 0.08, s * 0.06);
+            const kx = safeX + safeW * 0.12 + col * s * 0.08;
+            const ky = cy - s * 0.06 + row * s * 0.1;
+            ctx.beginPath();
+            ctx.arc(kx, ky, s * 0.02, 0, Math.PI * 2);
+            ctx.fill();
           }
         }
-        // dollar mark
-        ctx.fillStyle = '#ffd84a';
-        ctx.fillRect(cx - 1, cy - s * 0.18, 2, s * 0.14);
+        // Dollar sign slot at top
+        ctx.fillStyle = '#6a8a6a';
+        ctx.fillRect(cx - s * 0.08, safeY + s * 0.03, s * 0.16, s * 0.03);
         break;
       }
 
       case 'start': {
-        // Bus stop sign
-        ctx.strokeStyle = '#1a1a1a';
-        ctx.lineWidth = 1;
+        // Bus stop — vertical post with sign on top and bench at base
+        // Post
+        ctx.strokeStyle = '#6a6a6a';
+        ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(cx, py + s - 3);
-        ctx.lineTo(cx, py + s * 0.3);
+        ctx.lineTo(cx, py + s * 0.25);
         ctx.stroke();
-        // sign
+        // Sign on top
         ctx.fillStyle = '#d24545';
-        ctx.fillRect(cx - s * 0.28, py + s * 0.15, s * 0.56, s * 0.22);
+        ctx.fillRect(cx - s * 0.25, py + s * 0.1, s * 0.5, s * 0.2);
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 0.75;
-        ctx.strokeRect(cx - s * 0.28, py + s * 0.15, s * 0.56, s * 0.22);
-        // "B"
+        ctx.strokeRect(cx - s * 0.25, py + s * 0.1, s * 0.5, s * 0.2);
+        // "B" on sign
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(cx - 2, py + s * 0.2, 1, s * 0.12);
-        ctx.fillRect(cx - 2, py + s * 0.2, 3, 1);
-        ctx.fillRect(cx - 2, py + s * 0.255, 3, 1);
-        ctx.fillRect(cx - 2, py + s * 0.31, 3, 1);
-        ctx.fillRect(cx + 1, py + s * 0.2, 1, s * 0.12);
-        // base
-        ctx.fillStyle = '#1a1a1a';
+        const fontSize = Math.max(6, Math.floor(s * 0.14));
+        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('B', cx, py + s * 0.2);
+        // Bench at base — horizontal line with 2 short legs
+        ctx.strokeStyle = '#4a4a4a';
+        ctx.lineWidth = 1;
+        const benchY = py + s - s * 0.18;
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.22, benchY);
+        ctx.lineTo(cx + s * 0.22, benchY);
+        ctx.stroke();
+        // Bench legs
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.18, benchY);
+        ctx.lineTo(cx - s * 0.18, benchY + s * 0.1);
+        ctx.moveTo(cx + s * 0.18, benchY);
+        ctx.lineTo(cx + s * 0.18, benchY + s * 0.1);
+        ctx.stroke();
+        // Base
+        ctx.fillStyle = '#4a4a4a';
         ctx.fillRect(cx - 2, py + s - 3, 4, 2);
         break;
       }
