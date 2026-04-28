@@ -721,25 +721,22 @@ function convertVariantDoors(
     }
   }
 
+  const clampFrac = (f: number) => Math.min(1, Math.max(0, f));
   const total = shuffled.length;
-  const lockedTarget = Math.min(total, Math.round(total * Math.min(1, Math.max(0, lockedFraction))));
-  const trappedTarget = Math.min(total, Math.round(total * Math.min(1, Math.max(0, trappedFraction))));
-  const archwayTarget = Math.min(total, Math.round(total * Math.min(1, Math.max(0, archwayFraction))));
-
-  let converted = 0;
-  const maxConverts = total;
+  const lockedTarget = Math.min(total, Math.round(total * clampFrac(lockedFraction)));
+  const trappedTarget = Math.min(total, Math.round(total * clampFrac(trappedFraction)));
+  const archwayTarget = Math.min(total, Math.round(total * clampFrac(archwayFraction)));
 
   // Locked doors
+  let converted = 0;
   for (const c of shuffled) {
-    if (converted >= maxConverts) break;
-    if (lockedTarget <= 0) break;
+    if (converted >= lockedTarget) break;
     const t = grid[c.y][c.x];
     if (t !== 'door-h' && t !== 'door-v') continue;
     if (startPerim.has(`${c.x},${c.y}`)) continue;
     const lockedType = t === 'door-h' ? 'locked-door-h' : 'locked-door-v';
     grid[c.y][c.x] = lockedType;
     converted++;
-    if (converted >= lockedTarget) break;
   }
 
   // Re-shuffle for trapped pass
