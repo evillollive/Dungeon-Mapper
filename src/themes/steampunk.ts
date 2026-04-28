@@ -58,6 +58,21 @@ export const steampunkTheme: TileTheme = {
         ctx.moveTo(cx, py + 2);
         ctx.lineTo(cx, py + s - 2);
         ctx.stroke();
+        // Corner rivet dots
+        ctx.fillStyle = '#8a6030';
+        const rr = Math.max(1, s * 0.04);
+        ctx.beginPath();
+        ctx.arc(px + 4, py + 4, rr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px + s - 4, py + 4, rr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px + 4, py + s - 4, rr, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px + s - 4, py + s - 4, rr, 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
 
@@ -77,6 +92,21 @@ export const steampunkTheme: TileTheme = {
           ctx.beginPath();
           ctx.moveTo(cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1);
           ctx.lineTo(cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2);
+          ctx.stroke();
+        }
+        // Inner gear hub
+        ctx.fillStyle = '#4a3010';
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        // Small inner spokes
+        ctx.strokeStyle = '#b87333';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < 3; i++) {
+          const angle = (i * Math.PI * 2) / 3 + Math.PI / 6;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(angle) * s * 0.1, cy + Math.sin(angle) * s * 0.1);
+          ctx.lineTo(cx + Math.cos(angle) * s * 0.2, cy + Math.sin(angle) * s * 0.2);
           ctx.stroke();
         }
         break;
@@ -118,6 +148,19 @@ export const steampunkTheme: TileTheme = {
         ctx.beginPath();
         ctx.arc(cx, cy, 2, 0, Math.PI * 2);
         ctx.stroke();
+        // Pressure gauge
+        ctx.strokeStyle = '#e0a060';
+        ctx.lineWidth = 0.5;
+        const gx = cx + 4;
+        const gy = cy - 2;
+        ctx.beginPath();
+        ctx.arc(gx, gy, 1.5, 0, Math.PI * 2);
+        ctx.stroke();
+        // Gauge tick
+        ctx.beginPath();
+        ctx.moveTo(gx, gy);
+        ctx.lineTo(gx + 1, gy - 1);
+        ctx.stroke();
         break;
       }
 
@@ -131,6 +174,19 @@ export const steampunkTheme: TileTheme = {
         ctx.lineWidth = 0.5;
         ctx.beginPath();
         ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+        ctx.stroke();
+        // Pressure gauge (rotated)
+        ctx.strokeStyle = '#e0a060';
+        ctx.lineWidth = 0.5;
+        const gxv = cx - 2;
+        const gyv = cy + 4;
+        ctx.beginPath();
+        ctx.arc(gxv, gyv, 1.5, 0, Math.PI * 2);
+        ctx.stroke();
+        // Gauge tick
+        ctx.beginPath();
+        ctx.moveTo(gxv, gyv);
+        ctx.lineTo(gxv - 1, gyv + 1);
         ctx.stroke();
         break;
       }

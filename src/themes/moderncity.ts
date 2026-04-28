@@ -1,6 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash } from './artUtils';
 
 export const moderncityTheme: TileTheme = {
   id: 'moderncity',
@@ -64,6 +64,16 @@ export const moderncityTheme: TileTheme = {
         ctx.lineTo(px + s / 2, py + s / 2);
         ctx.lineTo(px, py + s / 2);
         ctx.stroke();
+        // Aggregate/gravel speckles
+        ctx.fillStyle = '#a0a0a0';
+        const h0 = tileHash(x, y);
+        const h1 = tileHash(x + 7, y + 3);
+        const h2 = tileHash(x + 13, y + 11);
+        const h3 = tileHash(x + 19, y + 17);
+        ctx.fillRect(px + 3 + h0 * (s - 6), py + 3 + h1 * (s - 6), 1, 1);
+        ctx.fillRect(px + 3 + h2 * (s - 6), py + 3 + h3 * (s - 6), 1, 1);
+        ctx.fillRect(px + 3 + h1 * (s - 6), py + 3 + h2 * (s - 6), 1, 1);
+        ctx.fillRect(px + 3 + h3 * (s - 6), py + 3 + h0 * (s - 6), 1, 1);
         break;
       }
 
@@ -87,6 +97,9 @@ export const moderncityTheme: TileTheme = {
         ctx.strokeStyle = '#2a2a2a';
         ctx.lineWidth = 0.5;
         ctx.strokeRect(px + 1, py + 1, s - 2, s - 2);
+        // Entry mark at bottom center
+        ctx.fillStyle = '#2a2a2a';
+        ctx.fillRect(cx - 2, py + s - 4, 4, 3);
         break;
       }
 
@@ -122,6 +135,15 @@ export const moderncityTheme: TileTheme = {
         ctx.fillStyle = '#222222';
         ctx.fillRect(cx - 2, cy - 1, 1, 2);
         ctx.fillRect(cx + 1, cy - 1, 1, 2);
+        // Push-bar on each door half
+        ctx.strokeStyle = '#666666';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px + 4, cy);
+        ctx.lineTo(cx - 1, cy);
+        ctx.moveTo(cx + 1, cy);
+        ctx.lineTo(px + s - 4, cy);
+        ctx.stroke();
         break;
       }
 
@@ -140,6 +162,15 @@ export const moderncityTheme: TileTheme = {
         ctx.fillStyle = '#222222';
         ctx.fillRect(cx - 1, cy - 2, 2, 1);
         ctx.fillRect(cx - 1, cy + 1, 2, 1);
+        // Push-bar on each door half
+        ctx.strokeStyle = '#666666';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx, py + 4);
+        ctx.lineTo(cx, cy - 1);
+        ctx.moveTo(cx, cy + 1);
+        ctx.lineTo(cx, py + s - 4);
+        ctx.stroke();
         break;
       }
 
