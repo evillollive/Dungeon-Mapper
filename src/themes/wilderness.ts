@@ -302,8 +302,11 @@ export const wildernessTheme: TileTheme = {
       }
 
       case 'water': {
-        ctx.strokeStyle = '#4ab4e8';
+        // Flowing river with current lines and ">" arrows
+        const wh = tileHash(x, y);
+        ctx.strokeStyle = '#6ac8f0';
         ctx.lineWidth = 1;
+
         for (let i = 0; i < 3; i++) {
           const wy = py + 4 + i * (s / 3.5);
           ctx.beginPath();
@@ -312,6 +315,21 @@ export const wildernessTheme: TileTheme = {
             ctx.quadraticCurveTo(px + 2 + wx + 1, wy - 2, px + 2 + wx + 2, wy);
             ctx.quadraticCurveTo(px + 2 + wx + 3, wy + 2, px + 2 + wx + 4, wy);
           }
+          ctx.stroke();
+        }
+
+        // Current arrows between waves
+        ctx.strokeStyle = '#90d8ff';
+        ctx.lineWidth = 0.8;
+        const arrowCount = 2 + (wh > 0.6 ? 1 : 0);
+        for (let i = 0; i < arrowCount; i++) {
+          const ax = px + s * (0.2 + ((wh * 73 + i * 37) % 60) / 100);
+          const ay = py + s * (0.25 + i * 0.25);
+          const aSize = s * 0.06;
+          ctx.beginPath();
+          ctx.moveTo(ax - aSize, ay - aSize);
+          ctx.lineTo(ax + aSize, ay);
+          ctx.lineTo(ax - aSize, ay + aSize);
           ctx.stroke();
         }
         break;
@@ -331,43 +349,110 @@ export const wildernessTheme: TileTheme = {
       }
 
       case 'trap': {
-        ctx.strokeStyle = '#cc3333';
+        // Bear trap: circle base with jaw arcs and teeth
+        ctx.strokeStyle = '#993322';
         ctx.lineWidth = 1.5;
+
+        // Trap base circle
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.25, 0, Math.PI * 2);
+        ctx.arc(cx, cy, s * 0.28, 0, Math.PI * 2);
         ctx.stroke();
+
+        // Left jaw arc with teeth
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
-        ctx.moveTo(px + 3, py + 3);
-        ctx.lineTo(px + s - 3, py + s - 3);
-        ctx.moveTo(px + s - 3, py + 3);
-        ctx.lineTo(px + 3, py + s - 3);
+        ctx.arc(cx - s * 0.05, cy, s * 0.32, Math.PI * 0.6, Math.PI * 1.4);
         ctx.stroke();
+        // Left jaw teeth
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+          const a = Math.PI * 0.7 + i * (Math.PI * 0.6 / 4);
+          const bx = cx - s * 0.05 + Math.cos(a) * s * 0.32;
+          const by = cy + Math.sin(a) * s * 0.32;
+          ctx.beginPath();
+          ctx.moveTo(bx, by);
+          ctx.lineTo(bx + Math.cos(a) * (-s * 0.06), by + Math.sin(a) * (-s * 0.06));
+          ctx.stroke();
+        }
+
+        // Right jaw arc with teeth
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.arc(cx + s * 0.05, cy, s * 0.32, -Math.PI * 0.4, Math.PI * 0.4);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 4; i++) {
+          const a = -Math.PI * 0.3 + i * (Math.PI * 0.6 / 4);
+          const bx = cx + s * 0.05 + Math.cos(a) * s * 0.32;
+          const by = cy + Math.sin(a) * s * 0.32;
+          ctx.beginPath();
+          ctx.moveTo(bx, by);
+          ctx.lineTo(bx + Math.cos(a) * (-s * 0.06), by + Math.sin(a) * (-s * 0.06));
+          ctx.stroke();
+        }
         break;
       }
 
       case 'treasure': {
-        ctx.fillStyle = '#8b6914';
-        ctx.fillRect(cx - s * 0.2, cy - s * 0.15, s * 0.4, s * 0.3);
-        ctx.fillStyle = '#d4af37';
-        ctx.fillRect(cx - s * 0.2, cy - s * 0.22, s * 0.4, s * 0.12);
-        ctx.strokeStyle = '#ffe080';
-        ctx.lineWidth = 0.5;
-        ctx.strokeRect(cx - s * 0.2, cy - s * 0.22, s * 0.4, s * 0.37);
+        // Buried supply cache: mound with "X" marks the spot
+        // Mound shape
+        ctx.fillStyle = '#8b6a3a';
+        ctx.beginPath();
+        ctx.moveTo(px + s * 0.15, cy + s * 0.15);
+        ctx.quadraticCurveTo(cx - s * 0.1, cy - s * 0.25, cx, cy - s * 0.28);
+        ctx.quadraticCurveTo(cx + s * 0.1, cy - s * 0.25, px + s * 0.85, cy + s * 0.15);
+        ctx.closePath();
+        ctx.fill();
+
+        // Dirt base
+        ctx.fillStyle = '#6a5030';
+        ctx.fillRect(px + s * 0.12, cy + s * 0.1, s * 0.76, s * 0.12);
+
+        // "X" marks the spot
+        ctx.strokeStyle = '#d4af37';
+        ctx.lineWidth = 2;
+        const xSize = s * 0.1;
+        ctx.beginPath();
+        ctx.moveTo(cx - xSize, cy - s * 0.12 - xSize);
+        ctx.lineTo(cx + xSize, cy - s * 0.12 + xSize);
+        ctx.moveTo(cx + xSize, cy - s * 0.12 - xSize);
+        ctx.lineTo(cx - xSize, cy - s * 0.12 + xSize);
+        ctx.stroke();
         break;
       }
 
       case 'start': {
-        ctx.fillStyle = '#40e060';
-        ctx.beginPath();
-        ctx.moveTo(cx, py + 3);
-        ctx.lineTo(cx + 4, cy);
-        ctx.lineTo(cx + 2, cy);
-        ctx.lineTo(cx + 2, py + s - 3);
-        ctx.lineTo(cx - 2, py + s - 3);
-        ctx.lineTo(cx - 2, cy);
-        ctx.lineTo(cx - 4, cy);
-        ctx.closePath();
-        ctx.fill();
+        // Campfire: ring of stones with flame
+        const sh = tileHash(x, y);
+
+        // Stone ring (7 stones)
+        ctx.fillStyle = '#6a6a6a';
+        const stoneCount = 7;
+        for (let i = 0; i < stoneCount; i++) {
+          const a = (i / stoneCount) * Math.PI * 2;
+          const jitter = ((sh * 97 + i * 13) % 10 - 5) * 0.01;
+          const stoneR = s * (0.32 + jitter);
+          const stX = cx + Math.cos(a) * stoneR;
+          const stY = cy + Math.sin(a) * stoneR;
+          ctx.beginPath();
+          ctx.arc(stX, stY, s * 0.05, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Flames: 3 triangular points
+        const flameColors = ['#ff4400', '#ff8800', '#ffcc00'];
+        const flameHeights = [0.22, 0.18, 0.15];
+        const flameOffsets = [-0.06, 0.02, 0.08];
+        for (let i = 0; i < 3; i++) {
+          ctx.fillStyle = flameColors[i];
+          const fOff = flameOffsets[i] + (sh - 0.5) * 0.04;
+          ctx.beginPath();
+          ctx.moveTo(cx + fOff * s - s * 0.04, cy + s * 0.05);
+          ctx.lineTo(cx + fOff * s, cy - s * flameHeights[i]);
+          ctx.lineTo(cx + fOff * s + s * 0.04, cy + s * 0.05);
+          ctx.closePath();
+          ctx.fill();
+        }
         break;
       }
     }
