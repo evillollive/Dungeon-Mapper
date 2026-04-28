@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-28
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 7.1, & 7.3 complete. Phase 4.5.3 (iconic tiles: treasure, traps, start, water) next.
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 7.1, & 7.3 complete. Phase 5.1 (multi-level dungeon support) next.
 
 ---
 
@@ -305,20 +305,15 @@ Upgrade procedural tile rendering across all 13 themes simultaneously for strong
 - No changes to print mode — all art upgrades are screen-mode only
 - Performance: lightweight Canvas 2D calls only (thin lines, small dots/circles)
 
-**4.5.3 — Iconic Tiles: Treasure, Traps, Start, Water**
-- Per-theme treasure/trap/start icons — currently the most generic tiles across themes:
-  - Treasure: Castle → crown outline, Pirate → skull chest, Cyberpunk → data chip, Starship → glowing core
-  - Trap: Wilderness → bear trap jaws, Starship → laser grid (already distinct), Cyberpunk → electric arc
-  - Start: Wilderness → campfire, Castle → banner, Starship → airlock hatch
-- Theme-specific water/liquid rendering — replace identical wave-lines-with-different-color:
-  - Dungeon: dark ripple pools
-  - Wilderness: flowing river with current lines
-  - Starship: coolant with bubbles
-  - Cyberpunk: toxic neon with shimmer
-  - Alien: acid with organic swirl pattern
-  - Desert: oasis with palm silhouette at edge
-- Optional fog edge feathering — soft 1–2px gradient at revealed/hidden boundaries to reduce hard grid edges
-- Print mode art pass — add cross-hatching for walls and stipple shading for water in B&W mode for a more polished cartographic look
+**~~4.5.3 — Iconic Tiles: Treasure, Traps, Start, Water~~** ✅ COMPLETE
+- ✅ Per-theme treasure/trap/start icons — all 13 themes upgraded with unique thematic art:
+  - Treasure: Dungeon → chest with lock + coins, Castle → crowned chest, Starship → hexagonal data core, Alien → crystal cluster, Cyberpunk → data chip with pins, Wilderness → buried cache mound, Old West → gold nuggets, Steampunk → clockwork gears, Modern City → bank safe, Post-Apocalypse → supply crate, Pirate → skull chest, Desert → ankh relic, Ancient → sarcophagus
+  - Trap: Dungeon → pressure plate with spikes, Castle → murder hole with arrow slits, Starship → laser grid with glow, Alien → spore burst, Cyberpunk → electric arc, Wilderness → bear trap jaws, Old West → bear trap, Steampunk → gear pressure plate, Modern City → manhole cover, Post-Apocalypse → landmine, Pirate → cannon with fuse, Desert → quicksand spiral, Ancient → cursed glyph pentagram
+  - Start: Dungeon → stone archway, Castle → royal banner, Starship → airlock hatch with status lights, Alien → landing beacon, Cyberpunk → neon portal, Wilderness → campfire with stone ring, Old West → saloon doors, Steampunk → boiler engine, Modern City → bus stop sign, Post-Apocalypse → shelter entrance, Pirate → anchor with rope, Desert → caravan tent, Ancient → obelisk with inscriptions
+- ✅ Theme-specific water/liquid rendering — all 13 themes upgraded:
+  - Dungeon → dark ripple pools with torchlight reflections, Castle → moat with lily pads, Starship → coolant with bubbles and pipe, Alien → acid with organic swirls, Cyberpunk → toxic neon with shimmer, Wilderness → river with current arrows, Old West → water trough, Steampunk → steam pipe with valve, Modern City → fountain with spray, Post-Apocalypse → toxic pool with radiation dots, Pirate → bilge with deck planks, Desert → oasis with palm silhouette, Ancient → reflecting pool with lotus
+- ✅ Fog edge feathering — soft gradient at revealed/hidden boundaries (always on, both MapCanvas and exports)
+- ✅ Print mode art pass — cross-hatching for walls and stipple shading for water in B&W mode
 
 ### Phase 5: Multi-Level Dungeons & Customization
 
@@ -377,9 +372,9 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - ~~**Phase 7.3** — Measurement & Distance Tools~~ ✅
 - ~~**Phase 4.3** — Light Sources~~ ✅
 - ~~**Phase 4.5.2** — Theme Personality: Floors, Walls, Doors~~ ✅
+- ~~**Phase 4.5.3** — Iconic Tiles: Treasure, Traps, Start, Water~~ ✅
 
 ### Medium-Term — Active Roadmap
-- **Phase 4.5.3** — Iconic Tiles: Treasure, Traps, Start, Water *(next sub-phase of art polish)*
 - **Phase 5.1** — Multi-Level Dungeon Support *(high demand, moderate complexity)*
 - **Phase 5.2** — Custom Tile/Theme Creation
 
@@ -421,6 +416,16 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 ---
 
 ## Changes History
+
+**2026-04-28 — Phase 4.5.3 complete: Iconic tiles shipped**
+- All 13 themes: water tiles upgraded with unique per-theme liquid rendering (dungeon ripple pools, castle moat with lily pads, starship coolant bubbles, alien acid swirls, cyberpunk neon shimmer, wilderness river currents, old west water trough, steampunk steam pipe + valve, modern city fountain, post-apocalypse toxic pool, pirate bilge planks, desert oasis + palm, ancient reflecting pool + lotus)
+- All 13 themes: trap tiles upgraded with thematic trap art (pressure plate, murder hole, laser grid, spore burst, electric arc, bear trap jaws, gear plate, manhole cover, landmine, cannon, quicksand spiral, cursed glyph pentagram)
+- All 13 themes: treasure tiles upgraded with unique treasure art (chest with coins, crowned chest, data core, crystal cluster, data chip, buried cache, gold nuggets, clockwork gears, bank safe, supply crate, skull chest, ankh relic, sarcophagus)
+- All 13 themes: start tiles upgraded with distinct entrance art (stone archway, royal banner, airlock hatch, landing beacon, neon portal, campfire, saloon doors, boiler engine, bus stop, shelter, anchor, caravan tent, obelisk)
+- Print mode art pass: walls now use cross-hatching (diagonal white lines over black fill), water uses stipple dot pattern under wave lines
+- Fog edge feathering: soft 1–2px gradient at revealed/hidden boundaries in both MapCanvas (live) and renderMap (exports) — always on
+- All detail rendering is deterministic via `tileHash()` — no runtime randomness
+- Priority order updated to show 5.1 as next
 
 **2026-04-28 — Phase 4.5.2 complete: Theme personality shipped**
 - All 13 themes: floor tiles upgraded with distinct per-theme micro-detail (flagstone mortar, checkerboard, deck plating rivets, grass blades, plank knots, circuit traces, sand stipple, spore glow, concrete aggregate, boot prints, iron rivets, rubble cracks, carved mortar grid)

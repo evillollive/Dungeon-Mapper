@@ -334,17 +334,34 @@ export const cyberpunkTheme: TileTheme = {
       }
 
       case 'water': {
-        ctx.strokeStyle = '#0088ff';
+        // Toxic neon pool with shimmering reflections and toxic bubbles
+        const wh = tileHash(x, y);
+
+        // Neon-cyan horizontal reflection lines
         ctx.lineWidth = 1;
-        for (let i = 0; i < 2; i++) {
-          const wy = py + 5 + i * (s / 2.5);
+        const lineYs = [0.3, 0.5, 0.72];
+        const lineColors = ['#00ccff', '#00e8ff', '#00b8e0'];
+        for (let i = 0; i < 3; i++) {
+          ctx.strokeStyle = lineColors[i];
+          const ly = py + lineYs[i] * s + (wh - 0.5) * s * 0.06;
           ctx.beginPath();
-          ctx.moveTo(px + 2, wy);
-          for (let wx = 0; wx < s - 4; wx += 4) {
-            ctx.quadraticCurveTo(px + 2 + wx + 1, wy - 2, px + 2 + wx + 2, wy);
-            ctx.quadraticCurveTo(px + 2 + wx + 3, wy + 2, px + 2 + wx + 4, wy);
+          ctx.moveTo(px + 2, ly);
+          for (let wx = 0; wx < s - 4; wx += 6) {
+            ctx.lineTo(px + 2 + wx + 3, ly + (i % 2 === 0 ? -1.5 : 1.5));
+            ctx.lineTo(px + 2 + wx + 6, ly);
           }
           ctx.stroke();
+        }
+
+        // Toxic bubbles
+        ctx.fillStyle = '#39ff14';
+        const bubbleSeeds = [0.0, 0.33, 0.67];
+        for (let i = 0; i < 3; i++) {
+          const bx = 0.2 + ((wh * 83 + i * 41) % 60) / 100;
+          const by = 0.2 + bubbleSeeds[i] * 0.55;
+          ctx.beginPath();
+          ctx.arc(px + bx * s, py + by * s, s * 0.025, 0, Math.PI * 2);
+          ctx.fill();
         }
         break;
       }
@@ -361,47 +378,138 @@ export const cyberpunkTheme: TileTheme = {
       }
 
       case 'trap': {
-        ctx.strokeStyle = '#ff0000';
-        ctx.lineWidth = 1.5;
+        // Electric arc: jagged lightning bolt with sparks
+        const th = tileHash(x, y);
+        const flip = th > 0.5;
+        const x0 = flip ? px + s - 3 : px + 3;
+        const y0 = py + 3;
+        const x1 = flip ? px + 3 : px + s - 3;
+        const y1 = py + s - 3;
+
+        // Primary bolt (jagged path)
+        ctx.strokeStyle = '#ff2060';
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.25, 0, Math.PI * 2);
+        ctx.moveTo(x0, y0);
+        const segments = 4;
+        for (let i = 1; i < segments; i++) {
+          const t = i / segments;
+          const mx = x0 + (x1 - x0) * t + (th * 40 - 20) * (i % 2 === 0 ? 1 : -1) * 0.15;
+          const my = y0 + (y1 - y0) * t;
+          ctx.lineTo(mx, my);
+        }
+        ctx.lineTo(x1, y1);
         ctx.stroke();
-        ctx.fillStyle = '#ff000033';
+
+        // Secondary fainter bolt
+        ctx.strokeStyle = '#ff206066';
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.25, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#ff0000';
-        ctx.fillRect(cx - 1, cy - 1, 2, 2);
+        ctx.moveTo(x0 + 2, y0 + 1);
+        for (let i = 1; i < segments; i++) {
+          const t = i / segments;
+          const mx = x0 + 2 + (x1 - x0) * t + (th * 30 - 15) * (i % 2 === 0 ? -1 : 1) * 0.15;
+          const my = y0 + 1 + (y1 - y0) * t;
+          ctx.lineTo(mx, my);
+        }
+        ctx.lineTo(x1 + 2, y1 + 1);
+        ctx.stroke();
+
+        // Spark dots at endpoints
+        ctx.fillStyle = '#ff80a0';
+        for (const [sx, sy] of [[x0, y0], [x1, y1]] as [number, number][]) {
+          ctx.beginPath();
+          ctx.arc(sx, sy, s * 0.04, 0, Math.PI * 2);
+          ctx.fill();
+        }
         break;
       }
 
       case 'treasure': {
-        ctx.strokeStyle = '#ffff00';
-        ctx.lineWidth = 1.5;
-        ctx.strokeRect(cx - s * 0.25, cy - s * 0.2, s * 0.5, s * 0.4);
-        ctx.fillStyle = '#ffff0022';
-        ctx.fillRect(cx - s * 0.25, cy - s * 0.2, s * 0.5, s * 0.4);
-        ctx.fillStyle = '#ffff00';
-        ctx.fillRect(cx - 1, cy - 1, 2, 2);
+        // Data chip with pins and glow
+        const chipW = s * 0.3;
+        const chipH = s * 0.24;
+
+        // Faint glow rectangle
+        ctx.fillStyle = '#ffdd0018';
+        ctx.fillRect(cx - chipW * 0.7, cy - chipH * 0.7, chipW * 1.4, chipH * 1.4);
+
+        // Chip body
+        ctx.fillStyle = '#e8c820';
+        ctx.fillRect(cx - chipW / 2, cy - chipH / 2, chipW, chipH);
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect(cx - chipW / 2, cy - chipH / 2, chipW, chipH);
+
+        // Pins on each side
+        ctx.strokeStyle = '#ffd700';
+        ctx.lineWidth = 1;
+        const pinLen = s * 0.08;
+        // Top and bottom pins
+        for (let i = 0; i < 3; i++) {
+          const pinX = cx - chipW / 2 + chipW * (i + 1) / 4;
+          ctx.beginPath();
+          ctx.moveTo(pinX, cy - chipH / 2);
+          ctx.lineTo(pinX, cy - chipH / 2 - pinLen);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(pinX, cy + chipH / 2);
+          ctx.lineTo(pinX, cy + chipH / 2 + pinLen);
+          ctx.stroke();
+        }
+        // Left and right pins
+        for (let i = 0; i < 2; i++) {
+          const pinY = cy - chipH / 2 + chipH * (i + 1) / 3;
+          ctx.beginPath();
+          ctx.moveTo(cx - chipW / 2, pinY);
+          ctx.lineTo(cx - chipW / 2 - pinLen, pinY);
+          ctx.stroke();
+          ctx.beginPath();
+          ctx.moveTo(cx + chipW / 2, pinY);
+          ctx.lineTo(cx + chipW / 2 + pinLen, pinY);
+          ctx.stroke();
+        }
         break;
       }
 
       case 'start': {
-        ctx.strokeStyle = '#00ff00';
-        ctx.lineWidth = 1.5;
+        // Neon spawn portal with chevrons
+        // Outer glow ring
+        ctx.strokeStyle = '#00ff4430';
+        ctx.lineWidth = 4;
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.3, 0, Math.PI * 2);
+        ctx.arc(cx, cy, s * 0.40, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.fillStyle = '#00ff0033';
+
+        // Main circle
+        ctx.strokeStyle = '#00ff44';
+        ctx.lineWidth = 1.8;
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = '#00ff00';
+        ctx.arc(cx, cy, s * 0.32, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Inward chevron arrows at cardinal positions
+        ctx.strokeStyle = '#00ff44';
+        ctx.lineWidth = 1.5;
+        const chevR = s * 0.32;
+        const chevSize = s * 0.07;
+        const cardinals: [number, number][] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+        for (const [dx, dy] of cardinals) {
+          const tipX = cx + dx * (chevR - chevSize);
+          const tipY = cy + dy * (chevR - chevSize);
+          const perpX = -dy;
+          const perpY = dx;
+          ctx.beginPath();
+          ctx.moveTo(tipX + dx * chevSize + perpX * chevSize, tipY + dy * chevSize + perpY * chevSize);
+          ctx.lineTo(tipX, tipY);
+          ctx.lineTo(tipX + dx * chevSize - perpX * chevSize, tipY + dy * chevSize - perpY * chevSize);
+          ctx.stroke();
+        }
+
+        // Center dot
+        ctx.fillStyle = '#00ff44';
         ctx.beginPath();
-        ctx.moveTo(cx - 2, cy - 3);
-        ctx.lineTo(cx + 4, cy);
-        ctx.lineTo(cx - 2, cy + 3);
-        ctx.closePath();
+        ctx.arc(cx, cy, s * 0.05, 0, Math.PI * 2);
         ctx.fill();
         break;
       }

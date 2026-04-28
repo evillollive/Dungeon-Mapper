@@ -362,20 +362,53 @@ export const ancientTheme: TileTheme = {
       }
 
       case 'water': {
-        // Still reflecting pool — fewer, calmer ripples than other themes,
-        // tinted with a hint of jade.
-        ctx.strokeStyle = '#7ad0c8';
-        ctx.lineWidth = 1;
-        for (let wy = 0; wy < 2; wy++) {
-          const waveY = py + 5 + wy * (s / 2.5);
+        // Sacred reflecting pool — rectangular basin, calm ripples, lotus flower
+        const h0 = tileHash(x, y);
+        // Rectangular basin with beveled edges
+        const basinX = px + s * 0.12;
+        const basinY = py + s * 0.15;
+        const basinW = s * 0.76;
+        const basinH = s * 0.7;
+        // Outer bevel (lighter edge)
+        ctx.fillStyle = '#3a8a7a';
+        ctx.fillRect(basinX, basinY, basinW, basinH);
+        // Inner pool (darker jade/teal)
+        ctx.fillStyle = '#2a7a6a';
+        ctx.fillRect(basinX + 2, basinY + 2, basinW - 4, basinH - 4);
+        // Basin border
+        ctx.strokeStyle = '#1a5a4a';
+        ctx.lineWidth = 0.8;
+        ctx.strokeRect(basinX, basinY, basinW, basinH);
+        // 2 calm ripple arcs inside
+        ctx.strokeStyle = '#5ac0b0';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < 2; i++) {
+          const rippleY = basinY + basinH * 0.35 + i * basinH * 0.3;
           ctx.beginPath();
-          ctx.moveTo(px + 3, waveY);
-          for (let wx = 0; wx < s - 6; wx += 4) {
-            ctx.quadraticCurveTo(px + 3 + wx + 1, waveY - 1, px + 3 + wx + 2, waveY);
-            ctx.quadraticCurveTo(px + 3 + wx + 3, waveY + 1, px + 3 + wx + 4, waveY);
-          }
+          ctx.arc(cx, rippleY, basinW * 0.25, Math.PI * 0.15, Math.PI * 0.85);
           ctx.stroke();
         }
+        // Lotus flower — 3-4 petal ovals floating on surface
+        const lotusX = cx + (h0 - 0.5) * basinW * 0.3;
+        const lotusY = basinY + basinH * 0.5;
+        ctx.fillStyle = '#e0a0c0';
+        const petalCount = 3 + Math.floor(h0 * 2);
+        for (let i = 0; i < petalCount; i++) {
+          const angle = (i / petalCount) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.ellipse(
+            lotusX + Math.cos(angle) * s * 0.04,
+            lotusY + Math.sin(angle) * s * 0.03,
+            s * 0.035, s * 0.02,
+            angle, 0, Math.PI * 2
+          );
+          ctx.fill();
+        }
+        // Lotus center
+        ctx.fillStyle = '#e0c060';
+        ctx.beginPath();
+        ctx.arc(lotusX, lotusY, 1, 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
 
@@ -408,65 +441,151 @@ export const ancientTheme: TileTheme = {
       }
 
       case 'trap': {
-        // Cursed glyph circle — a red ringed sigil with a forbidding cross.
-        ctx.strokeStyle = '#cc3322';
+        // Cursed glyph — circle with 5-pointed star (pentagram) and rune ticks
+        const r = s * 0.3;
+        // Outer circle
+        ctx.strokeStyle = '#cc4420';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.28, 0, Math.PI * 2);
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.stroke();
+        // 5-pointed star (pentagram)
+        ctx.strokeStyle = '#e06030';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(cx - s * 0.18, cy);
-        ctx.lineTo(cx + s * 0.18, cy);
-        ctx.moveTo(cx, cy - s * 0.18);
-        ctx.lineTo(cx, cy + s * 0.18);
+        for (let i = 0; i < 5; i++) {
+          const angle = -Math.PI / 2 + (i * 4 * Math.PI) / 5;
+          const sx = cx + Math.cos(angle) * r * 0.85;
+          const sy = cy + Math.sin(angle) * r * 0.85;
+          if (i === 0) ctx.moveTo(sx, sy);
+          else ctx.lineTo(sx, sy);
+        }
+        ctx.closePath();
         ctx.stroke();
+        // Small rune-like tick marks around the outer circle
+        ctx.strokeStyle = '#cc4420';
+        ctx.lineWidth = 0.8;
+        for (let i = 0; i < 10; i++) {
+          const angle = (i / 10) * Math.PI * 2;
+          const innerR = r + 1;
+          const outerR = r + 3;
+          ctx.beginPath();
+          ctx.moveTo(cx + Math.cos(angle) * innerR, cy + Math.sin(angle) * innerR);
+          ctx.lineTo(cx + Math.cos(angle) * outerR, cy + Math.sin(angle) * outerR);
+          ctx.stroke();
+        }
+        // Inner glow fill
+        ctx.fillStyle = '#cc442015';
+        ctx.beginPath();
+        ctx.arc(cx, cy, r * 0.6, 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
 
       case 'treasure': {
-        // Sarcophagus — a stone coffer with a gilded lid stripe and a
-        // small lapis cartouche.
-        const tw = s * 0.55;
-        const th = s * 0.4;
+        // Sarcophagus lid — elongated rectangle with rounded head end, face, crossed arms
+        const tw = s * 0.4;
+        const th = s * 0.8;
         const tx = cx - tw / 2;
-        const ty = cy - th / 2;
+        const ty = py + s * 0.1;
+        // Body (elongated rectangle)
         ctx.fillStyle = '#9a7a48';
-        ctx.fillRect(tx, ty + th * 0.3, tw, th * 0.7);
-        ctx.fillStyle = '#e0c060';
-        ctx.fillRect(tx, ty, tw, th * 0.3);
+        ctx.fillRect(tx, ty + th * 0.2, tw, th * 0.8);
+        // Rounded head end
+        ctx.beginPath();
+        ctx.ellipse(cx, ty + th * 0.2, tw / 2, th * 0.2, 0, Math.PI, 0);
+        ctx.fill();
+        // Gold/brown stone outline
         ctx.strokeStyle = '#5a3a18';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.ellipse(cx, ty + th * 0.2, tw / 2, th * 0.2, 0, Math.PI, 0);
+        ctx.stroke();
+        ctx.strokeRect(tx, ty + th * 0.2, tw, th * 0.8);
+        // Face — two eyes
+        ctx.fillStyle = '#e0c060';
+        ctx.beginPath();
+        ctx.arc(cx - tw * 0.2, ty + th * 0.12, 1.2, 0, Math.PI * 2);
+        ctx.arc(cx + tw * 0.2, ty + th * 0.12, 1.2, 0, Math.PI * 2);
+        ctx.fill();
+        // Simple nose line
+        ctx.strokeStyle = '#e0c060';
         ctx.lineWidth = 0.5;
-        ctx.strokeRect(tx, ty, tw, th);
-        // Lapis cartouche on the lid.
-        ctx.fillStyle = '#1e4a8e';
-        ctx.fillRect(cx - tw * 0.12, ty + th * 0.08, tw * 0.24, th * 0.14);
+        ctx.beginPath();
+        ctx.moveTo(cx, ty + th * 0.14);
+        ctx.lineTo(cx, ty + th * 0.22);
+        ctx.stroke();
+        // Crossed arms (two diagonal lines across the chest area)
+        ctx.strokeStyle = '#e0c060';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.moveTo(tx + 2, ty + th * 0.35);
+        ctx.lineTo(tx + tw - 2, ty + th * 0.55);
+        ctx.moveTo(tx + tw - 2, ty + th * 0.35);
+        ctx.lineTo(tx + 2, ty + th * 0.55);
+        ctx.stroke();
+        // Gilded lid stripe
+        ctx.fillStyle = '#e0c060';
+        ctx.fillRect(tx, ty + th * 0.2, tw, 1.5);
         break;
       }
 
       case 'start': {
-        // Obelisk — a tapered stone pillar with a gilded pyramidion at the
-        // top, marking the entrance of the complex.
-        ctx.fillStyle = '#8a6a3a';
+        // Obelisk — tall narrow tapered rectangle with pyramid cap and inscription bands
+        const baseW = s * 0.28;
+        const topW = s * 0.16;
+        const obeliskBottom = py + s - 4;
+        const obeliskTop = py + s * 0.22;
+        // Obelisk body (tapered)
+        ctx.fillStyle = '#7a5a30';
         ctx.beginPath();
-        ctx.moveTo(cx - s * 0.12, py + s - 3);
-        ctx.lineTo(cx + s * 0.12, py + s - 3);
-        ctx.lineTo(cx + s * 0.08, py + s * 0.18);
-        ctx.lineTo(cx - s * 0.08, py + s * 0.18);
+        ctx.moveTo(cx - baseW / 2, obeliskBottom);
+        ctx.lineTo(cx + baseW / 2, obeliskBottom);
+        ctx.lineTo(cx + topW / 2, obeliskTop);
+        ctx.lineTo(cx - topW / 2, obeliskTop);
         ctx.closePath();
         ctx.fill();
+        // Lighter highlight on one side
+        ctx.fillStyle = '#9a7a4a';
+        ctx.beginPath();
+        ctx.moveTo(cx, obeliskBottom);
+        ctx.lineTo(cx + baseW / 2, obeliskBottom);
+        ctx.lineTo(cx + topW / 2, obeliskTop);
+        ctx.lineTo(cx, obeliskTop);
+        ctx.closePath();
+        ctx.fill();
+        // Outline
         ctx.strokeStyle = '#3a2a10';
         ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(cx - baseW / 2, obeliskBottom);
+        ctx.lineTo(cx + baseW / 2, obeliskBottom);
+        ctx.lineTo(cx + topW / 2, obeliskTop);
+        ctx.lineTo(cx - topW / 2, obeliskTop);
+        ctx.closePath();
         ctx.stroke();
-        // Gilded pyramidion cap.
+        // Pyramid cap (pyramidion)
         ctx.fillStyle = '#e0c060';
         ctx.beginPath();
-        ctx.moveTo(cx - s * 0.08, py + s * 0.18);
-        ctx.lineTo(cx + s * 0.08, py + s * 0.18);
-        ctx.lineTo(cx, py + 3);
+        ctx.moveTo(cx - topW / 2, obeliskTop);
+        ctx.lineTo(cx + topW / 2, obeliskTop);
+        ctx.lineTo(cx, py + 4);
         ctx.closePath();
         ctx.fill();
         ctx.stroke();
+        // 2-3 horizontal inscription band lines
+        ctx.strokeStyle = '#5a3a18';
+        ctx.lineWidth = 0.5;
+        const bandCount = 3;
+        for (let i = 1; i <= bandCount; i++) {
+          const t = i / (bandCount + 1);
+          const bandY = obeliskTop + t * (obeliskBottom - obeliskTop);
+          const halfW = (baseW / 2 - (baseW - topW) / 2 * (1 - t));
+          ctx.beginPath();
+          ctx.moveTo(cx - halfW, bandY);
+          ctx.lineTo(cx + halfW, bandY);
+          ctx.stroke();
+        }
         break;
       }
     }

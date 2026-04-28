@@ -23,6 +23,78 @@ const FOG_GM_FILL = 'rgba(107, 114, 128, 0.55)';
 const EXPLORED_PLAYER_FILL = 'rgba(107, 114, 128, 0.55)';
 const EXPLORED_GM_FILL = 'rgba(107, 114, 128, 0.35)';
 
+/* -------------------------------------------------------------------------- */
+/*  Fog edge feathering — soft gradient at revealed/hidden boundaries         */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Paint a soft 1–2 px gradient fringe on the *revealed* side of each
+ * fog boundary edge so the transition from hidden → visible isn't a hard
+ * grid line. The gradient fades from the fog colour to fully transparent.
+ *
+ * `isFogged(x,y)` should return `true` for cells that are hidden / fogged.
+ * `featherPx` is the gradient depth in canvas pixels (default 2).
+ */
+function drawFogFeather(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  tileSize: number,
+  isFogged: (x: number, y: number) => boolean,
+  fogRgb: [number, number, number],
+  fogAlpha: number,
+  featherPx?: number,
+): void {
+  const fp = featherPx ?? Math.max(1, Math.round(tileSize * 0.08));
+  // Scan every *revealed* cell and check the 4 cardinal neighbours.
+  // Where a neighbour is fogged, paint a short linear gradient that fades
+  // into the revealed cell from that edge.
+  ctx.save();
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (isFogged(x, y)) continue; // only feather on the clear side
+      const px = x * tileSize;
+      const py = y * tileSize;
+
+      // Top edge: neighbour above is fogged.
+      if (y > 0 && isFogged(x, y - 1)) {
+        const g = ctx.createLinearGradient(0, py, 0, py + fp);
+        g.addColorStop(0, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},${fogAlpha})`);
+        g.addColorStop(1, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},0)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(px, py, tileSize, fp);
+      }
+      // Bottom edge: neighbour below is fogged.
+      if (y < height - 1 && isFogged(x, y + 1)) {
+        const bot = py + tileSize;
+        const g = ctx.createLinearGradient(0, bot, 0, bot - fp);
+        g.addColorStop(0, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},${fogAlpha})`);
+        g.addColorStop(1, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},0)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(px, bot - fp, tileSize, fp);
+      }
+      // Left edge: neighbour to the left is fogged.
+      if (x > 0 && isFogged(x - 1, y)) {
+        const g = ctx.createLinearGradient(px, 0, px + fp, 0);
+        g.addColorStop(0, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},${fogAlpha})`);
+        g.addColorStop(1, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},0)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(px, py, fp, tileSize);
+      }
+      // Right edge: neighbour to the right is fogged.
+      if (x < width - 1 && isFogged(x + 1, y)) {
+        const rt = px + tileSize;
+        const g = ctx.createLinearGradient(rt, 0, rt - fp, 0);
+        g.addColorStop(0, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},${fogAlpha})`);
+        g.addColorStop(1, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},0)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(rt - fp, py, fp, tileSize);
+      }
+    }
+  }
+  ctx.restore();
+}
+
 // Cache parsed Path2D objects for icon rendering. Keyed by icon id.
 const iconPath2DCache = new Map<string, Path2D>();
 function getIconPath2D(iconId: string): Path2D | null {
@@ -847,6 +919,21 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         }
         ctx.restore();
       }
+
+      // Fog edge feathering — soft gradient fringe at fog/clear boundaries.
+      const fogRgb: [number, number, number] = [107, 114, 128];
+      const fogAlpha = isPlayerView ? 1.0 : 0.55;
+      const isCellFogged = (fx: number, fy: number): boolean => {
+        if (fx < 0 || fy < 0 || fx >= meta.width || fy >= meta.height) return false;
+        if (!fog[fy]?.[fx]) return false;
+        if (defogSkip && defogSkip.has(`${fx},${fy}`)) return false;
+        if (dynamicFogEnabled && playerVisible) {
+          if (playerVisible.has(`${fx},${fy}`)) return false;
+          if (lightVisible?.has(`${fx},${fy}`)) return false;
+        }
+        return true;
+      };
+      drawFogFeather(ctx, meta.width, meta.height, tileSize, isCellFogged, fogRgb, fogAlpha);
     }
 
     // FOV overlay. When fovVisible is provided, darken every cell that is
@@ -973,7 +1060,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         const px1 = sx + Math.cos(perp) * hw;
         const py1 = sy + Math.sin(perp) * hw;
         const px2 = sx - Math.cos(perp) * hw;
-        const py2 = sy - Math.sin(perp) * hw;
+        const py = sy - Math.sin(perp) * hw;
         const px3 = ex - Math.cos(perp) * hw;
         const py3 = ey - Math.sin(perp) * hw;
         const px4 = ex + Math.cos(perp) * hw;
@@ -982,7 +1069,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         ctx.moveTo(px1, py1);
         ctx.lineTo(px4, py4);
         ctx.lineTo(px3, py3);
-        ctx.lineTo(px2, py2);
+        ctx.lineTo(px2, py);
         ctx.closePath();
         ctx.fillStyle = MEASURE_FILL;
         ctx.fill();

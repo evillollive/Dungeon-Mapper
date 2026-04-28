@@ -1,6 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash } from './artUtils';
 
 // Alien World theme: a strange, biological landscape — spongy spore beds,
 // fungal walls, glowing acid pools, towering crystal spires, and pulsing
@@ -370,13 +370,32 @@ export const alienTheme: TileTheme = {
       }
 
       case 'water': {
-        // Bubbling acid pool: a few rising bubbles over a green surface.
-        ctx.strokeStyle = '#c8ff60';
-        ctx.lineWidth = 1;
-        const bubbles: [number, number, number][] = [
-          [0.3, 0.65, 0.08], [0.55, 0.45, 0.1], [0.75, 0.7, 0.07], [0.4, 0.3, 0.06],
+        // Acid pool with organic swirls and rising bubbles
+        const wh = tileHash(x, y);
+
+        // Concentric irregular oval swirls
+        const swirls: [string, number, number][] = [
+          ['#60e030', 0.38, 0.26],
+          ['#80ff50', 0.30, 0.20],
+          ['#50c820', 0.22, 0.14],
         ];
-        for (const [bx, by, br] of bubbles) {
+        for (const [color, rx, ry] of swirls) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.ellipse(cx + (wh - 0.5) * s * 0.1, cy + (wh - 0.3) * s * 0.06,
+            s * rx, s * ry, wh * 0.5, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        // Rising bubbles with tileHash-varied positions
+        ctx.strokeStyle = '#c8ff60';
+        ctx.lineWidth = 0.8;
+        const bubbleOffsets = [0.0, 0.37, 0.71, 0.53];
+        for (let i = 0; i < 4; i++) {
+          const bx = 0.2 + ((wh * 97 + i * 43) % 60) / 100;
+          const by = 0.15 + bubbleOffsets[i] * 0.7;
+          const br = 0.03 + (i % 2) * 0.02;
           ctx.beginPath();
           ctx.arc(px + bx * s, py + by * s, s * br, 0, Math.PI * 2);
           ctx.stroke();
@@ -405,59 +424,113 @@ export const alienTheme: TileTheme = {
       }
 
       case 'trap': {
-        // Spore burst: radiating spikes from a central pod.
-        ctx.strokeStyle = '#ffe040';
-        ctx.lineWidth = 1.5;
-        const spikes = 8;
-        for (let i = 0; i < spikes; i++) {
-          const a = (i / spikes) * Math.PI * 2;
+        // Spore burst: central pod with radiating spore lines and danger zone
+        const th = tileHash(x, y);
+
+        // Faint circular danger zone ring
+        ctx.strokeStyle = '#ffe04030';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.42, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // Radiating spore lines ending in dots
+        const sporeCount = 7 + Math.floor(th * 2); // 7 or 8
+        ctx.strokeStyle = '#e8c830';
+        ctx.lineWidth = 1.2;
+        for (let i = 0; i < sporeCount; i++) {
+          const a = (i / sporeCount) * Math.PI * 2 + th * 0.3;
+          const len = s * (0.32 + (((th * 97 + i * 31) % 10) / 100));
           ctx.beginPath();
-          ctx.moveTo(cx + Math.cos(a) * (s * 0.12), cy + Math.sin(a) * (s * 0.12));
-          ctx.lineTo(cx + Math.cos(a) * (s * 0.4), cy + Math.sin(a) * (s * 0.4));
+          ctx.moveTo(cx + Math.cos(a) * s * 0.1, cy + Math.sin(a) * s * 0.1);
+          ctx.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len);
           ctx.stroke();
+          // Dot at end
+          ctx.fillStyle = '#ffe860';
+          ctx.beginPath();
+          ctx.arc(cx + Math.cos(a) * len, cy + Math.sin(a) * len, s * 0.03, 0, Math.PI * 2);
+          ctx.fill();
         }
-        ctx.fillStyle = '#ffe040';
+
+        // Central pod
+        ctx.fillStyle = '#d4a820';
         ctx.beginPath();
         ctx.arc(cx, cy, s * 0.1, 0, Math.PI * 2);
         ctx.fill();
+        ctx.strokeStyle = '#ffe040';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.1, 0, Math.PI * 2);
+        ctx.stroke();
         break;
       }
 
       case 'treasure': {
-        // Crystal cluster: three jutting shards.
-        ctx.fillStyle = '#ff60d0';
-        ctx.strokeStyle = '#ffd0ff';
-        ctx.lineWidth = 0.5;
-        const shards: [number, number, number, number][] = [
-          [cx - s * 0.2, cy + s * 0.25, cx - s * 0.05, cy - s * 0.25],
-          [cx, cy + s * 0.3, cx, cy - s * 0.3],
-          [cx + s * 0.2, cy + s * 0.25, cx + s * 0.08, cy - s * 0.2],
-        ];
-        for (const [bx, by, tx, ty] of shards) {
+        // Crystal cluster: 3-4 elongated crystals radiating from center
+        const crh = tileHash(x, y);
+        const crystalCount = 3 + (crh > 0.5 ? 1 : 0);
+        const baseAngle = crh * Math.PI * 0.5;
+        const colors = ['#ff60d0', '#e040c0', '#ff80e0', '#d050b0'];
+
+        for (let i = 0; i < crystalCount; i++) {
+          const a = baseAngle + (i / crystalCount) * Math.PI * 2;
+          const len = s * (0.3 + ((crh * 53 + i * 17) % 10) / 100);
+          const hw = s * 0.05; // half-width of crystal
+          ctx.fillStyle = colors[i % colors.length];
           ctx.beginPath();
-          ctx.moveTo(bx - 2, by);
-          ctx.lineTo(tx, ty);
-          ctx.lineTo(bx + 2, by);
+          ctx.moveTo(cx + Math.cos(a + Math.PI / 2) * hw, cy + Math.sin(a + Math.PI / 2) * hw);
+          ctx.lineTo(cx + Math.cos(a) * len, cy + Math.sin(a) * len);
+          ctx.lineTo(cx + Math.cos(a - Math.PI / 2) * hw, cy + Math.sin(a - Math.PI / 2) * hw);
           ctx.closePath();
           ctx.fill();
-          ctx.stroke();
+        }
+
+        // Sparkle dots
+        ctx.fillStyle = '#ffd0ff';
+        const sparkles = [[0.3, 0.25], [0.7, 0.35], [0.55, 0.75], [0.25, 0.65]];
+        for (let i = 0; i < 3; i++) {
+          const sp = sparkles[(Math.floor(crh * 97) + i) % sparkles.length];
+          ctx.beginPath();
+          ctx.arc(px + sp[0] * s, py + sp[1] * s, s * 0.02, 0, Math.PI * 2);
+          ctx.fill();
         }
         break;
       }
 
       case 'start': {
-        // Landing site: concentric ring beacon.
+        // Landing beacon: concentric circles with directional indicators
+        // Outer thin circle
         ctx.strokeStyle = '#40ffe0';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.4, 0, Math.PI * 2);
+        ctx.arc(cx, cy, s * 0.42, 0, Math.PI * 2);
         ctx.stroke();
+
+        // Inner thick circle
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.arc(cx, cy, s * 0.25, 0, Math.PI * 2);
         ctx.stroke();
+
+        // Directional triangles at cardinal points
         ctx.fillStyle = '#40ffe0';
+        const dirs: [number, number][] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+        for (const [dx, dy] of dirs) {
+          const tipX = cx + dx * s * 0.42;
+          const tipY = cy + dy * s * 0.42;
+          const perpX = -dy;
+          const perpY = dx;
+          ctx.beginPath();
+          ctx.moveTo(tipX, tipY);
+          ctx.lineTo(tipX - dx * s * 0.08 + perpX * s * 0.04, tipY - dy * s * 0.08 + perpY * s * 0.04);
+          ctx.lineTo(tipX - dx * s * 0.08 - perpX * s * 0.04, tipY - dy * s * 0.08 - perpY * s * 0.04);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // Center dot
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.1, 0, Math.PI * 2);
+        ctx.arc(cx, cy, s * 0.06, 0, Math.PI * 2);
         ctx.fill();
         break;
       }

@@ -364,18 +364,33 @@ export const starshipTheme: TileTheme = {
       }
 
       case 'water': {
+        // Coolant fluid with bubbles and pipe line
+        const bh = tileHash(x, y);
+        const bh2 = tileHash(x + 3, y + 7);
+        const bh3 = tileHash(x + 11, y + 5);
+        const bh4 = tileHash(x + 7, y + 13);
+        // Horizontal pipe line across middle
+        ctx.strokeStyle = '#005580';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(px, cy);
+        ctx.lineTo(px + s, cy);
+        ctx.stroke();
+        // Bubbles
         ctx.strokeStyle = '#00e0ff';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < 3; i++) {
-          const wy = py + 4 + i * (s / 3.5);
-          ctx.beginPath();
-          ctx.moveTo(px + 2, wy);
-          for (let wx = 0; wx < s - 4; wx += 4) {
-            ctx.quadraticCurveTo(px + 2 + wx + 1, wy - 2, px + 2 + wx + 2, wy);
-            ctx.quadraticCurveTo(px + 2 + wx + 3, wy + 2, px + 2 + wx + 4, wy);
-          }
-          ctx.stroke();
-        }
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.arc(px + s * (0.2 + bh * 0.2), py + s * (0.2 + bh2 * 0.2), s * 0.08, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(px + s * (0.55 + bh2 * 0.2), py + s * (0.15 + bh3 * 0.25), s * 0.05, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(px + s * (0.6 + bh3 * 0.2), py + s * (0.6 + bh4 * 0.2), s * 0.07, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(px + s * (0.25 + bh4 * 0.15), py + s * (0.65 + bh * 0.15), s * 0.04, 0, Math.PI * 2);
+        ctx.stroke();
         break;
       }
 
@@ -393,53 +408,133 @@ export const starshipTheme: TileTheme = {
       }
 
       case 'trap': {
+        // Laser grid — diagonal laser lines with glow and node circles
+        // Glow layer (wider semi-transparent strokes)
+        ctx.strokeStyle = '#ff006644';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(px + 3, py + 3);
+        ctx.lineTo(px + s - 3, py + s - 3);
+        ctx.moveTo(px + s - 3, py + 3);
+        ctx.lineTo(px + 3, py + s - 3);
+        ctx.moveTo(px + s * 0.5, py + 3);
+        ctx.lineTo(px + 3, py + s * 0.5);
+        ctx.stroke();
+        // Sharp laser lines
         ctx.strokeStyle = '#ff0066';
-        ctx.lineWidth = 1.5;
+        ctx.lineWidth = 1;
         ctx.beginPath();
         ctx.moveTo(px + 3, py + 3);
         ctx.lineTo(px + s - 3, py + s - 3);
         ctx.moveTo(px + s - 3, py + 3);
         ctx.lineTo(px + 3, py + s - 3);
+        ctx.moveTo(px + s * 0.5, py + 3);
+        ctx.lineTo(px + 3, py + s * 0.5);
         ctx.stroke();
-        ctx.strokeStyle = '#ff006688';
-        ctx.lineWidth = 3;
+        // Node circles at laser origins
+        ctx.fillStyle = '#ff3388';
         ctx.beginPath();
-        ctx.moveTo(px + 3, py + 3);
-        ctx.lineTo(px + s - 3, py + s - 3);
-        ctx.moveTo(px + s - 3, py + 3);
-        ctx.lineTo(px + 3, py + s - 3);
-        ctx.stroke();
+        ctx.arc(px + 3, py + 3, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px + s - 3, py + 3, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px + s - 3, py + s - 3, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px + 3, py + s - 3, 2, 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
 
       case 'treasure': {
+        // Data core — glowing hexagonal core
+        const hr = s * 0.28;
+        // Glow ring (wider semi-transparent stroke)
+        ctx.strokeStyle = '#ff990044';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        for (let i = 0; i < 6; i++) {
+          const angle = (Math.PI / 3) * i - Math.PI / 6;
+          const hx = cx + hr * Math.cos(angle);
+          const hy = cy + hr * Math.sin(angle);
+          if (i === 0) ctx.moveTo(hx, hy);
+          else ctx.lineTo(hx, hy);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        // Hexagon outline
         ctx.strokeStyle = '#ff9900';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.28, 0, Math.PI * 2);
+        for (let i = 0; i < 6; i++) {
+          const angle = (Math.PI / 3) * i - Math.PI / 6;
+          const hx = cx + hr * Math.cos(angle);
+          const hy = cy + hr * Math.sin(angle);
+          if (i === 0) ctx.moveTo(hx, hy);
+          else ctx.lineTo(hx, hy);
+        }
+        ctx.closePath();
         ctx.stroke();
-        ctx.fillStyle = '#ff990044';
-        ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.28, 0, Math.PI * 2);
+        // Fill with semi-transparent orange
+        ctx.fillStyle = '#ff990033';
         ctx.fill();
+        // Center dot
         ctx.fillStyle = '#ff9900';
-        ctx.fillRect(cx - 1, cy - 1, 2, 2);
+        ctx.beginPath();
+        ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
 
       case 'start': {
+        // Airlock hatch — circle with chevron arrows and status lights
+        const ar = s * 0.3;
         ctx.strokeStyle = '#00ffcc';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.35, 0, Math.PI * 2);
+        ctx.arc(cx, cy, ar, 0, Math.PI * 2);
         ctx.stroke();
+        // Chevron arrows pointing inward (4 directions)
         ctx.fillStyle = '#00ffcc';
+        const chevSize = s * 0.08;
+        // Top chevron (pointing down)
         ctx.beginPath();
-        ctx.moveTo(cx - 2, cy - 3);
-        ctx.lineTo(cx + 4, cy);
-        ctx.lineTo(cx - 2, cy + 3);
+        ctx.moveTo(cx - chevSize, cy - ar + chevSize);
+        ctx.lineTo(cx, cy - ar + chevSize * 2.5);
+        ctx.lineTo(cx + chevSize, cy - ar + chevSize);
         ctx.closePath();
         ctx.fill();
+        // Bottom chevron (pointing up)
+        ctx.beginPath();
+        ctx.moveTo(cx - chevSize, cy + ar - chevSize);
+        ctx.lineTo(cx, cy + ar - chevSize * 2.5);
+        ctx.lineTo(cx + chevSize, cy + ar - chevSize);
+        ctx.closePath();
+        ctx.fill();
+        // Left chevron (pointing right)
+        ctx.beginPath();
+        ctx.moveTo(cx - ar + chevSize, cy - chevSize);
+        ctx.lineTo(cx - ar + chevSize * 2.5, cy);
+        ctx.lineTo(cx - ar + chevSize, cy + chevSize);
+        ctx.closePath();
+        ctx.fill();
+        // Right chevron (pointing left)
+        ctx.beginPath();
+        ctx.moveTo(cx + ar - chevSize, cy - chevSize);
+        ctx.lineTo(cx + ar - chevSize * 2.5, cy);
+        ctx.lineTo(cx + ar - chevSize, cy + chevSize);
+        ctx.closePath();
+        ctx.fill();
+        // Status indicator dots at cardinal positions
+        const dotR = 1.5;
+        const dotDist = ar + 4;
+        ctx.fillStyle = '#00ff88';
+        ctx.beginPath(); ctx.arc(cx, cy - dotDist, dotR, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx, cy + dotDist, dotR, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx - dotDist, cy, dotR, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + dotDist, cy, dotR, 0, Math.PI * 2); ctx.fill();
         break;
       }
     }

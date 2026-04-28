@@ -345,7 +345,7 @@ export const castleTheme: TileTheme = {
       }
 
       case 'water': {
-        // Moat ripples in lighter blue.
+        // Castle moat — gentle wave ripples with lily pads
         ctx.strokeStyle = '#7ac8f0';
         ctx.lineWidth = 1;
         for (let wy = 0; wy < 3; wy++) {
@@ -358,6 +358,22 @@ export const castleTheme: TileTheme = {
           }
           ctx.stroke();
         }
+        // Lily pads — dark green ovals positioned by tileHash
+        const lh1 = tileHash(x, y);
+        const lh2 = tileHash(x + 5, y + 3);
+        ctx.fillStyle = '#2a6a2a';
+        ctx.beginPath();
+        ctx.ellipse(
+          px + s * (0.2 + lh1 * 0.3), py + s * (0.25 + lh2 * 0.2),
+          s * 0.08, s * 0.06, lh1 * Math.PI, 0, Math.PI * 2
+        );
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(
+          px + s * (0.55 + lh2 * 0.25), py + s * (0.6 + lh1 * 0.15),
+          s * 0.07, s * 0.05, lh2 * Math.PI, 0, Math.PI * 2
+        );
+        ctx.fill();
         break;
       }
 
@@ -381,18 +397,25 @@ export const castleTheme: TileTheme = {
       }
 
       case 'trap': {
-        // Murder hole — red X with a square outline indicating an opening.
+        // Murder hole — red X with square border and arrow-slit markers
+        ctx.strokeStyle = '#8e1e1e';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(px + 3, py + 3, s - 6, s - 6);
+        // Arrow-slit markers on left and right sides
+        ctx.fillStyle = '#4a0e0e';
+        // Left arrow slit
+        ctx.fillRect(px + 3, cy - 3, 2, 6);
+        // Right arrow slit
+        ctx.fillRect(px + s - 5, cy - 3, 2, 6);
+        // Murder hole X
         ctx.strokeStyle = '#ff4444';
         ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(px + 3, py + 3);
-        ctx.lineTo(px + s - 3, py + s - 3);
-        ctx.moveTo(px + s - 3, py + 3);
-        ctx.lineTo(px + 3, py + s - 3);
+        ctx.moveTo(px + 6, py + 6);
+        ctx.lineTo(px + s - 6, py + s - 6);
+        ctx.moveTo(px + s - 6, py + 6);
+        ctx.lineTo(px + 6, py + s - 6);
         ctx.stroke();
-        ctx.strokeStyle = '#8e1e1e';
-        ctx.lineWidth = 1;
-        ctx.strokeRect(px + 3, py + 3, s - 6, s - 6);
         break;
       }
 

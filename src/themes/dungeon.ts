@@ -347,18 +347,27 @@ export const dungeonTheme: TileTheme = {
       }
 
       case 'water': {
-        ctx.strokeStyle = '#4ab4e8';
-        ctx.lineWidth = 1;
-        for (let wy = 0; wy < 3; wy++) {
-          const waveY = py + 4 + wy * (s / 3.5);
+        // Underground pool — concentric oval ripples with torchlight reflections
+        const wh = tileHash(x, y);
+        const wh2 = tileHash(x + 3, y + 7);
+        const offX = (wh - 0.5) * s * 0.15;
+        const offY = (wh2 - 0.5) * s * 0.15;
+        ctx.strokeStyle = '#3a7a9a';
+        ctx.lineWidth = 0.7;
+        for (let ri = 1; ri <= 3; ri++) {
           ctx.beginPath();
-          ctx.moveTo(px + 2, waveY);
-          for (let wx = 0; wx < s - 4; wx += 4) {
-            ctx.quadraticCurveTo(px + 2 + wx + 1, waveY - 2, px + 2 + wx + 2, waveY);
-            ctx.quadraticCurveTo(px + 2 + wx + 3, waveY + 2, px + 2 + wx + 4, waveY);
-          }
+          ctx.ellipse(cx + offX, cy + offY, s * 0.12 * ri, s * 0.08 * ri, 0, 0, Math.PI * 2);
           ctx.stroke();
         }
+        // Torchlight highlight dots
+        ctx.fillStyle = '#8ac8e8';
+        const dotH = tileHash(x + 5, y + 11);
+        ctx.beginPath();
+        ctx.arc(cx + offX + s * 0.06, cy + offY - s * 0.04, 1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(cx + offX - s * 0.1, cy + offY + s * (0.02 + dotH * 0.06), 0.8, 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
 
@@ -376,51 +385,124 @@ export const dungeonTheme: TileTheme = {
       }
 
       case 'trap': {
-        ctx.strokeStyle = '#ff4444';
-        ctx.lineWidth = 2;
+        // Pressure plate trap — recessed plate with seam and spike hints
+        const plateInset = s * 0.15;
+        ctx.fillStyle = '#6a1010';
+        ctx.fillRect(px + plateInset, py + plateInset, s - plateInset * 2, s - plateInset * 2);
+        // Seam/crack line around edge
+        ctx.strokeStyle = '#4a0a0a';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(px + plateInset, py + plateInset, s - plateInset * 2, s - plateInset * 2);
+        // Inner recessed shadow
+        ctx.strokeStyle = '#aa3333';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(px + plateInset + 2, py + plateInset + 2, s - plateInset * 2 - 4, s - plateInset * 2 - 4);
+        // Triangular spike hints at corners
+        ctx.fillStyle = '#cc4444';
+        const sp = plateInset + 1;
+        // Top-left spike
         ctx.beginPath();
-        ctx.moveTo(px + 3, py + 3);
-        ctx.lineTo(px + s - 3, py + s - 3);
-        ctx.moveTo(px + s - 3, py + 3);
-        ctx.lineTo(px + 3, py + s - 3);
-        ctx.stroke();
+        ctx.moveTo(px + sp, py + sp);
+        ctx.lineTo(px + sp + 3, py + sp);
+        ctx.lineTo(px + sp, py + sp + 3);
+        ctx.closePath();
+        ctx.fill();
+        // Bottom-right spike
+        ctx.beginPath();
+        ctx.moveTo(px + s - sp, py + s - sp);
+        ctx.lineTo(px + s - sp - 3, py + s - sp);
+        ctx.lineTo(px + s - sp, py + s - sp - 3);
+        ctx.closePath();
+        ctx.fill();
+        // Top-right spike
+        ctx.beginPath();
+        ctx.moveTo(px + s - sp, py + sp);
+        ctx.lineTo(px + s - sp - 3, py + sp);
+        ctx.lineTo(px + s - sp, py + sp + 3);
+        ctx.closePath();
+        ctx.fill();
         break;
       }
 
       case 'treasure': {
+        // Gold chest with lock and spilling coins
         const tw = s * 0.5;
         const th = s * 0.35;
         const tx = cx - tw / 2;
         const ty = cy - th / 2;
-        ctx.fillStyle = '#8b6914';
+        // Chest body (dark brown)
+        ctx.fillStyle = '#5a3a10';
         ctx.fillRect(tx, ty + th * 0.4, tw, th * 0.6);
+        // Gold trim lid
         ctx.fillStyle = '#d4af37';
-        ctx.fillRect(tx, ty, tw, th * 0.5);
-        ctx.beginPath();
-        ctx.arc(cx, ty + th * 0.25, tw * 0.15, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#fff8dc';
+        ctx.fillRect(tx, ty, tw, th * 0.45);
+        // Lid outline
+        ctx.strokeStyle = '#8b6914';
         ctx.lineWidth = 0.5;
+        ctx.strokeRect(tx, ty, tw, th * 0.45);
         ctx.strokeRect(tx, ty + th * 0.4, tw, th * 0.6);
-        ctx.strokeRect(tx, ty, tw, th * 0.5);
+        // Circular lock on front
+        ctx.fillStyle = '#888';
+        ctx.beginPath();
+        ctx.arc(cx, ty + th * 0.55, tw * 0.1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#333';
+        ctx.beginPath();
+        ctx.arc(cx, ty + th * 0.55, tw * 0.05, 0, Math.PI * 2);
+        ctx.fill();
+        // Spilling gold coins on the right side
+        ctx.fillStyle = '#ffd700';
+        ctx.beginPath();
+        ctx.arc(tx + tw + 2, ty + th * 0.7, s * 0.06, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#e6c200';
+        ctx.beginPath();
+        ctx.arc(tx + tw + 1, ty + th * 0.4, s * 0.05, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#ccaa00';
+        ctx.beginPath();
+        ctx.arc(tx + tw + 3, ty + th * 0.9, s * 0.04, 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
 
       case 'start': {
-        ctx.fillStyle = '#50fa7b';
+        // Stone archway entrance with mossy green tint
+        const pillarW = s * 0.15;
+        const archTop = py + s * 0.25;
+        // Left stone pillar
+        ctx.fillStyle = '#4a6a4a';
+        ctx.fillRect(px + 3, archTop + s * 0.15, pillarW, s * 0.55);
+        // Right stone pillar
+        ctx.fillRect(px + s - 3 - pillarW, archTop + s * 0.15, pillarW, s * 0.55);
+        // Curved arch at top (mossy green stones)
+        ctx.strokeStyle = '#5a7a5a';
+        ctx.lineWidth = pillarW * 0.8;
         ctx.beginPath();
-        ctx.moveTo(cx, py + 3);
-        ctx.lineTo(cx + 4, cy);
-        ctx.lineTo(cx + 2, cy);
-        ctx.lineTo(cx + 2, py + s - 3);
-        ctx.lineTo(cx - 2, py + s - 3);
-        ctx.lineTo(cx - 2, cy);
-        ctx.lineTo(cx - 4, cy);
+        ctx.arc(cx, archTop + s * 0.15, s * 0.5 - 3 - pillarW / 2, Math.PI, 0);
+        ctx.stroke();
+        // Pillar stone line details
+        ctx.strokeStyle = '#3a5a3a';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px + 3, archTop + s * 0.35);
+        ctx.lineTo(px + 3 + pillarW, archTop + s * 0.35);
+        ctx.moveTo(px + 3, archTop + s * 0.5);
+        ctx.lineTo(px + 3 + pillarW, archTop + s * 0.5);
+        ctx.moveTo(px + s - 3 - pillarW, archTop + s * 0.35);
+        ctx.lineTo(px + s - 3, archTop + s * 0.35);
+        ctx.moveTo(px + s - 3 - pillarW, archTop + s * 0.5);
+        ctx.lineTo(px + s - 3, archTop + s * 0.5);
+        ctx.stroke();
+        // Downward entry arrow below arch
+        ctx.fillStyle = '#b0e0b0';
+        ctx.beginPath();
+        ctx.moveTo(cx, py + s - 3);
+        ctx.lineTo(cx - 3, py + s - 7);
+        ctx.lineTo(cx + 3, py + s - 7);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = '#2e8b57';
-        ctx.lineWidth = 0.5;
-        ctx.stroke();
+        ctx.fillRect(cx - 1, py + s - 10, 2, 4);
         break;
       }
     }

@@ -22,6 +22,58 @@ const FOG_GM_FILL = 'rgba(107, 114, 128, 0.55)';
 const EXPLORED_PLAYER_FILL = 'rgba(107, 114, 128, 0.55)';
 const EXPLORED_GM_FILL = 'rgba(107, 114, 128, 0.35)';
 
+/** Fog edge feathering for export renderer (mirrors MapCanvas.tsx version). */
+function drawFogFeather(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  tileSize: number,
+  isFogged: (x: number, y: number) => boolean,
+  fogRgb: [number, number, number],
+  fogAlpha: number,
+): void {
+  const fp = Math.max(1, Math.round(tileSize * 0.08));
+  ctx.save();
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (isFogged(x, y)) continue;
+      const px = x * tileSize;
+      const py = y * tileSize;
+      if (y > 0 && isFogged(x, y - 1)) {
+        const g = ctx.createLinearGradient(0, py, 0, py + fp);
+        g.addColorStop(0, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},${fogAlpha})`);
+        g.addColorStop(1, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},0)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(px, py, tileSize, fp);
+      }
+      if (y < height - 1 && isFogged(x, y + 1)) {
+        const bot = py + tileSize;
+        const g = ctx.createLinearGradient(0, bot, 0, bot - fp);
+        g.addColorStop(0, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},${fogAlpha})`);
+        g.addColorStop(1, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},0)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(px, bot - fp, tileSize, fp);
+      }
+      if (x > 0 && isFogged(x - 1, y)) {
+        const g = ctx.createLinearGradient(px, 0, px + fp, 0);
+        g.addColorStop(0, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},${fogAlpha})`);
+        g.addColorStop(1, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},0)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(px, py, fp, tileSize);
+      }
+      if (x < width - 1 && isFogged(x + 1, y)) {
+        const rt = px + tileSize;
+        const g = ctx.createLinearGradient(rt, 0, rt - fp, 0);
+        g.addColorStop(0, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},${fogAlpha})`);
+        g.addColorStop(1, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},0)`);
+        ctx.fillStyle = g;
+        ctx.fillRect(rt - fp, py, fp, tileSize);
+      }
+    }
+  }
+  ctx.restore();
+}
+
 export interface RenderMapOptions {
   /** Pixels per tile cell. At 300 DPI with 1 inch = 1 cell this is 300. */
   tileSize: number;
@@ -188,6 +240,15 @@ export function renderMapToCanvas(
       }
       ctx.restore();
     }
+
+    // Fog edge feathering for exported images.
+    const fogRgb: [number, number, number] = [107, 114, 128];
+    const fogAlpha = isPlayerView ? 1.0 : 0.55;
+    const isCellFogged = (fx: number, fy: number): boolean => {
+      if (fx < 0 || fy < 0 || fx >= width || fy >= height) return false;
+      return !!fog[fy]?.[fx];
+    };
+    drawFogFeather(ctx, width, height, tileSize, isCellFogged, fogRgb, fogAlpha);
   }
 
   // Scale bar — bottom-right corner

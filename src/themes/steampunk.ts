@@ -1,6 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash } from './artUtils';
 
 export const steampunkTheme: TileTheme = {
   id: 'steampunk',
@@ -352,18 +352,47 @@ export const steampunkTheme: TileTheme = {
       }
 
       case 'water': {
-        ctx.strokeStyle = '#40c8a0';
-        ctx.lineWidth = 1.5;
+        // Steam pipe with vapor
+        const vh = tileHash(x, y);
+        const valveX = px + s * 0.3 + vh * s * 0.3;
+        // Pipe body — two parallel horizontal lines
+        ctx.strokeStyle = '#706050';
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(px + 2, cy);
-        ctx.lineTo(px + s - 2, cy);
+        ctx.moveTo(px + 2, cy - s * 0.06);
+        ctx.lineTo(px + s - 2, cy - s * 0.06);
+        ctx.moveTo(px + 2, cy + s * 0.06);
+        ctx.lineTo(px + s - 2, cy + s * 0.06);
         ctx.stroke();
+        // Pipe fill
+        ctx.fillStyle = '#4a3a2a';
+        ctx.fillRect(px + 2, cy - s * 0.06, s - 4, s * 0.12);
+        // Valve wheel
+        ctx.strokeStyle = '#b87333';
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(px + 4, cy, 2, 0, Math.PI * 2);
+        ctx.arc(valveX, cy, s * 0.08, 0, Math.PI * 2);
         ctx.stroke();
+        // Valve cross
         ctx.beginPath();
-        ctx.arc(px + s - 4, cy, 2, 0, Math.PI * 2);
+        ctx.moveTo(valveX - s * 0.06, cy);
+        ctx.lineTo(valveX + s * 0.06, cy);
+        ctx.moveTo(valveX, cy - s * 0.06);
+        ctx.lineTo(valveX, cy + s * 0.06);
         ctx.stroke();
+        // Steam puffs above pipe
+        ctx.fillStyle = 'rgba(200, 200, 200, 0.5)';
+        const ph1 = tileHash(x + 3, y + 5);
+        const ph2 = tileHash(x + 7, y + 11);
+        ctx.beginPath();
+        ctx.arc(px + s * 0.25 + ph1 * s * 0.15, cy - s * 0.2, s * 0.06, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px + s * 0.55 + ph2 * s * 0.1, cy - s * 0.25, s * 0.05, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px + s * 0.7, cy - s * 0.18, s * 0.04, 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
 
@@ -382,40 +411,137 @@ export const steampunkTheme: TileTheme = {
       }
 
       case 'trap': {
-        ctx.strokeStyle = '#cc4400';
-        ctx.lineWidth = 1.5;
+        // Gear pressure plate — square plate with gear in center
+        ctx.strokeStyle = '#b87333';
+        ctx.lineWidth = 1;
         ctx.strokeRect(px + 3, py + 3, s - 6, s - 6);
+        // Gear circle
+        const gearR = s * 0.18;
+        ctx.fillStyle = '#8a5a20';
         ctx.beginPath();
-        ctx.arc(cx, cy, 2, 0, Math.PI * 2);
+        ctx.arc(cx, cy, gearR, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#cc8833';
+        ctx.lineWidth = 0.75;
         ctx.stroke();
+        // Gear teeth — 6 small rectangles around the edge
+        ctx.fillStyle = '#cc8833';
+        for (let i = 0; i < 6; i++) {
+          const angle = (i * Math.PI) / 3;
+          const tx = cx + Math.cos(angle) * gearR;
+          const ty = cy + Math.sin(angle) * gearR;
+          ctx.save();
+          ctx.translate(tx, ty);
+          ctx.rotate(angle);
+          ctx.fillRect(-s * 0.03, -s * 0.04, s * 0.06, s * 0.08);
+          ctx.restore();
+        }
+        // Inner hub dot
+        ctx.fillStyle = '#4a3010';
+        ctx.beginPath();
+        ctx.arc(cx, cy, s * 0.05, 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
 
       case 'treasure': {
-        ctx.strokeStyle = '#d4af37';
+        // Clockwork contraption — interlocking gears
+        const drawGear = (gx: number, gy: number, gr: number, teeth: number) => {
+          ctx.fillStyle = '#c8a020';
+          ctx.beginPath();
+          ctx.arc(gx, gy, gr, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#8a6a10';
+          ctx.lineWidth = 0.75;
+          ctx.stroke();
+          ctx.fillStyle = '#d4af37';
+          for (let i = 0; i < teeth; i++) {
+            const angle = (i * Math.PI * 2) / teeth;
+            const tx = gx + Math.cos(angle) * gr;
+            const ty = gy + Math.sin(angle) * gr;
+            ctx.save();
+            ctx.translate(tx, ty);
+            ctx.rotate(angle);
+            ctx.fillRect(-s * 0.02, -s * 0.03, s * 0.04, s * 0.06);
+            ctx.restore();
+          }
+          ctx.fillStyle = '#6a4a10';
+          ctx.beginPath();
+          ctx.arc(gx, gy, gr * 0.3, 0, Math.PI * 2);
+          ctx.fill();
+        };
+        // Three interlocking gears of different sizes
+        drawGear(cx - s * 0.14, cy - s * 0.08, s * 0.14, 6);
+        drawGear(cx + s * 0.16, cy - s * 0.04, s * 0.1, 5);
+        drawGear(cx + s * 0.02, cy + s * 0.16, s * 0.08, 4);
+        // Connecting rods
+        ctx.strokeStyle = '#b87333';
         ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.28, 0, Math.PI * 2);
+        ctx.moveTo(cx - s * 0.14, cy - s * 0.08);
+        ctx.lineTo(cx + s * 0.16, cy - s * 0.04);
         ctx.stroke();
-        for (let i = 0; i < 4; i++) {
-          const angle = (i * Math.PI) / 2;
-          ctx.beginPath();
-          ctx.moveTo(cx + Math.cos(angle) * s * 0.15, cy + Math.sin(angle) * s * 0.15);
-          ctx.lineTo(cx + Math.cos(angle) * s * 0.28, cy + Math.sin(angle) * s * 0.28);
-          ctx.stroke();
-        }
+        ctx.beginPath();
+        ctx.moveTo(cx + s * 0.16, cy - s * 0.04);
+        ctx.lineTo(cx + s * 0.02, cy + s * 0.16);
+        ctx.stroke();
         break;
       }
 
       case 'start': {
-        ctx.strokeStyle = '#70b050';
-        ctx.lineWidth = 1.5;
+        // Steam engine boiler
+        const boilerW = s * 0.6;
+        const boilerH = s * 0.4;
+        const boilerX = cx - boilerW / 2;
+        const boilerY = cy - boilerH / 2 + s * 0.06;
+        const boilerR = s * 0.06;
+        // Boiler body (rounded rectangle)
+        ctx.fillStyle = '#3a3030';
         ctx.beginPath();
-        ctx.arc(cx, cy, s * 0.3, 0, Math.PI * 2);
+        ctx.moveTo(boilerX + boilerR, boilerY);
+        ctx.lineTo(boilerX + boilerW - boilerR, boilerY);
+        ctx.arc(boilerX + boilerW - boilerR, boilerY + boilerR, boilerR, -Math.PI / 2, 0);
+        ctx.lineTo(boilerX + boilerW, boilerY + boilerH - boilerR);
+        ctx.arc(boilerX + boilerW - boilerR, boilerY + boilerH - boilerR, boilerR, 0, Math.PI / 2);
+        ctx.lineTo(boilerX + boilerR, boilerY + boilerH);
+        ctx.arc(boilerX + boilerR, boilerY + boilerH - boilerR, boilerR, Math.PI / 2, Math.PI);
+        ctx.lineTo(boilerX, boilerY + boilerR);
+        ctx.arc(boilerX + boilerR, boilerY + boilerR, boilerR, Math.PI, Math.PI * 1.5);
+        ctx.fill();
+        ctx.strokeStyle = '#706050';
+        ctx.lineWidth = 0.75;
         ctx.stroke();
-        ctx.fillStyle = '#70b050';
-        ctx.fillRect(cx - 1, cy - s * 0.2, 2, s * 0.4);
-        ctx.fillRect(cx - s * 0.2, cy - 1, s * 0.4, 2);
+        // Chimney/smokestack
+        const chimX = cx + s * 0.08;
+        const chimW = s * 0.1;
+        const chimH = s * 0.2;
+        ctx.fillStyle = '#2a2020';
+        ctx.fillRect(chimX - chimW / 2, boilerY - chimH, chimW, chimH);
+        ctx.strokeStyle = '#706050';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(chimX - chimW / 2, boilerY - chimH, chimW, chimH);
+        // Smoke puffs
+        ctx.fillStyle = 'rgba(180, 180, 180, 0.5)';
+        ctx.beginPath();
+        ctx.arc(chimX, boilerY - chimH - s * 0.05, s * 0.04, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(chimX + s * 0.04, boilerY - chimH - s * 0.1, s * 0.03, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(chimX - s * 0.03, boilerY - chimH - s * 0.14, s * 0.025, 0, Math.PI * 2);
+        ctx.fill();
+        // Pressure gauge on front
+        ctx.strokeStyle = '#b87333';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(cx - s * 0.1, cy + s * 0.06, s * 0.06, 0, Math.PI * 2);
+        ctx.stroke();
+        // Gauge needle
+        ctx.beginPath();
+        ctx.moveTo(cx - s * 0.1, cy + s * 0.06);
+        ctx.lineTo(cx - s * 0.1 + s * 0.04, cy + s * 0.03);
+        ctx.stroke();
         break;
       }
     }
