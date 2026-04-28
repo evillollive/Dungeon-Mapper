@@ -12,11 +12,11 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **13 preset theme modes** — Castle, Dungeon, Starship, Alien World, Lost Civilization, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City, Pirate, Desert (see [Preset Modes](#preset-modes) below)
 - **Graph-paper canvas** — light parchment background with cyan grid lines, evoking traditional engineering / quad-ruled graph paper
 - **Print mode** — toggle a high-contrast black-and-white renderer for printer-friendly output
-- **GM drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`
+- **GM drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`, Line-of-Sight / FOV `O`
 - **Copy / Paste / Cut** — select a region with the Select tool, then `Ctrl+C` to copy, `Ctrl+X` to cut, `Ctrl+V` to paste tiles and notes at the selection origin with a live preview overlay
-- **Procedural map generation** — toolbar **🎲 Generate** opens a dialog with three algorithms (Rooms & Corridors, Open Terrain, Cavern), a deterministic seed, a density slider, per-generator tile-mix sliders, optional theme room labels, and an opt-in **Generate into selection** mode that stamps a generated map into an active selection rectangle without disturbing the rest of the map (see [Map Generation](#map-generation) below)
+- **Procedural map generation** — toolbar **🎲 Generate** opens a dialog with four algorithms (Rooms & Corridors, Open Terrain, Cavern, Village), a deterministic seed, a density slider, per-generator tile-mix sliders, corridor strategy and shape controls, optional theme room labels with procedural names, and an opt-in **Generate into selection** mode that stamps a generated map into an active selection rectangle without disturbing the rest of the map (see [Map Generation](#map-generation) below)
 - **Player view** — header **🛡 GM View / 👁 Player View** toggle swaps to a player-safe toolbar with a freehand drawing pen, an eraser, fog-of-war controls, and token tools (see [Player View](#player-view) below)
-- **Fog of war** — per-cell hidden / revealed flags with a Defog brush, Reveal `V` / Hide `H` drag-rectangles, Reset Fog (re-cover the map), Clear Fog (reveal everything), and an optional GM **🌫 Show Fog** preview overlay
+- **Fog of war** — per-cell hidden / revealed flags with a Defog brush, Reveal `V` / Hide `H` drag-rectangles, Reset Fog (re-cover the map), Clear Fog (reveal everything), an optional GM **🌫 Show Fog** preview overlay, and **Dynamic Fog** mode that auto-reveals cells visible from player tokens with 3-state rendering (hidden / explored / visible)
 - **Tokens with icon library** — drop Player, NPC, and Monster tokens (small 1×1, medium 2×2, large 3×3) onto the map with a searchable icon picker (30+ icons in 6 categories); Move Token to drag, Remove Token to delete
 - **Initiative panel** — a turn-order list in the right-hand sidebar that mirrors placed tokens; the GM can drag entries to reorder, rename them inline, or clear the list (see [Initiative](#initiative) below)
 - **Shape / area markers** — place colored shape overlays (circle, square, diamond) on the map for marking spell areas, hazard zones, and tactical effects; 8 color options with adjustable radius (see [Markers](#markers) below)
@@ -26,7 +26,8 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **Undo / Redo** — up to 50 steps (`Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z`)
 - **Room notes** — numbered annotations placed on the map with labels and descriptions; in Player View, notes that sit under fog are hidden from the side panel
 - **Auto-save** — map state persisted to IndexedDB on every change (migrates legacy localStorage data automatically)
-- **Export / Import** — JSON round-trip, PNG canvas export, and SVG vector export
+- **Line-of-Sight / FOV** — click any cell to visualize which cells are visible from that point, with walls blocking the view; click the same cell again to clear (`O` shortcut)
+- **Export / Import** — JSON round-trip, PNG canvas export, SVG vector export, and a print-optimized high-DPI PNG export dialog with page tiling
 - **Adjustable UI scale** — header **UI** dropdown rescales chrome text and controls (50%, 75%, 100%, 125%, 150%) and remembers your choice across sessions
 - **Preserve-tiles toggle** — when enabled (toolbar **🎨 Preserve**), switching themes keeps already-painted tiles in their original style so you can mix terrain styles from multiple themes on a single map
 - **Light parchment aesthetic** — warm off-white background, deep brick-red accents, and pixel-sharp canvas rendering for a graph-paper feel
@@ -41,19 +42,19 @@ Each theme keeps the same underlying tile types but renames them and re-renders 
 
 | Theme | Setting | Tile flavor (Floor / Wall / Door / Secret Door / Locked Door / Trapped Door / Portcullis / Archway / Barricade / Water / Pillar / Trap / Treasure / Start) |
 | --- | --- | --- |
-| **Alien World** | Otherworldly biological landscape | Spore Bed / Fungal Wall / Membrane / Hidden Burrow / Sealed Membrane / Enzyme Gate / Spore Valve / Pore / Thorn Barrier / Acid Pool / Crystal Spire / Spore Burst / Crystal Cluster / Landing Site |
-| **Castle** | Aboveground stone keep | Stone Tile / Battlement / Oak Door / Hidden Passage / Iron-Bound Door / Rigged Portcullis / Portcullis / Archway / Barricade / Moat / Column / Murder Hole / Royal Hoard / Great Hall |
-| **Cyberpunk** | Neon-lit street grids | Street / Barrier / Shutter / Cloaked Panel / Biometric Lock / Shock Door / Blast Shutter / Open Arch / Barricade / Acid Pool / Terminal / Turret / Chip Cache / Spawn |
-| **Desert** | Sun-baked sands and tombs | Sand / Sandstone / Tomb Door / Hidden Chamber / Sealed Tomb / Cursed Door / Stone Gate / Arch / Rubble Wall / Oasis / Cactus / Quicksand / Relic / Caravan |
-| **Dungeon** *(default)* | Subterranean crawl | Flagstone / Stone Wall / Iron Door / Secret Door / Locked Door / Trapped Door / Portcullis / Archway / Barricade / Underground Pool / Pillar / Trap / Treasure / Entrance |
-| **Lost Civilization** | Ancient temple complex | Flagstone / Carved Wall / Stone Slab / Hidden Glyph / Warded Seal / Glyph Trap Door / Rune Gate / Stone Arch / Rubble Wall / Reflecting Pool / Pillar / Cursed Glyph / Sarcophagus / Obelisk |
-| **Modern City** | Contemporary urban streets | Sidewalk / Building / Doorway / Hidden Door / Locked Entry / Alarmed Door / Security Gate / Open Entry / Barricade / Fountain / Lamp Post / Manhole / ATM / Bus Stop |
-| **Old West** | Frontier towns and saloons | Dirt / Plank Wall / Saloon Door / Hidden Passage / Locked Door / Trapped Door / Jailhouse Gate / Archway / Wagon Barricade / Water Trough / Post / Bear Trap / Gold / Entrance |
-| **Pirate** | Tall ships and hidden coves | Deck / Hull / Hatch / Smuggler Hatch / Chained Hatch / Rigged Hatch / Cargo Gate / Open Hatch / Barrel Barricade / Bilge / Mast / Cannon / Booty / Anchor |
-| **Post-Apocalypse** | Ruined wastelands | Rubble / Ruins / Barricade / Hidden Stash / Chained Door / Rigged Door / Scrap Gate / Broken Arch / Junk Wall / Toxic Pool / Rubble Pile / Landmine / Supplies / Shelter |
-| **Starship** | Deep-space vessel interiors | Deck / Bulkhead / Blast Door / Hidden Hatch / Mag-Locked Door / Booby-Trapped Hatch / Blast Shutter / Open Corridor / Debris Wall / Coolant / Support / Laser Grid / Data Core / Airlock |
-| **Steampunk** | Industrial gear-and-steam works | Iron Plate / Gear Wall / Valve Door / Concealed Hatch / Padlocked Gate / Pressure-Rigged Door / Steam Gate / Open Passage / Pipe Barricade / Steam Pipe / Piston / Pressure Plate / Contraption / Engine |
-| **Wilderness** | Outdoor overland maps | Grass / Trees / Gate / Hidden Path / Locked Gate / Snare Gate / Palisade Gate / Trellis / Brush Barricade / River / Boulder / Snare / Cache / Camp |
+| **Alien World** | Otherworldly biological landscape | Spore Bed / Fungal Wall / Membrane / Hidden Burrow / Locked Membrane / Trapped Membrane / Chitin Gate / Nerve Arch / Growth Barricade / Acid Pool / Crystal Spire / Spore Burst / Crystal Cluster / Landing Site |
+| **Castle** | Aboveground stone keep | Stone Tile / Battlement / Oak Door / Hidden Passage / Locked Oak Door / Trapped Oak Door / Castle Portcullis / Stone Archway / Wooden Barricade / Moat / Column / Murder Hole / Royal Hoard / Great Hall |
+| **Cyberpunk** | Neon-lit street grids | Street / Barrier / Shutter / Cloaked Panel / Locked Shutter / Trapped Shutter / Security Gate / Neon Arch / Debris Barrier / Acid Pool / Terminal / Turret / Chip Cache / Spawn |
+| **Desert** | Sun-baked sands and tombs | Sand / Sandstone / Tomb Door / Hidden Chamber / Locked Tomb Door / Trapped Tomb Door / Sand Gate / Desert Arch / Sand Barricade / Oasis / Cactus / Quicksand / Relic / Caravan |
+| **Dungeon** *(default)* | Subterranean crawl | Flagstone / Stone Wall / Iron Door / Secret Door / Locked Iron Door / Trapped Iron Door / Iron Portcullis / Stone Archway / Wooden Barricade / Underground Pool / Pillar / Trap / Treasure / Entrance |
+| **Lost Civilization** | Ancient temple complex | Flagstone / Carved Wall / Stone Slab / Hidden Glyph / Locked Carved Door / Trapped Carved Door / Stone Portcullis / Temple Arch / Stone Barricade / Reflecting Pool / Pillar / Cursed Glyph / Sarcophagus / Obelisk |
+| **Modern City** | Contemporary urban streets | Sidewalk / Building / Doorway / Hidden Door / Locked Doorway / Trapped Doorway / Security Gate / Open Entry / Road Barrier / Fountain / Lamp Post / Manhole / ATM / Bus Stop |
+| **Old West** | Frontier towns and saloons | Dirt / Plank Wall / Saloon Door / Hidden Passage / Locked Plank Door / Trapped Plank Door / Jail Gate / Open Doorway / Wooden Barricade / Water Trough / Post / Bear Trap / Gold / Entrance |
+| **Pirate** | Tall ships and hidden coves | Deck / Hull / Hatch / Smuggler Hatch / Locked Hatch / Trapped Hatch / Chain Gate / Open Port / Cargo Barricade / Bilge / Mast / Cannon / Booty / Anchor |
+| **Post-Apocalypse** | Ruined wastelands | Rubble / Ruins / Barricade / Hidden Stash / Locked Barricade / Trapped Barricade / Chain Gate / Ruined Arch / Scrap Barricade / Toxic Pool / Rubble Pile / Landmine / Supplies / Shelter |
+| **Starship** | Deep-space vessel interiors | Deck / Bulkhead / Blast Door / Hidden Hatch / Locked Blast Door / Trapped Blast Door / Blast Shield / Open Bulkhead / Emergency Barrier / Coolant / Support / Laser Grid / Data Core / Airlock |
+| **Steampunk** | Industrial gear-and-steam works | Iron Plate / Gear Wall / Valve Door / Concealed Hatch / Locked Valve Door / Trapped Valve Door / Steam Gate / Pipe Archway / Gear Barricade / Steam Pipe / Piston / Pressure Plate / Contraption / Engine |
+| **Wilderness** | Outdoor overland maps | Grass / Trees / Gate / Hidden Path / Locked Gate / Trapped Gate / Fence Gate / Natural Arch / Log Barricade / River / Boulder / Snare / Cache / Camp |
 
 ### Print mode
 
@@ -76,6 +77,8 @@ New maps start with fog enabled and every cell hidden so the Player View is safe
 - **Reveal `V`** / **Hide `H`** — drag a rectangle of cells to expose or re-cover them.
 - **Reset Fog** — re-fog the entire map (hide every cell).
 - **Clear Fog** — reveal the entire map (clear all fog).
+- **Dynamic** — toggle auto-reveal mode. When enabled, cells visible from any player token are automatically revealed using line-of-sight. The fog uses 3-state rendering: **hidden** (opaque, never seen), **explored** (dimmed, previously visible but no longer in line-of-sight), and **visible** (clear, currently in line-of-sight of a player token). The explored grid persists with the map.
+- **Reset Explored** — (appears when Dynamic is enabled) clears all explored memory so previously seen cells return to fully fogged.
 
 In Player View, fogged cells are covered by an opaque overlay and any room notes that sit under fog are omitted from the side panel so they don't leak hidden rooms. In GM View, the toolbar's **🌫 Show Fog** checkbox layers a translucent grey wash over the same cells so the GM can preview what's hidden from players without losing their own view of the map.
 
@@ -93,7 +96,7 @@ The Player toolbar exposes a freehand drawing tool for live table annotations:
 Drop tokens onto cells to track participants and threats:
 
 - **Player**, **NPC**, and **Monster** tokens. Monster tokens come in three footprints — Monster S (1×1), Monster M (2×2), and Monster L (3×3) — for varying creature sizes.
-- **Icon picker** — when placing a token, a searchable icon picker dialog opens with 30+ icons across 6 categories (Combat, Exploration, Characters, Creatures, Items, Magic). Choose an icon to display on the token, or cancel to use the default letter/emoji fallback.
+- **Icon picker** — when placing a token, a searchable icon picker dialog opens with 30+ icons across 6 categories (Characters, Weapons, Magic, Creatures, Items, Environment). Choose an icon to display on the token, or cancel to use the default letter/emoji fallback.
 - **Move Token** — click and drag a token to relocate it.
 - **Remove** — click a token to delete it.
 
@@ -158,17 +161,27 @@ The **Algorithm** dropdown selects the generator. Opening the dialog pre-selects
 
 | Algorithm | What it produces | Default for themes |
 | --- | --- | --- |
-| **Rooms & Corridors** | Rectangular rooms connected by L-shaped corridors. Best for dungeons, castles, ships, and other built spaces. | Dungeon, Castle, Starship, Alien World, Steampunk, Cyberpunk, Modern City, Pirate, Old West, Lost Civilization |
+| **Rooms & Corridors** | Rectangular rooms connected by corridors with configurable routing strategy. Best for dungeons, castles, ships, and other built spaces. | Dungeon, Castle, Starship, Alien World, Steampunk, Cyberpunk, Modern City, Pirate, Old West, Lost Civilization |
 | **Open Terrain** | Open ground scattered with obstacles, water, and standing stones. Best for outdoor / overland maps. | Wilderness, Desert, Post-Apocalypse |
 | **Cavern** | Organic cave system carved out via cellular-automata smoothing, guaranteed to be a single connected region. | (No theme defaults to this — pick it manually for any theme.) |
+| **Village** | A settlement with buildings, streets, and optional walls. Uses BSP partitioning for organic district layout. | (No theme defaults to this — pick it manually for any theme.) |
 
 ### Dialog controls
 
 - **Width / Height** — target map size in tiles. Clamped to 8–128 (the same range as the header **SIZE** dropdowns).
 - **Generate into selection** — visible only when an active selection rectangle is present in the editor (use the Select tool `S` to make one) and is at least 6 × 6 tiles. When checked, Width / Height are taken from the selection and only cells inside the selection are overwritten — notes, tokens, fog, and tiles outside the selection are preserved. When unchecked (or no selection exists), generating replaces the entire map and clears notes and tokens.
 - **Density** — global "how full should the map feel" multiplier (range: 0.1–1.5, default 1.0). Higher values pack in more rooms / obstacles / features; lower values produce sparser layouts.
+- **Corridor style** *(Rooms & Corridors only)* — selects the corridor routing strategy:
+  - **Classic L-bends** — connect rooms in sequence with right-angled corridors (default).
+  - **Spanning tree** — connect each room to its nearest neighbors via a minimum spanning tree.
+  - **Looping passages** — spanning tree plus extra short edges to create cycles.
+  - **Winding passages** — spanning tree with Z-shaped corridors.
+- **Corridor bend** *(Rooms & Corridors only)* — a slider controlling how straight corridors are, from winding (0) to straight (1), with the legacy default at 0.5.
+- **Dungeon shape** *(Rooms & Corridors only)* — constrains room placement to a non-rectangular mask. Eight shapes available: Rectangle (default), Circle, Diamond, Cross, L-Shape, T-Shape, Hexagon, Octagon.
+- **Dead-end pruning** *(Rooms & Corridors only)* — slider (0–100%) that iteratively removes dead-end corridor tiles. At 0% (default) dead ends are kept; at 100% all dead-end stubs are removed.
 - **Tile mix** *(collapsible section)* — per-generator sliders for fine-tuning what gets sprinkled in. Each generator exposes its own set, e.g. Rooms & Corridors offers Treasure share, Trap / Hazard share, and Door fraction; Open Terrain and Cavern have their own. The dialog remembers the values you set per algorithm as you flip between them, and a **Reset** button restores the active algorithm's theme defaults.
 - **Label rooms with theme archetypes** — Rooms & Corridors only, and only when the active theme has a room-archetype palette (built spaces such as Castle "Great Hall", Starship "Bridge", Modern City rooms, etc.). When checked, generated rooms are auto-labeled with theme-appropriate names dropped into the side notes panel.
+- **Add procedural names** — visible when room labels are enabled. Appends flavor-text suffixes (e.g. "Crypt of the Crimson Veil") to room labels using per-theme word tables.
 - **Seed** — text seed used to make generation deterministic; the same seed + algorithm + parameters always produces the same map. Accepts decimal digits, hex (with or without an `0x` prefix), or any free-form string (which is hashed). Use the **🎲** button next to the field to roll a new random seed; leaving the field blank also picks a fresh random seed at generate time.
 
 ### Confirmation and undo
@@ -197,6 +210,7 @@ the same registry these shortcuts are defined in.
 | `S` | Select tool |
 | `V` | Reveal fog (drag-rectangle, fog must be enabled) |
 | `H` | Hide fog (drag-rectangle, fog must be enabled) |
+| `O` | Line-of-Sight / FOV tool — click a cell to see what is visible from it |
 
 ### View
 
@@ -242,6 +256,7 @@ the same registry these shortcuts are defined in.
 | `Ctrl+S` | Export map as JSON |
 | `Ctrl+Shift+S` | Export map as PNG |
 | `Ctrl+Alt+S` | Export map as SVG |
+| `Ctrl+Shift+P` | Print-optimized export (high-DPI PNG with page tiling) |
 
 ### Help
 
@@ -301,6 +316,12 @@ Your work is auto-saved to the browser's IndexedDB on every change, but the head
 - **↓ JSON** — writes the full map (tiles, notes, grid size, theme, name, and other metadata) to a `.json` file. This is the only format that round-trips back into the editor.
 - **↓ PNG** — saves a rasterized snapshot of the current canvas as a `.png` image. Great for sharing or printing, but it cannot be re-imported.
 - **↓ SVG** — saves a vector rendering of the map as an `.svg` file, with each tile and numbered note drawn as scalable shapes. Like PNG, this is for sharing/printing only — it cannot be re-imported.
+- **🖨 Print Export** (`Ctrl+Shift+P`) — opens a dialog for high-resolution, print-ready PNG output at 1 inch per tile. Options include:
+  - **Resolution (DPI)** — choose the output DPI (300 DPI recommended).
+  - **Page Size** — select a page preset to split large maps into printable page tiles.
+  - **View Mode** — export as GM (full map) or Player (fog hides content).
+  - **Black & White** — toggle print mode for monochrome output.
+  - The dialog shows the computed output dimensions and page count before exporting.
 
 If **🖨 Print** mode is active, PNG/SVG exports use the high-contrast black-and-white renderer.
 
