@@ -13,6 +13,7 @@ import {
   getCorridorStrategy,
   type CorridorBridge,
 } from './corridorEngine';
+import { removeDeadEnds } from './deadEndRemoval';
 import { applyDoors } from './doorEngine';
 import { applyDecorations, type Decoration } from './decorationEngine';
 import { getRoomsCorridorsFlavor } from './poi';
@@ -292,6 +293,23 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
     continuity: ctx.corridorContinuity,
   });
   const corridorBridges: CorridorBridge[] = corridorPlan.bridges;
+
+  // Dead-end removal: prune corridor branches that lead nowhere. Runs
+  // after corridors are carved but before `outlineWalls` so the wall
+  // pass naturally seals the removed passages. Room cells are protected
+  // so only corridor dead ends are pruned.
+  const deadEndFraction = ctx.deadEndRemoval ?? 0;
+  if (deadEndFraction > 0) {
+    const roomCellSet = new Set<string>();
+    for (const r of rooms) {
+      for (let ry = r.y; ry < r.y + r.h; ry++) {
+        for (let rx = r.x; rx < r.x + r.w; rx++) {
+          roomCellSet.add(`${rx},${ry}`);
+        }
+      }
+    }
+    removeDeadEnds(grid, width, height, deadEndFraction, roomCellSet);
+  }
 
   outlineWalls(grid);
   // Bridge each room to its adjacent corridor with a single floor cell

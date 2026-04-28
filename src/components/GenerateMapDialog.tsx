@@ -201,6 +201,10 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
   const showDungeonShape = generatorId === 'rooms-and-corridors';
   const dungeonShape = getDungeonShape(dungeonShapeId);
 
+  // Dead-end removal — 0 = no removal (legacy), 1 = remove all.
+  const [deadEndRemoval, setDeadEndRemoval] = useState<number>(0);
+  const showDeadEndRemoval = generatorId === 'rooms-and-corridors';
+
   // True when the current selection is large enough to host a generator
   // run. Falls back to false (and disables the toggle) when no selection
   // is active or the rectangle is too small to be useful.
@@ -268,6 +272,7 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
         corridorStrategy: showCorridorStrategy ? corridorStrategyId : undefined,
         corridorContinuity: showCorridorStrategy ? corridorContinuity : undefined,
         dungeonShape: showDungeonShape ? dungeonShapeId : undefined,
+        deadEndRemoval: showDeadEndRemoval ? deadEndRemoval : undefined,
       });
       const suggestedName = `Generated ${generator.name}`;
       if (intoSelection && selection) {
@@ -392,6 +397,22 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
               {dungeonShape.description}
             </p>
           </>
+        )}
+
+        {showDeadEndRemoval && (
+          <label className="generate-dialog-row">
+            <span>
+              Dead-end pruning ({deadEndRemoval === 0 ? 'off' : deadEndRemoval >= 1 ? 'max' : `${Math.round(deadEndRemoval * 100)}%`})
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={deadEndRemoval}
+              onChange={e => setDeadEndRemoval(Number(e.target.value))}
+            />
+          </label>
         )}
 
         <div className="generate-dialog-row generate-dialog-grid-2">

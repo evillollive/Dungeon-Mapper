@@ -65,6 +65,12 @@ export interface GenerateContext {
    * values fall back to `'rectangle'` (full grid), preserving legacy output.
    */
   dungeonShape?: string;
+  /**
+   * Optional 0..1 fraction controlling dead-end corridor removal.
+   * 0 = no removal (legacy), 1 = remove all dead ends. Only
+   * rooms-and-corridors interprets this; other generators ignore it.
+   */
+  deadEndRemoval?: number;
 }
 
 /** A generator's output — pre-built tile grid plus optional notes. */
