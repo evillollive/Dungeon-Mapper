@@ -54,19 +54,19 @@ function drawFogFeather(
     for (let x = 0; x < width; x++) {
       if (isFogged(x, y)) continue; // only feather on the clear side
       const px = x * tileSize;
-      const py2 = y * tileSize;
+      const py = y * tileSize;
 
       // Top edge: neighbour above is fogged.
       if (y > 0 && isFogged(x, y - 1)) {
-        const g = ctx.createLinearGradient(0, py2, 0, py2 + fp);
+        const g = ctx.createLinearGradient(0, py, 0, py + fp);
         g.addColorStop(0, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},${fogAlpha})`);
         g.addColorStop(1, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},0)`);
         ctx.fillStyle = g;
-        ctx.fillRect(px, py2, tileSize, fp);
+        ctx.fillRect(px, py, tileSize, fp);
       }
       // Bottom edge: neighbour below is fogged.
       if (y < height - 1 && isFogged(x, y + 1)) {
-        const bot = py2 + tileSize;
+        const bot = py + tileSize;
         const g = ctx.createLinearGradient(0, bot, 0, bot - fp);
         g.addColorStop(0, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},${fogAlpha})`);
         g.addColorStop(1, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},0)`);
@@ -79,7 +79,7 @@ function drawFogFeather(
         g.addColorStop(0, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},${fogAlpha})`);
         g.addColorStop(1, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},0)`);
         ctx.fillStyle = g;
-        ctx.fillRect(px, py2, fp, tileSize);
+        ctx.fillRect(px, py, fp, tileSize);
       }
       // Right edge: neighbour to the right is fogged.
       if (x < width - 1 && isFogged(x + 1, y)) {
@@ -88,7 +88,7 @@ function drawFogFeather(
         g.addColorStop(0, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},${fogAlpha})`);
         g.addColorStop(1, `rgba(${fogRgb[0]},${fogRgb[1]},${fogRgb[2]},0)`);
         ctx.fillStyle = g;
-        ctx.fillRect(rt - fp, py2, fp, tileSize);
+        ctx.fillRect(rt - fp, py, fp, tileSize);
       }
     }
   }
@@ -1060,7 +1060,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         const px1 = sx + Math.cos(perp) * hw;
         const py1 = sy + Math.sin(perp) * hw;
         const px2 = sx - Math.cos(perp) * hw;
-        const py2 = sy - Math.sin(perp) * hw;
+        const py = sy - Math.sin(perp) * hw;
         const px3 = ex - Math.cos(perp) * hw;
         const py3 = ey - Math.sin(perp) * hw;
         const px4 = ex + Math.cos(perp) * hw;
@@ -1069,7 +1069,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         ctx.moveTo(px1, py1);
         ctx.lineTo(px4, py4);
         ctx.lineTo(px3, py3);
-        ctx.lineTo(px2, py2);
+        ctx.lineTo(px2, py);
         ctx.closePath();
         ctx.fillStyle = MEASURE_FILL;
         ctx.fill();
