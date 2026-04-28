@@ -1,6 +1,6 @@
 import type { TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash } from './artUtils';
 
 // Castle theme: an aboveground stone keep — polished sandstone halls, heavy
 // oak doors with gold hinges, crenellated battlement walls, a moat, and a
@@ -56,12 +56,19 @@ export const castleTheme: TileTheme = {
         break;
 
       case 'floor': {
-        ctx.fillStyle = jitterColor(color, x, y, 0.07);
+        // Proper checkerboard pattern
+        const isDark = (x + y) % 2 === 0;
+        ctx.fillStyle = jitterColor(isDark ? '#c0b088' : color, x, y, 0.03);
         ctx.fillRect(px, py, size, size);
-        // Subtle checkerboard hint to evoke polished hall tiles.
-        ctx.fillStyle = '#c0b088';
-        ctx.fillRect(px + 2, py + 2, Math.max(2, s / 3), Math.max(2, s / 3));
-        ctx.fillRect(cx, cy, Math.max(2, s / 3), Math.max(2, s / 3));
+        // Thin cross seam through center
+        ctx.strokeStyle = '#a89868';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px, cy);
+        ctx.lineTo(px + s, cy);
+        ctx.moveTo(cx, py);
+        ctx.lineTo(cx, py + s);
+        ctx.stroke();
         break;
       }
 
@@ -75,6 +82,21 @@ export const castleTheme: TileTheme = {
         ctx.fillStyle = '#d8b87a';
         ctx.fillRect(px + 2, py + 2, s - 4, 2);
         ctx.fillRect(px + 2, py + 2, 2, s - 4);
+        // Ashlar masonry mortar lines
+        const wh = tileHash(x, y);
+        ctx.strokeStyle = '#6a5028';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(px + 2, py + Math.round(s / 3));
+        ctx.lineTo(px + s - 2, py + Math.round(s / 3));
+        ctx.moveTo(px + 2, py + Math.round(s * 2 / 3));
+        ctx.lineTo(px + s - 2, py + Math.round(s * 2 / 3));
+        // Offset vertical seams per row (masonry bond)
+        const seamOffset = (y % 2 === 0) ? 0.35 : 0.65;
+        const vx = px + 2 + (s - 4) * (seamOffset + wh * 0.15);
+        ctx.moveTo(vx, py + 2);
+        ctx.lineTo(vx, py + s - 2);
+        ctx.stroke();
         // Crenel notch along the top.
         ctx.fillStyle = '#1f1a14';
         const notchW = Math.max(2, Math.floor(s / 4));
@@ -102,9 +124,14 @@ export const castleTheme: TileTheme = {
         // Heavy oak plank with gold hinge bands.
         ctx.fillStyle = '#5a3a1a';
         ctx.fillRect(px + 2, cy - 3, s - 4, 6);
+        // Plank seam lines across the door body
         ctx.strokeStyle = '#3a2410';
         ctx.lineWidth = 0.5;
         ctx.beginPath();
+        ctx.moveTo(px + 2, cy - 1);
+        ctx.lineTo(px + s - 2, cy - 1);
+        ctx.moveTo(px + 2, cy + 1);
+        ctx.lineTo(px + s - 2, cy + 1);
         ctx.moveTo(cx, cy - 3);
         ctx.lineTo(cx, cy + 3);
         ctx.stroke();
@@ -117,9 +144,14 @@ export const castleTheme: TileTheme = {
       case 'door-v': {
         ctx.fillStyle = '#5a3a1a';
         ctx.fillRect(cx - 3, py + 2, 6, s - 4);
+        // Plank seam lines across the door body
         ctx.strokeStyle = '#3a2410';
         ctx.lineWidth = 0.5;
         ctx.beginPath();
+        ctx.moveTo(cx - 1, py + 2);
+        ctx.lineTo(cx - 1, py + s - 2);
+        ctx.moveTo(cx + 1, py + 2);
+        ctx.lineTo(cx + 1, py + s - 2);
         ctx.moveTo(cx - 3, cy);
         ctx.lineTo(cx + 3, cy);
         ctx.stroke();
