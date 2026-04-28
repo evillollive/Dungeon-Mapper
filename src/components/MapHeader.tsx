@@ -25,6 +25,8 @@ interface MapHeaderProps {
   onToggleViewMode: () => void;
   /** Open the in-app keyboard shortcuts overlay. */
   onShowShortcuts: () => void;
+  /** Open the print-optimized export dialog. */
+  onOpenExportDialog: () => void;
 }
 
 /**
@@ -45,7 +47,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
   map, onSetName, onResize, onSetTileSize, onClear, onNew, onLoad,
   onExportSVG, onUndo, onRedo, canUndo, canRedo, printMode, onTogglePrintMode,
   uiScale, uiScaleOptions, onSetUIScale, getCanvas,
-  viewMode, onToggleViewMode, onShowShortcuts,
+  viewMode, onToggleViewMode, onShowShortcuts, onOpenExportDialog,
 }, ref) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -190,6 +192,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
         <button type="button" className="header-btn" onClick={handleExportJSON} title="Export JSON [Ctrl+S]" aria-label="Export map as JSON" aria-keyshortcuts="Control+S">↓ JSON</button>
         <button type="button" className="header-btn" onClick={handleExportPNG} title="Export PNG [Ctrl+Shift+S]" aria-label="Export map as PNG image" aria-keyshortcuts="Control+Shift+S">↓ PNG</button>
         <button type="button" className="header-btn" onClick={onExportSVG} title="Export SVG [Ctrl+Alt+S]" aria-label="Export map as SVG" aria-keyshortcuts="Control+Alt+S">↓ SVG</button>
+        <button type="button" className="header-btn" onClick={onOpenExportDialog} title="Print-Optimized Export — high-DPI PNG with page tiling [Ctrl+Shift+P]" aria-label="Print-optimized export" aria-keyshortcuts="Control+Shift+P">🖨 Print Export</button>
         <button type="button" className="header-btn" onClick={() => fileInputRef.current?.click()} title="Import JSON [Ctrl+O]" aria-label="Import map from JSON file" aria-keyshortcuts="Control+O">↑ Import</button>
         <button
           type="button"

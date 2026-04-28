@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-28
-> **Status:** Phases 1, 2, & 3 complete. Phase 4+ in planning.
+> **Status:** Phases 1, 2, 3, & 7.1 complete. Phase 4+ in planning.
 
 ---
 
@@ -26,6 +26,7 @@ Dungeon-Mapper is a React + TypeScript + Vite single-page app with Canvas-based 
 - Dual GM/Player views (Shift+V toggle)
 - Player drawing tools (freehand pen with colors and widths)
 - Export: JSON (round-trip), PNG, SVG (GM and Player variants)
+- **Print-Optimized Export** (72/150/300 DPI, page tiling for Letter & A4)
 - Undo/Redo (50-step history)
 - IndexedDB auto-save with legacy localStorage migration
 - 30+ keyboard shortcuts with discoverable help overlay
@@ -74,7 +75,7 @@ Repo: amishne/mipui | Stack: Pure JavaScript + Firebase
 | Elevation/stairs visualization | Multi-level passage indicators | Partial |
 | Copy/paste regions | Selection-based content duplication | ✅ |
 | Image import tool | Import existing battlemaps | ✅ |
-| Multi-resolution export | 32px, 64px, 192px, 300 DPI battlemap | Partial |
+| Multi-resolution export | 32px, 64px, 192px, 300 DPI battlemap | ✅ |
 | Sparse grid storage | Only populated cells stored (infinite grid potential) | ❌ |
 | Tile caching (DOM→PNG) | Performance optimization for large maps | ❌ |
 | Operation-based sync | Conflict-free operation ordering | ❌ |
@@ -265,10 +266,12 @@ Longer-term features that expand map richness.
 
 Smaller features that improve the overall experience.
 
-**7.1 — Print-Optimized Export**
-- 300 DPI "battlemap" export option (1 inch = 1 cell at 300 DPI)
-- Grid-aligned cropping for VTT import
-- Page-size presets (Letter, A4) with tiling for large maps
+**~~7.1 — Print-Optimized Export~~** ✅ COMPLETE
+- ✅ Multi-DPI export (72, 150, 300 DPI) at 1 inch per tile cell
+- ✅ Grid-aligned rendering for VTT import
+- ✅ Page-size presets (US Letter, A4) with automatic page tiling for large maps
+- ✅ Export dialog with view mode (GM/Player) and print mode toggles
+- ✅ Keyboard shortcut (Ctrl+Shift+P) and header button
 
 **7.2 — Custom Tile/Theme Creation**
 - User-defined custom tile types with uploaded graphics
@@ -288,7 +291,6 @@ Smaller features that improve the overall experience.
 ## Part 5: Recommended Priority Order
 
 ### Next Up — High-Value Tactical Features
-- **Phase 7.1** — Print-Optimized Export *(frequently requested by tabletop players, relatively self-contained)*
 - **Phase 4.1** — Line-of-Sight / FOV *(killer tactical feature)*
 - **Phase 4.2** — Dynamic Fog of War *(builds on FOV, natural follow-up)*
 - **Phase 7.3** — Measurement & Distance Tools *(tactical play needs this)*
@@ -348,6 +350,14 @@ Smaller features that improve the overall experience.
 ---
 
 ## Changes History
+
+**2026-04-28 — Phase 7.1 complete: Print-Optimized Export shipped**
+- Standalone `renderMapToCanvas()` utility for offscreen high-DPI rendering
+- `ExportDialog` component with DPI (72/150/300), page-size (Letter, A4), view-mode, and print-mode options
+- `exportHighResPNG()` function with page tiling for large maps
+- Header button (🖨 Print Export) and keyboard shortcut (Ctrl+Shift+P)
+- Competitor table updated: Mipui multi-resolution export marked ✅
+- Priority order updated to reflect Phase 7.1 completion
 
 **2026-04-28 — Phase 3 complete: Village Generator shipped**
 - New `village` generator added (4th generator type)

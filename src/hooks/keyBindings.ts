@@ -65,6 +65,8 @@ export interface ShortcutActions {
   triggerExportJSON: () => void;
   triggerExportPNG: () => void;
   triggerExportSVG: () => void;
+  /** Open the print-optimized export dialog (Ctrl+Shift+P). */
+  openExportDialog: () => void;
   cycleTheme: (direction: 1 | -1) => void;
   cycleActiveTile: (direction: 1 | -1) => void;
   zoomIn: () => void;
@@ -324,6 +326,14 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       description: 'Export map as SVG',
       match: e => isCtrlOrMeta(e) && e.altKey && e.key.toLowerCase() === 's',
       action: actions.triggerExportSVG,
+    },
+    {
+      id: 'file.printExport',
+      category: 'File',
+      keys: 'Ctrl+Shift+P',
+      description: 'Print-optimized export (high-DPI PNG with page tiling)',
+      match: e => isCtrlOrMeta(e) && e.shiftKey && !e.altKey && e.key.toLowerCase() === 'p',
+      action: actions.openExportDialog,
     },
 
     // ── Help ──

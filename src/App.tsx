@@ -8,6 +8,7 @@ import IconPicker from './components/IconPicker';
 import MapHeader, { type MapHeaderHandle } from './components/MapHeader';
 import GenerateMapDialog from './components/GenerateMapDialog';
 import ShortcutsHelp from './components/ShortcutsHelp';
+import ExportDialog from './components/ExportDialog';
 import type { GeneratedMap } from './utils/generators';
 import { useMapState, getClipboard } from './hooks/useMapState';
 import { useDrawingTool } from './hooks/useDrawingTool';
@@ -145,6 +146,7 @@ function App() {
   const [gmShowFog, setGmShowFog] = useState<boolean>(loadInitialGmShowFog);
   const [showGenerateDialog, setShowGenerateDialog] = useState<boolean>(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState<boolean>(false);
+  const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
   // Polite live-region message announced to screen readers when the user
   // performs an action whose visual feedback is the canvas (e.g. undo,
   // theme switch, view-mode toggle). Cleared automatically a moment
@@ -464,6 +466,7 @@ function App() {
     triggerExportJSON: () => headerRef.current?.triggerExportJSON(),
     triggerExportPNG: () => headerRef.current?.triggerExportPNG(),
     triggerExportSVG: handleExportSVG,
+    openExportDialog: () => setShowExportDialog(true),
     cycleTheme,
     cycleActiveTile,
     zoomIn: () => canvasRef.current?.zoomIn(),
@@ -504,6 +507,7 @@ function App() {
         viewMode={viewMode}
         onToggleViewMode={switchViewMode}
         onShowShortcuts={() => setShowShortcutsHelp(true)}
+        onOpenExportDialog={() => setShowExportDialog(true)}
       />
       <div className="app-body">
         {viewMode === 'gm' ? (
@@ -672,6 +676,15 @@ function App() {
         <ShortcutsHelp
           bindings={shortcutBindings}
           onClose={() => setShowShortcutsHelp(false)}
+        />
+      )}
+      {showExportDialog && (
+        <ExportDialog
+          map={map}
+          themeId={themeId}
+          printMode={printMode}
+          viewMode={viewMode}
+          onClose={() => setShowExportDialog(false)}
         />
       )}
       <IconPicker

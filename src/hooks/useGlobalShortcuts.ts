@@ -66,6 +66,7 @@ export function useGlobalShortcuts(actions: ShortcutActions): KeyBinding[] {
       triggerExportJSON:() => actionsRef.current.triggerExportJSON(),
       triggerExportPNG: () => actionsRef.current.triggerExportPNG(),
       triggerExportSVG: () => actionsRef.current.triggerExportSVG(),
+      openExportDialog:() => actionsRef.current.openExportDialog(),
       cycleTheme:       d => actionsRef.current.cycleTheme(d),
       cycleActiveTile:  d => actionsRef.current.cycleActiveTile(d),
       zoomIn:           () => actionsRef.current.zoomIn(),

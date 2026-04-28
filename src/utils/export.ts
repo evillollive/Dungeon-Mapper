@@ -2,6 +2,7 @@ import type { DungeonMap, ViewMode } from '../types/map';
 import { TOKEN_KIND_COLORS } from '../types/map';
 import type { TileTheme } from '../themes/index';
 import { ICON_BY_ID } from './iconLibrary';
+import { renderMapToCanvas } from './renderMap';
 
 export function exportMapJSON(map: DungeonMap): void {
   const json = JSON.stringify(map, null, 2);
@@ -215,4 +216,115 @@ function escapeXML(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+// ── Print-Optimized / High-DPI Export ──────────────────────────────
+
+/**
+ * Standard page sizes in inches.  Width and height are the printable
+ * area (≈ 0.5″ margin on each side subtracted from the physical sheet).
+ */
+export interface PagePreset {
+  id: string;
+  label: string;
+  /** Printable width in inches. */
+  width: number;
+  /** Printable height in inches. */
+  height: number;
+}
+
+export const PAGE_PRESETS: PagePreset[] = [
+  { id: 'none',   label: 'Full Map (no tiling)', width: 0, height: 0 },
+  { id: 'letter', label: 'US Letter (7.5 × 10″)', width: 7.5, height: 10 },
+  { id: 'a4',     label: 'A4 (7.27 × 10.69″)',    width: 7.27, height: 10.69 },
+];
+
+export const DPI_OPTIONS = [72, 150, 300] as const;
+
+export interface HighResExportOptions {
+  /** Dots per inch — each tile = 1 inch, so dpi also = tile size in px. */
+  dpi: number;
+  /** Page preset id.  'none' = single full-map image. */
+  pagePresetId: string;
+  /** Theme id for rendering. */
+  themeId: string;
+  /** Use print / B&W mode. */
+  printMode: boolean;
+  /** View mode (gm / player). */
+  viewMode: ViewMode;
+}
+
+/**
+ * Export the map as one or more high-resolution PNGs.
+ *
+ * When `pagePresetId` is `'none'`, a single PNG covering the whole map is
+ * downloaded.  Otherwise the map is sliced into page-sized tiles and each
+ * tile is downloaded as a separate file named `<map>_page_R-C.png`.
+ */
+export async function exportHighResPNG(
+  map: DungeonMap,
+  opts: HighResExportOptions,
+): Promise<void> {
+  const tileSize = opts.dpi;            // 1 cell = 1 inch at this dpi
+  const fullCanvas = renderMapToCanvas(map, {
+    tileSize,
+    themeId: opts.themeId,
+    printMode: opts.printMode,
+    viewMode: opts.viewMode,
+  });
+
+  const baseName = map.meta.name.replace(/\s+/g, '_') || 'dungeon';
+
+  const preset = PAGE_PRESETS.find(p => p.id === opts.pagePresetId) ?? PAGE_PRESETS[0];
+
+  if (preset.id === 'none' || preset.width === 0) {
+    // Single full-map download.
+    await downloadCanvasAsPNG(fullCanvas, `${baseName}_${opts.dpi}dpi.png`);
+    return;
+  }
+
+  // Tiled page export.
+  const pageW = Math.round(preset.width * opts.dpi);
+  const pageH = Math.round(preset.height * opts.dpi);
+  const cols = Math.ceil(fullCanvas.width / pageW);
+  const rows = Math.ceil(fullCanvas.height / pageH);
+
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const sx = c * pageW;
+      const sy = r * pageH;
+      const sw = Math.min(pageW, fullCanvas.width - sx);
+      const sh = Math.min(pageH, fullCanvas.height - sy);
+      const page = document.createElement('canvas');
+      page.width = pageW;
+      page.height = pageH;
+      const pctx = page.getContext('2d')!;
+      // Fill with white so partial pages have a clean background (paper is white).
+      pctx.fillStyle = '#ffffff';
+      pctx.fillRect(0, 0, pageW, pageH);
+      pctx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
+      const fileName = rows === 1 && cols === 1
+        ? `${baseName}_${opts.dpi}dpi.png`
+        : `${baseName}_${opts.dpi}dpi_page_${r + 1}-${c + 1}.png`;
+      await downloadCanvasAsPNG(page, fileName);
+      // Small delay between downloads so the browser doesn't block them.
+      if (rows * cols > 1) await new Promise(res => setTimeout(res, 250));
+    }
+  }
+}
+
+/** Convert a canvas to a PNG blob and trigger a download. */
+function downloadCanvasAsPNG(canvas: HTMLCanvasElement, fileName: string): Promise<void> {
+  return new Promise<void>((resolve) => {
+    canvas.toBlob((blob) => {
+      if (!blob) { resolve(); return; }
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(url);
+      resolve();
+    }, 'image/png');
+  });
 }
