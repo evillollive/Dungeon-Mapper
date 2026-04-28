@@ -59,7 +59,16 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
           <div
             key={note.id}
             className={`note-item ${selectedNoteId === note.id ? 'selected' : ''}`}
+            role="button"
+            tabIndex={0}
+            aria-pressed={selectedNoteId === note.id}
             onClick={() => onSelectNote(selectedNoteId === note.id ? null : note.id)}
+            onKeyDown={e => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelectNote(selectedNoteId === note.id ? null : note.id);
+              }
+            }}
           >
             {editingId === note.id ? (
               <div className="note-edit" onClick={e => e.stopPropagation()}>
@@ -68,12 +77,14 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
                   value={editLabel}
                   onChange={e => setEditLabel(e.target.value)}
                   placeholder="Room name"
+                  aria-label="Room name"
                 />
                 <textarea
                   className="note-textarea"
                   value={editDesc}
                   onChange={e => setEditDesc(e.target.value)}
                   placeholder="Description..."
+                  aria-label="Room description"
                   rows={3}
                 />
                 <div className="note-edit-actions">
@@ -91,11 +102,13 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
                       className="note-edit-btn"
                       onClick={e => { e.stopPropagation(); startEdit(note); }}
                       title="Edit note"
+                      aria-label={`Edit note ${note.id}: ${note.label}`}
                     >✎</button>
                     <button
                       className="note-delete-btn"
                       onClick={e => { e.stopPropagation(); onDeleteNote(note.id); }}
                       title="Delete note"
+                      aria-label={`Delete note ${note.id}: ${note.label}`}
                     >✕</button>
                   </div>
                 </div>

@@ -151,6 +151,7 @@ export function renderMapToCanvas(
   }
 
   // Notes
+  const dynamicFogActive = (map.dynamicFogEnabled ?? false) && fogActive;
   const isFogged = (nx: number, ny: number) => fogActive && !!fog?.[ny]?.[nx];
   const visibleNotes = (fogActive && isPlayerView)
     ? map.notes.filter(n => {
@@ -201,7 +202,6 @@ export function renderMapToCanvas(
 
   // Tokens
   const tokens = map.tokens ?? [];
-  const dynamicFogActive = (map.dynamicFogEnabled ?? false) && fogActive;
   const visibleTokens = (fogActive && isPlayerView)
     ? tokens.filter(t => !isTokenFogged(t, fog, undefined, dynamicFogActive ? map.explored : undefined))
     : tokens;
