@@ -52,6 +52,13 @@ export interface CorridorContext {
   width: number;
   height: number;
   rng: Rng;
+  /**
+   * 0..1 knob controlling how straight corridors are. 0 = maximum bends
+   * (Z-shapes replace L-shapes), 0.5 = default legacy behavior, 1 = bias
+   * toward the straightest possible L-bend. Strategies that don't support
+   * it simply ignore the value.
+   */
+  continuity?: number;
 }
 
 export interface CorridorPlan {
@@ -326,6 +333,35 @@ function carveZBetween(
   ];
 }
 
+/**
+ * Carve a corridor between two rooms, choosing L or Z shape based on
+ * the corridor continuity parameter. Low continuity favors Z-bends;
+ * high continuity favors the straightest L-bend; 0.5 matches legacy.
+ */
+
+/** Continuity threshold below which corridors are always Z-shaped. */
+const CONTINUITY_ALWAYS_Z = 0.3;
+/** Continuity threshold above which corridors are always L-shaped. */
+const CONTINUITY_ALWAYS_L = 0.7;
+/** Lower edge of the "legacy behavior" window (no shape mixing). */
+const CONTINUITY_LEGACY_MIN = 0.45;
+/** Upper edge of the "legacy behavior" window (no shape mixing). */
+const CONTINUITY_LEGACY_MAX = 0.55;
+
+function carveContinuityBetween(
+  ctx: CorridorContext,
+  a: CorridorRoom,
+  b: CorridorRoom,
+  skip: Set<number>
+): CorridorBridge[] {
+  const cont = ctx.continuity ?? 0.5;
+  // Below CONTINUITY_ALWAYS_Z → always Z; above CONTINUITY_ALWAYS_L → always L; in between → random mix.
+  if (cont < CONTINUITY_ALWAYS_Z || (cont < CONTINUITY_ALWAYS_L && ctx.rng.next() > cont)) {
+    return carveZBetween(ctx, a, b);
+  }
+  return carveLBetween(ctx, a, b, skip);
+}
+
 /* ─────────────────────────  Strategies  ───────────────────────────── */
 
 /**
@@ -343,9 +379,17 @@ const straightLStrategy: CorridorStrategy = {
   plan(ctx) {
     const bridges: CorridorBridge[] = [];
     const { rooms } = ctx;
+    const cont = ctx.continuity ?? 0.5;
+    // At default continuity (0.5), use legacy L-only behavior.
+    // At lower continuity, mix in Z-corridors for bendier paths.
+    const useContinuityMix = cont < CONTINUITY_LEGACY_MIN || cont > CONTINUITY_LEGACY_MAX;
     for (let i = 1; i < rooms.length; i++) {
       const skip = new Set([i - 1, i]);
-      bridges.push(...carveLBetween(ctx, rooms[i - 1], rooms[i], skip));
+      if (useContinuityMix) {
+        bridges.push(...carveContinuityBetween(ctx, rooms[i - 1], rooms[i], skip));
+      } else {
+        bridges.push(...carveLBetween(ctx, rooms[i - 1], rooms[i], skip));
+      }
     }
     return { bridges };
   },
@@ -366,9 +410,15 @@ const mstStrategy: CorridorStrategy = {
   plan(ctx) {
     const bridges: CorridorBridge[] = [];
     const tree = minimumSpanningTree(ctx.rooms);
+    const cont = ctx.continuity ?? 0.5;
+    const useContinuityMix = cont < CONTINUITY_LEGACY_MIN || cont > CONTINUITY_LEGACY_MAX;
     for (const e of tree) {
       const skip = new Set([e.i, e.j]);
-      bridges.push(...carveLBetween(ctx, ctx.rooms[e.i], ctx.rooms[e.j], skip));
+      if (useContinuityMix) {
+        bridges.push(...carveContinuityBetween(ctx, ctx.rooms[e.i], ctx.rooms[e.j], skip));
+      } else {
+        bridges.push(...carveLBetween(ctx, ctx.rooms[e.i], ctx.rooms[e.j], skip));
+      }
     }
     return { bridges };
   },
@@ -389,10 +439,16 @@ const loopsStrategy: CorridorStrategy = {
     const tree = minimumSpanningTree(ctx.rooms);
     const used = new Set<string>();
     const edgeKey = (i: number, j: number) => (i < j ? `${i},${j}` : `${j},${i}`);
+    const cont = ctx.continuity ?? 0.5;
+    const useContinuityMix = cont < CONTINUITY_LEGACY_MIN || cont > CONTINUITY_LEGACY_MAX;
     for (const e of tree) {
       used.add(edgeKey(e.i, e.j));
       const skip = new Set([e.i, e.j]);
-      bridges.push(...carveLBetween(ctx, ctx.rooms[e.i], ctx.rooms[e.j], skip));
+      if (useContinuityMix) {
+        bridges.push(...carveContinuityBetween(ctx, ctx.rooms[e.i], ctx.rooms[e.j], skip));
+      } else {
+        bridges.push(...carveLBetween(ctx, ctx.rooms[e.i], ctx.rooms[e.j], skip));
+      }
     }
     // Add ~one extra edge per ~4 rooms, capped at half the MST edge
     // count so we never collapse into a complete graph. We pick the
@@ -413,7 +469,11 @@ const loopsStrategy: CorridorStrategy = {
         const e = allEdges[k];
         used.add(edgeKey(e.i, e.j));
         const skip = new Set([e.i, e.j]);
-        bridges.push(...carveLBetween(ctx, ctx.rooms[e.i], ctx.rooms[e.j], skip));
+        if (useContinuityMix) {
+          bridges.push(...carveContinuityBetween(ctx, ctx.rooms[e.i], ctx.rooms[e.j], skip));
+        } else {
+          bridges.push(...carveLBetween(ctx, ctx.rooms[e.i], ctx.rooms[e.j], skip));
+        }
       }
     }
     return { bridges };
@@ -434,8 +494,16 @@ const windingStrategy: CorridorStrategy = {
   plan(ctx) {
     const bridges: CorridorBridge[] = [];
     const tree = minimumSpanningTree(ctx.rooms);
+    const cont = ctx.continuity ?? 0.5;
     for (const e of tree) {
-      bridges.push(...carveZBetween(ctx, ctx.rooms[e.i], ctx.rooms[e.j]));
+      // At high continuity, some Z-corridors simplify to L-bends.
+      // Probability scales linearly from 0 at the legacy boundary to 0.5 at max.
+      if (cont > CONTINUITY_LEGACY_MAX && ctx.rng.next() < cont - 0.5) {
+        const skip = new Set([e.i, e.j]);
+        bridges.push(...carveLBetween(ctx, ctx.rooms[e.i], ctx.rooms[e.j], skip));
+      } else {
+        bridges.push(...carveZBetween(ctx, ctx.rooms[e.i], ctx.rooms[e.j]));
+      }
     }
     return { bridges };
   },

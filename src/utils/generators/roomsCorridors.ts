@@ -13,13 +13,16 @@ import {
   getCorridorStrategy,
   type CorridorBridge,
 } from './corridorEngine';
+import { removeDeadEnds } from './deadEndRemoval';
 import { applyDoors } from './doorEngine';
 import { applyDecorations, type Decoration } from './decorationEngine';
 import { getRoomsCorridorsFlavor } from './poi';
 import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotesEngine';
+import { generateRoomNameSuffix } from './nameGenerator';
 import { getRoomPalette, type RoomKind } from './roomKinds';
 import { makeRng, type Rng } from './random';
 import { placeStairs } from './stairsEngine';
+import { getDungeonShape, rectFitsMask } from './shapeMask';
 import { DEFAULT_SECRET_DOOR_FRACTION } from './tileMix';
 import type { GenerateContext, GeneratedMap } from './types';
 
@@ -217,6 +220,12 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   const rng = makeRng(seed);
   const grid = makeTypeGrid(width, height, 'empty');
 
+  // Build the shape mask — constrains where rooms may be placed. The
+  // default 'rectangle' shape marks the entire interior as valid, so
+  // existing seeds produce identical output when no shape is specified.
+  const shape = getDungeonShape(ctx.dungeonShape);
+  const shapeMask = shape.mask(width, height);
+
   // Slider-driven overrides come in via `ctx.tileMix`; when a key is
   // absent we use the legacy formulas so unchanged sliders + no room
   // labels reproduce the previous output exactly. The dialog only
@@ -245,6 +254,7 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
     const x = rng.int(1, Math.max(1, width - w - 2));
     const y = rng.int(1, Math.max(1, height - h - 2));
     const candidate: Room = { x, y, w, h };
+    if (!rectFitsMask(shapeMask, x, y, w, h)) continue;
     if (rooms.some(r => rectsOverlap(r, candidate))) continue;
     rooms.push(candidate);
   }
@@ -279,8 +289,28 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   // end) walks every room's perimeter, identifies these openings, and
   // decides where (if anywhere) actual door tiles should go.
   const strategy = getCorridorStrategy(ctx.corridorStrategy);
-  const corridorPlan = strategy.plan({ rooms, grid, width, height, rng });
+  const corridorPlan = strategy.plan({
+    rooms, grid, width, height, rng,
+    continuity: ctx.corridorContinuity,
+  });
   const corridorBridges: CorridorBridge[] = corridorPlan.bridges;
+
+  // Dead-end removal: prune corridor branches that lead nowhere. Runs
+  // after corridors are carved but before `outlineWalls` so the wall
+  // pass naturally seals the removed passages. Room cells are protected
+  // so only corridor dead ends are pruned.
+  const deadEndFraction = ctx.deadEndRemoval ?? 0;
+  if (deadEndFraction > 0) {
+    const roomCellSet = new Set<string>();
+    for (const r of rooms) {
+      for (let ry = r.y; ry < r.y + r.h; ry++) {
+        for (let rx = r.x; rx < r.x + r.w; rx++) {
+          roomCellSet.add(`${rx},${ry}`);
+        }
+      }
+    }
+    removeDeadEnds(grid, width, height, deadEndFraction, roomCellSet);
+  }
 
   outlineWalls(grid);
   // Bridge each room to its adjacent corridor with a single floor cell
@@ -298,6 +328,15 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   const hasPalette = !!(palette && palette.length > 0);
   if (hasPalette) {
     assignRoomKinds(rooms, palette!, rng);
+    // Optionally append procedurally generated flavor-text names.
+    if (ctx.nameRooms) {
+      for (const r of rooms) {
+        if (r.kind) {
+          const suffix = generateRoomNameSuffix(themeId, rng);
+          r.kind = { ...r.kind, label: `${r.kind.label} ${suffix}` };
+        }
+      }
+    }
   }
 
   // Pick the start in the first room and `stairs-down` at the farthest
@@ -435,6 +474,9 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   applyDoors(grid, rooms, rng, {
     doorKeepFraction: ov.doors,
     secretDoorFraction: ov.secretDoors ?? DEFAULT_SECRET_DOOR_FRACTION,
+    lockedDoorFraction: ov.lockedDoors ?? 0,
+    trappedDoorFraction: ov.trappedDoors ?? 0,
+    archwayFraction: ov.archways ?? 0,
     startRoomIndex: 0,
   });
 

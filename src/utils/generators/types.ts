@@ -50,6 +50,34 @@ export interface GenerateContext {
    * the legacy output exactly so existing seeds are unaffected.
    */
   corridorStrategy?: string;
+  /**
+   * Optional 0..1 knob controlling how straight corridors are within the
+   * selected strategy. 0 = maximum bends (Z-shapes), 0.5 = default legacy
+   * behavior, 1 = bias toward straight L-bends. Only rooms-and-corridors
+   * interprets this; other generators ignore it.
+   */
+  corridorContinuity?: number;
+  /**
+   * Optional id of the dungeon shape to use (e.g. `'rectangle'`, `'circle'`,
+   * `'diamond'`). Only the rooms-and-corridors generator interprets this —
+   * other generators ignore it. The shape constrains where rooms can be
+   * placed by applying a boolean mask to the map grid. Unknown / missing
+   * values fall back to `'rectangle'` (full grid), preserving legacy output.
+   */
+  dungeonShape?: string;
+  /**
+   * Optional 0..1 fraction controlling dead-end corridor removal.
+   * 0 = no removal (legacy), 1 = remove all dead ends. Only
+   * rooms-and-corridors interprets this; other generators ignore it.
+   */
+  deadEndRemoval?: number;
+  /**
+   * When true (and `labelRooms` is also true), appends procedurally
+   * generated flavor-text names to room labels (e.g. "Crypt of the
+   * Crimson Veil" instead of just "Crypt"). Only rooms-and-corridors
+   * interprets this.
+   */
+  nameRooms?: boolean;
 }
 
 /** A generator's output — pre-built tile grid plus optional notes. */

@@ -19,6 +19,11 @@ import {
   getTileMixSliders,
   type TileMixSliderSpec,
 } from '../utils/generators/tileMix';
+import {
+  DEFAULT_DUNGEON_SHAPE,
+  DUNGEON_SHAPE_LIST,
+  getDungeonShape,
+} from '../utils/generators/shapeMask';
 import { themeSupportsRoomLabels } from '../utils/generators/roomKinds';
 
 interface GenerateMapDialogProps {
@@ -187,6 +192,23 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
   const showCorridorStrategy = generatorId === 'rooms-and-corridors';
   const corridorStrategy = getCorridorStrategy(corridorStrategyId);
 
+  // Corridor continuity — 0 = maximum bends, 0.5 = default, 1 = straightest.
+  const [corridorContinuity, setCorridorContinuity] = useState<number>(0.5);
+
+  // Dungeon shape — only rooms-and-corridors supports non-rectangular
+  // shapes. The default 'rectangle' reproduces the legacy behavior.
+  const [dungeonShapeId, setDungeonShapeId] = useState<string>(DEFAULT_DUNGEON_SHAPE);
+  const showDungeonShape = generatorId === 'rooms-and-corridors';
+  const dungeonShape = getDungeonShape(dungeonShapeId);
+
+  // Dead-end removal — 0 = no removal (legacy), 1 = remove all.
+  const [deadEndRemoval, setDeadEndRemoval] = useState<number>(0);
+  const showDeadEndRemoval = generatorId === 'rooms-and-corridors';
+
+  // Procedural room naming — appends flavor text to room kind labels.
+  const [nameRooms, setNameRooms] = useState<boolean>(false);
+  const showNameRooms = showLabelRoomsToggle && labelRooms;
+
   // True when the current selection is large enough to host a generator
   // run. Falls back to false (and disables the toggle) when no selection
   // is active or the rectangle is too small to be useful.
@@ -251,7 +273,11 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
         themeId,
         tileMix,
         labelRooms: showLabelRoomsToggle ? labelRooms : false,
+        nameRooms: showNameRooms ? nameRooms : false,
         corridorStrategy: showCorridorStrategy ? corridorStrategyId : undefined,
+        corridorContinuity: showCorridorStrategy ? corridorContinuity : undefined,
+        dungeonShape: showDungeonShape ? dungeonShapeId : undefined,
+        deadEndRemoval: showDeadEndRemoval ? deadEndRemoval : undefined,
       });
       const suggestedName = `Generated ${generator.name}`;
       if (intoSelection && selection) {
@@ -343,7 +369,55 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
             <p className="generate-dialog-description">
               {corridorStrategy.description}
             </p>
+            <label className="generate-dialog-row">
+              <span>
+                Corridor bend ({corridorContinuity < 0.35 ? 'winding' : corridorContinuity > 0.65 ? 'straight' : 'default'})
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={corridorContinuity}
+                onChange={e => setCorridorContinuity(Number(e.target.value))}
+              />
+            </label>
           </>
+        )}
+
+        {showDungeonShape && (
+          <>
+            <label className="generate-dialog-row">
+              <span>Dungeon shape</span>
+              <select
+                value={dungeonShapeId}
+                onChange={e => setDungeonShapeId(e.target.value)}
+              >
+                {DUNGEON_SHAPE_LIST.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </label>
+            <p className="generate-dialog-description">
+              {dungeonShape.description}
+            </p>
+          </>
+        )}
+
+        {showDeadEndRemoval && (
+          <label className="generate-dialog-row">
+            <span>
+              Dead-end pruning ({deadEndRemoval === 0 ? 'off' : deadEndRemoval >= 1 ? 'max' : `${Math.round(deadEndRemoval * 100)}%`})
+            </span>
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={deadEndRemoval}
+              onChange={e => setDeadEndRemoval(Number(e.target.value))}
+            />
+          </label>
         )}
 
         <div className="generate-dialog-row generate-dialog-grid-2">
@@ -452,6 +526,19 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
             />
             <span>
               Label rooms with theme archetypes (e.g. Bridge, Great Hall)
+            </span>
+          </label>
+        )}
+
+        {showNameRooms && (
+          <label className="generate-dialog-row generate-dialog-checkbox">
+            <input
+              type="checkbox"
+              checked={nameRooms}
+              onChange={e => setNameRooms(e.target.checked)}
+            />
+            <span>
+              Add procedural names (e.g. Crypt of the Crimson Veil)
             </span>
           </label>
         )}
