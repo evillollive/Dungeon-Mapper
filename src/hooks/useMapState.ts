@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { DungeonMap, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage } from '../types/map';
+import type { DungeonMap, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource } from '../types/map';
 import { createEmptyGrid, createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
 import { saveMap, loadMap, migrateFromLocalStorage } from '../utils/storage';
 import { reThemeNotes } from '../utils/reThemeNotes';
@@ -21,6 +21,7 @@ function createDefaultMap(): DungeonMap {
     annotations: [],
     markers: [],
     initiative: [],
+    lightSources: [],
   };
 }
 
@@ -44,6 +45,7 @@ function withDefaults(map: DungeonMap): DungeonMap {
     // existing tokens on legacy saves — a freshly loaded map shouldn't
     // surprise the GM with a pre-filled turn order they didn't set.
     initiative: map.initiative ?? [],
+    lightSources: map.lightSources ?? [],
   };
 }
 
@@ -100,6 +102,7 @@ export function useMapState() {
   const nextTokenIdRef = useRef(1);
   const nextStrokeIdRef = useRef(1);
   const nextMarkerIdRef = useRef(1);
+  const nextLightIdRef = useRef(1);
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
@@ -119,6 +122,7 @@ export function useMapState() {
         nextTokenIdRef.current = nextIdAfter(ready.tokens);
         nextStrokeIdRef.current = nextIdAfter(ready.annotations);
         nextMarkerIdRef.current = nextIdAfter(ready.markers);
+        nextLightIdRef.current = nextIdAfter(ready.lightSources);
       }
     }).catch(() => {});
   }, []);
@@ -225,6 +229,10 @@ export function useMapState() {
       });
       const keptIds = new Set(newTokens.map(t => t.id));
       const newInitiative = (prev.initiative ?? []).filter(id => keptIds.has(id));
+      // Drop light sources that are now out of bounds.
+      const newLightSources = (prev.lightSources ?? []).filter(
+        ls => ls.x >= 0 && ls.x < width && ls.y >= 0 && ls.y < height,
+      );
       const updated = {
         ...prev,
         meta: { ...prev.meta, width, height },
@@ -232,6 +240,7 @@ export function useMapState() {
         fog: newFog,
         tokens: newTokens,
         initiative: newInitiative,
+        lightSources: newLightSources,
       };
       debouncedSave(updated);
       return updated;
@@ -251,6 +260,7 @@ export function useMapState() {
         tokens: [],
         annotations: [],
         initiative: [],
+        lightSources: [],
       };
       debouncedSave(updated);
       return updated;
@@ -258,6 +268,7 @@ export function useMapState() {
     setNextNoteId(1);
     nextTokenIdRef.current = 1;
     nextStrokeIdRef.current = 1;
+    nextLightIdRef.current = 1;
     setSelectedNoteId(null);
   }, [debouncedSave]);
 
@@ -272,6 +283,7 @@ export function useMapState() {
     setNextNoteId(1);
     nextTokenIdRef.current = 1;
     nextStrokeIdRef.current = 1;
+    nextLightIdRef.current = 1;
     setSelectedNoteId(null);
   }, [debouncedSave]);
 
@@ -855,6 +867,48 @@ export function useMapState() {
     });
   }, [debouncedSave]);
 
+  // ── Light Sources ─────────────────────────────────────────────────────
+  // Static light sources that project illumination from a fixed cell via
+  // the same FOV algorithm used for player tokens. When dynamic fog is
+  // enabled, lit cells are treated as visible (clear). When dynamic fog is
+  // off, lights render a warm glow overlay on the canvas only.
+
+  const addLightSource = useCallback((x: number, y: number, radius: number, color: string, label: string): number | null => {
+    const newId = nextLightIdRef.current;
+    let placed = false;
+    setMap(prev => {
+      if (x < 0 || y < 0 || x >= prev.meta.width || y >= prev.meta.height) return prev;
+      const ls: LightSource = { id: newId, x, y, radius, color, label };
+      placed = true;
+      const updated = { ...prev, lightSources: [...(prev.lightSources ?? []), ls] };
+      debouncedSave(updated);
+      return updated;
+    });
+    if (placed) {
+      nextLightIdRef.current = newId + 1;
+      return newId;
+    }
+    return null;
+  }, [debouncedSave]);
+
+  const removeLightSource = useCallback((id: number) => {
+    setMap(prev => {
+      const lightSources = (prev.lightSources ?? []).filter(ls => ls.id !== id);
+      const updated = { ...prev, lightSources };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const clearLightSources = useCallback(() => {
+    setMap(prev => {
+      if ((prev.lightSources ?? []).length === 0) return prev;
+      const updated = { ...prev, lightSources: [] };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
   // ---- Background image ----
 
   const setBackgroundImage = useCallback((bg: BackgroundImage) => {
@@ -1069,5 +1123,9 @@ export function useMapState() {
     setBackgroundImage,
     clearBackgroundImage,
     updateBackgroundImage,
+    // Light sources
+    addLightSource,
+    removeLightSource,
+    clearLightSources,
   };
 }

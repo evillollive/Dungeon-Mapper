@@ -124,6 +124,14 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       action: actions.toggleFov,
     },
     tool('tool.measure', 'm', 'Measure / Distance tool', 'measure'),
+    {
+      id: 'tool.light',
+      category: 'Tools',
+      keys: 'I',
+      description: 'Light Source tool — place a light source on a cell (Illuminate)',
+      match: e => isPlainKey(e) && !e.shiftKey && e.key.toLowerCase() === 'i',
+      action: () => actions.setActiveTool('light'),
+    },
 
     // ── View ──
     {
@@ -388,4 +396,6 @@ export const TOOL_SHORTCUTS: Record<ToolType, string | undefined> = {
   'remove-marker': undefined,
   fov: 'O',
   measure: 'M',
+  light: 'I',
+  'remove-light': undefined,
 };
