@@ -192,6 +192,9 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
   const showCorridorStrategy = generatorId === 'rooms-and-corridors';
   const corridorStrategy = getCorridorStrategy(corridorStrategyId);
 
+  // Corridor continuity — 0 = maximum bends, 0.5 = default, 1 = straightest.
+  const [corridorContinuity, setCorridorContinuity] = useState<number>(0.5);
+
   // Dungeon shape — only rooms-and-corridors supports non-rectangular
   // shapes. The default 'rectangle' reproduces the legacy behavior.
   const [dungeonShapeId, setDungeonShapeId] = useState<string>(DEFAULT_DUNGEON_SHAPE);
@@ -263,6 +266,7 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
         tileMix,
         labelRooms: showLabelRoomsToggle ? labelRooms : false,
         corridorStrategy: showCorridorStrategy ? corridorStrategyId : undefined,
+        corridorContinuity: showCorridorStrategy ? corridorContinuity : undefined,
         dungeonShape: showDungeonShape ? dungeonShapeId : undefined,
       });
       const suggestedName = `Generated ${generator.name}`;
@@ -355,6 +359,19 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
             <p className="generate-dialog-description">
               {corridorStrategy.description}
             </p>
+            <label className="generate-dialog-row">
+              <span>
+                Corridor bend ({corridorContinuity < 0.35 ? 'winding' : corridorContinuity > 0.65 ? 'straight' : 'default'})
+              </span>
+              <input
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={corridorContinuity}
+                onChange={e => setCorridorContinuity(Number(e.target.value))}
+              />
+            </label>
           </>
         )}
 

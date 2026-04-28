@@ -51,6 +51,13 @@ export interface GenerateContext {
    */
   corridorStrategy?: string;
   /**
+   * Optional 0..1 knob controlling how straight corridors are within the
+   * selected strategy. 0 = maximum bends (Z-shapes), 0.5 = default legacy
+   * behavior, 1 = bias toward straight L-bends. Only rooms-and-corridors
+   * interprets this; other generators ignore it.
+   */
+  corridorContinuity?: number;
+  /**
    * Optional id of the dungeon shape to use (e.g. `'rectangle'`, `'circle'`,
    * `'diamond'`). Only the rooms-and-corridors generator interprets this —
    * other generators ignore it. The shape constrains where rooms can be

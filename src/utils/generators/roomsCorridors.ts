@@ -287,7 +287,10 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   // end) walks every room's perimeter, identifies these openings, and
   // decides where (if anywhere) actual door tiles should go.
   const strategy = getCorridorStrategy(ctx.corridorStrategy);
-  const corridorPlan = strategy.plan({ rooms, grid, width, height, rng });
+  const corridorPlan = strategy.plan({
+    rooms, grid, width, height, rng,
+    continuity: ctx.corridorContinuity,
+  });
   const corridorBridges: CorridorBridge[] = corridorPlan.bridges;
 
   outlineWalls(grid);
