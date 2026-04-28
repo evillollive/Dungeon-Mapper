@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-28
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 7.1, & 7.3 complete. Phase 5+ in planning.
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 7.1, & 7.3 complete. Phase 5 (multi-level dungeons & customization) next.
 
 ---
 
@@ -227,62 +227,20 @@ Advanced tactical features for live play.
   - Place tool with [I] shortcut; Remove tool; Clear All button — all in GM toolbar LIGHT section
   - Light source ghost preview (glow + dashed radius circle) follows cursor while tool is active
 
-### Phase 5: Collaboration & Sharing
+### Phase 5: Multi-Level Dungeons & Customization
 
-Transform from a single-device tool to a shared experience.
+Features that extend dungeon mapping depth and personalization.
 
-**5.1 — Shareable Map Links**
-- Cloud storage for maps (Firebase, Supabase, or similar)
-- Generate shareable URLs; read-only sharing gives Player View automatically
-- No registration required for viewing
-- Inspired by: Mipui's no-registration link sharing
-
-**5.2 — Real-Time Collaboration**
-- Multi-user simultaneous editing via operation-based sync
-- GM edits tiles/fog; players move their tokens
-- Conflict resolution via operation ordering; presence indicators
-- Inspired by: Mipui (MIT — can adapt sync patterns freely)
-- Why: Single biggest feature gap vs. Mipui
-
-**5.3 — Map Forking & Templates**
-- Fork/duplicate shared maps as starting points
-- Curated template library of pre-built maps
-- Community sharing gallery (longer-term)
-
-### Phase 6: Advanced Rendering & World Building
-
-Longer-term features that expand map richness.
-
-**6.1 — Multi-Layer System**
-- Replace single tile grid with a layer stack (floor, walls, objects, GM overlay, annotations)
-- Per-layer visibility toggling; layer-specific tools
-- Why: Layers enable richer maps without tile-type limitations
-
-**6.2 — Multi-Level Dungeon Support**
+**5.1 — Multi-Level Dungeon Support** *(formerly 6.2)*
 - Link multiple maps as dungeon levels
 - Stairs connect specific cells between levels; level navigator UI
 - Why: Multi-floor dungeons are common but require manually managing separate files today
 
-**6.3 — Geomorphic Tile Assembly Mode**
-- Assemble pre-drawn tile art into seamless maps with edge-matching constraints
-- Bundle default geomorph tiles; allow custom tile uploads
-- Inspired by: Dave's Mapper (GPL — study concept only, reimplement)
+**5.2 — Custom Tile/Theme Creation** *(formerly 7.2)*
+- User-defined custom tile types with uploaded graphics
+- Custom theme builder with color picker and tile assignment
 
-**6.4 — World/Region Map Generator (New Generator)**
-- 5th generator for world-scale maps
-- Voronoi-based terrain with heightmap, biome assignment, river generation, political boundaries, settlement placement
-- Inspired by: Azgaar (MIT — can study algorithms freely)
-- Why: Most ambitious feature — positions us as a comprehensive mapping suite
-- **Note:** Depends on 6.1 (Multi-Layer) and likely 6.5 (SVG rendering) for usability at world scale
-
-**6.5 — SVG/Vector Rendering Option**
-- Optional SVG rendering mode alongside Canvas
-- Benefits: infinite zoom quality, better print output, CSS styling
-- Why: Canvas works for dungeon-scale; world-scale needs vector
-
-### Phase 7: Quality-of-Life & Polish
-
-Smaller features that improve the overall experience.
+### Completed Quality-of-Life Phases
 
 **~~7.1 — Print-Optimized Export~~** ✅ COMPLETE
 - ✅ Multi-DPI export (72, 150, 300 DPI) at 1 inch per tile cell
@@ -291,10 +249,6 @@ Smaller features that improve the overall experience.
 - ✅ Export dialog with view mode (GM/Player) and print mode toggles
 - ✅ Keyboard shortcut (Ctrl+Shift+P) and header button
 
-**7.2 — Custom Tile/Theme Creation**
-- User-defined custom tile types with uploaded graphics
-- Custom theme builder with color picker and tile assignment
-
 **~~7.3 — Measurement & Distance Tools~~** ✅ COMPLETE
 - ✅ Ruler/measurement tool showing distance in grid squares and feet (Chebyshev/D&D distance)
 - ✅ Circle, cone, and line measurement templates for spell areas
@@ -302,9 +256,23 @@ Smaller features that improve the overall experience.
 - ✅ Scale bar on exported maps (PNG print export)
 - ✅ Keyboard shortcut [M] for measure tool
 
-**7.4 — Map Search & Organization**
-- Map search/filter (if cloud storage added in Phase 5)
-- Tags, folders, or categories for organizing saved maps; recent maps list
+### Far Future
+
+Items that may be revisited someday but are not on the active roadmap. Most require backend infrastructure or a fundamentally different scope (world-scale mapping).
+
+**Collaboration & Sharing** *(requires backend)*
+- Shareable Map Links — cloud storage, shareable URLs, no-registration viewing
+- Real-Time Collaboration — multi-user editing via operation-based sync
+- Map Forking & Templates — fork shared maps, template library, community gallery
+
+**World Building & Advanced Rendering** *(different product scope)*
+- Multi-Layer System — replace single tile grid with a layer stack (floor, walls, objects, GM overlay); mainly needed as a prerequisite for world-scale mapping
+- World/Region Map Generator — Voronoi-based terrain, heightmap, biomes, rivers, political boundaries, settlements (inspired by Azgaar)
+- SVG/Vector Rendering — optional SVG mode for infinite zoom quality; mainly needed for world-scale maps
+
+**Specialized Features**
+- Geomorphic Tile Assembly — assemble pre-drawn tile art with edge-matching constraints (inspired by Dave's Mapper)
+- Map Search & Organization — tags, folders, categories for organizing saved maps (depends on cloud storage)
 
 ---
 
@@ -316,18 +284,9 @@ Smaller features that improve the overall experience.
 - ~~**Phase 7.3** — Measurement & Distance Tools~~ ✅
 - ~~**Phase 4.3** — Light Sources~~ ✅
 
-### Medium-Term — New Generation & Advanced Features
-- **Phase 6.2** — Multi-Level Dungeon Support *(high demand, moderate complexity)*
-- **Phase 7.2** — Custom Tile/Theme Creation
-
-### Long-Term Vision
-- **Phase 5.1–5.2** — Cloud Sharing & Real-Time Collaboration *(requires backend decision)*
-- **Phase 5.3** — Map Forking & Templates
-- **Phase 6.1** — Multi-Layer System *(biggest refactor; needed before 6.4)*
-- **Phase 6.3** — Geomorphic Tile Assembly
-- **Phase 6.4** — World/Region Map Generator *(most ambitious; depends on 6.1, probably 6.5)*
-- **Phase 6.5** — SVG/Vector Rendering Option
-- **Phase 7.4** — Map Search & Organization *(depends on Phase 5)*
+### Medium-Term — Active Roadmap
+- **Phase 5.1** — Multi-Level Dungeon Support *(high demand, moderate complexity)*
+- **Phase 5.2** — Custom Tile/Theme Creation
 
 ---
 
@@ -338,23 +297,12 @@ Smaller features that improve the overall experience.
 | Algorithm | Study From | License Constraint |
 |---|---|---|
 | Voronoi + Lloyd relaxation | Azgaar (MIT) or Watabou (GPL—study only) | Reimplement; use `delaunator` npm package |
-| Operation-based sync | Mipui (MIT) | Can adapt freely |
-| Tile caching (DOM→PNG) | Mipui (MIT) | Can adapt freely |
 
-### Recommended New Dependencies (to investigate when implementing)
-
-| Feature | Candidate Library | Purpose |
-|---|---|---|
-| Voronoi/Delaunay | `delaunator` (ISC) | Town/world generation tessellation |
-| Label placement | `polylabel` (ISC) | Optimal text placement in polygons |
-| Collaboration backend | Firebase or Supabase | Real-time sync and cloud storage |
-| Icon set expansion | game-icons.net SVG set (CC-BY) | Additional token icons |
+*Note: Operation-based sync and tile caching algorithms (Mipui, MIT) remain relevant if collaboration features are ever pursued — see Far Future section.*
 
 ### Key Architectural Decisions Needed Before Starting
 
-1. **Canvas vs SVG vs Hybrid:** Current Canvas renderer works for dungeon-scale. World-scale maps (Phase 6.4) and multi-layer support (Phase 6.1) may push toward SVG or a hybrid. Decide before Phase 6.
-2. **Backend choice:** Cloud sharing (Phase 5) requires a backend. Firebase is proven (Mipui uses it) but creates vendor lock-in. Supabase is open-source alternative.
-3. **Layer architecture:** The multi-layer system (Phase 6.1) would be the biggest refactor. Plan the data model early so Phases 3–5 are compatible.
+1. **Canvas vs SVG vs Hybrid:** Current Canvas renderer works well for dungeon-scale. Only relevant if world-scale maps (Far Future) are ever pursued.
 
 ---
 
@@ -363,12 +311,23 @@ Smaller features that improve the overall experience.
 | Decision | Date | Rationale |
 |---|---|---|
 | No hex grid support | 2026-04-28 | Non-square tiles not desired; removes former Phase 3 entirely |
+| No backend / collaboration (far future) | 2026-04-28 | App stays client-only; cloud sharing, real-time collab, and map forking moved to far future — no backend infrastructure needed |
+| No world mapping (far future) | 2026-04-28 | World/region maps, multi-layer system, SVG rendering, and geomorphic tiles moved to far future — focus stays on dungeon-scale mapping |
+| Map organization deferred (far future) | 2026-04-28 | Map search/tags/folders depend on cloud storage; deferred alongside backend features |
 | Town generator as standalone phase | 2026-04-28 | Scope and algorithmic complexity warrants its own phase rather than being part of generation upgrades |
 | BSP over Voronoi for village gen | 2026-04-28 | BSP partitioning produces clean rectangular buildings that map well to the existing square-grid tile system; Voronoi deferred to world-map scale (Phase 6.4) |
 
 ---
 
 ## Changes History
+
+**2026-04-28 — Roadmap restructured: backend & world-mapping items moved to Far Future**
+- Former Phase 5 (Collaboration & Sharing: shareable links, real-time collab, map forking) moved to Far Future — app stays client-only with no backend
+- Former Phase 6.1 (Multi-Layer System), 6.3 (Geomorphic Tiles), 6.4 (World Map Generator), 6.5 (SVG Rendering) moved to Far Future — focus stays on dungeon-scale mapping
+- Former Phase 7.4 (Map Search & Organization) moved to Far Future — depends on cloud storage
+- Multi-Level Dungeon Support (formerly 6.2) and Custom Tile/Theme Creation (formerly 7.2) renumbered as Phase 5.1 and 5.2
+- Architecture notes simplified: removed backend-dependent libraries and decisions
+- Design decisions log updated with rationale
 
 **2026-04-28 — Phase 4.3 complete: Light Sources shipped**
 - `LightSource` data type (`id`, `x`, `y`, `radius`, `color`, `label`) persisted on `DungeonMap.lightSources[]`
