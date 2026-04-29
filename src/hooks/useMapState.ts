@@ -1092,6 +1092,31 @@ export function useMapState() {
     });
   }, [debouncedSave]);
 
+  const addStairLink = useCallback((link: import('../types/map').StairLink) => {
+    setProject(prev => {
+      const filtered = prev.stairLinks.filter(
+        l => !(l.fromLevel === link.fromLevel && l.fromCell.x === link.fromCell.x && l.fromCell.y === link.fromCell.y)
+      );
+      const updated: DungeonProject = { ...prev, stairLinks: [...filtered, link] };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const removeStairLink = useCallback((fromLevel: number, fromX: number, fromY: number) => {
+    setProject(prev => {
+      const filtered = prev.stairLinks.filter(
+        l => !(
+          (l.fromLevel === fromLevel && l.fromCell.x === fromX && l.fromCell.y === fromY) ||
+          (l.toLevel === fromLevel && l.toCell.x === fromX && l.toCell.y === fromY)
+        )
+      );
+      const updated: DungeonProject = { ...prev, stairLinks: filtered };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
   return {
     map, project, activeLevelIndex,
     selectedNoteId, setSelectedNoteId,
@@ -1113,5 +1138,6 @@ export function useMapState() {
     addLightSource, removeLightSource, clearLightSources,
     switchLevel, addLevel, renameLevel, deleteLevel,
     duplicateLevel, reorderLevels, setProjectName,
+    addStairLink, removeStairLink,
   };
 }
