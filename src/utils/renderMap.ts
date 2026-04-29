@@ -7,13 +7,13 @@
  * visible canvas or its device-pixel-ratio scaling.
  */
 
-import type { DungeonMap, ViewMode, Token, ShapeMarker, AnnotationStroke } from '../types/map';
-import { TOKEN_KIND_COLORS } from '../types/map';
-import { getTheme } from '../themes/index';
+import type { CustomThemeDefinition, DungeonMap, ViewMode, Token, ShapeMarker, AnnotationStroke } from '../types/map';
+import { TOKEN_KIND_COLORS, isBuiltInTileType } from '../types/map';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from './tokenVisibility';
 import { ICON_BY_ID } from './iconLibrary';
+import { getSemanticTileType, getThemeWithCustom } from './customThemes';
 
 // Screen-mode canvas styling (mirrored from MapCanvas.tsx).
 const SCREEN_BG = '#f4f1e4';
@@ -89,6 +89,8 @@ export interface RenderMapOptions {
    * (no scale bar).
    */
   feetPerCell?: number;
+  /** Project-scoped custom themes available for rendering custom tiles. */
+  customThemes?: readonly CustomThemeDefinition[];
 }
 
 /**
@@ -100,8 +102,8 @@ export function renderMapToCanvas(
   map: DungeonMap,
   opts: RenderMapOptions,
 ): HTMLCanvasElement {
-  const { tileSize, themeId, printMode = false, viewMode = 'gm', feetPerCell = 0 } = opts;
-  const theme = getTheme(themeId);
+  const { tileSize, themeId, printMode = false, viewMode = 'gm', feetPerCell = 0, customThemes = [] } = opts;
+  const theme = getThemeWithCustom(themeId, customThemes);
   const { width, height } = map.meta;
   const isPlayerView = viewMode === 'player';
   const fogActive = map.fogEnabled ?? false;
@@ -125,11 +127,13 @@ export function renderMapToCanvas(
       const tile = map.tiles[y]?.[x];
       if (!tile) continue;
       if (printMode) {
-        drawPrintTile(ctx, tile.type, x, y, tileSize);
+        drawPrintTile(ctx, getSemanticTileType(tile.type, customThemes), x, y, tileSize);
       } else if (tile.type !== 'empty') {
-        const tileTheme = tile.theme ? getTheme(tile.theme) : theme;
+        const tileTheme = tile.theme ? getThemeWithCustom(tile.theme, customThemes) : theme;
         tileTheme.drawTile(ctx, tile.type, x, y, tileSize);
-        drawTileOverlay(ctx, tile.type, x, y, tileSize, tileTheme.tileColors[tile.type]);
+        if (isBuiltInTileType(tile.type)) {
+          drawTileOverlay(ctx, tile.type, x, y, tileSize, tileTheme.tileColors[tile.type]);
+        }
       }
     }
   }

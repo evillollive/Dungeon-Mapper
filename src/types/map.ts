@@ -1,10 +1,36 @@
-export type TileType =
+export type BuiltInTileType =
   | 'empty' | 'floor' | 'wall' | 'door-h' | 'door-v' | 'secret-door'
   | 'locked-door-h' | 'locked-door-v'
   | 'trapped-door-h' | 'trapped-door-v'
   | 'portcullis' | 'archway' | 'barricade'
   | 'stairs-up' | 'stairs-down' | 'water' | 'pillar'
   | 'trap' | 'treasure' | 'start';
+
+export type CustomTileType = `custom:${string}`;
+export type TileType = BuiltInTileType | CustomTileType;
+
+export interface CustomTileDefinition {
+  id: CustomTileType;
+  label: string;
+  color: string;
+  /** Optional uploaded PNG/JPEG/WebP artwork stored as a data URL. */
+  imageDataUrl?: string;
+  /**
+   * Built-in tile behavior this custom tile follows for systems that need
+   * semantics (line of sight, print fallback, generators, etc.).
+   */
+  baseType: BuiltInTileType;
+}
+
+export interface CustomThemeDefinition {
+  id: `custom-theme:${string}`;
+  name: string;
+  baseThemeId: string;
+  gridColor: string;
+  tileColors: Partial<Record<BuiltInTileType, string>>;
+  tileLabels: Partial<Record<BuiltInTileType, string>>;
+  customTiles: CustomTileDefinition[];
+}
 
 export interface Tile {
   type: TileType;
@@ -260,6 +286,8 @@ export interface DungeonProject {
   activeLevelIndex: number;
   /** Explicit stair connections between levels. */
   stairLinks: StairLink[];
+  /** Project-scoped user-created tile/theme definitions. */
+  customThemes?: CustomThemeDefinition[];
 }
 
 /**
@@ -325,7 +353,20 @@ export const TOKEN_KIND_LABELS: Record<TokenKind, string> = {
   monster: 'Monster',
 };
 
-export const TILE_LABELS: Record<TileType, string> = {
+export const BUILT_IN_TILE_TYPES: BuiltInTileType[] = [
+  'empty', 'floor', 'wall', 'door-h', 'door-v', 'secret-door',
+  'locked-door-h', 'locked-door-v',
+  'trapped-door-h', 'trapped-door-v',
+  'portcullis', 'archway', 'barricade',
+  'stairs-up', 'stairs-down', 'water', 'pillar',
+  'trap', 'treasure', 'start',
+];
+
+export function isBuiltInTileType(type: TileType): type is BuiltInTileType {
+  return (BUILT_IN_TILE_TYPES as TileType[]).includes(type);
+}
+
+export const TILE_LABELS: Record<BuiltInTileType, string> = {
   empty: 'Empty',
   floor: 'Floor',
   wall: 'Wall',
@@ -353,7 +394,7 @@ export const TILE_LABELS: Record<TileType, string> = {
 // background shows through it in screen mode, and SVG/print export treat it
 // as background), so a "paint empty" button would appear to do nothing on
 // the map. Use the Erase tool to clear a tile back to empty.
-export const ALL_TILE_TYPES: TileType[] = [
+export const ALL_TILE_TYPES: BuiltInTileType[] = [
   'floor', 'wall', 'door-h', 'door-v', 'secret-door',
   'locked-door-h', 'locked-door-v',
   'trapped-door-h', 'trapped-door-v',

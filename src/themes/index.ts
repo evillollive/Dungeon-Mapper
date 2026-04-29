@@ -1,4 +1,4 @@
-import type { TileType } from '../types/map';
+import type { BuiltInTileType, TileType } from '../types/map';
 
 export interface TileTheme {
   id: string;
@@ -6,7 +6,7 @@ export interface TileTheme {
   tiles: { id: TileType; label: string }[];
   emptyTileId: TileType;
   cssVars: Record<string, string>;
-  tileColors: Record<TileType, string>;
+  tileColors: Record<BuiltInTileType, string> & Record<string, string>;
   /** Per-theme grid line colour. Replaces the old hardcoded #2d3561. */
   gridColor: string;
   drawTile(ctx: CanvasRenderingContext2D, id: TileType, x: number, y: number, size: number): void;

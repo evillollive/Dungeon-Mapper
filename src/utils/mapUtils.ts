@@ -1,4 +1,4 @@
-import type { Tile, TileType } from '../types/map';
+import type { BuiltInTileType, Tile, TileType } from '../types/map';
 
 export function createEmptyGrid(width: number, height: number): Tile[][] {
   return Array.from({ length: height }, () =>
@@ -69,7 +69,7 @@ export function floodFill(
   return newTiles;
 }
 
-export const TILE_COLORS: Record<TileType, string> = {
+export const TILE_COLORS: Record<BuiltInTileType, string> = {
   empty: '#1a1a2e',
   floor: '#c8b89a',
   wall: '#4a4a4a',

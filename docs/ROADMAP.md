@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-29
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 7.1, & 7.3 complete. Phase 5.3 (custom tile/theme creation) next.
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 7.1, & 7.3 complete.
 
 ---
 
@@ -9,7 +9,7 @@
 
 Dungeon-Mapper is a React + TypeScript + Vite single-page app with Canvas-based rendering. It currently offers:
 
-- Square grid maps (8×8 to 128×128 tiles, **20 tile types**)
+- Square grid maps (8×8 to 128×128 tiles, **20 built-in tile types** plus project-scoped custom tiles)
 - 4 procedural generators: Rooms & Corridors, Open Terrain, Cavern, **Village** (all seeded/deterministic)
 - **8 dungeon shape masks** (rectangle, circle, diamond, cross, L-shape, T-shape, hexagon, octagon)
 - **Corridor style control** with continuity slider (0%–100%) across 4 pluggable strategies
@@ -373,9 +373,13 @@ Features that extend dungeon mapping depth and personalization.
 - ✅ No backend required — maps are bundled in the application source/build
 - ✅ Serves as onboarding for new users who want to explore features without starting from scratch or using random generation
 
-**5.3 — Custom Tile/Theme Creation** *(formerly 5.2, originally 7.2)*
-- User-defined custom tile types with uploaded graphics
-- Custom theme builder with color picker and tile assignment
+**~~5.3 — Custom Tile/Theme Creation~~** ✅ COMPLETE *(formerly 5.2, originally 7.2)*
+- ✅ Project-scoped custom theme builder accessible from the GM Theme toolbar
+- ✅ Custom themes inherit a built-in base theme, with editable theme name, grid color, built-in tile colors, and built-in tile labels
+- ✅ User-defined custom tile palette entries with label, semantic base behavior, color fallback, and optional uploaded PNG/JPEG/WebP graphics stored as data URLs
+- ✅ Custom tiles render in the toolbar palette, map canvas, minimap, SVG export color fallback, and high-DPI/print export fallback
+- ✅ Custom tile base behavior feeds line-of-sight, dynamic fog, light visibility, and print-mode fallback semantics
+- ✅ Custom themes and custom tile definitions round-trip through project JSON export/import and IndexedDB autosave
 
 ### Completed Quality-of-Life Phases
 
@@ -424,9 +428,10 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - ~~**Phase 4.5.3** — Iconic Tiles: Treasure, Traps, Start, Water~~ ✅
 - ~~**Phase 5.1** — Multi-Level Dungeon Support~~ ✅
 - ~~**Phase 5.2** — Sample & Default Maps~~ ✅
+- ~~**Phase 5.3** — Custom Tile/Theme Creation~~ ✅
 
 ### Medium-Term — Active Roadmap
-- **Phase 5.3** — Custom Tile/Theme Creation
+- *(No active medium-term phase selected.)*
 
 ---
 

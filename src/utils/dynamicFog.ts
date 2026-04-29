@@ -10,7 +10,7 @@
  * round-trips. The visible set is ephemeral (recomputed each render).
  */
 
-import type { Tile, Token } from '../types/map';
+import type { CustomThemeDefinition, Tile, Token } from '../types/map';
 import { computeFOV } from './fov';
 
 /**
@@ -20,6 +20,7 @@ import { computeFOV } from './fov';
 export function computePlayerFOV(
   tiles: Tile[][],
   tokens: Token[],
+  customThemes: readonly CustomThemeDefinition[] = [],
 ): Set<string> | null {
   const players = tokens.filter(t => t.kind === 'player');
   if (players.length === 0) return null;
@@ -32,7 +33,7 @@ export function computePlayerFOV(
     // it ensures the full footprint contributes to the visible area.
     for (let dy = 0; dy < sz; dy++) {
       for (let dx = 0; dx < sz; dx++) {
-        const fov = computeFOV(tiles, token.x + dx, token.y + dy);
+        const fov = computeFOV(tiles, token.x + dx, token.y + dy, 0, customThemes);
         for (const key of fov) {
           union.add(key);
         }

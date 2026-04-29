@@ -1,20 +1,22 @@
 import React from 'react';
-import type { ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
+import type { CustomThemeDefinition, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
 import type { BackgroundImage } from '../types/map';
-import { ALL_TILE_TYPES, TILE_LABELS, MARKER_SHAPES, MARKER_COLORS, MARKER_SHAPE_LABELS, MEASURE_SHAPES, MEASURE_SHAPE_LABELS, LIGHT_SOURCE_PRESETS } from '../types/map';
-import { getTheme, THEME_LIST } from '../themes/index';
+import { ALL_TILE_TYPES, TILE_LABELS, MARKER_SHAPES, MARKER_COLORS, MARKER_SHAPE_LABELS, MEASURE_SHAPES, MEASURE_SHAPE_LABELS, LIGHT_SOURCE_PRESETS, isBuiltInTileType } from '../types/map';
 import { drawTileOverlay } from '../themes/tileOverlays';
+import { buildThemeList, getCustomTileLabel, getThemeWithCustom } from '../utils/customThemes';
 import TokenToolsSection from './TokenToolsSection';
 
 interface ToolbarProps {
   activeTool: ToolType;
   activeTile: TileType;
   themeId: string;
+  customThemes?: readonly CustomThemeDefinition[];
   onSetTool: (tool: ToolType) => void;
   onSetTile: (tile: TileType) => void;
   onSetTheme: (theme: string, preserveExisting?: boolean) => void;
   preserveOnThemeSwitch: boolean;
   onTogglePreserveOnThemeSwitch: () => void;
+  onOpenCustomThemeBuilder: () => void;
   fogEnabled: boolean;
   /**
    * GM-only preview toggle. The fog-of-war controls themselves now live in
@@ -68,7 +70,12 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] =
   { id: 'select',     label: 'Select',      shortcut: 'S', icon: '⬜' },
 ];
 
-function TilePreview({ type, size = 28, themeId }: { type: TileType; size?: number; themeId: string }) {
+function TilePreview({
+  type,
+  size = 28,
+  themeId,
+  customThemes = [],
+}: { type: TileType; size?: number; themeId: string; customThemes?: readonly CustomThemeDefinition[] }) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
   React.useEffect(() => {
@@ -77,15 +84,17 @@ function TilePreview({ type, size = 28, themeId }: { type: TileType; size?: numb
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const theme = getTheme(themeId);
+    const theme = getThemeWithCustom(themeId, customThemes);
     canvas.width = size;
     canvas.height = size;
 
     // Draw themed tile at position (0,0).
     theme.drawTile(ctx, type, 0, 0, size);
     // Add print-mode-inspired glyph overlay.
-    drawTileOverlay(ctx, type, 0, 0, size, theme.tileColors[type]);
-  }, [type, size, themeId]);
+    if (isBuiltInTileType(type)) {
+      drawTileOverlay(ctx, type, 0, 0, size, theme.tileColors[type]);
+    }
+  }, [type, size, themeId, customThemes]);
 
   return (
     <canvas
@@ -104,8 +113,8 @@ function TilePreview({ type, size = 28, themeId }: { type: TileType; size?: numb
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
-  activeTool, activeTile, themeId, onSetTool, onSetTile,
-  onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
+  activeTool, activeTile, themeId, customThemes = [], onSetTool, onSetTile,
+  onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch, onOpenCustomThemeBuilder,
   fogEnabled, gmShowFog, onToggleGmShowFog, onOpenGenerateMap,
   markerShape, markerColor, markerSize, onSetMarkerShape, onSetMarkerColor,
   onSetMarkerSize, onClearMarkers,
@@ -114,7 +123,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
   lightPreset, lightRadius, lightColor, onSetLightPreset, onSetLightRadius, onSetLightColor, onClearLightSources,
   stairLinkSource, stairLinkCount, onClearStairLinks,
 }) => {
-  const theme = getTheme(themeId);
+  const theme = getThemeWithCustom(themeId, customThemes);
+  const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
   const bgFileRef = React.useRef<HTMLInputElement>(null);
   const tileLabels = React.useMemo(() => {
     const map = new Map<TileType, string>();
@@ -122,7 +132,13 @@ const Toolbar: React.FC<ToolbarProps> = ({
     return map;
   }, [theme]);
   const tileLabel = (tileType: TileType): string =>
-    tileLabels.get(tileType) ?? TILE_LABELS[tileType];
+    tileLabels.get(tileType) ?? (isBuiltInTileType(tileType) ? TILE_LABELS[tileType] : getCustomTileLabel(tileType, customThemes) ?? 'Custom Tile');
+  const paletteTiles = React.useMemo(() => {
+    const customTiles = theme.tiles
+      .map(t => t.id)
+      .filter(t => !isBuiltInTileType(t));
+    return [...ALL_TILE_TYPES, ...customTiles];
+  }, [theme.tiles]);
   return (
     <div className="toolbar">
       <div className="toolbar-section">
@@ -161,9 +177,19 @@ const Toolbar: React.FC<ToolbarProps> = ({
             onClick={e => e.stopPropagation()}
             title="Map theme"
           >
-            {THEME_LIST.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+            {themeList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </label>
+        <button
+          type="button"
+          className="tool-btn"
+          onClick={onOpenCustomThemeBuilder}
+          title="Create or edit project-scoped custom themes and custom tiles"
+          aria-label="Open custom theme builder"
+        >
+          <span className="tool-icon" aria-hidden="true">🧩</span>
+          <span className="tool-name">Custom</span>
+        </button>
         <label
           className={`tool-btn ${preserveOnThemeSwitch ? 'active' : ''}`}
           style={{ cursor: 'pointer' }}
@@ -287,7 +313,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
       <div className="toolbar-section">
         <div className="toolbar-label">TILES</div>
         <div className="tile-palette">
-          {ALL_TILE_TYPES.map(tileType => (
+          {paletteTiles.map(tileType => (
             <button
               key={tileType}
               type="button"
@@ -297,7 +323,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
               aria-label={`${tileLabel(tileType)} tile`}
               aria-pressed={activeTile === tileType}
             >
-              <TilePreview type={tileType} size={22} themeId={themeId} />
+              <TilePreview type={tileType} size={22} themeId={themeId} customThemes={customThemes} />
               <span className="tile-btn-label">{tileLabel(tileType)}</span>
             </button>
           ))}

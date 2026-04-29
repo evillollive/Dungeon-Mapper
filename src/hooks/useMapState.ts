@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { DungeonMap, DungeonProject, StairLink, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, DungeonProject, StairLink, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource } from '../types/map';
 import { createEmptyGrid, createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
 import { saveProject, loadProject, migrateFromLocalStorage } from '../utils/storage';
 import { wrapMapAsProject } from '../utils/storage';
@@ -30,6 +30,7 @@ function createDefaultProject(): DungeonProject {
     levels: [createDefaultMap()],
     activeLevelIndex: 0,
     stairLinks: [],
+    customThemes: [],
   };
 }
 
@@ -51,6 +52,7 @@ function withProjectDefaults(project: DungeonProject): DungeonProject {
     ...project,
     levels: project.levels.map(withDefaults),
     stairLinks: project.stairLinks ?? [],
+    customThemes: project.customThemes ?? [],
   };
 }
 
@@ -485,6 +487,38 @@ export function useMapState() {
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSave, activeLevelIndex]);
+
+  const saveCustomTheme = useCallback((theme: CustomThemeDefinition) => {
+    setProject(prev => {
+      const existing = prev.customThemes ?? [];
+      const updated: DungeonProject = {
+        ...prev,
+        customThemes: existing.some(t => t.id === theme.id)
+          ? existing.map(t => t.id === theme.id ? theme : t)
+          : [...existing, theme],
+      };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const deleteCustomTheme = useCallback((themeId: string) => {
+    setProject(prev => {
+      const existing = prev.customThemes ?? [];
+      if (!existing.some(t => t.id === themeId)) return prev;
+      const updated: DungeonProject = {
+        ...prev,
+        customThemes: existing.filter(t => t.id !== themeId),
+        levels: prev.levels.map(level => (
+          level.meta.theme === themeId
+            ? { ...level, meta: { ...level.meta, theme: 'dungeon' } }
+            : level
+        )),
+      };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
 
   const undo = useCallback(() => {
     const h = getHistory(activeLevelIndex);
@@ -1125,7 +1159,7 @@ export function useMapState() {
     loadMapData, loadProjectData,
     generateMap, applyGeneratedRegion,
     addNote, updateNote, deleteNote,
-    setTileSize, setTheme,
+    setTileSize, setTheme, saveCustomTheme, deleteCustomTheme,
     undo, redo, canUndo, canRedo,
     setFogCells, fillAllFog, setFogEnabled,
     setDynamicFogEnabled, setExplored, resetExplored,
