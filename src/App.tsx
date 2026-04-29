@@ -224,6 +224,11 @@ function App() {
   // preview should be rendered and how large the buffer is.
   const [clipboardInfo, setClipboardInfo] = useState<{ w: number; h: number } | null>(null);
 
+  // ── Responsive layout panel state ──────────────────────────────────
+  // Collapsible toolbar (left) and drawer panel (right) for tablet/mobile.
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
+  const [rightPanelOpen, setRightPanelOpen] = useState(false);
+
   // FOV / Line-of-Sight state. The origin is the cell the user clicked
   // with the FOV tool; the visible set is recomputed whenever the origin
   // or the tile grid changes.
@@ -792,9 +797,20 @@ function App() {
         onReorder={reorderLevels}
         stairLinks={project.stairLinks}
       />
-      <div className="app-body">
+      <div className={`app-body${toolbarCollapsed ? ' toolbar-collapsed' : ''}`}>
         {viewMode === 'gm' ? (
-          <nav aria-label="Edit tools">
+          <nav aria-label="Edit tools" className={toolbarCollapsed ? 'nav-collapsed' : ''}>
+            <button
+              type="button"
+              className="panel-toggle toolbar-toggle"
+              onClick={() => setToolbarCollapsed(c => !c)}
+              title={toolbarCollapsed ? 'Expand toolbar' : 'Collapse toolbar'}
+              aria-label={toolbarCollapsed ? 'Expand toolbar' : 'Collapse toolbar'}
+              aria-expanded={!toolbarCollapsed}
+            >
+              {toolbarCollapsed ? '▶' : '◀'}
+            </button>
+            {!toolbarCollapsed && (
             <Toolbar
               activeTool={activeTool}
               activeTile={activeTile}
@@ -857,9 +873,21 @@ function App() {
               onSetGmDrawWidth={setGmDrawWidth}
               onClearGmDrawings={handleClearGmDrawings}
             />
+            )}
           </nav>
         ) : (
-          <nav aria-label="Present tools">
+          <nav aria-label="Present tools" className={toolbarCollapsed ? 'nav-collapsed' : ''}>
+            <button
+              type="button"
+              className="panel-toggle toolbar-toggle"
+              onClick={() => setToolbarCollapsed(c => !c)}
+              title={toolbarCollapsed ? 'Expand toolbar' : 'Collapse toolbar'}
+              aria-label={toolbarCollapsed ? 'Expand toolbar' : 'Collapse toolbar'}
+              aria-expanded={!toolbarCollapsed}
+            >
+              {toolbarCollapsed ? '▶' : '◀'}
+            </button>
+            {!toolbarCollapsed && (
             <PlayerToolbar
               activeTool={activeTool}
               onSetTool={handleSetActiveTool}
@@ -876,6 +904,7 @@ function App() {
               onToggleDynamicFog={handleToggleDynamicFog}
               onResetExplored={handleResetExplored}
             />
+            )}
           </nav>
         )}
         <main id="dm-canvas-area" className="canvas-area" aria-label="Map canvas area">
@@ -936,8 +965,18 @@ function App() {
             activeLevelIndex={activeLevelIndex}
           />
         </main>
+        <button
+          type="button"
+          className="panel-toggle right-panel-toggle"
+          onClick={() => setRightPanelOpen(o => !o)}
+          title={rightPanelOpen ? 'Hide panels' : 'Show panels'}
+          aria-label={rightPanelOpen ? 'Hide initiative and notes panels' : 'Show initiative and notes panels'}
+          aria-expanded={rightPanelOpen}
+        >
+          {rightPanelOpen ? '▶' : '◀'}
+        </button>
         {viewMode === 'gm' && (
-          <aside className="right-panel" aria-label="Initiative and notes">
+          <aside className={`right-panel right-panel-drawer${rightPanelOpen ? ' open' : ''}`} aria-label="Initiative and notes">
             <InitiativePanel
               tokens={map.tokens ?? []}
               initiative={map.initiative ?? []}
@@ -959,7 +998,7 @@ function App() {
           </aside>
         )}
         {viewMode === 'player' && (
-          <aside className="right-panel" aria-label="Initiative and notes">
+          <aside className={`right-panel right-panel-drawer${rightPanelOpen ? ' open' : ''}`} aria-label="Initiative and notes">
             <InitiativePanel
               // Hide tokens whose footprint touches any fogged cell from
               // the player initiative list so the panel doesn't leak the
