@@ -171,7 +171,11 @@ export function exportMapSVG(
       const d = stroke.points
         .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x * tileSize} ${p.y * tileSize}`)
         .join(' ');
-      svg += `<path d="${d}" stroke="${stroke.color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+      // GM strokes use a dashed pattern to visually distinguish them.
+      const dashAttr = stroke.kind === 'gm'
+        ? ` stroke-dasharray="${Math.max(4, w * 2.5)} ${Math.max(4, w * 2.5) * 0.6}"`
+        : '';
+      svg += `<path d="${d}" stroke="${stroke.color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none"${dashAttr}/>`;
     }
   }
 

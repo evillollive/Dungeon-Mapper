@@ -132,6 +132,8 @@ interface MapCanvasProps {
   selectedTokenId?: number | null;
   drawColor: string;
   drawWidth: number;
+  gmDrawColor: string;
+  gmDrawWidth: number;
   onSetTile: (x: number, y: number, type: TileType) => void;
   onSetTiles: (tiles: { x: number; y: number; type: TileType }[]) => void;
   onFillTile: (x: number, y: number, type: TileType) => void;
@@ -370,6 +372,12 @@ function drawAnnotation(
   ctx.lineWidth = Math.max(1, stroke.width * tileSize);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+  // GM strokes use a dashed pattern so the GM can visually distinguish
+  // their private annotations from player-visible drawings at a glance.
+  if (stroke.kind === 'gm') {
+    const dash = Math.max(4, stroke.width * tileSize * 2.5);
+    ctx.setLineDash([dash, dash * 0.6]);
+  }
   ctx.beginPath();
   for (let i = 0; i < stroke.points.length; i++) {
     const px = stroke.points[i].x * tileSize;
@@ -549,6 +557,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   selectedTokenId,
   drawColor,
   drawWidth,
+  gmDrawColor,
+  gmDrawWidth,
   onSetTile,
   onSetTiles,
   onFillTile,
@@ -860,15 +870,17 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       drawToken(ctx, token, tileSize, token.id === selectedTokenId);
     }
 
-    // Live (in-progress) freehand stroke, drawn on top so the player sees
-    // immediate feedback while dragging.
+    // Live (in-progress) freehand stroke, drawn on top so the user sees
+    // immediate feedback while dragging. Use the appropriate kind/color/width
+    // depending on whether the GM or player is drawing.
     if (activeStroke && activeStroke.length > 0) {
+      const isGmDraw = !isPlayerView && activeTool === 'gmdraw';
       drawAnnotation(ctx, {
         id: -1,
-        kind: 'player',
+        kind: isGmDraw ? 'gm' : 'player',
         points: activeStroke,
-        color: drawColor,
-        width: drawWidth,
+        color: isGmDraw ? gmDrawColor : drawColor,
+        width: isGmDraw ? gmDrawWidth : drawWidth,
       }, tileSize);
     }
 
@@ -1325,7 +1337,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex]);
 
   // Minimap render
   useEffect(() => {
@@ -1537,6 +1549,15 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       } else {
         onAddNote(x, y);
       }
+    } else if (activeTool === 'gmerase') {
+      // Click a stroke's bounding cell to remove it. Only GM strokes
+      // are removable via the GM erase tool.
+      for (let i = annotations.length - 1; i >= 0; i--) {
+        const s = annotations[i];
+        if (s.kind !== 'gm') continue;
+        const hit = s.points.some(p => Math.floor(p.x) === x && Math.floor(p.y) === y);
+        if (hit) { onRemoveAnnotation(s.id); break; }
+      }
     }
   }, [
     activeTool, activeTile, getTileCoords, onSetTile, onFillTile, onAddNote, onSelectNote,
@@ -1559,6 +1580,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
     // Player-mode interactive tools that need drag tracking.
     if (isPlayerView && activeTool === 'pdraw') {
+      const fc = getFractionalCoords(e);
+      if (fc) setActiveStroke([fc]);
+      return;
+    }
+    // GM-mode freehand drawing tool.
+    if (!isPlayerView && activeTool === 'gmdraw') {
       const fc = getFractionalCoords(e);
       if (fc) setActiveStroke([fc]);
       return;
@@ -1633,10 +1660,22 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         setActiveStroke(prev => {
           if (!prev) return [fc];
           const last = prev[prev.length - 1];
-          // Subsample so we don't spam thousands of points for short
-          // distances. Threshold ~0.07 tiles (sqrt(0.005)) — finer than
-          // pixel-level for typical tile sizes but coarse enough to keep
-          // strokes lightweight when serialized.
+          const dx = fc.x - last.x;
+          const dy = fc.y - last.y;
+          if (dx * dx + dy * dy < 0.005) return prev;
+          return [...prev, fc];
+        });
+      }
+      return;
+    }
+
+    // GM-mode drawing: same subsampling logic as player draw.
+    if (!isPlayerView && activeTool === 'gmdraw') {
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        setActiveStroke(prev => {
+          if (!prev) return [fc];
+          const last = prev[prev.length - 1];
           const dx = fc.x - last.x;
           const dy = fc.y - last.y;
           if (dx * dx + dy * dy < 0.005) return prev;
@@ -1719,6 +1758,17 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       setActiveStroke(null);
     }
 
+    // Commit GM-mode freehand stroke.
+    if (!isPlayerView && activeTool === 'gmdraw' && activeStroke && activeStroke.length > 0) {
+      onAddAnnotation({
+        kind: 'gm',
+        points: activeStroke,
+        color: gmDrawColor,
+        width: gmDrawWidth,
+      });
+      setActiveStroke(null);
+    }
+
     // Commit player-mode defog brush — clear fog for every cell the
     // brush touched as a single fog edit (one undo step).
     if (isPlayerView && activeTool === 'defog' && defogStroke && defogStroke.length > 0) {
@@ -1754,7 +1804,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setIsDragging(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, onAddAnnotation, drawColor, drawWidth]);
+  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth]);
 
   const handleMouseLeave = useCallback(() => {
     isMouseDownRef.current = false;
@@ -1840,6 +1890,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     : activeTool === 'defog' ? 'cell'
     : activeTool === 'pdraw' ? 'crosshair'
     : activeTool === 'perase' ? 'cell'
+    : activeTool === 'gmdraw' ? 'crosshair'
+    : activeTool === 'gmerase' ? 'cell'
     : activeTool === 'move-token' ? 'grab'
     : activeTool === 'remove-token' ? 'not-allowed'
     : activeTool === 'token-player' || activeTool === 'token-npc'

@@ -137,6 +137,14 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       match: e => isPlainKey(e) && !e.shiftKey && e.key.toLowerCase() === 'i',
       action: () => actions.setActiveTool('light'),
     },
+    {
+      id: 'tool.gmdraw',
+      category: 'Tools',
+      keys: 'D',
+      description: 'GM Draw tool — freehand annotations visible only in GM view',
+      match: e => isPlainKey(e) && !e.shiftKey && e.key.toLowerCase() === 'd',
+      action: () => { if (actions.isGmView()) actions.setActiveTool('gmdraw'); },
+    },
 
     // ── View ──
     {
@@ -422,4 +430,6 @@ export const TOOL_SHORTCUTS: Record<ToolType, string | undefined> = {
   light: 'I',
   'remove-light': undefined,
   'link-stair': 'K',
+  gmdraw: 'D',
+  gmerase: undefined,
 };
