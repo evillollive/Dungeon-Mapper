@@ -629,7 +629,7 @@ export default function MobileToolbar(props: MobileToolbarProps) {
 
   // Long-press timer for FAB
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const fabRef = useRef<HTMLButtonElement>(null);
+  const fabRef = useRef<HTMLDivElement>(null);
 
   /* ---- derived ---- */
   const isGm = viewMode === 'gm';
