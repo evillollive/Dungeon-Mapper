@@ -20,6 +20,7 @@ interface ToolbarProps {
   gmShowFog: boolean;
   onToggleGmShowFog: () => void;
   onOpenGenerateMap: () => void;
+  onOpenPremadeMaps: () => void;
   // Shape marker tool settings
   markerShape: MarkerShape;
   markerColor: string;
@@ -129,6 +130,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             onTogglePreserveOnThemeSwitch={props.onTogglePreserveOnThemeSwitch}
             onOpenCustomThemeBuilder={props.onOpenCustomThemeBuilder}
             onOpenGenerateMap={props.onOpenGenerateMap}
+            onOpenPremadeMaps={props.onOpenPremadeMaps}
           />
         )}
         {activeTab === 'tactical' && (
