@@ -72,6 +72,11 @@ const BUILT_LIGHT = '#f97316';
 const TECH_LIGHT = '#38bdf8';
 const WILD_LIGHT = '#fbbf24';
 const STRANGE_LIGHT = '#a78bfa';
+const LARGE_MAP_DIMENSION = 64;
+const MEDIUM_MAP_DIMENSION = 56;
+const LARGE_MAP_TILE_SIZE = 12;
+const MEDIUM_MAP_TILE_SIZE = 16;
+const DEFAULT_PREMADE_TILE_SIZE = 20;
 const PASSABLE_TOKEN_TILE_TYPES = new Set<TileType>([
   'floor',
   'door-h',
@@ -756,9 +761,9 @@ function isPassable(type: TileType): boolean {
 
 function tileSizeFor(width: number, height: number): number {
   const maxDim = Math.max(width, height);
-  if (maxDim >= 64) return 12;
-  if (maxDim >= 56) return 16;
-  return 20;
+  if (maxDim >= LARGE_MAP_DIMENSION) return LARGE_MAP_TILE_SIZE;
+  if (maxDim >= MEDIUM_MAP_DIMENSION) return MEDIUM_MAP_TILE_SIZE;
+  return DEFAULT_PREMADE_TILE_SIZE;
 }
 
 function keyOf(x: number, y: number): string {
@@ -869,7 +874,7 @@ function placeLights(tiles: Tile[][], color: string | undefined, seed: string): 
       y: cell.y,
       radius: 6,
       color: color ?? BUILT_LIGHT,
-      label: lights.length === 0 ? 'Primary Light' : `Scene Light ${lights.length + 1}`,
+      label: lights.length === 0 ? 'Primary Light' : `Scene Light ${lights.length}`,
     });
   }
   return lights;
