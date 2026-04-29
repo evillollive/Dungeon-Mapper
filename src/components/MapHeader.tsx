@@ -28,6 +28,8 @@ interface MapHeaderProps {
   onShowShortcuts: () => void;
   /** Open the print-optimized export dialog. */
   onOpenExportDialog: () => void;
+  /** Open the curated sample-map browser. */
+  onOpenPremadeMaps: () => void;
 }
 
 /**
@@ -48,7 +50,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
   map, project, onSetName, onResize, onSetTileSize, onClear, onNew, onLoadProject,
   onExportSVG, onUndo, onRedo, canUndo, canRedo, printMode, onTogglePrintMode,
   uiScale, uiScaleOptions, onSetUIScale, getCanvas,
-  viewMode, onToggleViewMode, onShowShortcuts, onOpenExportDialog,
+  viewMode, onToggleViewMode, onShowShortcuts, onOpenExportDialog, onOpenPremadeMaps,
 }, ref) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -189,6 +191,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
         <button type="button" className="header-btn" onClick={onUndo} disabled={!canUndo} title="Undo [Ctrl+Z]" aria-label="Undo" aria-keyshortcuts="Control+Z">↩ Undo</button>
         <button type="button" className="header-btn" onClick={onRedo} disabled={!canRedo} title="Redo [Ctrl+Y]" aria-label="Redo" aria-keyshortcuts="Control+Y Control+Shift+Z">↪ Redo</button>
         <button type="button" className="header-btn" onClick={handleNew} title="New Map [Ctrl+Alt+N]" aria-label="New map" aria-keyshortcuts="Control+Alt+N">New</button>
+        <button type="button" className="header-btn" onClick={onOpenPremadeMaps} title="Load a ready-to-use sample map" aria-label="Load sample map">Samples</button>
         <button type="button" className="header-btn danger" onClick={handleClear} title="Clear Map" aria-label="Clear map">Clear</button>
         <button type="button" className="header-btn" onClick={handleExportJSON} title="Export JSON [Ctrl+S]" aria-label="Export map as JSON" aria-keyshortcuts="Control+S">↓ JSON</button>
         <button type="button" className="header-btn" onClick={handleExportPNG} title="Export PNG [Ctrl+Shift+S]" aria-label="Export map as PNG image" aria-keyshortcuts="Control+Shift+S">↓ PNG</button>

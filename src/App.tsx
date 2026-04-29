@@ -7,6 +7,7 @@ import InitiativePanel from './components/InitiativePanel';
 import IconPicker from './components/IconPicker';
 import MapHeader, { type MapHeaderHandle } from './components/MapHeader';
 import GenerateMapDialog from './components/GenerateMapDialog';
+import PremadeMapsDialog from './components/PremadeMapsDialog';
 import ShortcutsHelp from './components/ShortcutsHelp';
 import ExportDialog from './components/ExportDialog';
 import type { GeneratedMap } from './utils/generators';
@@ -165,6 +166,7 @@ function App() {
   );
   const [gmShowFog, setGmShowFog] = useState<boolean>(loadInitialGmShowFog);
   const [showGenerateDialog, setShowGenerateDialog] = useState<boolean>(false);
+  const [showPremadeMapsDialog, setShowPremadeMapsDialog] = useState<boolean>(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState<boolean>(false);
   const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
   // Polite live-region message announced to screen readers when the user
@@ -690,6 +692,7 @@ function App() {
         onToggleViewMode={switchViewMode}
         onShowShortcuts={() => setShowShortcutsHelp(true)}
         onOpenExportDialog={() => setShowExportDialog(true)}
+        onOpenPremadeMaps={() => setShowPremadeMapsDialog(true)}
       />
       <LevelTabs
         levels={project.levels}
@@ -924,6 +927,17 @@ function App() {
           selection={selection}
           onCancel={handleCancelGenerateMap}
           onGenerate={handleGenerateMap}
+        />
+      )}
+      {showPremadeMapsDialog && (
+        <PremadeMapsDialog
+          currentHasContent={hasExistingContent}
+          onCancel={() => setShowPremadeMapsDialog(false)}
+          onLoadProject={loaded => {
+            loadProjectData(loaded);
+            setShowPremadeMapsDialog(false);
+            announce('Sample map loaded');
+          }}
         />
       )}
       {showShortcutsHelp && (
