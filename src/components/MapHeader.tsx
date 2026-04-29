@@ -175,7 +175,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
           aria-pressed={viewMode === 'player'}
           aria-keyshortcuts="Shift+V"
         >
-          {viewMode === 'player' ? '👁 Present' : '✏️ Edit'}
+          👁 Present
         </button>
         <button
           type="button"
