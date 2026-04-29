@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-29
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 7.1, & 7.3 complete. Phase 5.2 (custom tile/theme creation) next.
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 7.1, & 7.3 complete. Phase 5.2 (sample & default maps) next.
 
 ---
 
@@ -84,6 +84,7 @@ Repo: amishne/mipui | Stack: Pure JavaScript + Firebase
 | Tile caching (DOM→PNG) | Performance optimization for large maps | ❌ |
 | Operation-based sync | Conflict-free operation ordering | ❌ |
 | Forking/remixing maps | Create derivatives of shared maps | ❌ |
+| Public sample/community maps | Browse and load pre-made maps | ❌ |
 
 ### HexTML (No License Specified)
 
@@ -152,6 +153,33 @@ Repo: davmillar/DavesMapper | Stack: PHP + jQuery
 | Dave's Mapper | GPL v3 | ❌ (PHP) | ❌ (server-side) | Legally risky ⚠️ | Should not fork. Study tile assembly concept only. |
 
 **Summary:** No direct forking recommended. MIT repos (Azgaar, Mipui) are architecturally incompatible but algorithms can be studied freely. GPL v3 repos would force our codebase to become GPL v3. CC BY-NC prohibits commercial use. No license means no code reuse.
+
+---
+
+## Part 3b-ii: Competitor Sample & Template Map Analysis
+
+Most successful dungeon mapping tools offer some form of pre-made or sample maps. This analysis informs Phase 5.2.
+
+| Competitor | Sample/Template Maps? | Details |
+|---|---|---|
+| **Inkarnate** | ✅ Yes (236K+ maps) | Massive community map library; Pro users get curated templates; any map can be cloned and edited instantly |
+| **DungeonFog** | ✅ Yes (community library) | Community HUB for browsing shared maps; claim and customize others' maps; 3K+ assets for customization |
+| **Mipui** | ✅ Yes (public maps) | Public community maps browsable and editable; no registration needed to view |
+| **DungeonForge** | ✅ Yes (community gallery) | Featured/hot/new maps with search and tags; free to download and customize |
+| **Worldographer** | ✅ Yes (auto-generated) | Auto-generates world/city/dungeon maps as starting points; fully customizable |
+| **Tabletop Arc** | ✅ Yes (AI-generated) | AI creates complete dungeon adventures (layout + encounters + lore); editable SVG |
+| **Mystic Waffle** | ✅ Yes (instant generation) | Instant editable map generation; copyright-free for commercial use |
+| **Donjon** | ❌ Random only | Generates random maps on each visit; no saved gallery or browsable samples |
+| **Dungeondraft** | ❌ No built-in samples | No bundled maps; relies on community sharing via external sites |
+| **Dave's Mapper** | Partial (tile remix) | Generates maps from community-contributed art tiles; no curated sample dungeons |
+| **HexTML** | ❌ No | No sample maps |
+
+**Key Findings:**
+1. **Sample/template maps are a standard feature** among the most popular tools — Inkarnate, DungeonFog, and Mipui all treat them as core onboarding
+2. **Community-driven libraries** (Inkarnate's 236K+) are the gold standard but require backend infrastructure we don't have
+3. **Bundled sample maps** (our planned approach) are the right client-only alternative — they serve as both onboarding and feature showcase
+4. **2 maps per theme** is a reasonable minimum; competitors with curated libraries typically offer 10–50+ per category
+5. **Editability is expected** — every competitor that offers samples allows full editing after loading
 
 ---
 
@@ -335,7 +363,17 @@ Features that extend dungeon mapping depth and personalization.
 - ✅ Full JSON round-trip — multi-level project export/import with stair links preserved
 - ✅ IndexedDB autosave with legacy bare-map migration via `wrapMapAsProject()`
 
-**5.2 — Custom Tile/Theme Creation** *(formerly 7.2)*
+**5.2 — Sample & Default Maps**
+- Bundled collection of hand-crafted sample maps — at least 2 per theme (26+ maps minimum across 13 themes)
+- Maps showcase each theme's art, tile variety, and generator capabilities (rooms-and-corridors, village, cavern, open-terrain)
+- "Sample Maps" gallery accessible from the start screen or a menu — browse by theme, preview thumbnail, load into editor
+- Loaded sample maps are fully editable (treated as a new unsaved project)
+- Maps range from small (16×16 tavern/encounter) to medium (32×32 dungeon level) to demonstrate different use cases
+- Multi-level sample projects (at least 1–2) showcasing stair links between levels
+- No backend required — maps bundled as JSON in the application build
+- Serves as onboarding for new users who want to explore features without starting from scratch or using random generation
+
+**5.3 — Custom Tile/Theme Creation** *(formerly 5.2, originally 7.2)*
 - User-defined custom tile types with uploaded graphics
 - Custom theme builder with color picker and tile assignment
 
@@ -387,7 +425,8 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - ~~**Phase 5.1** — Multi-Level Dungeon Support~~ ✅
 
 ### Medium-Term — Active Roadmap
-- **Phase 5.2** — Custom Tile/Theme Creation
+- **Phase 5.2** — Sample & Default Maps
+- **Phase 5.3** — Custom Tile/Theme Creation
 
 ---
 
@@ -426,10 +465,22 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 | Bidirectional stair links by convention | 2026-04-29 | A single StairLink entry covers travel in both directions — simplifies UI and avoids the need for paired entries; removal deletes any link matching either endpoint |
 | Double-click for stair navigation | 2026-04-29 | Double-clicking a linked stair tile navigates to the destination level and centers viewport — intuitive discovery without requiring a separate "navigate" tool |
 | Stair link tool as explicit mode | 2026-04-29 | Link creation requires the dedicated link-stair tool ([K]) rather than auto-linking on placement — prevents accidental links and gives the user full control over which stairs connect |
+| Sample maps before custom themes | 2026-04-29 | Bundled sample maps (Phase 5.2) ship before custom tile/theme creation (Phase 5.3) — simpler to implement, immediately improves new-user onboarding, and showcases existing theme art without requiring new infrastructure; competitors like Inkarnate, DungeonFog, and Mipui all offer pre-made maps |
 
 ---
 
 ## Changes History
+
+**2026-04-29 — Phase 5.2 added: Sample & Default Maps**
+- New Phase 5.2: bundled sample maps — at least 2 hand-crafted maps per theme (26+ maps across 13 themes)
+- Maps showcase theme art, tile variety, and generator types; range from small encounters to medium dungeons; includes multi-level projects with stair links
+- Gallery UI for browsing by theme with thumbnail preview; loaded maps are fully editable
+- No backend required — maps bundled as JSON in the app build
+- Competitor research: Inkarnate (236K+ cloneable community maps, Pro templates), DungeonFog (community map library + 3K+ assets), Mipui (public community maps, browse & edit), DungeonForge (community gallery with search/tags), Dave's Mapper (tile-based remixing), Donjon (random generation only, no saved samples), Dungeondraft (no built-in samples, import only)
+- Most successful competitors (Inkarnate, DungeonFog) treat sample/template maps as a core onboarding and retention feature
+- Former Phase 5.2 (Custom Tile/Theme Creation) renumbered to Phase 5.3
+- Priority order updated: 5.2 (Sample Maps) → 5.3 (Custom Themes)
+- Design decision logged: sample maps before custom themes
 
 **2026-04-29 — Phase 5.1 complete: Multi-level dungeon support shipped**
 - Stair link tool ([K] shortcut) in GM toolbar: click stairs tile to set source, switch levels, click destination stairs to link
