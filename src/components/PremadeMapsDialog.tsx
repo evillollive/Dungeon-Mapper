@@ -37,12 +37,9 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
     [themeFilter]
   );
   const [selectedId, setSelectedId] = useState<string>(filtered[0]?.id ?? '');
-
-  useEffect(() => {
-    if (!filtered.some(summary => summary.id === selectedId)) {
-      setSelectedId(filtered[0]?.id ?? '');
-    }
-  }, [filtered, selectedId]);
+  const currentSelectedId = filtered.some(summary => summary.id === selectedId)
+    ? selectedId
+    : filtered[0]?.id ?? '';
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -55,7 +52,7 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
     return () => window.removeEventListener('keydown', handler);
   }, [onCancel]);
 
-  const selected = PREMADE_MAP_SUMMARIES.find(summary => summary.id === selectedId) ?? filtered[0];
+  const selected = PREMADE_MAP_SUMMARIES.find(summary => summary.id === currentSelectedId) ?? filtered[0];
 
   const handleLoad = () => {
     if (!selected) return;
