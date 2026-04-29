@@ -322,7 +322,9 @@ export type ToolType =
   // Light source tools — place and remove light source markers.
   | 'light' | 'remove-light'
   // Stair link tool — click stairs to link them between levels.
-  | 'link-stair';
+  | 'link-stair'
+  // GM drawing tools — freehand annotations visible only in GM view.
+  | 'gmdraw' | 'gmerase';
 
 export type ViewMode = 'gm' | 'player';
 

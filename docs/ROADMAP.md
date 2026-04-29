@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-29
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 7.1, & 7.3 complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete.
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 7.1, 7.3, & 7.5 complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete.
 
 ---
 
@@ -28,6 +28,7 @@ Dungeon-Mapper is a React + TypeScript + Vite single-page app with Canvas-based 
 - **Image Import / Background Layer** (PNG/JPG behind the grid)
 - Dual GM/Player views (Shift+V toggle)
 - Player drawing tools (freehand pen with colors and widths)
+- **GM drawing/annotation tools** (freehand pen with dashed rendering, hidden from player view, [D] shortcut)
 - Export: JSON (round-trip), PNG, SVG (GM and Player variants)
 - **Print-Optimized Export** (72/150/300 DPI, page tiling for Letter & A4)
 - **Multi-Level Dungeons** (level tabs with add/rename/duplicate/reorder, stair links between levels with navigation, per-level undo history)
@@ -71,7 +72,7 @@ Repo: amishne/mipui | Stack: Pure JavaScript + Firebase
 | No-registration sharing | Share map via URL, instant access | ❌ |
 | 8-layer rendering system | Floors, walls, images, separators, text, shapes, elevation, GM overlay | Partial (fog only) |
 | Vision/FOV (shadowcasting) | Line-of-sight calculation from any cell | ✅ |
-| GM overlay layer | Hidden content visible only to GM | Partial (fog) |
+| GM overlay layer | Hidden content visible only to GM | ✅ (fog + GM annotations) |
 | 1000+ game icons (game-icons.net) | Searchable icon library for tokens | ✅ (30+ icons) |
 | Angled/oval wall drawing | Non-rectangular wall shapes | ❌ |
 | Separator types | Doors, windows, bars, fences, curtains, archways | ✅ |
@@ -397,6 +398,15 @@ Features that extend dungeon mapping depth and personalization.
 - ✅ Scale bar on exported maps (PNG print export)
 - ✅ Keyboard shortcut [M] for measure tool
 
+**~~7.5 — GM Drawing / Annotation Tools~~** ✅ COMPLETE
+- ✅ GM freehand drawing tool (`gmdraw` ToolType) in the GM toolbar with [D] keyboard shortcut
+- ✅ GM erase tool (`gmerase` ToolType) to click-remove individual GM strokes
+- ✅ GM annotations use `kind: 'gm'` on `AnnotationStroke` — hidden from player view (canvas, PNG export, SVG export)
+- ✅ GM strokes rendered with dashed line pattern to visually distinguish from player drawings
+- ✅ Independent color palette (8 swatches) and brush width controls (Thin/Medium/Thick) separate from player pen settings
+- ✅ Clear All button to remove all GM drawings from the map
+- ✅ Dashed pattern renders consistently in live canvas, PNG export (`renderMap.ts`), and SVG export (`export.ts`)
+
 ### Far Future
 
 Items that may be revisited someday but are not on the active roadmap. Most require backend infrastructure or a fundamentally different scope (world-scale mapping).
@@ -421,7 +431,7 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 
 ---
 
-## Part 3c: UI/UX Competitive Analysis
+#### Part 3c: UI/UX Competitive Analysis
 
 ### Current UI Inventory
 
@@ -495,7 +505,7 @@ Every tool section is visible at all times in the GM toolbar. Advanced features 
 
 ---
 
-## Part 3d: Accessibility Audit
+#### Part 3d: Accessibility Audit
 
 ### Current Accessibility Strengths (Score: 8/10 WCAG A/AA)
 
@@ -554,7 +564,7 @@ When a user paints a tile, places a token, or toggles fog, there is no `aria-liv
 
 ---
 
-## Part 3e: Codebase Refactoring Assessment
+#### Part 3e: Codebase Refactoring Assessment
 
 ### Current Architecture Overview
 
@@ -625,7 +635,7 @@ The toolbar renders 11 sections unconditionally. Splitting into tab-based sub-co
 
 ---
 
-## Part 3f: Extended Competitor Analysis
+#### Part 3f: Extended Competitor Analysis
 
 ### Competitors Not Previously Analyzed
 
@@ -683,7 +693,7 @@ Based on this expanded competitor analysis, the following features represent rea
 
 ---
 
-## Part 3g: Mobile & Tablet Adaptation Analysis
+#### Part 3g: Mobile & Tablet Adaptation Analysis
 
 ### Current Mobile Readiness (Score: 3/10)
 
@@ -766,6 +776,7 @@ Convert to installable Progressive Web App:
 - ~~**Phase 5.1** — Multi-Level Dungeon Support~~ ✅
 - ~~**Phase 5.2** — Sample & Default Maps~~ ✅
 - ~~**Phase 5.3** — Custom Tile/Theme Creation~~ ✅
+- ~~**Phase 7.5** — GM Drawing / Annotation Tools~~ ✅
 
 ### Medium-Term — Active Roadmap (Phase 6)
 
@@ -878,6 +889,17 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-04-29 — Phase 7.5 complete: GM Drawing / Annotation Tools shipped**
+- GM freehand drawing tool (`gmdraw` ToolType) with [D] keyboard shortcut in the GM toolbar
+- GM erase tool (`gmerase` ToolType) — click a GM stroke to remove it
+- GM annotations stored as `AnnotationStroke` with `kind: 'gm'` — hidden from player view in canvas, PNG export, and SVG export
+- GM strokes rendered with dashed line pattern to visually distinguish from solid player drawings
+- Independent 8-color swatch palette and 3 brush widths (Thin/Medium/Thick) separate from player pen settings
+- Clear All button removes all GM drawings from the current level
+- Dashed rendering consistent across live canvas (`MapCanvas.tsx`), high-DPI PNG (`renderMap.ts`), and SVG export (`export.ts`)
+- Data model forward-compatibility: `AnnotationStroke.kind` already existed as `'player' | 'gm'` — no schema changes needed
+- Priority order and feature inventory updated
 
 **2026-04-29 — Phase 6 analysis complete: UI/UX Overhaul, Accessibility, Refactoring & Mobile**
 - Comprehensive UI competitive analysis: identified 11-section toolbar overload, header congestion, GM/Player naming confusion, non-collapsible right panels, zero progressive disclosure

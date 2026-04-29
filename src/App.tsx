@@ -194,6 +194,10 @@ function App() {
   // persisted on the map; they're a per-session preference.
   const [drawColor, setDrawColor] = useState<string>('#dc2626');
   const [drawWidth, setDrawWidth] = useState<number>(0.25);
+  // GM drawing pen state — separate from player pen so each has independent
+  // color/width preferences.
+  const [gmDrawColor, setGmDrawColor] = useState<string>('#ff6b6b');
+  const [gmDrawWidth, setGmDrawWidth] = useState<number>(0.25);
   // Marker tool settings — shape, color, radius (in tiles).
   const [markerShape, setMarkerShape] = useState<MarkerShape>('circle');
   const [markerColor, setMarkerColor] = useState<string>('#dc2626');
@@ -415,6 +419,7 @@ function App() {
   const handleResetFog = useCallback(() => fillAllFog(true), [fillAllFog]);
   const handleClearFog = useCallback(() => fillAllFog(false), [fillAllFog]);
   const handleClearPlayerDrawings = useCallback(() => clearAnnotations('player'), [clearAnnotations]);
+  const handleClearGmDrawings = useCallback(() => clearAnnotations('gm'), [clearAnnotations]);
 
   // When a token is placed, prompt for name (player view) then open the
   // icon picker so the user can choose an icon for the token.
@@ -769,6 +774,11 @@ function App() {
                   }
                 }
               }}
+              gmDrawColor={gmDrawColor}
+              gmDrawWidth={gmDrawWidth}
+              onSetGmDrawColor={setGmDrawColor}
+              onSetGmDrawWidth={setGmDrawWidth}
+              onClearGmDrawings={handleClearGmDrawings}
             />
           </nav>
         ) : (
@@ -806,6 +816,8 @@ function App() {
             selectedTokenId={selectedTokenId}
             drawColor={drawColor}
             drawWidth={drawWidth}
+            gmDrawColor={gmDrawColor}
+            gmDrawWidth={gmDrawWidth}
             onSetTile={setTile}
             onSetTiles={setTiles}
             onFillTile={fillTiles}
