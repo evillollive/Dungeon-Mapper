@@ -240,8 +240,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
           style={{ cursor: 'pointer' }}
           title={
             fogEnabled
-              ? 'Show Fog (preview) — overlay a translucent grey wash on cells that are currently hidden from players. The map stays visible to you; this is a GM-only preview. Fog controls live on the Player toolbar.'
-              : 'Show Fog has no effect until fog-of-war is enabled. Switch to the Player view to enable fog and reveal/hide cells.'
+              ? 'Show Fog (preview) — overlay a translucent grey wash on cells that are currently hidden from players. The map stays visible to you; this is an Edit-mode-only preview. Fog controls live on the Present toolbar.'
+              : 'Show Fog has no effect until fog-of-war is enabled. Switch to Present mode to enable fog and reveal/hide cells.'
           }
         >
           <span className="tool-icon" aria-hidden="true">🌫</span>
@@ -710,7 +710,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
           type="button"
           className={`tool-btn ${activeTool === 'gmdraw' ? 'active' : ''}`}
           onClick={() => onSetTool('gmdraw')}
-          title="GM Draw — freehand annotations visible only in GM view. [D]"
+          title="GM Draw — freehand annotations visible only in Edit mode. [D]"
           aria-label="GM Draw tool"
           aria-pressed={activeTool === 'gmdraw'}
         >

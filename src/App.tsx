@@ -402,7 +402,7 @@ function App() {
     setViewMode(prev => {
       const next: ViewMode = prev === 'gm' ? 'player' : 'gm';
       handleSetActiveTool(next === 'player' ? 'pdraw' : 'paint');
-      announce(next === 'player' ? 'Switched to Player view' : 'Switched to GM view');
+      announce(next === 'player' ? 'Switched to Present mode' : 'Switched to Edit mode');
       try {
         window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, next);
       } catch {
@@ -718,7 +718,7 @@ function App() {
       />
       <div className="app-body">
         {viewMode === 'gm' ? (
-          <nav aria-label="GM tools">
+          <nav aria-label="Edit tools">
             <Toolbar
               activeTool={activeTool}
               activeTile={activeTile}
@@ -782,7 +782,7 @@ function App() {
             />
           </nav>
         ) : (
-          <nav aria-label="Player tools">
+          <nav aria-label="Present tools">
             <PlayerToolbar
               activeTool={activeTool}
               onSetTool={handleSetActiveTool}

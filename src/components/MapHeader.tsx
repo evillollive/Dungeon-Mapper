@@ -170,12 +170,12 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
           type="button"
           className={`header-btn ${viewMode === 'player' ? 'active' : ''}`}
           onClick={onToggleViewMode}
-          title="Toggle Player View — switches to a fog-of-war-aware, player-safe UI with limited tools (drawing + tokens). Toggle off to return to the GM view. [Shift+V]"
-          aria-label={viewMode === 'player' ? 'Switch to GM view' : 'Switch to Player view'}
+          title="Toggle Present mode — switches to a fog-of-war-aware, player-safe UI with limited tools (drawing + tokens). Toggle off to return to Edit mode. [Shift+V]"
+          aria-label={viewMode === 'player' ? 'Switch to Edit mode' : 'Switch to Present mode'}
           aria-pressed={viewMode === 'player'}
           aria-keyshortcuts="Shift+V"
         >
-          {viewMode === 'player' ? '👁 Player View' : '🛡 GM View'}
+          {viewMode === 'player' ? '👁 Present' : '✏️ Edit'}
         </button>
         <button
           type="button"
