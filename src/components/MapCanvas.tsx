@@ -256,6 +256,11 @@ export interface MapCanvasHandle {
 const MINIMAP_MAX_W = 160;
 const MINIMAP_MAX_H = 120;
 
+/** Max ms between first pointer down and last pointer up to count as a "tap" gesture. */
+const GESTURE_TAP_TIMEOUT_MS = 300;
+/** Max px any pointer may move during a multi-finger tap before it's treated as a drag. */
+const GESTURE_MOVE_THRESHOLD_PX = 15;
+
 function bresenhamLine(x0: number, y0: number, x1: number, y1: number): { x: number; y: number }[] {
   const points: { x: number; y: number }[] = [];
   const dx = Math.abs(x1 - x0);
@@ -1724,7 +1729,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // Mark multi-finger gesture as "moved" if any pointer moves > 15px.
     if (prev && !gestureMovedRef.current) {
       const dist = Math.hypot(e.clientX - prev.x, e.clientY - prev.y);
-      if (dist > 15) gestureMovedRef.current = true;
+      if (dist > GESTURE_MOVE_THRESHOLD_PX) gestureMovedRef.current = true;
     }
 
     // Two-finger gesture: pinch-to-zoom + pan.
@@ -1879,7 +1884,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       pinchStartDistRef.current = null;
       // Detect multi-finger tap gestures: quick (< 300ms), minimal movement.
       const elapsed = Date.now() - gestureStartTimeRef.current;
-      if (!gestureMovedRef.current && elapsed < 300) {
+      if (!gestureMovedRef.current && elapsed < GESTURE_TAP_TIMEOUT_MS) {
         if (gestureMaxPointersRef.current === 2 && onUndo) { onUndo(); return; }
         if (gestureMaxPointersRef.current === 3 && onRedo) { onRedo(); return; }
       }

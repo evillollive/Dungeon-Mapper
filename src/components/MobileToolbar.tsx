@@ -98,7 +98,7 @@ const ALL_TOOLS: ToolMeta[] = [
 ];
 
 /** Duration in ms a touch must be held to trigger the FAB long-press menu. */
-const LONG_PRESS_DURATION_MS = 400;
+const LONG_PRESS_DURATION_MS = 500;
 
 /** Approximate pixel heights used for FAB positioning. */
 const BAR_HEIGHT_PX = 52;

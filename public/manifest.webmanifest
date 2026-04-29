@@ -6,8 +6,8 @@
   "background_color": "#f4f1ea",
   "display": "standalone",
   "orientation": "any",
-  "start_url": ".",
-  "scope": ".",
+  "start_url": "/Dungeon-Mapper/",
+  "scope": "/Dungeon-Mapper/",
   "categories": ["games", "utilities"],
   "icons": [
     {
