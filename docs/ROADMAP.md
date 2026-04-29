@@ -764,23 +764,27 @@ Key CSS changes:
 - Header simplifies: hide text labels, use icon-only buttons, overflow menu
 - Dialog max-widths already use `min(Xpx, 94vw)` — good
 
-**Phase 6.3 — Mobile-First Tool UX**
+**Phase 6.3 — Mobile-First Tool UX** ✅ COMPLETE
 
-For touch users, the desktop toolbar paradigm (always-visible left panel with 11 sections) doesn't work. Instead:
-- **Bottom toolbar**: 5–6 primary tool buttons (Draw, Erase, Fill, Select, Fog toggle, More...)
-- **"More" flyout**: Opens a tool palette with all remaining tools organized by category
-- **Floating action button (FAB)**: Quick access to Generate, Undo, and mode toggle
-- **Gesture shortcuts**: Two-finger tap for undo, three-finger tap for redo (matches iPad conventions)
-- **Tool options bar**: When a tool is selected, a contextual options bar appears above the bottom toolbar (tile palette for Draw, measure shape for Measure, etc.)
+Implemented a dedicated mobile toolbar experience for touch screens ≤ 768 px:
+- **MobileToolbar component** (`MobileToolbar.tsx`, 1026 lines) — replaces desktop toolbar on mobile
+- **Bottom bar**: 5–6 primary tool buttons (44×44 px touch targets) — Draw, Erase, Fill, Fog/Defog, Select, More
+- **"More" flyout**: Slides up from bottom (60vh max), categorized tool grid (Drawing/Fog/Tactical/Tokens/Advanced)
+- **Floating action button (FAB)**: 56 px circular undo button; long-press reveals vertical menu with Undo/Redo/Generate/Switch Mode
+- **Gesture shortcuts**: Two-finger tap = undo, three-finger tap = redo (in MapCanvas pointer handlers)
+- **Tool options bar**: Contextual controls above bottom bar — tile badge for paint/fill, color picker + width slider for draw, shape buttons for measure, shape + color + size for markers, Clear/Fill buttons for fog
+- **isMobile detection**: `matchMedia('(max-width: 768px)')` with live listener in App.tsx
+- **GM and Player modes**: Separate quick-button sets and flyout categories per view mode
 
-**Phase 6.3.1 — PWA Support**
+**Phase 6.3.1 — PWA Support** ✅ COMPLETE
 
-Convert to installable Progressive Web App:
-- Add `manifest.json` with app name, icons, theme color, display: standalone
-- Add service worker for offline caching of app shell and assets
-- Cache premade maps and theme data for offline use
-- Enable "Add to Home Screen" on iOS and Android
-- This is essential for tablet users who want a native-app-like experience
+Converted to installable Progressive Web App:
+- **manifest.webmanifest** with app name, icons, theme color (#f4f1ea), `display: standalone`
+- **Service worker** via vite-plugin-pwa (Workbox generateSW) — precaches all JS/CSS/HTML/SVG/PNG assets
+- **PWA icons**: 192×192 and 512×512 PNG generated from favicon.svg (with maskable variant)
+- **Apple mobile web app** meta tags: apple-touch-icon, apple-mobile-web-app-capable, status-bar-style
+- **Offline support**: App shell and all assets cached for full offline use
+- **viewport-fit: cover**: Ensures proper rendering in notched/island device safe areas
 
 ---
 
@@ -799,6 +803,8 @@ Convert to installable Progressive Web App:
 - ~~**Phase 7.5** — GM Drawing / Annotation Tools~~ ✅
 - ~~**Phase 6.1** — Touch & Pointer Events~~ ✅
 - ~~**Phase 6.2** — Responsive Layout~~ ✅
+- ~~**Phase 6.3** — Mobile-First Tool UX~~ ✅
+- ~~**Phase 6.3.1** — PWA Support~~ ✅
 
 ### Medium-Term — Active Roadmap (Phase 6)
 
@@ -830,13 +836,13 @@ Recommended implementation order based on dependency analysis, impact, and effor
    - *Why:* Trivial change, big clarity improvement, no dependencies
    - *Effort:* Very low
 
-**Sprint 3: Mobile & Polish**
-6. **Phase 6.3 — Mobile Tool UX** — Bottom toolbar, gesture shortcuts, contextual options bar
+**Sprint 3: Mobile & Polish** ✅ COMPLETE
+6. ~~**Phase 6.3 — Mobile Tool UX** — Bottom toolbar, gesture shortcuts, contextual options bar~~ ✅
    - *Why:* Makes the app usable on tablets (large new user segment)
    - *Effort:* Medium
    - *Dependency:* Requires 6.1 (touch events) and 6.2 (responsive layout)
 
-7. **Phase 6.3.1 — PWA** — manifest.json, service worker, offline caching
+7. ~~**Phase 6.3.1 — PWA** — manifest.json, service worker, offline caching~~ ✅
    - *Why:* Enables "install" on tablets, offline use
    - *Effort:* Low
    - *Dependency:* Standalone, can ship anytime after 6.3
