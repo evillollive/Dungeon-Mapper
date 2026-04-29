@@ -58,6 +58,12 @@ interface ToolbarProps {
   stairLinkSource: { level: number; x: number; y: number } | null;
   stairLinkCount: number;
   onClearStairLinks: () => void;
+  // GM drawing tool state
+  gmDrawColor: string;
+  gmDrawWidth: number;
+  onSetGmDrawColor: (c: string) => void;
+  onSetGmDrawWidth: (w: number) => void;
+  onClearGmDrawings: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -68,6 +74,13 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] =
   { id: 'line',       label: 'Line',        shortcut: 'L', icon: '📏' },
   { id: 'rect',       label: 'Rectangle',   shortcut: 'R', icon: '⬛' },
   { id: 'select',     label: 'Select',      shortcut: 'S', icon: '⬜' },
+];
+
+const GM_DRAW_COLORS = ['#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c', '#74c0fc', '#b197fc', '#f783ac', '#ffffff'];
+const GM_BRUSH_WIDTHS: { value: number; label: string }[] = [
+  { value: 0.12, label: 'Thin' },
+  { value: 0.25, label: 'Medium' },
+  { value: 0.5,  label: 'Thick' },
 ];
 
 function TilePreview({
@@ -122,6 +135,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   measureShape, measureFeetPerCell, onSetMeasureShape, onSetMeasureFeetPerCell,
   lightPreset, lightRadius, lightColor, onSetLightPreset, onSetLightRadius, onSetLightColor, onClearLightSources,
   stairLinkSource, stairLinkCount, onClearStairLinks,
+  gmDrawColor, gmDrawWidth, onSetGmDrawColor, onSetGmDrawWidth, onClearGmDrawings,
 }) => {
   const theme = getThemeWithCustom(themeId, customThemes);
   const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
@@ -686,6 +700,121 @@ const Toolbar: React.FC<ToolbarProps> = ({
         </button>
         <div className="toolbar-sub-label" style={{ fontSize: '0.6rem', opacity: 0.6, marginTop: 2 }}>
           {stairLinkCount} link{stairLinkCount !== 1 ? 's' : ''} total
+        </div>
+      </div>
+
+      {/* ── GM DRAW ── */}
+      <div className="toolbar-section">
+        <div className="toolbar-label">GM DRAW</div>
+        <button
+          type="button"
+          className={`tool-btn ${activeTool === 'gmdraw' ? 'active' : ''}`}
+          onClick={() => onSetTool('gmdraw')}
+          title="GM Draw — freehand annotations visible only in GM view. [D]"
+          aria-label="GM Draw tool"
+          aria-pressed={activeTool === 'gmdraw'}
+        >
+          <span className="tool-icon" aria-hidden="true">🖊️</span>
+          <span className="tool-name">Draw</span>
+          <span className="tool-shortcut" aria-hidden="true">[D]</span>
+        </button>
+        <button
+          type="button"
+          className={`tool-btn ${activeTool === 'gmerase' ? 'active' : ''}`}
+          onClick={() => onSetTool('gmerase')}
+          title="GM Erase — click a GM drawing to remove it."
+          aria-label="GM Erase tool"
+          aria-pressed={activeTool === 'gmerase'}
+        >
+          <span className="tool-icon" aria-hidden="true">🧽</span>
+          <span className="tool-name">Erase</span>
+        </button>
+        <button
+          type="button"
+          className="tool-btn"
+          onClick={onClearGmDrawings}
+          title="Remove all GM drawings from the map."
+          aria-label="Clear all GM drawings"
+        >
+          <span className="tool-icon" aria-hidden="true">🗑</span>
+          <span className="tool-name">Clear All</span>
+        </button>
+
+        {/* Color swatches */}
+        <div className="toolbar-sub-label" style={{ fontSize: '0.6rem', opacity: 0.7, marginTop: 6 }}>Color</div>
+        <div
+          className="tile-palette"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(4, 1fr)',
+            gap: 4,
+          }}
+        >
+          {GM_DRAW_COLORS.map(c => (
+            <button
+              key={c}
+              type="button"
+              className={`tile-btn ${gmDrawColor === c ? 'active' : ''}`}
+              onClick={() => onSetGmDrawColor(c)}
+              title={`Color: ${c}`}
+              aria-label={`GM pen color ${c}`}
+              aria-pressed={gmDrawColor === c}
+              style={{ padding: 2, width: 'auto', justifyContent: 'center' }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  display: 'inline-block',
+                  width: 22,
+                  height: 22,
+                  background: c,
+                  border: '1px solid #2d3561',
+                }}
+              />
+            </button>
+          ))}
+        </div>
+
+        {/* Brush widths */}
+        <div
+          style={{
+            marginTop: 6,
+            display: 'grid',
+            gridTemplateColumns: `repeat(${GM_BRUSH_WIDTHS.length}, 1fr)`,
+            gap: 4,
+          }}
+        >
+          {GM_BRUSH_WIDTHS.map(b => (
+            <button
+              key={b.value}
+              type="button"
+              className={`tool-btn ${Math.abs(gmDrawWidth - b.value) < 1e-6 ? 'active' : ''}`}
+              onClick={() => onSetGmDrawWidth(b.value)}
+              title={`${b.label} brush`}
+              aria-label={`${b.label} GM brush width`}
+              aria-pressed={Math.abs(gmDrawWidth - b.value) < 1e-6}
+              style={{
+                width: 'auto',
+                flexDirection: 'column',
+                gap: 2,
+                padding: '4px 4px',
+                textAlign: 'center',
+              }}
+            >
+              <span
+                className="tool-icon"
+                aria-hidden="true"
+                style={{
+                  display: 'inline-block',
+                  width: Math.max(6, b.value * 32),
+                  height: Math.max(6, b.value * 32),
+                  background: gmDrawColor,
+                  borderRadius: '50%',
+                }}
+              />
+              <span className="tool-name" style={{ flex: 'none' }}>{b.label}</span>
+            </button>
+          ))}
         </div>
       </div>
     </div>

@@ -354,6 +354,11 @@ function renderAnnotation(
   ctx.lineWidth = Math.max(1, stroke.width * tileSize);
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
+  // GM strokes use a dashed pattern to visually distinguish them.
+  if (stroke.kind === 'gm') {
+    const dash = Math.max(4, stroke.width * tileSize * 2.5);
+    ctx.setLineDash([dash, dash * 0.6]);
+  }
   ctx.beginPath();
   for (let i = 0; i < stroke.points.length; i++) {
     const px = stroke.points[i].x * tileSize;
