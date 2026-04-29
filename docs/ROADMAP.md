@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-29
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 7.1, & 7.3 complete. Phase 5.2 (sample & default maps) next.
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 7.1, & 7.3 complete. Phase 5.3 (custom tile/theme creation) next.
 
 ---
 
@@ -363,15 +363,15 @@ Features that extend dungeon mapping depth and personalization.
 - ✅ Full JSON round-trip — multi-level project export/import with stair links preserved
 - ✅ IndexedDB autosave with legacy bare-map migration via `wrapMapAsProject()`
 
-**5.2 — Sample & Default Maps**
-- Bundled collection of hand-crafted sample maps — at least 2 per theme (26+ maps minimum across 13 themes)
-- Maps showcase each theme's art, tile variety, and generator capabilities (rooms-and-corridors, village, cavern, open-terrain)
-- "Sample Maps" gallery accessible from the start screen or a menu — browse by theme, preview thumbnail, load into editor
-- Loaded sample maps are fully editable (treated as a new unsaved project)
-- Maps range from small (16×16 tavern/encounter) to medium (32×32 dungeon level) to demonstrate different use cases
-- Multi-level sample projects (at least 1–2) showcasing stair links between levels
-- No backend required — maps bundled as JSON in the application build
-- Serves as onboarding for new users who want to explore features without starting from scratch or using random generation
+**~~5.2 — Sample & Default Maps~~** ✅ COMPLETE
+- ✅ Bundled collection of 26 sample projects / 28 playable levels across 13 themes
+- ✅ Maps showcase each theme's art, tile variety, and generator capabilities (rooms-and-corridors, village, cavern, open-terrain)
+- ✅ "Sample Maps" gallery accessible from the header — browse by theme, review details, and load into editor
+- ✅ Loaded sample maps are fully editable (treated as a new project)
+- ✅ Maps range from small encounters to medium dungeon, settlement, cavern, and terrain maps
+- ✅ Multi-level sample projects showcase stair links between levels (ISS Constellation and Temple of the Forgotten Sun)
+- ✅ No backend required — maps are bundled in the application source/build
+- ✅ Serves as onboarding for new users who want to explore features without starting from scratch or using random generation
 
 **5.3 — Custom Tile/Theme Creation** *(formerly 5.2, originally 7.2)*
 - User-defined custom tile types with uploaded graphics
@@ -423,9 +423,9 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - ~~**Phase 4.5.2** — Theme Personality: Floors, Walls, Doors~~ ✅
 - ~~**Phase 4.5.3** — Iconic Tiles: Treasure, Traps, Start, Water~~ ✅
 - ~~**Phase 5.1** — Multi-Level Dungeon Support~~ ✅
+- ~~**Phase 5.2** — Sample & Default Maps~~ ✅
 
 ### Medium-Term — Active Roadmap
-- **Phase 5.2** — Sample & Default Maps
 - **Phase 5.3** — Custom Tile/Theme Creation
 
 ---
@@ -470,6 +470,12 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 ---
 
 ## Changes History
+
+**2026-04-29 — Phase 5.2 complete: Sample & Default Maps shipped**
+- Code-confirmed bundled samples in `src/utils/premadeMaps.ts`: 26 sample projects / 28 playable levels across all 13 themes
+- Gallery UI in `src/components/PremadeMapsDialog.tsx`, opened from the header `Samples` button, supports theme filtering and loading into the editor
+- Sample projects include generated notes, themed tokens, light sources, fog-of-war setup, initiative order, and two multi-level linked-stair examples
+- Roadmap status updated to make Phase 5.3 the next active phase
 
 **2026-04-29 — Phase 5.2 added: Sample & Default Maps**
 - New Phase 5.2: bundled sample maps — at least 2 hand-crafted maps per theme (26+ maps across 13 themes)
