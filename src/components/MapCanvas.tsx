@@ -216,6 +216,16 @@ interface MapCanvasProps {
   lightRadius?: number;
   /** Current light glow color (preview ghost). */
   lightColor?: string;
+  /** Stair links involving the active level (for rendering indicators). */
+  stairLinks?: import('../types/map').StairLink[];
+  /** Pending stair link source (shown as highlight when link-stair tool active). */
+  stairLinkSource?: { level: number; x: number; y: number } | null;
+  /** Called when user clicks a cell with the link-stair tool. */
+  onStairLinkClick?: (x: number, y: number) => void;
+  /** Called when user double-clicks a linked stair to navigate. */
+  onStairNavigate?: (x: number, y: number) => void;
+  /** Index of the currently active level. */
+  activeLevelIndex?: number;
 }
 
 export interface MapCanvasHandle {
@@ -571,6 +581,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   onRemoveLightSource,
   lightRadius = 4,
   lightColor = '#f97316',
+  stairLinks,
+  stairLinkSource,
+  onStairLinkClick,
+  onStairNavigate,
+  activeLevelIndex = 0,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -968,6 +983,56 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       }
     }
 
+    // ── Stair link indicators ────────────────────────────────────────
+    // Draw small arrow badges on stairs that have stair links.
+    if (stairLinks && stairLinks.length > 0 && !printMode) {
+      ctx.save();
+      const badgeR = Math.max(6, tileSize * 0.22);
+      for (const link of stairLinks) {
+        // Determine which end is on this level.
+        const entries: { x: number; y: number; destLevel: number }[] = [];
+        if (link.fromLevel === activeLevelIndex) {
+          entries.push({ x: link.fromCell.x, y: link.fromCell.y, destLevel: link.toLevel });
+        }
+        if (link.toLevel === activeLevelIndex) {
+          entries.push({ x: link.toCell.x, y: link.toCell.y, destLevel: link.fromLevel });
+        }
+        for (const { x, y, destLevel } of entries) {
+          const px = (x + 1) * tileSize - badgeR - 1;
+          const py = y * tileSize + badgeR + 1;
+          // Badge circle
+          ctx.beginPath();
+          ctx.arc(px, py, badgeR, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(59, 130, 246, 0.85)';
+          ctx.fill();
+          ctx.strokeStyle = '#fff';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+          // Level number label
+          const label = `L${destLevel + 1}`;
+          ctx.fillStyle = '#fff';
+          ctx.font = `bold ${Math.max(8, badgeR * 0.9)}px sans-serif`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, px, py);
+        }
+      }
+      ctx.restore();
+    }
+
+    // Highlight the pending stair link source cell.
+    if (stairLinkSource && stairLinkSource.level === activeLevelIndex && activeTool === 'link-stair') {
+      ctx.save();
+      const sx = stairLinkSource.x * tileSize;
+      const sy = stairLinkSource.y * tileSize;
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 3;
+      ctx.setLineDash([6, 3]);
+      ctx.strokeRect(sx + 2, sy + 2, tileSize - 4, tileSize - 4);
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
     // ── Measure tool overlay ──────────────────────────────────────────
     if (activeTool === 'measure' && isDragging && dragStart && dragEnd) {
       const sx = (dragStart.x + 0.5) * tileSize;
@@ -1255,7 +1320,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex]);
 
   // Minimap render
   useEffect(() => {
@@ -1434,6 +1499,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       if (ls) onRemoveLightSource?.(ls.id);
       return;
     }
+    if (activeTool === 'link-stair') {
+      onStairLinkClick?.(x, y);
+      return;
+    }
 
     // Player-only tools (drawing eraser).
     if (isPlayerView) {
@@ -1470,6 +1539,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     onAddToken, onRemoveToken, onRemoveAnnotation, meta.width, meta.height,
     onAddMarker, onRemoveMarker, markerShape, markerColor, markerSize, markers,
     getFractionalCoords, onFovClick, lightSources, onAddLightSource, onRemoveLightSource,
+    onStairLinkClick,
   ]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -1527,6 +1597,15 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       handleCanvasAction(e);
     }
   }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens]);
+
+  const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    const coords = getTileCoords(e);
+    if (!coords) return;
+    const tile = tiles[coords.y]?.[coords.x]?.type;
+    if (tile === 'stairs-up' || tile === 'stairs-down') {
+      onStairNavigate?.(coords.x, coords.y);
+    }
+  }, [getTileCoords, tiles, onStairNavigate]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isPanningRef.current) {
@@ -1802,6 +1881,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
               display: 'block',
             }}
             onMouseDown={handleMouseDown}
+            onDoubleClick={handleDoubleClick}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseLeave}

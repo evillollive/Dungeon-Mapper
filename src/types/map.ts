@@ -292,7 +292,9 @@ export type ToolType =
   | 'fov'
   | 'measure'
   // Light source tools — place and remove light source markers.
-  | 'light' | 'remove-light';
+  | 'light' | 'remove-light'
+  // Stair link tool — click stairs to link them between levels.
+  | 'link-stair';
 
 export type ViewMode = 'gm' | 'player';
 

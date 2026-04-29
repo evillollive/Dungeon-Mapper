@@ -52,6 +52,10 @@ interface ToolbarProps {
   onSetLightRadius: (r: number) => void;
   onSetLightColor: (c: string) => void;
   onClearLightSources: () => void;
+  // Stair link tool state
+  stairLinkSource: { level: number; x: number; y: number } | null;
+  stairLinkCount: number;
+  onClearStairLinks: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -108,6 +112,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   backgroundImage, onImportBackgroundImage, onUpdateBackgroundImage, onClearBackgroundImage,
   measureShape, measureFeetPerCell, onSetMeasureShape, onSetMeasureFeetPerCell,
   lightPreset, lightRadius, lightColor, onSetLightPreset, onSetLightRadius, onSetLightColor, onClearLightSources,
+  stairLinkSource, stairLinkCount, onClearStairLinks,
 }) => {
   const theme = getTheme(themeId);
   const bgFileRef = React.useRef<HTMLInputElement>(null);
@@ -617,6 +622,44 @@ const Toolbar: React.FC<ToolbarProps> = ({
               />
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* ── STAIR LINKS ── */}
+      <div className="toolbar-section">
+        <div className="toolbar-label">STAIR LINKS</div>
+        <button
+          type="button"
+          className={`tool-btn ${activeTool === 'link-stair' ? 'active' : ''}`}
+          onClick={() => onSetTool('link-stair')}
+          title="Link Stairs — click a stairs tile, switch levels, click the destination stairs tile to connect them. [K]"
+          aria-label="Link Stairs tool"
+          aria-pressed={activeTool === 'link-stair'}
+        >
+          <span className="tool-icon" aria-hidden="true">🔗</span>
+          <span className="tool-name">Link</span>
+          <span className="tool-shortcut" aria-hidden="true">[K]</span>
+        </button>
+        {activeTool === 'link-stair' && (
+          <div className="toolbar-sub-label" style={{ fontSize: '0.6rem', opacity: 0.8, marginTop: 4, lineHeight: 1.3 }}>
+            {stairLinkSource
+              ? `Source: (${stairLinkSource.x},${stairLinkSource.y}) on L${stairLinkSource.level + 1}. Switch levels and click destination stairs.`
+              : 'Click a stairs tile to start linking.'}
+          </div>
+        )}
+        <button
+          type="button"
+          className="tool-btn"
+          onClick={onClearStairLinks}
+          title="Remove all stair links involving this level."
+          aria-label="Clear stair links for this level"
+          disabled={stairLinkCount === 0}
+        >
+          <span className="tool-icon" aria-hidden="true">🗑</span>
+          <span className="tool-name">Clear Links</span>
+        </button>
+        <div className="toolbar-sub-label" style={{ fontSize: '0.6rem', opacity: 0.6, marginTop: 2 }}>
+          {stairLinkCount} link{stairLinkCount !== 1 ? 's' : ''} total
         </div>
       </div>
     </div>

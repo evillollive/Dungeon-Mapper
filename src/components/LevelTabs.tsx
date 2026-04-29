@@ -1,5 +1,5 @@
 import { useCallback, useState, useRef, useEffect } from 'react';
-import type { DungeonMap } from '../types/map';
+import type { DungeonMap, StairLink } from '../types/map';
 
 interface LevelTabsProps {
   levels: DungeonMap[];
@@ -10,6 +10,8 @@ interface LevelTabsProps {
   onDelete: (index: number) => void;
   onDuplicate: (index: number) => void;
   onReorder: (fromIndex: number, toIndex: number) => void;
+  /** All stair links in the project (for showing connection indicators). */
+  stairLinks?: StairLink[];
 }
 
 export default function LevelTabs({
@@ -21,6 +23,7 @@ export default function LevelTabs({
   onDelete,
   onDuplicate,
   onReorder,
+  stairLinks = [],
 }: LevelTabsProps) {
   // ── Context menu state ──
   const [menuIndex, setMenuIndex] = useState<number | null>(null);
@@ -130,6 +133,7 @@ export default function LevelTabs({
         const isActive = idx === activeIndex;
         const isDragging = idx === dragIndex;
         const isDropTarget = idx === dropTarget && dragIndex !== null && dragIndex !== idx;
+        const linkCount = stairLinks.filter(l => l.fromLevel === idx || l.toLevel === idx).length;
 
         return (
           <div
@@ -150,7 +154,7 @@ export default function LevelTabs({
             onDrop={(e) => handleDrop(e, idx)}
             onDragEnd={handleDragEnd}
             onDoubleClick={() => handleRenameStart(idx)}
-            title={`Level ${idx + 1}: ${level.meta.name} (${level.meta.width}×${level.meta.height})`}
+            title={`Level ${idx + 1}: ${level.meta.name} (${level.meta.width}×${level.meta.height})${linkCount > 0 ? ` — ${linkCount} stair link${linkCount !== 1 ? 's' : ''}` : ''}`}
           >
             {editingIndex === idx ? (
               <input
@@ -163,7 +167,14 @@ export default function LevelTabs({
                 onClick={(e) => e.stopPropagation()}
               />
             ) : (
-              <span className="level-tab__label">{level.meta.name}</span>
+              <>
+                <span className="level-tab__label">{level.meta.name}</span>
+                {linkCount > 0 && (
+                  <span className="level-tab__link-badge" title={`${linkCount} stair link${linkCount !== 1 ? 's' : ''}`}>
+                    🔗{linkCount}
+                  </span>
+                )}
+              </>
             )}
           </div>
         );
