@@ -700,6 +700,7 @@ function App() {
         onDelete={deleteLevel}
         onDuplicate={duplicateLevel}
         onReorder={reorderLevels}
+        stairLinks={project.stairLinks}
       />
       <div className="app-body">
         {viewMode === 'gm' ? (

@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
-> **Last updated:** 2026-04-28
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 7.1, & 7.3 complete. Phase 5.1 (multi-level dungeon support) next.
+> **Last updated:** 2026-04-29
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 7.1, & 7.3 complete. Phase 5.2 (custom tile/theme creation) next.
 
 ---
 
@@ -30,7 +30,8 @@ Dungeon-Mapper is a React + TypeScript + Vite single-page app with Canvas-based 
 - Player drawing tools (freehand pen with colors and widths)
 - Export: JSON (round-trip), PNG, SVG (GM and Player variants)
 - **Print-Optimized Export** (72/150/300 DPI, page tiling for Letter & A4)
-- Undo/Redo (50-step history)
+- **Multi-Level Dungeons** (level tabs with add/rename/duplicate/reorder, stair links between levels with navigation, per-level undo history)
+- Undo/Redo (50-step history, per-level in multi-level projects)
 - IndexedDB auto-save with legacy localStorage migration
 - 30+ keyboard shortcuts with discoverable help overlay
 - Zoom/Pan with minimap
@@ -75,7 +76,7 @@ Repo: amishne/mipui | Stack: Pure JavaScript + Firebase
 | Angled/oval wall drawing | Non-rectangular wall shapes | ❌ |
 | Separator types | Doors, windows, bars, fences, curtains, archways | ✅ |
 | Shape overlays | Colored squares/circles/diamonds for marking | ✅ |
-| Elevation/stairs visualization | Multi-level passage indicators | Partial |
+| Elevation/stairs visualization | Multi-level passage indicators | ✅ |
 | Copy/paste regions | Selection-based content duplication | ✅ |
 | Image import tool | Import existing battlemaps | ✅ |
 | Multi-resolution export | 32px, 64px, 192px, 300 DPI battlemap | ✅ |
@@ -93,7 +94,7 @@ Repo: playest/hextml | Stack: JavaScript + HTML5 Canvas
 | Hexagonal grid | Pointy-top and flat-top hex support | ❌ (not planned) |
 | Custom tile uploads | User-provided tile graphics | ❌ |
 | Secret/private notes | GM-only vs player-visible annotations | ✅ (via fog) |
-| Submap/layer system | Multi-level map organization | ❌ |
+| Submap/layer system | Multi-level map organization | ✅ (multi-level project) |
 | Hex coordinate numbering | Standard hex grid addressing | ❌ (not planned) |
 
 ### Donjon (CC BY-NC 3.0 — Non-Commercial Only ⚠️)
@@ -319,10 +320,20 @@ Upgrade procedural tile rendering across all 13 themes simultaneously for strong
 
 Features that extend dungeon mapping depth and personalization.
 
-**5.1 — Multi-Level Dungeon Support** *(formerly 6.2)*
-- Link multiple maps as dungeon levels
-- Stairs connect specific cells between levels; level navigator UI
-- Why: Multi-floor dungeons are common but require manually managing separate files today
+**~~5.1 — Multi-Level Dungeon Support~~** ✅ COMPLETE *(formerly 6.2)*
+- ✅ `DungeonProject` wraps ordered array of `DungeonMap` levels with `activeLevelIndex` and `stairLinks[]`
+- ✅ Level tab bar UI with add, rename (double-click), duplicate, delete, and drag-to-reorder
+- ✅ Per-level undo/redo history (50-step, isolated per level)
+- ✅ Stair link tool ([K] shortcut) — click stairs tile to set source, switch levels, click destination stairs to create link
+- ✅ Stair link badges rendered on canvas — blue "L#" badge on linked stairs tiles showing destination level
+- ✅ Pending stair link source highlighted with dashed orange border
+- ✅ Double-click linked stairs to navigate to destination level (auto-centers viewport on destination cell)
+- ✅ Level tabs show 🔗 badge with link count for levels that have stair connections
+- ✅ Stair links auto-reindex on level delete, duplicate, and reorder
+- ✅ STAIR LINKS toolbar section with Link tool, Clear Links button, and link count display
+- ✅ PageUp/PageDown keyboard shortcuts to cycle between levels
+- ✅ Full JSON round-trip — multi-level project export/import with stair links preserved
+- ✅ IndexedDB autosave with legacy bare-map migration via `wrapMapAsProject()`
 
 **5.2 — Custom Tile/Theme Creation** *(formerly 7.2)*
 - User-defined custom tile types with uploaded graphics
@@ -373,9 +384,9 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - ~~**Phase 4.3** — Light Sources~~ ✅
 - ~~**Phase 4.5.2** — Theme Personality: Floors, Walls, Doors~~ ✅
 - ~~**Phase 4.5.3** — Iconic Tiles: Treasure, Traps, Start, Water~~ ✅
+- ~~**Phase 5.1** — Multi-Level Dungeon Support~~ ✅
 
 ### Medium-Term — Active Roadmap
-- **Phase 5.1** — Multi-Level Dungeon Support *(high demand, moderate complexity)*
 - **Phase 5.2** — Custom Tile/Theme Creation
 
 ---
@@ -412,10 +423,25 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 | Art phase before Phase 5 | 2026-04-28 | Art improvements ship fast (no architectural changes), improve first impressions immediately, and the TileTheme interface extensions (gridColor) benefit Phase 5.2 custom themes |
 | Print mode as mandatory B&W fallback | 2026-04-28 | All art upgrades must degrade cleanly to the existing monochrome print renderer; no color-only differentiation |
 | Shadow/depth effects at artist discretion | 2026-04-28 | Canvas shadowBlur and gradient-based depth effects add polish but are expensive at scale; auto-disable above 96×96 if frame budget is exceeded |
+| Bidirectional stair links by convention | 2026-04-29 | A single StairLink entry covers travel in both directions — simplifies UI and avoids the need for paired entries; removal deletes any link matching either endpoint |
+| Double-click for stair navigation | 2026-04-29 | Double-clicking a linked stair tile navigates to the destination level and centers viewport — intuitive discovery without requiring a separate "navigate" tool |
+| Stair link tool as explicit mode | 2026-04-29 | Link creation requires the dedicated link-stair tool ([K]) rather than auto-linking on placement — prevents accidental links and gives the user full control over which stairs connect |
 
 ---
 
 ## Changes History
+
+**2026-04-29 — Phase 5.1 complete: Multi-level dungeon support shipped**
+- Stair link tool ([K] shortcut) in GM toolbar: click stairs tile to set source, switch levels, click destination stairs to link
+- Blue "L#" badges rendered on linked stairs tiles showing destination level number
+- Pending stair link source highlighted with dashed orange border
+- Double-click any linked stairs tile to navigate to destination level (viewport auto-centers on destination cell)
+- Level tabs show 🔗 badge with link count for levels that have stair connections
+- STAIR LINKS toolbar section with Link tool button, Clear Links button, and total link count
+- `addStairLink()` and `removeStairLink()` functions in useMapState (bidirectional removal)
+- Stair links auto-reindex on level delete, duplicate, and reorder (existing infrastructure)
+- Tool state cleanup: switching away from link-stair tool clears pending source
+- Priority order updated to show 5.2 as next
 
 **2026-04-28 — Phase 4.5.3 complete: Iconic tiles shipped**
 - All 13 themes: water tiles upgraded with unique per-theme liquid rendering (dungeon ripple pools, castle moat with lily pads, starship coolant bubbles, alien acid swirls, cyberpunk neon shimmer, wilderness river currents, old west water trough, steampunk steam pipe + valve, modern city fountain, post-apocalypse toxic pool, pirate bilge planks, desert oasis + palm, ancient reflecting pool + lotus)
