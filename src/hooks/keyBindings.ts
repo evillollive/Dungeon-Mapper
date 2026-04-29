@@ -128,6 +128,7 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       action: actions.toggleFov,
     },
     tool('tool.measure', 'm', 'Measure / Distance tool', 'measure'),
+    tool('tool.linkStair', 'k', 'Link Stairs tool — connect stairs between levels', 'link-stair'),
     {
       id: 'tool.light',
       category: 'Tools',
@@ -420,4 +421,5 @@ export const TOOL_SHORTCUTS: Record<ToolType, string | undefined> = {
   measure: 'M',
   light: 'I',
   'remove-light': undefined,
+  'link-stair': 'K',
 };

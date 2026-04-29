@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { DungeonMap, DungeonProject, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource } from '../types/map';
+import type { DungeonMap, DungeonProject, StairLink, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource } from '../types/map';
 import { createEmptyGrid, createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
 import { saveProject, loadProject, migrateFromLocalStorage } from '../utils/storage';
 import { wrapMapAsProject } from '../utils/storage';
@@ -1092,7 +1092,7 @@ export function useMapState() {
     });
   }, [debouncedSave]);
 
-  const addStairLink = useCallback((link: import('../types/map').StairLink) => {
+  const addStairLink = useCallback((link: StairLink) => {
     setProject(prev => {
       const filtered = prev.stairLinks.filter(
         l => !(l.fromLevel === link.fromLevel && l.fromCell.x === link.fromCell.x && l.fromCell.y === link.fromCell.y)

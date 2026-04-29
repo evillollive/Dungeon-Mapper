@@ -19,7 +19,7 @@ import { computeFOV } from './utils/fov';
 import { computePlayerFOV, mergeExplored } from './utils/dynamicFog';
 import { computeLightVisible } from './utils/lightSources';
 import { getTheme, THEME_LIST } from './themes/index';
-import { ALL_TILE_TYPES, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape, type LightSourcePreset, LIGHT_SOURCE_PRESETS } from './types/map';
+import { ALL_TILE_TYPES, type ToolType, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape, type LightSourcePreset, LIGHT_SOURCE_PRESETS } from './types/map';
 import LevelTabs from './components/LevelTabs';
 import './App.css';
 
@@ -143,6 +143,8 @@ function App() {
     deleteLevel,
     duplicateLevel,
     reorderLevels,
+    addStairLink,
+    removeStairLink,
   } = useMapState();
 
   const {
@@ -224,6 +226,76 @@ function App() {
       return { x, y };
     });
   }, []);
+
+  // ── Stair Link tool ─────────────────────────────────────────────────
+  // When the link-stair tool is active, the user clicks a stairs tile to
+  // set the "pending source", then switches levels and clicks a destination
+  // stairs tile. The pending source is cleared when the tool changes.
+  const [stairLinkSource, setStairLinkSource] = useState<{
+    level: number; x: number; y: number;
+  } | null>(null);
+
+  // Clear pending source when the tool changes away from link-stair.
+  const handleSetActiveTool = useCallback((tool: ToolType | ((prev: ToolType) => ToolType)) => {
+    setActiveTool((prev: ToolType) => {
+      const next = typeof tool === 'function' ? tool(prev) : tool;
+      if (prev === 'link-stair' && next !== 'link-stair') {
+        setStairLinkSource(null);
+      }
+      return next;
+    });
+  }, [setActiveTool]);
+
+  // Compute stair links relevant to the active level for canvas rendering.
+  const activeStairLinks = useMemo(() => {
+    return project.stairLinks.filter(
+      l => l.fromLevel === activeLevelIndex || l.toLevel === activeLevelIndex,
+    );
+  }, [project.stairLinks, activeLevelIndex]);
+
+  const handleStairLinkClick = useCallback((x: number, y: number) => {
+    const tile = map.tiles[y]?.[x]?.type;
+    if (tile !== 'stairs-up' && tile !== 'stairs-down') return;
+
+    if (!stairLinkSource) {
+      // First click: set as source.
+      setStairLinkSource({ level: activeLevelIndex, x, y });
+    } else {
+      // Second click: create the link (must be on a different level).
+      if (stairLinkSource.level === activeLevelIndex &&
+          stairLinkSource.x === x && stairLinkSource.y === y) {
+        // Clicking the same cell clears the selection.
+        setStairLinkSource(null);
+        return;
+      }
+      addStairLink({
+        fromLevel: stairLinkSource.level,
+        fromCell: { x: stairLinkSource.x, y: stairLinkSource.y },
+        toLevel: activeLevelIndex,
+        toCell: { x, y },
+      });
+      setStairLinkSource(null);
+    }
+  }, [stairLinkSource, activeLevelIndex, map.tiles, addStairLink]);
+
+  // Navigate to destination when double-clicking a linked stair.
+  const handleStairNavigate = useCallback((x: number, y: number) => {
+    const link = project.stairLinks.find(
+      l => (l.fromLevel === activeLevelIndex && l.fromCell.x === x && l.fromCell.y === y) ||
+           (l.toLevel === activeLevelIndex && l.toCell.x === x && l.toCell.y === y),
+    );
+    if (!link) return;
+    // Determine destination.
+    const isFrom = link.fromLevel === activeLevelIndex &&
+                   link.fromCell.x === x && link.fromCell.y === y;
+    const destLevel = isFrom ? link.toLevel : link.fromLevel;
+    const destCell = isFrom ? link.toCell : link.fromCell;
+    switchLevel(destLevel);
+    // Center on destination after a brief delay to let the level swap render.
+    requestAnimationFrame(() => {
+      canvasRef.current?.centerOnTile(destCell.x, destCell.y);
+    });
+  }, [project.stairLinks, activeLevelIndex, switchLevel]);
 
   // ── Dynamic Fog of War ──────────────────────────────────────────────
   // When dynamic fog is enabled, compute the union FOV from all player
@@ -317,7 +389,7 @@ function App() {
   const switchViewMode = useCallback(() => {
     setViewMode(prev => {
       const next: ViewMode = prev === 'gm' ? 'player' : 'gm';
-      setActiveTool(next === 'player' ? 'pdraw' : 'paint');
+      handleSetActiveTool(next === 'player' ? 'pdraw' : 'paint');
       announce(next === 'player' ? 'Switched to Player view' : 'Switched to GM view');
       try {
         window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, next);
@@ -326,7 +398,7 @@ function App() {
       }
       return next;
     });
-  }, [setActiveTool, announce]);
+  }, [handleSetActiveTool, announce]);
 
   const fogEnabled = map.fogEnabled ?? false;
   const handleToggleFogEnabled = useCallback(() => {
@@ -548,7 +620,7 @@ function App() {
   // listener and dispatches to the wired actions; the registry it returns
   // also feeds the in-app help overlay.
   const shortcutBindings = useGlobalShortcuts({
-    setActiveTool,
+    setActiveTool: handleSetActiveTool,
     undo: handleUndo,
     redo: handleRedo,
     togglePrintMode: handleTogglePrintMode,
@@ -575,7 +647,7 @@ function App() {
     pasteClipboard: handlePasteClipboard,
     toggleFov: () => {
       if (viewMode === 'gm') {
-        setActiveTool(prev => prev === 'fov' ? 'paint' : 'fov');
+        handleSetActiveTool(prev => prev === 'fov' ? 'paint' : 'fov');
       }
     },
     nextLevel: () => {
@@ -636,7 +708,7 @@ function App() {
               activeTool={activeTool}
               activeTile={activeTile}
               themeId={themeId}
-              onSetTool={setActiveTool}
+              onSetTool={handleSetActiveTool}
               onSetTile={setActiveTile}
               onSetTheme={handleSetTheme}
               preserveOnThemeSwitch={preserveOnThemeSwitch}
@@ -671,13 +743,27 @@ function App() {
               onSetLightRadius={setLightRadius}
               onSetLightColor={setLightColor}
               onClearLightSources={clearLightSources}
+              stairLinkSource={stairLinkSource}
+              stairLinkCount={project.stairLinks.length}
+              onClearStairLinks={() => {
+                // Remove all stair links for the current level.
+                for (const link of [...project.stairLinks]) {
+                  if (link.fromLevel === activeLevelIndex || link.toLevel === activeLevelIndex) {
+                    removeStairLink(
+                      link.fromLevel === activeLevelIndex ? link.fromLevel : link.toLevel,
+                      link.fromLevel === activeLevelIndex ? link.fromCell.x : link.toCell.x,
+                      link.fromLevel === activeLevelIndex ? link.fromCell.y : link.toCell.y,
+                    );
+                  }
+                }
+              }}
             />
           </nav>
         ) : (
           <nav aria-label="Player tools">
             <PlayerToolbar
               activeTool={activeTool}
-              onSetTool={setActiveTool}
+              onSetTool={handleSetActiveTool}
               drawColor={drawColor}
               onSetDrawColor={setDrawColor}
               drawWidth={drawWidth}
@@ -741,6 +827,11 @@ function App() {
             onRemoveLightSource={removeLightSource}
             lightRadius={lightRadius}
             lightColor={lightColor}
+            stairLinks={activeStairLinks}
+            stairLinkSource={activeTool === 'link-stair' ? stairLinkSource : null}
+            onStairLinkClick={handleStairLinkClick}
+            onStairNavigate={handleStairNavigate}
+            activeLevelIndex={activeLevelIndex}
           />
         </main>
         {viewMode === 'gm' && (
@@ -761,7 +852,7 @@ function App() {
               onSelectNote={handleSelectNote}
               onUpdateNote={updateNote}
               onDeleteNote={deleteNote}
-              onActivateNoteTool={() => setActiveTool('note')}
+              onActivateNoteTool={() => handleSetActiveTool('note')}
             />
           </aside>
         )}
