@@ -1,4 +1,4 @@
-import type { DungeonMap, DungeonProject, ViewMode } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, DungeonProject, ViewMode } from '../types/map';
 import { TOKEN_KIND_COLORS, isDungeonProject } from '../types/map';
 import type { TileTheme } from '../themes/index';
 import { ICON_BY_ID } from './iconLibrary';
@@ -137,7 +137,7 @@ export function exportMapSVG(
       // themes") so mixed-style maps export with each tile in its original
       // theme color. Falls back to the map theme when no override / resolver.
       const tileTheme = tile.theme && resolveTheme ? resolveTheme(tile.theme) : theme;
-      const fill = tileTheme.tileColors[tile.type];
+      const fill = tileTheme.tileColors[tile.type] ?? '#777777';
       svg += `<rect x="${x * tileSize}" y="${y * tileSize}" width="${tileSize}" height="${tileSize}" fill="${fill}" stroke="#2d3561" stroke-width="0.5"/>`;
     }
   }
@@ -291,6 +291,7 @@ export interface HighResExportOptions {
   viewMode: ViewMode;
   /** Feet per cell for scale bar. 0 = no scale bar. */
   feetPerCell?: number;
+  customThemes?: readonly CustomThemeDefinition[];
 }
 
 /**
@@ -311,6 +312,7 @@ export async function exportHighResPNG(
     printMode: opts.printMode,
     viewMode: opts.viewMode,
     feetPerCell: opts.feetPerCell,
+    customThemes: opts.customThemes,
   });
 
   const baseName = map.meta.name.replace(/\s+/g, '_') || 'dungeon';

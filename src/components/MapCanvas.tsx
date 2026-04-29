@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useMemo, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
-import type { DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource } from '../types/map';
-import { TOKEN_KIND_COLORS } from '../types/map';
-import { getTheme } from '../themes/index';
+import type { CustomThemeDefinition, DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource } from '../types/map';
+import { TOKEN_KIND_COLORS, isBuiltInTileType } from '../types/map';
+import { getSemanticTileType, getThemeWithCustom, preloadCustomThemeImages } from '../utils/customThemes';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from '../utils/tokenVisibility';
@@ -112,6 +112,7 @@ interface MapCanvasProps {
   activeTool: ToolType;
   activeTile: TileType;
   themeId: string;
+  customThemes?: CustomThemeDefinition[];
   printMode: boolean;
   viewMode: ViewMode;
   /**
@@ -540,6 +541,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   activeTool,
   activeTile,
   themeId,
+  customThemes = [],
   printMode,
   viewMode,
   gmShowFog,
@@ -717,7 +719,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-    const theme = getTheme(themeId);
+    preloadCustomThemeImages(customThemes, () => setBgImageReady(v => !v));
+    const theme = getThemeWithCustom(themeId, customThemes);
 
     const w = meta.width * tileSize;
     const h = meta.height * tileSize;
@@ -754,7 +757,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         const tile = tiles[y]?.[x];
         if (tile) {
           if (printMode) {
-            drawPrintTile(ctx, tile.type, x, y, tileSize);
+            drawPrintTile(ctx, getSemanticTileType(tile.type, customThemes), x, y, tileSize);
           } else if (tile.type !== 'empty') {
             // Skip 'empty' tiles in screen mode so the light graph-paper
             // background (SCREEN_BG) shows through instead of the theme's
@@ -762,10 +765,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
             // Honor the per-tile theme override (set by the optional
             // "preserve tiles when switching themes" mode) so mixed-style
             // maps render each tile in its original theme.
-            const tileTheme = tile.theme ? getTheme(tile.theme) : theme;
+            const tileTheme = tile.theme ? getThemeWithCustom(tile.theme, customThemes) : theme;
             tileTheme.drawTile(ctx, tile.type, x, y, tileSize);
             // Draw print-mode-inspired glyph overlay for quick identification.
-            drawTileOverlay(ctx, tile.type, x, y, tileSize, tileTheme.tileColors[tile.type]);
+            if (isBuiltInTileType(tile.type)) {
+              drawTileOverlay(ctx, tile.type, x, y, tileSize, tileTheme.tileColors[tile.type]);
+            }
           }
         }
       }
@@ -1320,13 +1325,13 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex]);
 
   // Minimap render
   useEffect(() => {
     const canvas = minimapRef.current;
     if (!canvas) return;
-    const theme = getTheme(themeId);
+    const theme = getThemeWithCustom(themeId, customThemes);
 
     const mTile = Math.max(1, Math.min(Math.floor(MINIMAP_MAX_W / meta.width), Math.floor(MINIMAP_MAX_H / meta.height)));
     const mW = meta.width * mTile;
@@ -1345,7 +1350,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       for (let x = 0; x < meta.width; x++) {
         const tile = tiles[y]?.[x];
         if (tile && tile.type !== 'empty') {
-          ctx.fillStyle = printMode ? '#000000' : theme.tileColors[tile.type];
+          ctx.fillStyle = printMode ? '#000000' : (theme.tileColors[tile.type] ?? '#777777');
           ctx.fillRect(x * mTile, y * mTile, mTile, mTile);
         }
       }
@@ -1363,7 +1368,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.lineWidth = 1;
       ctx.strokeRect(vx, vy, vw * mTile, vh * mTile);
     }
-  }, [map, tiles, meta, tileSize, themeId, printMode, zoom, pan]);
+  }, [map, tiles, meta, tileSize, themeId, customThemes, printMode, zoom, pan]);
 
   // Selection keyboard handler
   useEffect(() => {

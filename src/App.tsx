@@ -8,6 +8,7 @@ import IconPicker from './components/IconPicker';
 import MapHeader, { type MapHeaderHandle } from './components/MapHeader';
 import GenerateMapDialog from './components/GenerateMapDialog';
 import PremadeMapsDialog from './components/PremadeMapsDialog';
+import CustomThemeDialog from './components/CustomThemeDialog';
 import ShortcutsHelp from './components/ShortcutsHelp';
 import ExportDialog from './components/ExportDialog';
 import type { GeneratedMap } from './utils/generators';
@@ -19,8 +20,8 @@ import { isTokenFogged } from './utils/tokenVisibility';
 import { computeFOV } from './utils/fov';
 import { computePlayerFOV, mergeExplored } from './utils/dynamicFog';
 import { computeLightVisible } from './utils/lightSources';
-import { getTheme, THEME_LIST } from './themes/index';
-import { ALL_TILE_TYPES, type ToolType, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape, type LightSourcePreset, LIGHT_SOURCE_PRESETS } from './types/map';
+import { buildThemeList, getThemeWithCustom } from './utils/customThemes';
+import { ALL_TILE_TYPES, isBuiltInTileType, type ToolType, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape, type LightSourcePreset, LIGHT_SOURCE_PRESETS } from './types/map';
 import LevelTabs from './components/LevelTabs';
 import './App.css';
 
@@ -107,6 +108,8 @@ function App() {
     deleteNote,
     setTileSize,
     setTheme,
+    saveCustomTheme,
+    deleteCustomTheme,
     undo,
     redo,
     canUndo,
@@ -158,6 +161,8 @@ function App() {
   const canvasRef = useRef<MapCanvasHandle>(null);
   const headerRef = useRef<MapHeaderHandle>(null);
   const themeId = map.meta.theme ?? 'dungeon';
+  const customThemes = useMemo(() => project.customThemes ?? [], [project.customThemes]);
+  const themeList = useMemo(() => buildThemeList(customThemes), [customThemes]);
   const [printMode, setPrintMode] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(loadInitialViewMode);
   const [uiScale, setUIScale] = useState<number>(loadInitialUIScale);
@@ -167,6 +172,7 @@ function App() {
   const [gmShowFog, setGmShowFog] = useState<boolean>(loadInitialGmShowFog);
   const [showGenerateDialog, setShowGenerateDialog] = useState<boolean>(false);
   const [showPremadeMapsDialog, setShowPremadeMapsDialog] = useState<boolean>(false);
+  const [showCustomThemeDialog, setShowCustomThemeDialog] = useState<boolean>(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState<boolean>(false);
   const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
   // Polite live-region message announced to screen readers when the user
@@ -217,8 +223,8 @@ function App() {
 
   const fovVisible = useMemo(() => {
     if (!fovOrigin || activeTool !== 'fov') return null;
-    return computeFOV(map.tiles, fovOrigin.x, fovOrigin.y);
-  }, [fovOrigin, map.tiles, activeTool]);
+    return computeFOV(map.tiles, fovOrigin.x, fovOrigin.y, 0, customThemes);
+  }, [fovOrigin, map.tiles, activeTool, customThemes]);
 
   // When the user clicks a cell with the FOV tool, toggle the origin on/off.
   // Clicking the same cell again clears it; clicking a different cell moves it.
@@ -305,8 +311,8 @@ function App() {
   const dynamicFogEnabled = (map.dynamicFogEnabled ?? false) && (map.fogEnabled ?? false);
   const playerVisible = useMemo(() => {
     if (!dynamicFogEnabled) return null;
-    return computePlayerFOV(map.tiles, map.tokens ?? []);
-  }, [dynamicFogEnabled, map.tiles, map.tokens]);
+    return computePlayerFOV(map.tiles, map.tokens ?? [], customThemes);
+  }, [dynamicFogEnabled, map.tiles, map.tokens, customThemes]);
 
   // ── Light Sources ───────────────────────────────────────────────────
   // Compute the union FOV from all placed light sources. When dynamic fog
@@ -315,8 +321,8 @@ function App() {
   // When dynamic fog is off, `lightVisible` is used only for the canvas
   // glow overlay — no fog is removed.
   const lightVisible = useMemo(
-    () => computeLightVisible(map.tiles, map.lightSources),
-    [map.tiles, map.lightSources],
+    () => computeLightVisible(map.tiles, map.lightSources, customThemes),
+    [map.tiles, map.lightSources, customThemes],
   );
 
   // Whenever the visible set changes, merge into the explored grid so
@@ -487,28 +493,28 @@ function App() {
 
   const handleSetTheme = useCallback((next: string, preserveExisting?: boolean) => {
     setTheme(next, preserveExisting);
-    const themeName = THEME_LIST.find(t => t.id === next)?.name ?? next;
+    const themeName = themeList.find(t => t.id === next)?.name ?? next;
     announce(`Theme switched to ${themeName}`);
-  }, [setTheme, announce]);
+  }, [setTheme, announce, themeList]);
 
   // Cycle the active theme by `direction` (+1 next, -1 previous), wrapping
   // around at the ends of the alphabetised theme list. Driven by the T /
   // Shift+T global shortcuts; preserves the current preserve-existing
   // setting so users who've opted in keep their hand-painted tiles.
   const cycleTheme = useCallback((direction: 1 | -1) => {
-    const idx = THEME_LIST.findIndex(t => t.id === themeId);
+    const idx = themeList.findIndex(t => t.id === themeId);
     const start = idx >= 0 ? idx : 0;
-    const len = THEME_LIST.length;
-    const next = THEME_LIST[((start + direction) % len + len) % len];
+    const len = themeList.length;
+    const next = themeList[((start + direction) % len + len) % len];
     handleSetTheme(next.id, preserveOnThemeSwitch);
-  }, [themeId, preserveOnThemeSwitch, handleSetTheme]);
+  }, [themeId, themeList, preserveOnThemeSwitch, handleSetTheme]);
 
   // Cycle the active palette tile by `direction`. Wraps around the
   // displayed palette (`ALL_TILE_TYPES`); used by the [/] shortcuts so
   // keyboard users can change paint targets without reaching for the
   // mouse.
   const cycleActiveTile = useCallback((direction: 1 | -1) => {
-    const idx = ALL_TILE_TYPES.indexOf(activeTile);
+    const idx = isBuiltInTileType(activeTile) ? ALL_TILE_TYPES.indexOf(activeTile) : -1;
     const start = idx >= 0 ? idx : 0;
     const len = ALL_TILE_TYPES.length;
     const next = ALL_TILE_TYPES[((start + direction) % len + len) % len];
@@ -579,9 +585,9 @@ function App() {
   }, [setTiles]);
 
   const handleExportSVG = useCallback(() => {
-    const theme = getTheme(themeId);
-    exportMapSVG(map, theme, getTheme, { viewMode });
-  }, [map, themeId, viewMode]);
+    const theme = getThemeWithCustom(themeId, customThemes);
+    exportMapSVG(map, theme, id => getThemeWithCustom(id, customThemes), { viewMode });
+  }, [map, themeId, customThemes, viewMode]);
 
   // Auto-clear the polite live-region message a second after announcing
   // it, so the same string can be announced again on the next action.
@@ -712,11 +718,13 @@ function App() {
               activeTool={activeTool}
               activeTile={activeTile}
               themeId={themeId}
+              customThemes={customThemes}
               onSetTool={handleSetActiveTool}
               onSetTile={setActiveTile}
               onSetTheme={handleSetTheme}
               preserveOnThemeSwitch={preserveOnThemeSwitch}
               onTogglePreserveOnThemeSwitch={() => setPreserveOnThemeSwitch(p => !p)}
+              onOpenCustomThemeBuilder={() => setShowCustomThemeDialog(true)}
               fogEnabled={fogEnabled}
               gmShowFog={gmShowFog}
               onToggleGmShowFog={handleToggleGmShowFogAnnounced}
@@ -790,6 +798,7 @@ function App() {
             activeTool={activeTool}
             activeTile={activeTile}
             themeId={themeId}
+            customThemes={customThemes}
             printMode={printMode}
             viewMode={viewMode}
             gmShowFog={gmShowFog}
@@ -940,6 +949,16 @@ function App() {
           }}
         />
       )}
+      {showCustomThemeDialog && viewMode === 'gm' && (
+        <CustomThemeDialog
+          customThemes={customThemes}
+          activeThemeId={themeId}
+          onSave={saveCustomTheme}
+          onDelete={deleteCustomTheme}
+          onSetTheme={next => handleSetTheme(next, preserveOnThemeSwitch)}
+          onClose={() => setShowCustomThemeDialog(false)}
+        />
+      )}
       {showShortcutsHelp && (
         <ShortcutsHelp
           bindings={shortcutBindings}
@@ -950,6 +969,7 @@ function App() {
         <ExportDialog
           map={map}
           themeId={themeId}
+          customThemes={customThemes}
           printMode={printMode}
           viewMode={viewMode}
           onClose={() => setShowExportDialog(false)}

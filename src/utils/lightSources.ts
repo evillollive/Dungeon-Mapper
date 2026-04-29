@@ -12,7 +12,7 @@
  * can see them directly.
  */
 
-import type { Tile, LightSource } from '../types/map';
+import type { CustomThemeDefinition, Tile, LightSource } from '../types/map';
 import { computeFOV } from './fov';
 
 /**
@@ -25,12 +25,13 @@ import { computeFOV } from './fov';
 export function computeLightVisible(
   tiles: Tile[][],
   lightSources: LightSource[] | undefined,
+  customThemes: readonly CustomThemeDefinition[] = [],
 ): Set<string> | null {
   if (!lightSources || lightSources.length === 0) return null;
 
   const union = new Set<string>();
   for (const ls of lightSources) {
-    const fov = computeFOV(tiles, ls.x, ls.y, ls.radius);
+    const fov = computeFOV(tiles, ls.x, ls.y, ls.radius, customThemes);
     for (const key of fov) {
       union.add(key);
     }

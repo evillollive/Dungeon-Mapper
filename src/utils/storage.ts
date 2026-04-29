@@ -27,6 +27,7 @@ export function wrapMapAsProject(map: DungeonMap): DungeonProject {
     levels: [map],
     activeLevelIndex: 0,
     stairLinks: [],
+    customThemes: [],
   };
 }
 

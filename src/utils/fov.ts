@@ -10,7 +10,8 @@
  * Bergström's description) — reimplemented from scratch for this project.
  */
 
-import type { Tile, TileType } from '../types/map';
+import type { CustomThemeDefinition, Tile, TileType } from '../types/map';
+import { getSemanticTileType } from './customThemes';
 
 /**
  * Tile types that block line of sight. Walls and secret doors are opaque.
@@ -25,8 +26,11 @@ const OPAQUE_TILES: ReadonlySet<TileType> = new Set<TileType>([
 ]);
 
 /** Check whether a tile type blocks line of sight. */
-export function isOpaque(type: TileType): boolean {
-  return OPAQUE_TILES.has(type);
+export function isOpaque(
+  type: TileType,
+  customThemes: readonly CustomThemeDefinition[] = [],
+): boolean {
+  return OPAQUE_TILES.has(getSemanticTileType(type, customThemes));
 }
 
 /**
@@ -42,6 +46,7 @@ export function computeFOV(
   originX: number,
   originY: number,
   radius = 0,
+  customThemes: readonly CustomThemeDefinition[] = [],
 ): Set<string> {
   const height = tiles.length;
   const width = tiles[0]?.length ?? 0;
@@ -69,7 +74,7 @@ export function computeFOV(
     castOctant(
       tiles, visible, originX, originY,
       effectiveRadius, width, height, mult,
-      1, 1.0, 0.0,
+      1, 1.0, 0.0, customThemes,
     );
   }
 
@@ -95,6 +100,7 @@ function castOctant(
   row: number,
   startSlope: number,
   endSlope: number,
+  customThemes: readonly CustomThemeDefinition[],
 ): void {
   if (startSlope < endSlope) return;
 
@@ -128,7 +134,7 @@ function castOctant(
         visible.add(`${mapX},${mapY}`);
       }
 
-      const cellOpaque = inBounds && isOpaque(tiles[mapY][mapX].type);
+      const cellOpaque = inBounds && isOpaque(tiles[mapY][mapX].type, customThemes);
 
       if (blocked) {
         // Previous cell was opaque.
@@ -146,7 +152,7 @@ function castOctant(
         blocked = true;
         castOctant(
           tiles, visible, ox, oy, radius, width, height, mult,
-          r + 1, startSlope, leftSlope,
+          r + 1, startSlope, leftSlope, customThemes,
         );
         nextStartSlope = rightSlope;
       }
