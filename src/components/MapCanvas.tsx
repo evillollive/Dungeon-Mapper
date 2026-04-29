@@ -1423,7 +1423,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     return () => window.removeEventListener('keydown', handler);
   }, [activeTool, selection, onEraseTiles]);
 
-  const getTileCoords = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const getTileCoords = useCallback((e: { clientX: number; clientY: number }) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
@@ -1439,7 +1439,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   /** Like getTileCoords, but returns sub-tile fractional coordinates (in
    * tile units) so freehand drawing follows the cursor smoothly instead of
    * snapping to cell boundaries. Returns null when outside the map. */
-  const getFractionalCoords = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const getFractionalCoords = useCallback((e: { clientX: number; clientY: number }) => {
     const canvas = canvasRef.current;
     if (!canvas) return null;
     const rect = canvas.getBoundingClientRect();
@@ -1456,7 +1456,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
    * Behave like the existing rect tool but commit to fog instead of tiles. */
   const isFogDragTool = activeTool === 'reveal' || activeTool === 'hide';
 
-  const handleCanvasAction = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handleCanvasAction = useCallback((e: { clientX: number; clientY: number }) => {
     const coords = getTileCoords(e);
     if (!coords) return;
     const { x, y } = coords;
@@ -1568,13 +1568,68 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     onStairLinkClick,
   ]);
 
-  const handleMouseDown = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  /* ── Multi-touch gesture tracking ─────────────────────────── */
+  /** Active pointer IDs for multi-touch gesture detection. */
+  const activePointersRef = useRef<Map<number, { x: number; y: number }>>(new Map());
+  /** Initial distance between two fingers for pinch-to-zoom. */
+  const pinchStartDistRef = useRef<number | null>(null);
+  /** Zoom level when pinch started. */
+  const pinchStartZoomRef = useRef<number>(1);
+  /** Long-press timer for touch context actions (pan). */
+  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  /** Compute distance between two pointers. */
+  const pointerDistance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+    Math.hypot(a.x - b.x, a.y - b.y);
+
+  /** Compute midpoint between two pointers. */
+  const pointerMidpoint = (a: { x: number; y: number }, b: { x: number; y: number }) => ({
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2,
+  });
+
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (canvas) canvas.setPointerCapture(e.pointerId);
+
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // Two-finger gesture start: pinch-to-zoom or two-finger pan.
+    if (activePointersRef.current.size === 2) {
+      // Cancel any single-finger operation in progress.
+      isMouseDownRef.current = false;
+      if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+      const [p1, p2] = Array.from(activePointersRef.current.values());
+      pinchStartDistRef.current = pointerDistance(p1, p2);
+      pinchStartZoomRef.current = zoom;
+      lastPanPos.current = pointerMidpoint(p1, p2);
+      isPanningRef.current = true;
+      e.preventDefault();
+      return;
+    }
+
+    // More than 2 fingers — ignore.
+    if (activePointersRef.current.size > 2) return;
+
+    // Single pointer: right-click or pen barrel button → pan.
     if (e.button === 2) {
       isPanningRef.current = true;
       lastPanPos.current = { x: e.clientX, y: e.clientY };
       e.preventDefault();
       return;
     }
+
+    // Touch: long-press starts panning (replaces right-click for touch).
+    if (e.pointerType === 'touch') {
+      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = setTimeout(() => {
+        isPanningRef.current = true;
+        lastPanPos.current = { x: e.clientX, y: e.clientY };
+        isMouseDownRef.current = false;
+        longPressTimerRef.current = null;
+      }, 400);
+    }
+
     isMouseDownRef.current = true;
     const coords = getTileCoords(e);
 
@@ -1592,7 +1647,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
     if (isPlayerView && activeTool === 'defog' && coords) {
       // Start a freehand defog stroke. Cells are accumulated locally and
-      // committed in a single fog edit on mouseup.
+      // committed in a single fog edit on pointerup.
       lastDefogCellRef.current = coords;
       setDefogStroke([coords]);
       return;
@@ -1628,7 +1683,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     } else {
       handleCanvasAction(e);
     }
-  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens]);
+  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens, zoom]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const coords = getTileCoords(e);
@@ -1639,7 +1694,44 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
   }, [getTileCoords, tiles, onStairNavigate]);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // Two-finger gesture: pinch-to-zoom + pan.
+    if (activePointersRef.current.size === 2) {
+      const [p1, p2] = Array.from(activePointersRef.current.values());
+      const mid = pointerMidpoint(p1, p2);
+
+      // Pan based on midpoint movement.
+      if (isPanningRef.current) {
+        const dx = mid.x - lastPanPos.current.x;
+        const dy = mid.y - lastPanPos.current.y;
+        lastPanPos.current = mid;
+        setPan(prev => ({ x: prev.x + dx, y: prev.y + dy }));
+      }
+
+      // Pinch-to-zoom.
+      if (pinchStartDistRef.current !== null) {
+        const dist = pointerDistance(p1, p2);
+        const scale = dist / pinchStartDistRef.current;
+        const newZoom = Math.max(0.25, Math.min(4, pinchStartZoomRef.current * scale));
+        setZoom(newZoom);
+      }
+      return;
+    }
+
+    // Cancel long-press if finger moved significantly.
+    if (longPressTimerRef.current && e.pointerType === 'touch') {
+      const start = activePointersRef.current.get(e.pointerId);
+      if (start) {
+        const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
+        if (moved > 10) {
+          clearTimeout(longPressTimerRef.current);
+          longPressTimerRef.current = null;
+        }
+      }
+    }
+
     if (isPanningRef.current) {
       const dx = e.clientX - lastPanPos.current.x;
       const dy = e.clientY - lastPanPos.current.y;
@@ -1742,9 +1834,26 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     } else if (activeTool === 'paint' || activeTool === 'erase') {
       handleCanvasAction(e);
     }
-  }, [activeTool, isDragging, dragStart, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, onMoveToken]);
+  }, [activeTool, isDragging, dragStart, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, onMoveToken, zoom]);
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (canvas) canvas.releasePointerCapture(e.pointerId);
+    activePointersRef.current.delete(e.pointerId);
+
+    // Clear long-press timer.
+    if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+
+    // If all fingers lifted, reset multi-touch state.
+    if (activePointersRef.current.size === 0) {
+      pinchStartDistRef.current = null;
+    }
+    // If returning from 2 fingers to 1, don't start a draw operation.
+    if (activePointersRef.current.size >= 1) {
+      isPanningRef.current = false;
+      return;
+    }
+
     isPanningRef.current = false;
 
     // Commit player-mode freehand stroke.
@@ -1806,13 +1915,39 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setDragEnd(null);
   }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth]);
 
-  const handleMouseLeave = useCallback(() => {
+  const handlePointerLeave = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    activePointersRef.current.delete(e.pointerId);
+    if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+    // Only fully reset if all pointers are gone.
+    if (activePointersRef.current.size > 0) return;
+    pinchStartDistRef.current = null;
     isMouseDownRef.current = false;
     isPanningRef.current = false;
     setMousePos(null);
     if (activeStroke) setActiveStroke(null);
     // Commit any in-progress defog brush so the player doesn't lose work
     // if their cursor briefly leaves the canvas while dragging.
+    if (defogStroke && defogStroke.length > 0) {
+      onSetFogCells(defogStroke, false);
+      setDefogStroke(null);
+      lastDefogCellRef.current = null;
+    }
+    if (draggingTokenRef.current) draggingTokenRef.current = null;
+    if (isDragging) {
+      setIsDragging(false);
+      setDragStart(null);
+      setDragEnd(null);
+    }
+  }, [isDragging, activeStroke, defogStroke, onSetFogCells]);
+
+  /** Handle interrupted gestures (e.g. system dialog steals focus). */
+  const handlePointerCancel = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    activePointersRef.current.delete(e.pointerId);
+    if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+    pinchStartDistRef.current = null;
+    isMouseDownRef.current = false;
+    isPanningRef.current = false;
+    if (activeStroke) setActiveStroke(null);
     if (defogStroke && defogStroke.length > 0) {
       onSetFogCells(defogStroke, false);
       setDefogStroke(null);
@@ -1936,12 +2071,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
             style={{
               cursor: cursorStyle,
               display: 'block',
+              touchAction: 'none',
             }}
-            onMouseDown={handleMouseDown}
+            onPointerDown={handlePointerDown}
             onDoubleClick={handleDoubleClick}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseLeave}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={handlePointerLeave}
+            onPointerCancel={handlePointerCancel}
             onContextMenu={e => e.preventDefault()}
             onWheel={handleWheel}
             onKeyDown={handleCanvasKeyDown}
