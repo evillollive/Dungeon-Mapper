@@ -72,6 +72,21 @@ const BUILT_LIGHT = '#f97316';
 const TECH_LIGHT = '#38bdf8';
 const WILD_LIGHT = '#fbbf24';
 const STRANGE_LIGHT = '#a78bfa';
+const PASSABLE_TOKEN_TILE_TYPES = new Set<TileType>([
+  'floor',
+  'door-h',
+  'door-v',
+  'locked-door-h',
+  'locked-door-v',
+  'trapped-door-h',
+  'trapped-door-v',
+  'archway',
+  'stairs-up',
+  'stairs-down',
+  'trap',
+  'treasure',
+  'start',
+]);
 
 function encounter(
   ally: [string, string],
@@ -736,7 +751,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
 ];
 
 function isPassable(type: TileType): boolean {
-  return type !== 'empty' && type !== 'wall' && type !== 'secret-door' && type !== 'pillar' && type !== 'water';
+  return PASSABLE_TOKEN_TILE_TYPES.has(type);
 }
 
 function tileSizeFor(width: number, height: number): number {
@@ -804,11 +819,11 @@ function chooseTokenCell(
   const sorted = [...passable].sort((a, b) => {
     const da = distance(a, start);
     const db = distance(b, start);
+    const foeDistance = Math.max(8, Math.min(18, tiles.length / 2));
     if (role === 'player') return da - db;
     if (role === 'ally') return Math.abs(da - 4) - Math.abs(db - 4);
     if (role === 'boss') return db - da;
-    return Math.abs(da - Math.max(8, Math.min(18, tiles.length / 2))) -
-      Math.abs(db - Math.max(8, Math.min(18, tiles.length / 2)));
+    return Math.abs(da - foeDistance) - Math.abs(db - foeDistance);
   });
   return sorted.find(cell => canPlaceToken(tiles, occupied, cell.x, cell.y, size)) ?? start;
 }
