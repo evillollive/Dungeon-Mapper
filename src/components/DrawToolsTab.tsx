@@ -16,6 +16,7 @@ interface DrawToolsTabProps {
   onTogglePreserveOnThemeSwitch: () => void;
   onOpenCustomThemeBuilder: () => void;
   onOpenGenerateMap: () => void;
+  onOpenPremadeMaps: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -71,7 +72,7 @@ function TilePreview({
 const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   activeTool, activeTile, themeId, customThemes, onSetTool, onSetTile,
   onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
-  onOpenCustomThemeBuilder, onOpenGenerateMap,
+  onOpenCustomThemeBuilder, onOpenGenerateMap, onOpenPremadeMaps,
 }) => {
   const theme = getThemeWithCustom(themeId, customThemes);
   const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
@@ -166,6 +167,16 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
           <span className="tool-icon" aria-hidden="true">🎲</span>
           <span className="tool-name">Generate</span>
           <span className="tool-shortcut" aria-hidden="true">[G]</span>
+        </button>
+        <button
+          type="button"
+          className="tool-btn"
+          onClick={onOpenPremadeMaps}
+          title="Browse and load a ready-to-use sample map with themed names, tokens, light sources, and fog-of-war"
+          aria-label="Load sample map"
+        >
+          <span className="tool-icon" aria-hidden="true">📦</span>
+          <span className="tool-name">Samples</span>
         </button>
       </div>
 

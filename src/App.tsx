@@ -780,7 +780,6 @@ function App() {
         onToggleViewMode={switchViewMode}
         onShowShortcuts={() => setShowShortcutsHelp(true)}
         onOpenExportDialog={() => setShowExportDialog(true)}
-        onOpenPremadeMaps={() => setShowPremadeMapsDialog(true)}
       />
       <LevelTabs
         levels={project.levels}
@@ -811,6 +810,7 @@ function App() {
               gmShowFog={gmShowFog}
               onToggleGmShowFog={handleToggleGmShowFogAnnounced}
               onOpenGenerateMap={handleOpenGenerateMap}
+              onOpenPremadeMaps={() => setShowPremadeMapsDialog(true)}
               markerShape={markerShape}
               markerColor={markerColor}
               markerSize={markerSize}
