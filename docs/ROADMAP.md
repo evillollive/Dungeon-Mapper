@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-29
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 7.1, 7.3, & 7.5 complete.
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 7.1, 7.3, & 7.5 complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete.
 
 ---
 
@@ -425,6 +425,343 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - Geomorphic Tile Assembly — assemble pre-drawn tile art with edge-matching constraints (inspired by Dave's Mapper)
 - Map Search & Organization — tags, folders, categories for organizing saved maps (depends on cloud storage)
 
+### Phase 6: UI/UX Overhaul, Accessibility, Refactoring & Mobile
+
+*Comprehensive analysis phase — the app has grown from a simple editor to a feature-rich dungeon mapping platform with 25,000+ lines of code, 14 components, 40+ keyboard shortcuts, and 11 toolbar sections. The interface and architecture need to evolve to match.*
+
+---
+
+#### Part 3c: UI/UX Competitive Analysis
+
+### Current UI Inventory
+
+The app currently has a 3-column desktop layout: left toolbar (GM or Player), center canvas, right panels (notes + initiative). The header contains map controls, export buttons, and view toggles.
+
+| Element | Content | Clutter Level |
+|---|---|---|
+| **Header** (MapHeader) | Map name, width/height/tile-size/UI-scale dropdowns, 13+ buttons (view toggle, print mode, undo, redo, new, samples, clear, JSON/PNG/SVG export, print export, import, shortcuts help) | 🔴 High |
+| **GM Toolbar** (Toolbar) | 11 sections: tools (7), tile palette (20+ tiles), theme picker, custom theme, fog, generator, markers, background image, measure, lights, stair links — 43+ props passed from App | 🔴 High |
+| **Player Toolbar** (PlayerToolbar) | 4 sections: fog controls, draw tools, pen settings, tokens — 14 props | ✅ Clean |
+| **Canvas** (MapCanvas) | Map rendering + all mouse interactions — 54+ props, 1,925 lines | 🔴 Monolithic |
+| **Right Panels** | Initiative tracker + Notes panel — always visible | ⚠️ Moderate (takes space even when unused) |
+| **Level Tabs** | Multi-level navigation with context menus | ✅ Clean |
+| **Dialogs** (6) | Generate, Custom Theme, Export, Samples, Icon Picker, Shortcuts | ✅ Appropriately modal |
+
+### UI Problems Identified
+
+**1. GM Toolbar Overload**
+The GM toolbar has grown to 11 distinct sections with ~50+ controls. Sections include tile painting, theme selection, fog preview, generators, shape markers, background images, measurement tools, light sources, and stair linking. A new user encounters all of these at once with no progressive disclosure. Competitors like Dungeondraft and DungeonFog use collapsible panels, tabbed tool categories, and context-sensitive toolbars that only show relevant options.
+
+**2. Header Bar Congestion**
+The header contains 13+ buttons plus 4 dropdown selectors. Map metadata controls (name, width, height, tile size, UI scale) share space with action buttons (export formats, undo/redo, new/clear). This mixes "settings" with "actions" in a way that's confusing. Competitors separate file operations into menus and keep the header minimal.
+
+**3. Mode Naming: "GM" vs "Player"**
+The current view modes are named "GM" (Game Master) and "Player." These labels assume TTRPG context and may confuse users from other backgrounds (architects, game designers, writers, worldbuilders). Additionally, the distinction is unclear — GM mode is actually "Edit" mode and Player mode is actually "Present/Play" mode. The GM/Player naming also implies these are different user roles requiring separate logins, when really they're just view modes on the same session.
+
+**Recommendation:** Rename to **"Edit"** and **"Present"** (or "Edit" and "Play"). These names are universally understood and accurately describe what each mode does — one is for building/editing the map, the other is for presenting it to players with fog and restricted visibility.
+
+**4. Right Panels Always Visible**
+The Initiative Panel and Notes Panel are always rendered in the right column, even when the user isn't using tokens or notes. This wastes ~200px of horizontal space. They should be collapsible, tabbed, or drawer-based.
+
+**5. No Progressive Disclosure**
+Every tool section is visible at all times in the GM toolbar. Advanced features (light sources, stair links, shape markers, background images) should be behind expandable sections, a secondary toolbar tab, or discoverable via search.
+
+### Competitor UI Patterns Worth Adopting
+
+| Pattern | Used By | Current Status | Recommendation |
+|---|---|---|---|
+| **Collapsible tool panels** | Dungeondraft, DungeonFog, Inkarnate | ❌ All sections always visible | Add collapsible accordion sections with memory |
+| **Tabbed toolbar categories** | DungeonFog (Build/Light/Objects) | ❌ Single scrolling toolbar | Group tools into 3–4 tabs: Draw, Generate, Tactical, Advanced |
+| **Context-sensitive toolbar** | Dungeondraft | ❌ All tools always shown | Show relevant options only when a tool is active |
+| **File/Edit/View menus** | Dungeondraft, DungeonFog | ❌ All in header buttons | Move file ops (import/export/new/clear) into dropdown menus |
+| **Floating/dockable panels** | Dungeondraft | ❌ Fixed 3-column layout | Allow panels to float, dock, or hide |
+| **Command palette** | VS Code, Figma | ❌ Not implemented | Add Ctrl+P / Cmd+K command palette for power users |
+| **Bottom toolbar (mobile)** | Inkarnate (tablet mode) | ❌ Not implemented | Essential for touch/mobile support |
+| **Dark mode** | DungeonFog, Foundry VTT | ❌ Light only | Add theme toggle (reduces eye strain for long sessions) |
+
+### Proposed UI Restructure
+
+**Header (simplified):**
+- App name + map name (left)
+- Undo/Redo + View mode toggle (center)
+- File menu (dropdown: New, Import, Export JSON/PNG/SVG/Print, Samples) + Settings gear (dropdown: UI scale, tile size, print mode, shortcuts) (right)
+
+**Left Toolbar (tabbed):**
+- **Tab 1: Draw** — Paint/Erase/Fill/Line/Rect/Select + tile palette + theme picker
+- **Tab 2: Tactical** — Fog, FOV, Light Sources, Measure, Tokens, Initiative
+- **Tab 3: Generate** — Generator button, Markers, Background image
+- **Tab 4: Advanced** — Custom themes, Stair links, Level management
+- Each tab shows only its relevant controls — dramatic clutter reduction
+
+**Right Panel (collapsible drawer):**
+- Tabbed: Notes | Initiative | Map Info
+- Can be collapsed to give full canvas width
+- Auto-opens when relevant (e.g., placing a note opens Notes tab)
+
+**Canvas:**
+- Remains center stage, gains space from collapsible panels
+- Floating minimap (already exists)
+- Floating zoom controls (already exists)
+
+---
+
+#### Part 3d: Accessibility Audit
+
+### Current Accessibility Strengths (Score: 8/10 WCAG A/AA)
+
+The app has strong baseline accessibility that was built intentionally:
+
+| Feature | Status | Details |
+|---|---|---|
+| **Skip link** | ✅ | "Skip to map canvas" link, properly hidden until focused |
+| **Semantic HTML** | ✅ | `<nav>`, `<main>`, `<aside>`, `<section>` used correctly |
+| **ARIA labels** | ✅ | 200+ `aria-label` attributes across all interactive elements |
+| **ARIA roles** | ✅ | `role="dialog"`, `role="tablist"`, `role="button"`, `role="application"`, `role="status"` |
+| **Focus indicators** | ✅ | `:focus-visible` styles on all interactive elements (brick-red `#8a3a3a` outline) |
+| **Screen reader support** | ✅ | `.sr-only` class, `aria-live="polite"` announcements for state changes |
+| **Keyboard shortcuts** | ✅ | 40+ shortcuts, `aria-keyshortcuts` attributes, `?` opens help overlay |
+| **Modal dialogs** | ✅ | All 6 dialogs use `role="dialog"` + `aria-modal="true"` + Escape dismissal |
+| **Tab order** | ✅ | Logical document order, `tabIndex={0}` on interactive non-button elements |
+| **Color contrast** | ✅ | Dark text on light background, brick-red accents — likely WCAG AA compliant |
+| **Canvas keyboard nav** | ✅ | Arrow keys pan, Shift+Arrow for fast pan, canvas is focusable |
+
+### Accessibility Gaps
+
+**1. No `prefers-reduced-motion` support**
+CSS transitions exist (e.g., `transition: background 0.12s, color 0.12s`) but no `@media (prefers-reduced-motion: reduce)` query to disable them for users who need reduced motion. While the animations are subtle, WCAG 2.3.3 requires respecting this preference.
+
+**Action:** Add a `prefers-reduced-motion` media query that sets all `transition-duration` and `animation-duration` to `0s`.
+
+**2. No dark mode / `prefers-color-scheme` support**
+The app is light-theme only. Users with light sensitivity, low vision, or who simply prefer dark mode have no option. WCAG doesn't require dark mode, but it's an accessibility best practice — especially for an app used in long TTRPG sessions.
+
+**Action:** Add `prefers-color-scheme: dark` support with a manual toggle. Define CSS custom properties for all colors and swap them in dark mode.
+
+**3. No high-contrast mode**
+No `forced-colors` or `prefers-contrast: more` media query support. Users with Windows High Contrast Mode may see broken layouts.
+
+**Action:** Add `@media (forced-colors: active)` styles ensuring all interactive elements remain visible and distinguishable.
+
+**4. Touch target sizes below WCAG 2.5.8**
+Toolbar buttons are ~30–40px, below the WCAG recommended 44×44px minimum touch target. This affects both accessibility and mobile usability.
+
+**Action:** Increase all interactive element minimum sizes to 44×44px (or add sufficient spacing to create 44px effective targets).
+
+**5. Focus trapping in modals is incomplete**
+Modals have `aria-modal="true"` and Escape dismissal, but there is no explicit focus trap preventing Tab from escaping the dialog into background elements. The `aria-modal` attribute hints to assistive technology but doesn't enforce focus containment.
+
+**Action:** Implement focus trap utility (or use a library like `focus-trap-react`) for all 6 dialog components.
+
+**6. Canvas content not accessible to screen readers**
+The canvas element has an `aria-label` describing the map but the actual map content (tiles, tokens, notes, markers) is not programmatically accessible. A screen reader user cannot discover or interact with individual map elements.
+
+**Action (partial):** Add an off-screen text description that summarizes the map state (room count, token positions, note summaries). Full canvas accessibility is an unsolved problem in the industry — even Foundry VTT and Roll20 have limited canvas screen reader support.
+
+**7. No announcements for tool actions**
+When a user paints a tile, places a token, or toggles fog, there is no `aria-live` announcement confirming the action. The status message system exists but may not cover all actions.
+
+**Action:** Extend the `aria-live` region to announce key actions: tile painted, token placed, fog toggled, level switched, etc.
+
+---
+
+#### Part 3e: Codebase Refactoring Assessment
+
+### Current Architecture Overview
+
+| Metric | Value | Health |
+|---|---|---|
+| **Total source lines** | ~25,350 | ⚠️ Large for a single-page app with no state management library |
+| **Largest component** | MapCanvas.tsx (1,925 lines) | 🔴 God component — rendering + interactions + tools |
+| **Largest hook** | useMapState.ts (1,177 lines) | 🔴 God hook — all state + history + persistence + 50+ actions |
+| **App.tsx** | 988 lines, 21+ useState hooks | 🔴 Prop-drilling hub — passes 54 props to MapCanvas, 43 to Toolbar |
+| **State management** | Pure React hooks, all prop-drilled from App.tsx | ⚠️ Scaling limit reached |
+| **Test coverage** | 0% — no test infrastructure | 🔴 Risk for refactoring |
+| **Circular dependencies** | None detected | ✅ Clean import hierarchy |
+| **TypeScript strictness** | Full TypeScript with strict types | ✅ Strong type safety |
+
+### Critical Refactoring Targets
+
+**1. MapCanvas.tsx (1,925 lines → split into 4–5 modules)**
+
+The canvas component handles rendering, mouse event processing, tool-specific interaction logic, overlay drawing, and token/marker management — all in one file.
+
+Proposed split:
+- `MapCanvasRenderer.ts` — Pure canvas rendering functions (tiles, tokens, markers, fog, lights, overlays)
+- `MapCanvasInteractions.tsx` — Mouse event handlers, drag logic, coordinate mapping
+- `useCanvasTools.ts` — Tool-specific handlers (paint, erase, fill, select, measure, FOV, etc.)
+- `MapCanvasOverlays.ts` — FOV, fog, light glow, measurement template rendering
+- `MapCanvas.tsx` — Thin orchestrator connecting the above
+
+**2. useMapState.ts (1,177 lines → split into 4–5 hooks)**
+
+This hook manages the entire dungeon state, undo/redo history, multi-level projects, clipboard, persistence, and 50+ action handlers.
+
+Proposed split:
+- `useMapData.ts` — Core tile/note/token/marker CRUD operations
+- `useMapHistory.ts` — Undo/redo stack management
+- `useLevelManagement.ts` — Multi-level project operations (add/delete/duplicate/reorder levels)
+- `useMapClipboard.ts` — Copy/paste/cut logic
+- `useMapPersistence.ts` — IndexedDB save/load, legacy migration
+
+**3. App.tsx state management (21+ useState → context providers)**
+
+App.tsx currently props-drills everything to children. With 54 props going to MapCanvas and 43 to Toolbar, this is at the scaling limit of pure prop-drilling.
+
+Proposed solution — introduce 3–4 React Contexts (no external library needed):
+- `ToolContext` — activeTool, activeTile, markerShape/color/size, measureShape/feetPerCell, lightPreset/radius/color
+- `MapContext` — map, project, activeLevelIndex, theme
+- `ViewContext` — viewMode, printMode, uiScale, gmShowFog
+- `ActionContext` — callbacks for setTile, setTool, undo, redo, etc.
+
+This eliminates most prop-drilling while keeping the architecture pure React.
+
+**4. Toolbar.tsx (695 lines → tabbed sub-components)**
+
+The toolbar renders 11 sections unconditionally. Splitting into tab-based sub-components aligns with the UI restructure and reduces per-render cost:
+- `DrawToolsTab.tsx` — Paint, Erase, Fill, Line, Rect, Select + tile palette + theme
+- `TacticalToolsTab.tsx` — Fog, FOV, Lights, Measure, Tokens
+- `GenerateToolsTab.tsx` — Generator, Markers, Background
+- `AdvancedToolsTab.tsx` — Custom themes, Stair links
+
+### Impact on Far Future Goals
+
+| Far Future Goal | Refactoring Benefit |
+|---|---|
+| **Real-Time Collaboration** | Context-based state management makes it straightforward to intercept state changes for sync. useMapData hook becomes the single point where remote changes are applied. Without refactoring, collaboration would require touching 50+ prop-drilled callbacks. |
+| **Multi-Layer System** | Splitting MapCanvas renderer from interactions makes it possible to add layer-aware rendering without rewriting mouse handling. Each layer could get its own render pass in MapCanvasRenderer. |
+| **World/Region Maps** | Clean separation of rendering (MapCanvasRenderer) from tile logic (useMapData) allows swapping the tile-grid model for a polygon-based model without rewriting the canvas infrastructure. |
+| **Map Organization** | useMapPersistence as a separate hook makes it trivial to add cloud storage, tagging, and folder operations alongside the existing IndexedDB persistence. |
+| **Test Coverage** | Smaller, focused modules are dramatically easier to unit test. The current god hook and god component are essentially untestable. |
+
+---
+
+#### Part 3f: Extended Competitor Analysis
+
+### Competitors Not Previously Analyzed
+
+| Competitor | Type | Key Features We Lack |
+|---|---|---|
+| **Foundry VTT** (desktop app, $50 one-time) | Full virtual tabletop | Dynamic lighting with walls/doors as light barriers, module/plugin ecosystem, journal entries linked to map locations, audio ambiance per scene, animated tiles/tokens, ruler waypoints, macro scripting |
+| **Owlbear Rodeo** (browser, free) | Lightweight VTT | Real-time multiplayer with zero setup (share URL), drag-drop simplicity, fog reveal with pointer gestures, extension marketplace, character sheet integration |
+| **Shmeppy** (browser, free/$6/mo) | Minimalist VTT | Live collaborative editing (Google Docs style), infinite canvas, ultra-simple UX with near-zero learning curve, tile labeling, persistent game rooms |
+| **Dungeondraft** (desktop, $19.99) | Dungeon map editor | Asset/stamp library (1000+ objects), wall/path tools with auto-theming, cave tool with organic edges, custom asset pack import (community packs), batch export, water tool with animated preview |
+| **Inkarnate** (browser, $5/mo) | Map design studio | 236K+ community maps (cloneable), Pro asset library (10K+ stamps), world/region/city/battle map modes, layer system with blend modes, custom stamp upload, commercial use license |
+| **DungeonFog** (browser, €4.90/mo) | Interior/dungeon editor | Dynamic lighting (Pro), 3K+ asset library, multi-floor support, reusable room templates, commercial license, Foundry VTT/Roll20 export integration |
+
+### New Feature Opportunities
+
+Based on this expanded competitor analysis, the following features represent realistic, high-impact additions that don't require backend infrastructure:
+
+**6.4 — Asset/Stamp Library** *(high impact, medium effort)*
+- Expand the current 30+ SVG icon library to 200+ placeable object stamps (furniture, vegetation, dungeon dressing, sci-fi props)
+- Stamps would be placed on the map as decorative elements on top of tiles (not replacing tiles)
+- Per-theme stamp sets matching the 13 visual themes
+- Custom stamp upload (user PNG/SVG images, similar to existing custom tile upload)
+- Competitors: Dungeondraft has 1000+ objects, Inkarnate has 10K+, DungeonFog has 3K+
+- This is the single most impactful missing feature for visual map quality
+
+**6.5 — Wall & Path Drawing Tools** *(medium impact, medium effort)*
+- Free-form wall drawing (not just tile-based walls) — click to place wall segments along grid edges
+- Path/road drawing tool for connecting areas with natural-looking paths
+- Competitors: Dungeondraft, DungeonFog both have dedicated wall tools
+- Would complement the existing tile-based system rather than replace it
+
+**6.6 — Scene/Room Templates** *(medium impact, low effort)*
+- Save and reuse room configurations as reusable templates
+- Templates include tiles, tokens, notes, and markers for a selected region
+- Build on existing copy/paste infrastructure (clipboardInfo already exists)
+- Competitors: DungeonFog has reusable room templates, Inkarnate has stamp groups
+
+**6.7 — Map Linking & Journal Integration** *(medium impact, medium effort)*
+- Link notes to external content (URLs, text documents)
+- Cross-map note references (link a note on one map to a location on another)
+- Rich text formatting in notes (bold, italic, lists)
+- Competitors: Foundry VTT has deep journal/map integration
+
+**6.8 — Audio Ambiance** *(low-medium impact, low effort)*
+- Per-map ambient audio URL or uploaded audio file
+- Play/pause controls in present mode
+- Optional: per-room audio zones
+- Competitors: Foundry VTT, Syrinscape integration
+
+**6.9 — Animated Tokens & Effects** *(low impact, high effort)*
+- Animated token movement (smooth interpolation between cells)
+- Spell effect animations (fireball, lightning bolt)
+- Water/lava tile animation
+- Competitors: Foundry VTT has extensive animation support
+- Lower priority — high effort for marginal gameplay benefit in a mapping tool
+
+---
+
+#### Part 3g: Mobile & Tablet Adaptation Analysis
+
+### Current Mobile Readiness (Score: 3/10)
+
+| Aspect | Status | Details |
+|---|---|---|
+| **Viewport meta** | ✅ | `<meta name="viewport" content="width=device-width, initial-scale=1.0">` |
+| **Touch events** | ❌ | Zero touch/pointer event handlers — canvas uses only mouse events |
+| **Responsive layout** | ⚠️ | Grid layout with `clamp()` but only 2 media queries (both at 760px, both for dialogs only) |
+| **Touch target sizes** | ❌ | Buttons are ~30–40px (below 44px minimum) |
+| **Gesture support** | ❌ | No pinch-to-zoom, no two-finger pan, no long-press |
+| **Mobile toolbar** | ❌ | No collapsible/bottom toolbar pattern |
+| **PWA** | ❌ | No manifest.json, no service worker, no offline support |
+| **Tablet landscape** | ⚠️ | Usable but cramped — left/right panels consume ~40% of width on 10" tablets |
+
+### Mobile Adaptation Strategy
+
+#### Approach: Progressive Enhancement (not a separate mobile app)
+
+The app should remain a single codebase with responsive behavior, following the pattern used by Inkarnate and DungeonFog — both are browser-based map tools that work on tablets through responsive design and touch event support.
+
+**Phase 6.1 — Touch & Pointer Event Foundation**
+
+Replace all mouse events in MapCanvas with Pointer Events API (`pointerdown`, `pointermove`, `pointerup`). Pointer Events unify mouse, touch, and stylus input into a single API, eliminating the need for separate mouse and touch handlers.
+
+Key changes:
+- `onMouseDown` → `onPointerDown` (with `pointerType` detection for mouse vs touch vs pen)
+- `onMouseMove` → `onPointerMove`
+- `onMouseUp` → `onPointerUp`
+- `onWheel` → keep for mouse scroll, add pinch-to-zoom via touch gesture detection
+- Add `touch-action: none` CSS on canvas to prevent browser scroll/zoom interference
+- Two-finger pan gesture (detect 2 active pointers, compute delta)
+- Pinch-to-zoom gesture (detect 2 active pointers, compute distance change)
+- Long-press for context menu (replaces right-click on touch)
+- Add `onPointerCancel` handling for interrupted gestures
+
+**Phase 6.2 — Responsive Layout Overhaul**
+
+Breakpoint strategy:
+- **Desktop** (>1024px): Current 3-column layout — left toolbar, center canvas, right panels
+- **Tablet landscape** (768–1024px): Collapsible left toolbar (icon-only rail with slide-out detail), canvas expands, right panel as overlay drawer
+- **Tablet portrait / large phone** (480–768px): Bottom toolbar with tool selection, canvas fills viewport, panels as full-screen overlays
+- **Phone** (<480px): Simplified bottom toolbar, canvas fills viewport, panels as modal sheets, reduced tool set
+
+Key CSS changes:
+- Convert fixed grid to responsive grid with `@container` queries or media queries
+- Left toolbar collapses to icon rail at tablet widths
+- Right panels become slide-in drawers (toggle button at edge)
+- Header simplifies: hide text labels, use icon-only buttons, overflow menu
+- Dialog max-widths already use `min(Xpx, 94vw)` — good
+
+**Phase 6.3 — Mobile-First Tool UX**
+
+For touch users, the desktop toolbar paradigm (always-visible left panel with 11 sections) doesn't work. Instead:
+- **Bottom toolbar**: 5–6 primary tool buttons (Draw, Erase, Fill, Select, Fog toggle, More...)
+- **"More" flyout**: Opens a tool palette with all remaining tools organized by category
+- **Floating action button (FAB)**: Quick access to Generate, Undo, and mode toggle
+- **Gesture shortcuts**: Two-finger tap for undo, three-finger tap for redo (matches iPad conventions)
+- **Tool options bar**: When a tool is selected, a contextual options bar appears above the bottom toolbar (tile palette for Draw, measure shape for Measure, etc.)
+
+**Phase 6.3.1 — PWA Support**
+
+Convert to installable Progressive Web App:
+- Add `manifest.json` with app name, icons, theme color, display: standalone
+- Add service worker for offline caching of app shell and assets
+- Cache premade maps and theme data for offline use
+- Enable "Add to Home Screen" on iOS and Android
+- This is essential for tablet users who want a native-app-like experience
+
 ---
 
 ## Part 5: Recommended Priority Order
@@ -441,8 +778,67 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - ~~**Phase 5.3** — Custom Tile/Theme Creation~~ ✅
 - ~~**Phase 7.5** — GM Drawing / Annotation Tools~~ ✅
 
-### Medium-Term — Active Roadmap
-- *(No active medium-term phase selected.)*
+### Medium-Term — Active Roadmap (Phase 6)
+
+Recommended implementation order based on dependency analysis, impact, and effort:
+
+**Sprint 1: Foundation (enables everything else)**
+1. **Phase 6 Refactoring** — Split MapCanvas, useMapState, and introduce React Contexts
+   - *Why first:* Every subsequent phase modifies these files. Splitting them first prevents merge conflicts and makes parallel work possible. Also enables testing.
+   - *Effort:* Medium (restructuring, no new features)
+   - *Risk:* Low (pure refactoring, no behavior change)
+
+2. **Phase 6.1 — Touch & Pointer Events** — Replace mouse events with Pointer Events API
+   - *Why second:* Foundation for all mobile/tablet work. Small, self-contained change.
+   - *Effort:* Low-medium
+   - *Risk:* Low (Pointer Events are a superset of mouse events)
+
+**Sprint 2: UI/UX Overhaul**
+3. **Phase 6.2 — Responsive Layout** — Breakpoint system, collapsible panels, drawer-based right panel
+   - *Why:* Largest UX improvement — reduces clutter for desktop users AND enables tablet use
+   - *Effort:* Medium-high
+   - *Dependency:* Benefits from refactored Toolbar (Sprint 1)
+
+4. **Accessibility fixes** — prefers-reduced-motion, dark mode, focus traps, high-contrast, touch targets, action announcements
+   - *Why:* Ships alongside layout changes — same CSS files being modified
+   - *Effort:* Low-medium
+   - *Dependency:* Layout work in 6.2
+
+5. **Mode rename** — "GM" → "Edit", "Player" → "Present"
+   - *Why:* Trivial change, big clarity improvement, no dependencies
+   - *Effort:* Very low
+
+**Sprint 3: Mobile & Polish**
+6. **Phase 6.3 — Mobile Tool UX** — Bottom toolbar, gesture shortcuts, contextual options bar
+   - *Why:* Makes the app usable on tablets (large new user segment)
+   - *Effort:* Medium
+   - *Dependency:* Requires 6.1 (touch events) and 6.2 (responsive layout)
+
+7. **Phase 6.3.1 — PWA** — manifest.json, service worker, offline caching
+   - *Why:* Enables "install" on tablets, offline use
+   - *Effort:* Low
+   - *Dependency:* Standalone, can ship anytime after 6.3
+
+**Sprint 4: New Features**
+8. **Phase 6.4 — Asset/Stamp Library** — 200+ placeable objects, per-theme sets, custom upload
+   - *Why:* Highest-impact new feature for visual map quality — biggest competitive gap
+   - *Effort:* Medium-high
+   - *Dependency:* Benefits from refactored MapCanvas (Sprint 1)
+
+9. **Phase 6.6 — Scene/Room Templates** — Save/reuse room configurations
+   - *Why:* Builds on existing clipboard infrastructure, high user value
+   - *Effort:* Low
+   - *Dependency:* None
+
+10. **Phase 6.5 — Wall & Path Tools** — Free-form wall drawing along grid edges
+    - *Why:* Fills a competitive gap vs Dungeondraft/DungeonFog
+    - *Effort:* Medium
+    - *Dependency:* Benefits from refactored MapCanvas
+
+**Later / As Needed:**
+11. **Phase 6.7 — Map Linking & Journal** — Rich notes, cross-map references
+12. **Phase 6.8 — Audio Ambiance** — Per-map ambient audio
+13. **Phase 6.9 — Animated Tokens** — Smooth movement, spell effects
 
 ---
 
@@ -482,6 +878,13 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 | Double-click for stair navigation | 2026-04-29 | Double-clicking a linked stair tile navigates to the destination level and centers viewport — intuitive discovery without requiring a separate "navigate" tool |
 | Stair link tool as explicit mode | 2026-04-29 | Link creation requires the dedicated link-stair tool ([K]) rather than auto-linking on placement — prevents accidental links and gives the user full control over which stairs connect |
 | Sample maps before custom themes | 2026-04-29 | Bundled sample maps (Phase 5.2) ship before custom tile/theme creation (Phase 5.3) — simpler to implement, immediately improves new-user onboarding, and showcases existing theme art without requiring new infrastructure; competitors like Inkarnate, DungeonFog, and Mipui all offer pre-made maps |
+| Rename GM/Player to Edit/Present | 2026-04-29 | "GM" and "Player" assume TTRPG context and imply separate user roles; "Edit" and "Present" are universally understood, accurately describe behavior (build vs view), and don't confuse non-TTRPG users (architects, game designers, worldbuilders) |
+| Pointer Events over separate mouse/touch | 2026-04-29 | Pointer Events API unifies mouse, touch, and stylus into one handler set — eliminates duplicated event logic, provides `pointerType` for input-specific behavior, and is supported by all modern browsers |
+| React Context over state library | 2026-04-29 | 3–4 React Contexts (Tool, Map, View, Action) replace prop drilling without adding an external dependency; app complexity doesn't warrant Redux/Zustand, and contexts align with React's built-in patterns |
+| Progressive enhancement for mobile | 2026-04-29 | Single codebase with responsive breakpoints rather than a separate mobile app — follows Inkarnate/DungeonFog pattern; responsive CSS + pointer events + PWA achieves tablet support without maintaining two apps |
+| Refactoring before features | 2026-04-29 | Splitting MapCanvas (1,925 lines) and useMapState (1,177 lines) before adding new features prevents merge conflicts, enables testing, and makes parallel development possible — every Sprint 2–4 phase touches these files |
+| Tabbed toolbar over accordion | 2026-04-29 | Tabs (Draw/Tactical/Generate/Advanced) provide clearer mental model than accordion sections — user sees exactly 4 categories, each tab shows only relevant controls; accordion still shows all section headers creating visual noise |
+| Asset/stamp library as top new feature | 2026-04-29 | Biggest competitive gap: Dungeondraft has 1000+ objects, Inkarnate 10K+, DungeonFog 3K+; Dungeon Mapper has 30 token icons but zero placeable map objects (furniture, vegetation, dungeon dressing) |
 
 ---
 
@@ -497,6 +900,16 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - Dashed rendering consistent across live canvas (`MapCanvas.tsx`), high-DPI PNG (`renderMap.ts`), and SVG export (`export.ts`)
 - Data model forward-compatibility: `AnnotationStroke.kind` already existed as `'player' | 'gm'` — no schema changes needed
 - Priority order and feature inventory updated
+
+**2026-04-29 — Phase 6 analysis complete: UI/UX Overhaul, Accessibility, Refactoring & Mobile**
+- Comprehensive UI competitive analysis: identified 11-section toolbar overload, header congestion, GM/Player naming confusion, non-collapsible right panels, zero progressive disclosure
+- Proposed UI restructure: simplified header with dropdown menus, 4-tab toolbar (Draw/Tactical/Generate/Advanced), collapsible right panel drawer, command palette for power users
+- Accessibility audit (8/10 WCAG A/AA): documented strengths (skip link, 200+ ARIA labels, 40+ keyboard shortcuts, semantic HTML, focus indicators, screen reader support) and 7 gaps (prefers-reduced-motion, dark mode, high-contrast mode, touch targets, focus traps, canvas screen reader access, action announcements)
+- Codebase refactoring assessment: identified god component (MapCanvas 1,925 lines), god hook (useMapState 1,177 lines), excessive prop drilling (54 props to MapCanvas, 43 to Toolbar); proposed splits and React Context introduction; analyzed impact on far-future goals (collaboration, multi-layer, world maps, testing)
+- Extended competitor analysis: added Foundry VTT, Owlbear Rodeo, Shmeppy, Dungeondraft, Inkarnate, DungeonFog; identified 6 new feature opportunities (asset/stamp library, wall/path tools, room templates, journal integration, audio ambiance, animated tokens)
+- Mobile/tablet analysis (3/10): zero touch events, 2 media queries, no gestures, no PWA; proposed 3-phase adaptation (pointer events → responsive layout → mobile tool UX + PWA)
+- Implementation priority: 4 sprints ordered by dependency (Foundation → UI/UX → Mobile → Features); refactoring first to enable all subsequent work
+- 8 new design decisions logged
 
 **2026-04-29 — Phase 5.2 complete: Sample & Default Maps shipped**
 - Code-confirmed bundled samples in `src/utils/premadeMaps.ts`: 26 sample projects / 28 playable levels across all 13 themes
