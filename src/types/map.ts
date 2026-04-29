@@ -230,6 +230,50 @@ export interface DungeonMap {
   lightSources?: LightSource[];
 }
 
+// ── Multi-Level Project ────────────────────────────────────────────────────
+
+/**
+ * An explicit stair connection between two levels. Each link records the
+ * source and destination level indices and tile coordinates. Links are
+ * bidirectional by convention: a single entry covers travel in both
+ * directions.
+ */
+export interface StairLink {
+  fromLevel: number;
+  fromCell: { x: number; y: number };
+  toLevel: number;
+  toCell: { x: number; y: number };
+}
+
+/**
+ * Top-level container for a multi-level dungeon project. Wraps an ordered
+ * array of `DungeonMap` levels plus project-level metadata. A single-map
+ * file is simply a 1-level project. The `activeLevelIndex` tracks which
+ * level the user was last editing (for autosave / session restore).
+ */
+export interface DungeonProject {
+  /** Project display name (shown in the header). */
+  name: string;
+  /** Ordered list of dungeon levels. At least one level is always present. */
+  levels: DungeonMap[];
+  /** Index into `levels` of the currently-active level. */
+  activeLevelIndex: number;
+  /** Explicit stair connections between levels. */
+  stairLinks: StairLink[];
+}
+
+/**
+ * Type-guard: returns `true` when the payload has the shape of a
+ * `DungeonProject` (has a `levels` array) rather than a bare `DungeonMap`.
+ */
+export function isDungeonProject(obj: unknown): obj is DungeonProject {
+  return (
+    typeof obj === 'object' &&
+    obj !== null &&
+    Array.isArray((obj as DungeonProject).levels)
+  );
+}
+
 export type ToolType =
   | 'paint' | 'erase' | 'fill' | 'note' | 'line' | 'rect' | 'select'
   // GM fog tools — reveal/hide drag-rectangles of cells.

@@ -38,6 +38,112 @@
   min-height: 0;
 }
 
+/* ── Level Tabs ─────────────────────────────────────────── */
+.level-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 0 8px;
+  background: #ece6d6;
+  border-bottom: 1px solid #c2bbab;
+  flex-shrink: 0;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.level-tab {
+  display: flex;
+  align-items: center;
+  padding: 4px 14px;
+  font-size: var(--fs-12);
+  font-weight: 500;
+  color: #6a6258;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+  position: relative;
+}
+
+.level-tab:hover {
+  background: #f4f1ea;
+  color: #2a2620;
+}
+
+.level-tab--active {
+  color: #8a3a3a;
+  border-bottom-color: #8a3a3a;
+  background: #f4f1ea;
+  font-weight: 600;
+}
+
+.level-tab--dragging {
+  opacity: 0.4;
+}
+
+.level-tab--drop-target {
+  border-left: 2px solid #8a3a3a;
+}
+
+.level-tab--add {
+  color: #8a3a3a;
+  font-size: var(--fs-15);
+  font-weight: bold;
+  padding: 4px 10px;
+  border-bottom: none;
+}
+
+.level-tab--add:hover {
+  background: #ddd8c8;
+}
+
+.level-tab__label {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.level-tab__rename-input {
+  width: 100px;
+  font-size: var(--fs-12);
+  border: 1px solid #8a7f66;
+  border-radius: 2px;
+  padding: 1px 4px;
+  background: #fff;
+  color: #2a2620;
+  outline: none;
+}
+
+.level-tab__menu {
+  position: fixed;
+  z-index: 1000;
+  background: #ffffff;
+  border: 1px solid #c2bbab;
+  border-radius: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  padding: 4px 0;
+  min-width: 100px;
+}
+
+.level-tab__menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 6px 14px;
+  font-size: var(--fs-12);
+  border: none;
+  background: transparent;
+  color: #2a2620;
+  cursor: pointer;
+}
+
+.level-tab__menu button:hover {
+  background: #ece6d6;
+}
+
 /* ── Header ─────────────────────────────────────────────── */
 .map-header {
   display: flex;

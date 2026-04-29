@@ -20,6 +20,7 @@ import { computePlayerFOV, mergeExplored } from './utils/dynamicFog';
 import { computeLightVisible } from './utils/lightSources';
 import { getTheme, THEME_LIST } from './themes/index';
 import { ALL_TILE_TYPES, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape, type LightSourcePreset, LIGHT_SOURCE_PRESETS } from './types/map';
+import LevelTabs from './components/LevelTabs';
 import './App.css';
 
 const UI_SCALE_STORAGE_KEY = 'dungeon-mapper:ui-scale';
@@ -86,6 +87,8 @@ function loadInitialUIScale(): number {
 function App() {
   const {
     map,
+    project,
+    activeLevelIndex,
     selectedNoteId,
     setSelectedNoteId,
     setTile,
@@ -95,7 +98,7 @@ function App() {
     resizeMap,
     clearMap,
     newMap,
-    loadMapData,
+    loadProjectData,
     generateMap,
     applyGeneratedRegion,
     addNote,
@@ -134,6 +137,12 @@ function App() {
     addLightSource,
     removeLightSource,
     clearLightSources,
+    switchLevel,
+    addLevel,
+    renameLevel,
+    deleteLevel,
+    duplicateLevel,
+    reorderLevels,
   } = useMapState();
 
   const {
@@ -569,6 +578,16 @@ function App() {
         setActiveTool(prev => prev === 'fov' ? 'paint' : 'fov');
       }
     },
+    nextLevel: () => {
+      if (activeLevelIndex < project.levels.length - 1) {
+        switchLevel(activeLevelIndex + 1);
+      }
+    },
+    prevLevel: () => {
+      if (activeLevelIndex > 0) {
+        switchLevel(activeLevelIndex - 1);
+      }
+    },
   });
 
   return (
@@ -577,12 +596,13 @@ function App() {
       <MapHeader
         ref={headerRef}
         map={map}
+        project={project}
         onSetName={setMapName}
         onResize={resizeMap}
         onSetTileSize={setTileSize}
         onClear={clearMap}
         onNew={newMap}
-        onLoad={loadMapData}
+        onLoadProject={loadProjectData}
         onExportSVG={handleExportSVG}
         onUndo={handleUndo}
         onRedo={handleRedo}
@@ -598,6 +618,16 @@ function App() {
         onToggleViewMode={switchViewMode}
         onShowShortcuts={() => setShowShortcutsHelp(true)}
         onOpenExportDialog={() => setShowExportDialog(true)}
+      />
+      <LevelTabs
+        levels={project.levels}
+        activeIndex={activeLevelIndex}
+        onSwitch={switchLevel}
+        onAdd={addLevel}
+        onRename={renameLevel}
+        onDelete={deleteLevel}
+        onDuplicate={duplicateLevel}
+        onReorder={reorderLevels}
       />
       <div className="app-body">
         {viewMode === 'gm' ? (

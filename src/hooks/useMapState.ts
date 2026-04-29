@@ -1,20 +1,19 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { DungeonMap, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource } from '../types/map';
+import type { DungeonMap, DungeonProject, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource } from '../types/map';
 import { createEmptyGrid, createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
-import { saveMap, loadMap, migrateFromLocalStorage } from '../utils/storage';
+import { saveProject, loadProject, migrateFromLocalStorage } from '../utils/storage';
+import { wrapMapAsProject } from '../utils/storage';
 import { reThemeNotes } from '../utils/reThemeNotes';
 
 const DEFAULT_WIDTH = 32;
 const DEFAULT_HEIGHT = 32;
 const DEFAULT_TILE_SIZE = 20;
 
-function createDefaultMap(): DungeonMap {
+function createDefaultMap(name = 'Level 1'): DungeonMap {
   return {
-    meta: { name: 'New Dungeon', width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT, tileSize: DEFAULT_TILE_SIZE },
+    meta: { name, width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT, tileSize: DEFAULT_TILE_SIZE },
     tiles: createEmptyGrid(DEFAULT_WIDTH, DEFAULT_HEIGHT),
     notes: [],
-    // Maps start fully fogged with fog-of-war enabled. Players see a fully
-    // hidden map until the GM uses the Reveal tool to expose explored areas.
     fog: createFogGrid(DEFAULT_WIDTH, DEFAULT_HEIGHT, true),
     fogEnabled: true,
     tokens: [],
@@ -25,14 +24,15 @@ function createDefaultMap(): DungeonMap {
   };
 }
 
-/**
- * Backfill optional fields on maps loaded from older saves so the rest of
- * the app can rely on them being present. Mirrors the defaults from
- * createDefaultMap and is applied on every load path (IndexedDB autosave
- * and JSON import). Fog-of-war defaults to *on* with a fully-fogged grid
- * so the player view always starts safe regardless of when the map was
- * saved.
- */
+function createDefaultProject(): DungeonProject {
+  return {
+    name: 'New Dungeon',
+    levels: [createDefaultMap()],
+    activeLevelIndex: 0,
+    stairLinks: [],
+  };
+}
+
 function withDefaults(map: DungeonMap): DungeonMap {
   return {
     ...map,
@@ -41,34 +41,24 @@ function withDefaults(map: DungeonMap): DungeonMap {
     tokens: map.tokens ?? [],
     annotations: map.annotations ?? [],
     markers: map.markers ?? [],
-    // Default to an empty initiative list rather than auto-populating from
-    // existing tokens on legacy saves — a freshly loaded map shouldn't
-    // surprise the GM with a pre-filled turn order they didn't set.
     initiative: map.initiative ?? [],
     lightSources: map.lightSources ?? [],
   };
 }
 
-/**
- * Compute the next id to assign for a list of items keyed by `id`. Returns
- * one greater than the largest existing id, or 1 if the list is empty/absent.
- */
+function withProjectDefaults(project: DungeonProject): DungeonProject {
+  return {
+    ...project,
+    levels: project.levels.map(withDefaults),
+    stairLinks: project.stairLinks ?? [],
+  };
+}
+
 function nextIdAfter(items: { id: number }[] | undefined): number {
   if (!items || items.length === 0) return 1;
   return Math.max(...items.map(i => i.id)) + 1;
 }
 
-/**
- * One revertible step in the undo/redo stack. Snapshots the parts of
- * `DungeonMap` that user-driven mutations actually change: the tile grid,
- * the fog grid, the notes list, and the map's logical dimensions. The
- * dimensions are part of the snapshot so undoing a generation that
- * resized the map (e.g. 32x32 → 60x40) restores `meta.width`/`meta.height`
- * alongside the smaller `tiles` array, instead of leaving `meta` out of
- * sync with `tiles`. Tokens and annotations are intentionally excluded
- * because they are treated as live GM tools (see the comment near the
- * fog/token mutations below).
- */
 interface HistorySnapshot {
   tiles: Tile[][];
   fog: boolean[][];
@@ -77,11 +67,11 @@ interface HistorySnapshot {
   height: number;
 }
 
-/**
- * Internal clipboard buffer for copy/paste operations within the map.
- * Stored in a module-level variable (not React state) so it persists
- * across renders but doesn't trigger unnecessary re-renders.
- */
+interface LevelHistory {
+  past: HistorySnapshot[];
+  future: HistorySnapshot[];
+}
+
 interface ClipboardBuffer {
   tiles: Tile[][];
   notes: MapNote[];
@@ -91,13 +81,13 @@ interface ClipboardBuffer {
 
 let clipboard: ClipboardBuffer | null = null;
 
-/** Returns the current clipboard buffer, if any. */
 export function getClipboard(): ClipboardBuffer | null {
   return clipboard;
 }
 
 export function useMapState() {
-  const [map, setMap] = useState<DungeonMap>(createDefaultMap);
+  const [project, setProject] = useState<DungeonProject>(createDefaultProject);
+  const [activeLevelIndex, setActiveLevelIndex] = useState(0);
   const [nextNoteId, setNextNoteId] = useState(1);
   const nextTokenIdRef = useRef(1);
   const nextStrokeIdRef = useRef(1);
@@ -107,36 +97,52 @@ export function useMapState() {
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
-  const pastRef = useRef<HistorySnapshot[]>([]);
-  const futureRef = useRef<HistorySnapshot[]>([]);
+  const historyRef = useRef<Map<number, LevelHistory>>(new Map());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Load from IndexedDB on mount
+  function getHistory(levelIdx: number): LevelHistory {
+    let h = historyRef.current.get(levelIdx);
+    if (!h) {
+      h = { past: [], future: [] };
+      historyRef.current.set(levelIdx, h);
+    }
+    return h;
+  }
+
+  const map = project.levels[activeLevelIndex] ?? project.levels[0];
+
+  function syncIdsToLevel(level: DungeonMap) {
+    setNextNoteId(nextIdAfter(level.notes));
+    nextTokenIdRef.current = nextIdAfter(level.tokens);
+    nextStrokeIdRef.current = nextIdAfter(level.annotations);
+    nextMarkerIdRef.current = nextIdAfter(level.markers);
+    nextLightIdRef.current = nextIdAfter(level.lightSources);
+  }
+
   useEffect(() => {
     migrateFromLocalStorage().catch(() => {});
-    loadMap().then(loaded => {
+    loadProject().then(loaded => {
       if (loaded) {
-        const ready = withDefaults(loaded);
-        setMap(ready);
-        setNextNoteId(nextIdAfter(ready.notes));
-        nextTokenIdRef.current = nextIdAfter(ready.tokens);
-        nextStrokeIdRef.current = nextIdAfter(ready.annotations);
-        nextMarkerIdRef.current = nextIdAfter(ready.markers);
-        nextLightIdRef.current = nextIdAfter(ready.lightSources);
+        const ready = withProjectDefaults(loaded);
+        setProject(ready);
+        const idx = Math.min(ready.activeLevelIndex, ready.levels.length - 1);
+        setActiveLevelIndex(idx);
+        syncIdsToLevel(ready.levels[idx]);
       }
     }).catch(() => {});
+
   }, []);
 
-  const debouncedSave = useCallback((mapToSave: DungeonMap) => {
+  const debouncedSave = useCallback((proj: DungeonProject) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     saveTimerRef.current = setTimeout(() => {
-      saveMap(mapToSave).catch(() => {});
+      saveProject(proj).catch(() => {});
     }, 500);
   }, []);
 
   const MAX_HISTORY_SIZE = 50;
 
-  function pushHistory(prev: DungeonMap) {
+  function pushHistory(prev: DungeonMap, levelIdx: number) {
     const snap: HistorySnapshot = {
       tiles: prev.tiles,
       fog: prev.fog ?? createFogGrid(prev.meta.width, prev.meta.height, false),
@@ -144,119 +150,132 @@ export function useMapState() {
       width: prev.meta.width,
       height: prev.meta.height,
     };
-    pastRef.current = [...pastRef.current.slice(-(MAX_HISTORY_SIZE - 1)), snap];
-    futureRef.current = [];
+    const h = getHistory(levelIdx);
+    h.past = [...h.past.slice(-(MAX_HISTORY_SIZE - 1)), snap];
+    h.future = [];
     setCanUndo(true);
     setCanRedo(false);
   }
 
+  function updateActiveLevel(
+    proj: DungeonProject,
+    levelIdx: number,
+    updater: (prev: DungeonMap) => DungeonMap,
+  ): DungeonProject {
+    const newLevels = proj.levels.map((lvl, i) =>
+      i === levelIdx ? updater(lvl) : lvl,
+    );
+    return { ...proj, levels: newLevels, activeLevelIndex: levelIdx };
+  }
+
   const setTile = useCallback((x: number, y: number, type: TileType) => {
-    setMap(prev => {
-      pushHistory(prev);
-      const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
-      if (y >= 0 && y < prev.meta.height && x >= 0 && x < prev.meta.width) {
-        // Painting/erasing clears any per-tile theme override so the tile
-        // follows the current map theme. This is what makes "preserve on
-        // theme switch" non-destructive but still let new edits adopt the
-        // newly selected theme.
-        const next = { ...newTiles[y][x], type };
-        delete next.theme;
-        newTiles[y][x] = next;
-      }
-      const updated = { ...prev, tiles: newTiles };
-      debouncedSave(updated);
-      return updated;
-    });
-  }, [debouncedSave]);
-
-  const fillTiles = useCallback((x: number, y: number, fillType: TileType) => {
-    setMap(prev => {
-      const targetType = prev.tiles[y]?.[x]?.type;
-      if (!targetType) return prev;
-      pushHistory(prev);
-      const newTiles = floodFill(prev.tiles, x, y, targetType, fillType);
-      const updated = { ...prev, tiles: newTiles };
-      debouncedSave(updated);
-      return updated;
-    });
-  }, [debouncedSave]);
-
-  const setTiles = useCallback((updates: { x: number; y: number; type: TileType }[]) => {
-    setMap(prev => {
-      pushHistory(prev);
-      const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
-      for (const { x, y, type } of updates) {
-        if (y >= 0 && y < prev.meta.height && x >= 0 && x < prev.meta.width) {
-          // Same rationale as setTile: clear any per-tile theme override so
-          // the new edit follows the current map theme.
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
+        const newTiles = m.tiles.map(row => row.map(t => ({ ...t })));
+        if (y >= 0 && y < m.meta.height && x >= 0 && x < m.meta.width) {
           const next = { ...newTiles[y][x], type };
           delete next.theme;
           newTiles[y][x] = next;
         }
-      }
-      const updated = { ...prev, tiles: newTiles };
+        return { ...m, tiles: newTiles };
+      });
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
+
+  const fillTiles = useCallback((x: number, y: number, fillType: TileType) => {
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      const targetType = prevMap.tiles[y]?.[x]?.type;
+      if (!targetType) return prev;
+      pushHistory(prevMap, activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, tiles: floodFill(m.tiles, x, y, targetType, fillType),
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
+
+  const setTiles = useCallback((updates: { x: number; y: number; type: TileType }[]) => {
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
+        const newTiles = m.tiles.map(row => row.map(t => ({ ...t })));
+        for (const { x, y, type } of updates) {
+          if (y >= 0 && y < m.meta.height && x >= 0 && x < m.meta.width) {
+            const next = { ...newTiles[y][x], type };
+            delete next.theme;
+            newTiles[y][x] = next;
+          }
+        }
+        return { ...m, tiles: newTiles };
+      });
+      debouncedSave(updated);
+      return updated;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
 
   const getTileType = useCallback((x: number, y: number): TileType | null => {
     return map.tiles[y]?.[x]?.type ?? null;
   }, [map.tiles]);
 
   const setMapName = useCallback((name: string) => {
-    setMap(prev => {
-      const updated = { ...prev, meta: { ...prev.meta, name } };
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, meta: { ...m.meta, name },
+      }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const resizeMap = useCallback((width: number, height: number) => {
-    setMap(prev => {
-      const newTiles: Tile[][] = Array.from({ length: height }, (_, y) =>
-        Array.from({ length: width }, (_, x) =>
-          prev.tiles[y]?.[x] ?? { type: 'empty' as TileType }
-        )
-      );
-      // Newly-added cells from a grow-resize default to fogged so unexplored
-      // area added to the map stays hidden until the GM reveals it.
-      const newFog = resizeFogGrid(prev.fog, width, height, true);
-      // Drop tokens whose footprint no longer fits on the resized map.
-      const newTokens = (prev.tokens ?? []).filter(t => {
-        const sz = Math.max(1, Math.floor(t.size ?? 1));
-        return t.x >= 0 && t.y >= 0 && t.x + sz <= width && t.y + sz <= height;
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
+        const newTiles: Tile[][] = Array.from({ length: height }, (_, y) =>
+          Array.from({ length: width }, (_, x) =>
+            m.tiles[y]?.[x] ?? { type: 'empty' as TileType }
+          )
+        );
+        return {
+          ...m,
+          meta: { ...m.meta, width, height },
+          tiles: newTiles,
+          fog: resizeFogGrid(m.fog, width, height, true),
+          tokens: (m.tokens ?? []).filter(t => {
+            const sz = Math.max(1, Math.floor(t.size ?? 1));
+            return t.x >= 0 && t.y >= 0 && t.x + sz <= width && t.y + sz <= height;
+          }),
+          initiative: (m.initiative ?? []).filter(id =>
+            (m.tokens ?? []).some(t => {
+              const sz = Math.max(1, Math.floor(t.size ?? 1));
+              return t.id === id && t.x >= 0 && t.y >= 0 && t.x + sz <= width && t.y + sz <= height;
+            })
+          ),
+          lightSources: (m.lightSources ?? []).filter(
+            ls => ls.x >= 0 && ls.x < width && ls.y >= 0 && ls.y < height,
+          ),
+        };
       });
-      const keptIds = new Set(newTokens.map(t => t.id));
-      const newInitiative = (prev.initiative ?? []).filter(id => keptIds.has(id));
-      // Drop light sources that are now out of bounds.
-      const newLightSources = (prev.lightSources ?? []).filter(
-        ls => ls.x >= 0 && ls.x < width && ls.y >= 0 && ls.y < height,
-      );
-      const updated = {
-        ...prev,
-        meta: { ...prev.meta, width, height },
-        tiles: newTiles,
-        fog: newFog,
-        tokens: newTokens,
-        initiative: newInitiative,
-        lightSources: newLightSources,
-      };
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const clearMap = useCallback(() => {
-    setMap(prev => {
-      pushHistory(prev);
-      const updated = {
-        ...prev,
-        tiles: createEmptyGrid(prev.meta.width, prev.meta.height),
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m,
+        tiles: createEmptyGrid(m.meta.width, m.meta.height),
         notes: [],
-        // Clearing the map resets to a fully-fogged state, matching the
-        // behavior of a fresh map.
-        fog: createFogGrid(prev.meta.width, prev.meta.height, true),
+        fog: createFogGrid(m.meta.width, m.meta.height, true),
         explored: undefined,
         dynamicFogEnabled: false,
         tokens: [],
@@ -264,7 +283,7 @@ export function useMapState() {
         initiative: [],
         lightSources: [],
         markers: [],
-      };
+      }));
       debouncedSave(updated);
       return updated;
     });
@@ -274,15 +293,16 @@ export function useMapState() {
     nextLightIdRef.current = 1;
     nextMarkerIdRef.current = 1;
     setSelectedNoteId(null);
-  }, [debouncedSave]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
 
   const newMap = useCallback(() => {
-    const fresh = createDefaultMap();
-    pastRef.current = [];
-    futureRef.current = [];
+    const fresh = createDefaultProject();
+    historyRef.current = new Map();
     setCanUndo(false);
     setCanRedo(false);
-    setMap(fresh);
+    setProject(fresh);
+    setActiveLevelIndex(0);
     debouncedSave(fresh);
     setNextNoteId(1);
     nextTokenIdRef.current = 1;
@@ -292,37 +312,17 @@ export function useMapState() {
     setSelectedNoteId(null);
   }, [debouncedSave]);
 
-  /**
-   * Replace the map with procedurally-generated tiles. The previous
-   * tiles, fog grid, notes, and map dimensions are pushed onto the undo
-   * stack so the user can fully revert a generation; tokens and
-   * annotations are reset (and not undoable, since they're treated as
-   * live GM tools), matching the behavior of `clearMap`. The current
-   * theme and tile size are preserved so the generated map renders in
-   * whatever style the user already picked.
-   */
-  const generateMap = useCallback((
-    tiles: Tile[][],
-    width: number,
-    height: number,
-    notes: MapNote[] = [],
-    name?: string
-  ) => {
-    setMap(prev => {
-      pushHistory(prev);
-      const updated: DungeonMap = {
-        ...prev,
-        meta: { ...prev.meta, width, height, ...(name ? { name } : {}) },
-        tiles,
-        notes,
-        // Generated maps start fully fogged so a GM can reveal as players
-        // explore — same default as `createDefaultMap`.
+  const generateMap = useCallback((tiles: Tile[][], width: number, height: number, notes: MapNote[] = [], name?: string) => {
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m,
+        meta: { ...m.meta, width, height, ...(name ? { name } : {}) },
+        tiles, notes,
         fog: createFogGrid(width, height, true),
-        fogEnabled: prev.fogEnabled ?? true,
-        tokens: [],
-        annotations: [],
-        initiative: [],
-      };
+        fogEnabled: m.fogEnabled ?? true,
+        tokens: [], annotations: [], initiative: [],
+      }));
       debouncedSave(updated);
       return updated;
     });
@@ -330,623 +330,502 @@ export function useMapState() {
     nextTokenIdRef.current = 1;
     nextStrokeIdRef.current = 1;
     setSelectedNoteId(null);
-  }, [debouncedSave]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
 
-  /**
-   * Stamp a generated sub-map onto the existing map at `(ox, oy)` instead
-   * of replacing the whole canvas. Cells inside the target rectangle are
-   * overwritten by the generator's tiles (preserving any per-tile theme
-   * overrides on tiles outside the rectangle); the previous tiles are
-   * pushed onto the undo stack so the operation is fully revertible. Notes
-   * produced by the generator are merged into the existing notes list with
-   * fresh ids and their coordinates offset into the target region.
-   * Tokens, fog, and annotations are left untouched — only the drawn
-   * tiles and the notes list change.
-   */
-  const applyGeneratedRegion = useCallback((
-    genTiles: Tile[][],
-    ox: number,
-    oy: number,
-    genNotes: MapNote[] = []
-  ) => {
+  const applyGeneratedRegion = useCallback((genTiles: Tile[][], ox: number, oy: number, genNotes: MapNote[] = []) => {
     const regionH = genTiles.length;
     const regionW = genTiles[0]?.length ?? 0;
-    setMap(prev => {
-      pushHistory(prev);
-      const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
-      // Map the generator's local note ids (1..N) onto fresh ids that
-      // don't collide with existing notes on this map. `idOffset` is the
-      // amount we shift each generator id by — generator id 1 becomes
-      // `idOffset + 1`, generator id 2 becomes `idOffset + 2`, etc.
-      const idOffset = nextIdAfter(prev.notes) - 1;
-      const idMap = new Map<number, number>();
-      for (const n of genNotes) idMap.set(n.id, n.id + idOffset);
-      for (let y = 0; y < regionH; y++) {
-        const ty = oy + y;
-        if (ty < 0 || ty >= prev.meta.height) continue;
-        for (let x = 0; x < regionW; x++) {
-          const tx = ox + x;
-          if (tx < 0 || tx >= prev.meta.width) continue;
-          const src = genTiles[y][x];
-          const next: Tile = { type: src.type };
-          if (src.noteId !== undefined) {
-            const remapped = idMap.get(src.noteId);
-            if (remapped !== undefined) next.noteId = remapped;
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
+        const newTiles = m.tiles.map(row => row.map(t => ({ ...t })));
+        const idOffset = nextIdAfter(m.notes) - 1;
+        const idMap = new Map<number, number>();
+        for (const n of genNotes) idMap.set(n.id, n.id + idOffset);
+        for (let y = 0; y < regionH; y++) {
+          const ty = oy + y;
+          if (ty < 0 || ty >= m.meta.height) continue;
+          for (let x = 0; x < regionW; x++) {
+            const tx = ox + x;
+            if (tx < 0 || tx >= m.meta.width) continue;
+            const src = genTiles[y][x];
+            const next: Tile = { type: src.type };
+            if (src.noteId !== undefined) {
+              const remapped = idMap.get(src.noteId);
+              if (remapped !== undefined) next.noteId = remapped;
+            }
+            newTiles[ty][tx] = next;
           }
-          newTiles[ty][tx] = next;
         }
-      }
-      const remappedNotes: MapNote[] = genNotes.map(n => ({
-        ...n,
-        id: n.id + idOffset,
-        x: n.x + ox,
-        y: n.y + oy,
-      }));
-      const updatedNotes = [...prev.notes, ...remappedNotes];
-      const updated: DungeonMap = {
-        ...prev,
-        tiles: newTiles,
-        notes: updatedNotes,
-      };
+        const remappedNotes: MapNote[] = genNotes.map(n => ({ ...n, id: n.id + idOffset, x: n.x + ox, y: n.y + oy }));
+        return { ...m, tiles: newTiles, notes: [...m.notes, ...remappedNotes] };
+      });
       debouncedSave(updated);
       return updated;
     });
-    // Bump the next-note allocator past the ids we just appended so the
-    // user's subsequent manual notes don't collide with them. The highest
-    // id in `genNotes` is `nextIdAfter(genNotes) - 1`, and we shifted
-    // every id up by `nextNoteId - 1`, so the new floor is
-    // `nextNoteId + (highest in genNotes)`.
     if (genNotes.length > 0) {
       const highestGen = nextIdAfter(genNotes) - 1;
       setNextNoteId(prev => prev + highestGen);
     }
-  }, [debouncedSave]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
 
   const loadMapData = useCallback((loaded: DungeonMap) => {
-    const ready = withDefaults(loaded);
-    pastRef.current = [];
-    futureRef.current = [];
+    const proj = withProjectDefaults(wrapMapAsProject(withDefaults(loaded)));
+    historyRef.current = new Map();
     setCanUndo(false);
     setCanRedo(false);
-    setMap(ready);
-    debouncedSave(ready);
-    setNextNoteId(nextIdAfter(ready.notes));
-    nextTokenIdRef.current = nextIdAfter(ready.tokens);
-    nextStrokeIdRef.current = nextIdAfter(ready.annotations);
-    nextMarkerIdRef.current = nextIdAfter(ready.markers);
+    setProject(proj);
+    setActiveLevelIndex(0);
+    debouncedSave(proj);
+    syncIdsToLevel(proj.levels[0]);
     setSelectedNoteId(null);
+
+  }, [debouncedSave]);
+
+  const loadProjectData = useCallback((loaded: DungeonProject) => {
+    const proj = withProjectDefaults(loaded);
+    historyRef.current = new Map();
+    setCanUndo(false);
+    setCanRedo(false);
+    const idx = Math.min(proj.activeLevelIndex, proj.levels.length - 1);
+    setProject(proj);
+    setActiveLevelIndex(idx);
+    debouncedSave(proj);
+    syncIdsToLevel(proj.levels[idx]);
+    setSelectedNoteId(null);
+
   }, [debouncedSave]);
 
   const addNote = useCallback((x: number, y: number) => {
-    setMap(prev => {
-      pushHistory(prev);
-      const newNote: MapNote = {
-        id: nextNoteId,
-        x, y,
-        label: `Room ${nextNoteId}`,
-        description: '',
-      };
-      const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
-      if (newTiles[y]?.[x]) {
-        newTiles[y][x] = { ...newTiles[y][x], noteId: nextNoteId };
-      }
-      const updated = { ...prev, tiles: newTiles, notes: [...prev.notes, newNote] };
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
+        const newNote: MapNote = { id: nextNoteId, x, y, label: `Room ${nextNoteId}`, description: '' };
+        const newTiles = m.tiles.map(row => row.map(t => ({ ...t })));
+        if (newTiles[y]?.[x]) newTiles[y][x] = { ...newTiles[y][x], noteId: nextNoteId };
+        return { ...m, tiles: newTiles, notes: [...m.notes, newNote] };
+      });
       debouncedSave(updated);
       return updated;
     });
     setNextNoteId(id => id + 1);
-  }, [nextNoteId, debouncedSave]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [nextNoteId, debouncedSave, activeLevelIndex]);
 
   const updateNote = useCallback((id: number, label: string, description: string) => {
-    setMap(prev => {
-      const existing = prev.notes.find(n => n.id === id);
-      // Bail out if nothing would change so editing a note's dialog and
-      // confirming without changes doesn't push a spurious undo entry.
-      if (!existing || (existing.label === label && existing.description === description)) {
-        return prev;
-      }
-      pushHistory(prev);
-      const notes = prev.notes.map(n => n.id === id ? { ...n, label, description } : n);
-      const updated = { ...prev, notes };
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      const existing = prevMap.notes.find(n => n.id === id);
+      if (!existing || (existing.label === label && existing.description === description)) return prev;
+      pushHistory(prevMap, activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, notes: m.notes.map(n => n.id === id ? { ...n, label, description } : n),
+      }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
 
   const deleteNote = useCallback((id: number) => {
-    setMap(prev => {
-      if (!prev.notes.some(n => n.id === id)) return prev;
-      pushHistory(prev);
-      const notes = prev.notes.filter(n => n.id !== id);
-      const newTiles = prev.tiles.map(row =>
-        row.map(t => t.noteId === id ? { ...t, noteId: undefined } : t)
-      );
-      const updated = { ...prev, tiles: newTiles, notes };
+    setProject(prev => {
+      if (!prev.levels[activeLevelIndex].notes.some(n => n.id === id)) return prev;
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
+        const notes = m.notes.filter(n => n.id !== id);
+        const newTiles = m.tiles.map(row => row.map(t => t.noteId === id ? { ...t, noteId: undefined } : t));
+        return { ...m, tiles: newTiles, notes };
+      });
       debouncedSave(updated);
       return updated;
     });
     setSelectedNoteId(sel => sel === id ? null : sel);
-  }, [debouncedSave]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
 
   const setTileSize = useCallback((tileSize: number) => {
-    setMap(prev => {
-      const updated = { ...prev, meta: { ...prev.meta, tileSize } };
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, meta: { ...m.meta, tileSize } }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const setTheme = useCallback((theme: string, preserveExisting = false) => {
-    setMap(prev => {
-      const previousTheme = prev.meta.theme ?? 'dungeon';
-      // Bail out if nothing would change so we don't push spurious history.
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      const previousTheme = prevMap.meta.theme ?? 'dungeon';
       if (theme === previousTheme) return prev;
-
-      let newTiles = prev.tiles;
-      let newNotes = prev.notes;
-      if (preserveExisting) {
-        // Stamp the *outgoing* theme onto every non-empty tile that does not
-        // already carry an explicit per-tile theme. This freezes the visual
-        // style of the user's existing work so it survives the switch, while
-        // tiles painted afterward (which clear `theme`) follow the new map
-        // theme. Empty tiles are skipped because they don't render and
-        // tagging them would just bloat saved files.
-        let mutated = false;
-        const stamped = prev.tiles.map(row =>
-          row.map(t => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
+        let newTiles = m.tiles;
+        let newNotes = m.notes;
+        if (preserveExisting) {
+          let mutated = false;
+          const stamped = m.tiles.map(row => row.map(t => {
             if (t.type === 'empty' || t.theme) return t;
             mutated = true;
             return { ...t, theme: previousTheme };
-          })
-        );
-        if (mutated) {
-          pushHistory(prev);
-          newTiles = stamped;
+          }));
+          if (mutated) { pushHistory(m, activeLevelIndex); newTiles = stamped; }
+        } else {
+          const { notes: themed, removedIds } = reThemeNotes(m.notes, m.tiles, theme);
+          newNotes = themed;
+          if (removedIds.size > 0) {
+            newTiles = m.tiles.map(row => row.map(t =>
+              t.noteId !== undefined && removedIds.has(t.noteId) ? { ...t, noteId: undefined } : t,
+            ));
+          }
         }
-      } else {
-        // When *not* preserving, re-label auto-generated notes (room labels
-        // and POIs) to match the new theme. User-created notes (no `kind`)
-        // are left unchanged. Room-archetype notes are removed only when the
-        // new theme lacks a room palette; their stale `noteId` links on
-        // tiles are cleared so the canvas doesn't reference dead notes.
-        const { notes: themed, removedIds } = reThemeNotes(
-          prev.notes,
-          prev.tiles,
-          theme,
-        );
-        newNotes = themed;
-        if (removedIds.size > 0) {
-          newTiles = prev.tiles.map(row =>
-            row.map(t =>
-              t.noteId !== undefined && removedIds.has(t.noteId)
-                ? { ...t, noteId: undefined }
-                : t,
-            ),
-          );
-        }
-      }
-
-      const updated = {
-        ...prev,
-        tiles: newTiles,
-        notes: newNotes,
-        meta: { ...prev.meta, theme },
-      };
+        return { ...m, tiles: newTiles, notes: newNotes, meta: { ...m.meta, theme } };
+      });
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
 
   const undo = useCallback(() => {
-    if (pastRef.current.length === 0) return;
-    setMap(prev => {
-      const previous = pastRef.current[pastRef.current.length - 1];
-      pastRef.current = pastRef.current.slice(0, -1);
-      futureRef.current = [
-        ...futureRef.current,
-        {
-          tiles: prev.tiles,
-          fog: prev.fog ?? createFogGrid(prev.meta.width, prev.meta.height, false),
-          notes: prev.notes,
-          width: prev.meta.width,
-          height: prev.meta.height,
-        },
-      ];
-      const updated: DungeonMap = {
-        ...prev,
-        meta: { ...prev.meta, width: previous.width, height: previous.height },
-        tiles: previous.tiles,
-        fog: previous.fog,
-        notes: previous.notes,
-      };
+    const h = getHistory(activeLevelIndex);
+    if (h.past.length === 0) return;
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      const previous = h.past[h.past.length - 1];
+      h.past = h.past.slice(0, -1);
+      h.future = [...h.future, {
+        tiles: prevMap.tiles,
+        fog: prevMap.fog ?? createFogGrid(prevMap.meta.width, prevMap.meta.height, false),
+        notes: prevMap.notes, width: prevMap.meta.width, height: prevMap.meta.height,
+      }];
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, meta: { ...m.meta, width: previous.width, height: previous.height },
+        tiles: previous.tiles, fog: previous.fog, notes: previous.notes,
+      }));
       debouncedSave(updated);
-      setCanUndo(pastRef.current.length > 0);
+      setCanUndo(h.past.length > 0);
       setCanRedo(true);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const redo = useCallback(() => {
-    if (futureRef.current.length === 0) return;
-    setMap(prev => {
-      const next = futureRef.current[futureRef.current.length - 1];
-      futureRef.current = futureRef.current.slice(0, -1);
-      pastRef.current = [
-        ...pastRef.current,
-        {
-          tiles: prev.tiles,
-          fog: prev.fog ?? createFogGrid(prev.meta.width, prev.meta.height, false),
-          notes: prev.notes,
-          width: prev.meta.width,
-          height: prev.meta.height,
-        },
-      ];
-      const updated: DungeonMap = {
-        ...prev,
-        meta: { ...prev.meta, width: next.width, height: next.height },
-        tiles: next.tiles,
-        fog: next.fog,
-        notes: next.notes,
-      };
+    const h = getHistory(activeLevelIndex);
+    if (h.future.length === 0) return;
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      const next = h.future[h.future.length - 1];
+      h.future = h.future.slice(0, -1);
+      h.past = [...h.past, {
+        tiles: prevMap.tiles,
+        fog: prevMap.fog ?? createFogGrid(prevMap.meta.width, prevMap.meta.height, false),
+        notes: prevMap.notes, width: prevMap.meta.width, height: prevMap.meta.height,
+      }];
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, meta: { ...m.meta, width: next.width, height: next.height },
+        tiles: next.tiles, fog: next.fog, notes: next.notes,
+      }));
       debouncedSave(updated);
       setCanUndo(true);
-      setCanRedo(futureRef.current.length > 0);
+      setCanRedo(h.future.length > 0);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   // ── Fog of war ────────────────────────────────────────────────────────
-  // All fog mutations share the tile/fog history stack so reveal/hide drag
-  // operations can be undone alongside tile edits.
 
   const setFogCells = useCallback((cells: { x: number; y: number }[], hidden: boolean) => {
-    setMap(prev => {
-      const w = prev.meta.width;
-      const h = prev.meta.height;
-      const current = prev.fog ?? createFogGrid(w, h, false);
-      // Skip the snapshot if nothing would change to avoid empty undo steps.
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      const w = prevMap.meta.width; const ht = prevMap.meta.height;
+      const current = prevMap.fog ?? createFogGrid(w, ht, false);
       let mutated = false;
       const newFog = current.map(row => row.slice());
       for (const { x, y } of cells) {
-        if (x < 0 || x >= w || y < 0 || y >= h) continue;
-        if (newFog[y][x] !== hidden) {
-          newFog[y][x] = hidden;
-          mutated = true;
-        }
+        if (x < 0 || x >= w || y < 0 || y >= ht) continue;
+        if (newFog[y][x] !== hidden) { newFog[y][x] = hidden; mutated = true; }
       }
       if (!mutated) return prev;
-      pushHistory(prev);
-      const updated = { ...prev, fog: newFog };
+      pushHistory(prevMap, activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, fog: newFog }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
 
   const fillAllFog = useCallback((hidden: boolean) => {
-    setMap(prev => {
-      const w = prev.meta.width;
-      const h = prev.meta.height;
-      pushHistory(prev);
-      const updated = { ...prev, fog: createFogGrid(w, h, hidden) };
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, fog: createFogGrid(m.meta.width, m.meta.height, hidden),
+      }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
 
   const setFogEnabled = useCallback((enabled: boolean) => {
-    setMap(prev => {
-      if ((prev.fogEnabled ?? false) === enabled) return prev;
-      const updated = { ...prev, fogEnabled: enabled };
+    setProject(prev => {
+      if ((prev.levels[activeLevelIndex].fogEnabled ?? false) === enabled) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, fogEnabled: enabled }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const setDynamicFogEnabled = useCallback((enabled: boolean) => {
-    setMap(prev => {
-      if ((prev.dynamicFogEnabled ?? false) === enabled) return prev;
-      const patch: Partial<DungeonMap> = { dynamicFogEnabled: enabled };
-      // When enabling dynamic fog, ensure the explored grid exists.
-      if (enabled && !prev.explored) {
-        patch.explored = createFogGrid(prev.meta.width, prev.meta.height, false);
-      }
-      const updated = { ...prev, ...patch };
+    setProject(prev => {
+      if ((prev.levels[activeLevelIndex].dynamicFogEnabled ?? false) === enabled) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
+        const patch: Partial<DungeonMap> = { dynamicFogEnabled: enabled };
+        if (enabled && !m.explored) patch.explored = createFogGrid(m.meta.width, m.meta.height, false);
+        return { ...m, ...patch };
+      });
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
-  /** Replace the explored grid (called by App.tsx after mergeExplored). */
   const setExplored = useCallback((explored: boolean[][]) => {
-    setMap(prev => {
-      if (prev.explored === explored) return prev;
-      const updated = { ...prev, explored };
+    setProject(prev => {
+      if (prev.levels[activeLevelIndex].explored === explored) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, explored }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
-  /** Reset the explored grid (re-fog everything for dynamic fog). */
   const resetExplored = useCallback(() => {
-    setMap(prev => {
-      const updated = {
-        ...prev,
-        explored: createFogGrid(prev.meta.width, prev.meta.height, false),
-      };
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, explored: createFogGrid(m.meta.width, m.meta.height, false),
+      }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   // ── Tokens ────────────────────────────────────────────────────────────
-  // Tokens are not part of the tile/fog undo stack — they're treated as
-  // lightweight overlays that can be added/moved/removed freely.
 
-  /**
-   * Place a token on the map. Returns the new token's id on success, or
-   * `null` if placement was rejected (e.g. the footprint wouldn't fit on
-   * the map). On success the token is also appended to the initiative
-   * order so it shows up in the right-hand Initiative panel.
-   */
   const addToken = useCallback((kind: TokenKind, x: number, y: number, label?: string, size?: number): number | null => {
     const newId = nextTokenIdRef.current;
     let placed = false;
-    setMap(prev => {
-      const w = prev.meta.width;
-      const h = prev.meta.height;
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
       const sz = Math.max(1, Math.floor(size ?? 1));
-      // Reject placement if the footprint wouldn't fit on the map.
-      if (x < 0 || y < 0 || x + sz > w || y + sz > h) return prev;
-      const token: Token = {
-        id: newId,
-        x, y,
-        kind,
-        label: label ?? `${kind[0].toUpperCase()}${newId}`,
-        ...(sz > 1 ? { size: sz } : {}),
-      };
+      if (x < 0 || y < 0 || x + sz > prevMap.meta.width || y + sz > prevMap.meta.height) return prev;
       placed = true;
-      const updated = {
-        ...prev,
-        tokens: [...(prev.tokens ?? []), token],
-        // Append the new token to the initiative order so it shows up in
-        // the Initiative panel in the order it was placed. The GM can
-        // drag entries to reorder afterwards.
-        initiative: [...(prev.initiative ?? []), newId],
-      };
+      const token: Token = { id: newId, x, y, kind, label: label ?? `${kind[0].toUpperCase()}${newId}`, ...(sz > 1 ? { size: sz } : {}) };
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, tokens: [...(m.tokens ?? []), token], initiative: [...(m.initiative ?? []), newId],
+      }));
       debouncedSave(updated);
       return updated;
     });
-    if (placed) {
-      nextTokenIdRef.current = newId + 1;
-      return newId;
-    }
+    if (placed) { nextTokenIdRef.current = newId + 1; return newId; }
     return null;
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const moveToken = useCallback((id: number, x: number, y: number) => {
-    setMap(prev => {
-      const w = prev.meta.width;
-      const h = prev.meta.height;
-      const existing = (prev.tokens ?? []).find(t => t.id === id);
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      const existing = (prevMap.tokens ?? []).find(t => t.id === id);
       if (!existing) return prev;
       const sz = Math.max(1, Math.floor(existing.size ?? 1));
-      // Refuse the move if the map is too small to fit the footprint;
-      // otherwise the clamp below would force the token to (0,0) with
-      // its footprint extending off the map.
+      const w = prevMap.meta.width; const h = prevMap.meta.height;
       if (sz > w || sz > h) return prev;
-      // Clamp the top-left so the full footprint stays on the map.
       const cx = Math.min(Math.max(0, x), w - sz);
       const cy = Math.min(Math.max(0, y), h - sz);
       if (cx === existing.x && cy === existing.y) return prev;
-      const tokens = (prev.tokens ?? []).map(t =>
-        t.id === id ? { ...t, x: cx, y: cy } : t
-      );
-      const updated = { ...prev, tokens };
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, tokens: (m.tokens ?? []).map(t => t.id === id ? { ...t, x: cx, y: cy } : t),
+      }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const removeToken = useCallback((id: number) => {
-    setMap(prev => {
-      const tokens = (prev.tokens ?? []).filter(t => t.id !== id);
-      const initiative = (prev.initiative ?? []).filter(tid => tid !== id);
-      const updated = { ...prev, tokens, initiative };
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, tokens: (m.tokens ?? []).filter(t => t.id !== id), initiative: (m.initiative ?? []).filter(tid => tid !== id),
+      }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const updateToken = useCallback((id: number, patch: Partial<Omit<Token, 'id'>>) => {
-    setMap(prev => {
-      const tokens = (prev.tokens ?? []).map(t =>
-        t.id === id ? { ...t, ...patch } : t
-      );
-      const updated = { ...prev, tokens };
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, tokens: (m.tokens ?? []).map(t => t.id === id ? { ...t, ...patch } : t),
+      }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
-
-  // ── Initiative order ──────────────────────────────────────────────────
-  // The initiative panel mirrors the GM-controlled turn order. Tokens are
-  // appended on placement (see `addToken`) and removed on deletion (see
-  // `removeToken`); these helpers let the GM drag entries to reorder and
-  // wipe the list without removing the underlying tokens.
+  }, [debouncedSave, activeLevelIndex]);
 
   const reorderInitiative = useCallback((fromIndex: number, toIndex: number) => {
-    setMap(prev => {
-      const init = [...(prev.initiative ?? [])];
+    setProject(prev => {
+      const init = [...(prev.levels[activeLevelIndex].initiative ?? [])];
       if (fromIndex < 0 || fromIndex >= init.length) return prev;
       const clampedTo = Math.max(0, Math.min(init.length - 1, toIndex));
       if (fromIndex === clampedTo) return prev;
       const [moved] = init.splice(fromIndex, 1);
       init.splice(clampedTo, 0, moved);
-      const updated = { ...prev, initiative: init };
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, initiative: init }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const clearInitiative = useCallback(() => {
-    setMap(prev => {
-      if ((prev.initiative ?? []).length === 0) return prev;
-      const updated = { ...prev, initiative: [] };
+    setProject(prev => {
+      if ((prev.levels[activeLevelIndex].initiative ?? []).length === 0) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, initiative: [] }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
-
-  // ── Annotations (free-form pen) ───────────────────────────────────────
+  }, [debouncedSave, activeLevelIndex]);
 
   const addAnnotation = useCallback((stroke: Omit<AnnotationStroke, 'id'>) => {
     const newId = nextStrokeIdRef.current;
     nextStrokeIdRef.current = newId + 1;
-    setMap(prev => {
-      const updated = {
-        ...prev,
-        annotations: [...(prev.annotations ?? []), { ...stroke, id: newId }],
-      };
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, annotations: [...(m.annotations ?? []), { ...stroke, id: newId }],
+      }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const removeAnnotation = useCallback((id: number) => {
-    setMap(prev => {
-      const annotations = (prev.annotations ?? []).filter(a => a.id !== id);
-      const updated = { ...prev, annotations };
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, annotations: (m.annotations ?? []).filter(a => a.id !== id),
+      }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const clearAnnotations = useCallback((kind?: 'player' | 'gm') => {
-    setMap(prev => {
-      const annotations = kind
-        ? (prev.annotations ?? []).filter(a => a.kind !== kind)
-        : [];
-      const updated = { ...prev, annotations };
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, annotations: kind ? (m.annotations ?? []).filter(a => a.kind !== kind) : [],
+      }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
-
-  // ── Shape Markers ─────────────────────────────────────────────────────
-  // Lightweight tactical overlays (spell AoE, hazard zones, etc.) rendered
-  // with transparency so the map content underneath remains visible.
+  }, [debouncedSave, activeLevelIndex]);
 
   const addMarker = useCallback((shape: MarkerShape, x: number, y: number, color: string, size: number): number | null => {
     const newId = nextMarkerIdRef.current;
     let placed = false;
-    setMap(prev => {
-      if (x < 0 || y < 0 || x >= prev.meta.width || y >= prev.meta.height) return prev;
-      const marker: ShapeMarker = { id: newId, x, y, shape, color, size: Math.max(1, Math.floor(size)) };
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      if (x < 0 || y < 0 || x >= prevMap.meta.width || y >= prevMap.meta.height) return prev;
       placed = true;
-      const updated = { ...prev, markers: [...(prev.markers ?? []), marker] };
+      const marker: ShapeMarker = { id: newId, x, y, shape, color, size: Math.max(1, Math.floor(size)) };
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, markers: [...(m.markers ?? []), marker],
+      }));
       debouncedSave(updated);
       return updated;
     });
-    if (placed) {
-      nextMarkerIdRef.current = newId + 1;
-      return newId;
-    }
+    if (placed) { nextMarkerIdRef.current = newId + 1; return newId; }
     return null;
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const removeMarker = useCallback((id: number) => {
-    setMap(prev => {
-      const markers = (prev.markers ?? []).filter(m => m.id !== id);
-      const updated = { ...prev, markers };
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, markers: (m.markers ?? []).filter(mk => mk.id !== id),
+      }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const clearMarkers = useCallback(() => {
-    setMap(prev => {
-      if ((prev.markers ?? []).length === 0) return prev;
-      const updated = { ...prev, markers: [] };
+    setProject(prev => {
+      if ((prev.levels[activeLevelIndex].markers ?? []).length === 0) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, markers: [] }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
-
-  // ── Light Sources ─────────────────────────────────────────────────────
-  // Static light sources that project illumination from a fixed cell via
-  // the same FOV algorithm used for player tokens. When dynamic fog is
-  // enabled, lit cells are treated as visible (clear). When dynamic fog is
-  // off, lights render a warm glow overlay on the canvas only.
+  }, [debouncedSave, activeLevelIndex]);
 
   const addLightSource = useCallback((x: number, y: number, radius: number, color: string, label: string): number | null => {
     const newId = nextLightIdRef.current;
     let placed = false;
-    setMap(prev => {
-      if (x < 0 || y < 0 || x >= prev.meta.width || y >= prev.meta.height) return prev;
-      const ls: LightSource = { id: newId, x, y, radius, color, label };
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      if (x < 0 || y < 0 || x >= prevMap.meta.width || y >= prevMap.meta.height) return prev;
       placed = true;
-      const updated = { ...prev, lightSources: [...(prev.lightSources ?? []), ls] };
+      const ls: LightSource = { id: newId, x, y, radius, color, label };
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, lightSources: [...(m.lightSources ?? []), ls],
+      }));
       debouncedSave(updated);
       return updated;
     });
-    if (placed) {
-      nextLightIdRef.current = newId + 1;
-      return newId;
-    }
+    if (placed) { nextLightIdRef.current = newId + 1; return newId; }
     return null;
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const removeLightSource = useCallback((id: number) => {
-    setMap(prev => {
-      const lightSources = (prev.lightSources ?? []).filter(ls => ls.id !== id);
-      const updated = { ...prev, lightSources };
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, lightSources: (m.lightSources ?? []).filter(ls => ls.id !== id),
+      }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const clearLightSources = useCallback(() => {
-    setMap(prev => {
-      if ((prev.lightSources ?? []).length === 0) return prev;
-      const updated = { ...prev, lightSources: [] };
+    setProject(prev => {
+      if ((prev.levels[activeLevelIndex].lightSources ?? []).length === 0) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, lightSources: [] }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
-
-  // ---- Background image ----
+  }, [debouncedSave, activeLevelIndex]);
 
   const setBackgroundImage = useCallback((bg: BackgroundImage) => {
-    setMap(prev => {
-      const updated = { ...prev, backgroundImage: bg };
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, backgroundImage: bg }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const clearBackgroundImage = useCallback(() => {
-    setMap(prev => {
-      if (!prev.backgroundImage) return prev;
-      const updated = { ...prev, backgroundImage: undefined };
+    setProject(prev => {
+      if (!prev.levels[activeLevelIndex].backgroundImage) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, backgroundImage: undefined }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
   const updateBackgroundImage = useCallback((patch: Partial<BackgroundImage>) => {
-    setMap(prev => {
-      if (!prev.backgroundImage) return prev;
-      const updated = { ...prev, backgroundImage: { ...prev.backgroundImage, ...patch } };
+    setProject(prev => {
+      if (!prev.levels[activeLevelIndex].backgroundImage) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, backgroundImage: { ...m.backgroundImage!, ...patch },
+      }));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, activeLevelIndex]);
 
-  /**
-   * Copy the contents of the given selection rectangle into the internal
-   * clipboard buffer. Tiles and notes within the rectangle are captured
-   * with their positions relative to the selection origin.
-   */
+  // ── Clipboard ─────────────────────────────────────────────────────────
+
   const copySelection = useCallback((sel: { x: number; y: number; w: number; h: number }) => {
     const { tiles: mapTiles, notes: mapNotes, meta } = map;
     const bufTiles: Tile[][] = [];
@@ -963,174 +842,276 @@ export function useMapState() {
       }
       bufTiles.push(row);
     }
-    // Capture notes whose anchor falls inside the rectangle, with
-    // positions rebased to the selection's top-left corner.
     const bufNotes: MapNote[] = mapNotes
-      .filter(n =>
-        n.x >= sel.x && n.x < sel.x + sel.w &&
-        n.y >= sel.y && n.y < sel.y + sel.h
-      )
+      .filter(n => n.x >= sel.x && n.x < sel.x + sel.w && n.y >= sel.y && n.y < sel.y + sel.h)
       .map(n => ({ ...n, x: n.x - sel.x, y: n.y - sel.y }));
     clipboard = { tiles: bufTiles, notes: bufNotes, width: sel.w, height: sel.h };
   }, [map]);
 
-  /**
-   * Cut the selection: copy to clipboard then erase the selected region.
-   */
   const cutSelection = useCallback((sel: { x: number; y: number; w: number; h: number }) => {
-    // Copy first.
     copySelection(sel);
-    // Then erase the region (including removing notes inside it).
-    setMap(prev => {
-      pushHistory(prev);
-      const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
-      for (let dy = 0; dy < sel.h; dy++) {
-        const ty = sel.y + dy;
-        if (ty < 0 || ty >= prev.meta.height) continue;
-        for (let dx = 0; dx < sel.w; dx++) {
-          const tx = sel.x + dx;
-          if (tx < 0 || tx >= prev.meta.width) continue;
-          newTiles[ty][tx] = { type: 'empty' };
-        }
-      }
-      const notesToRemove = new Set(
-        prev.notes
-          .filter(n =>
-            n.x >= sel.x && n.x < sel.x + sel.w &&
-            n.y >= sel.y && n.y < sel.y + sel.h
-          )
-          .map(n => n.id)
-      );
-      // Clear noteId references from tiles that pointed at removed notes.
-      for (let y = 0; y < prev.meta.height; y++) {
-        for (let x = 0; x < prev.meta.width; x++) {
-          if (newTiles[y][x].noteId !== undefined && notesToRemove.has(newTiles[y][x].noteId!)) {
-            const next = { ...newTiles[y][x] };
-            delete next.noteId;
-            newTiles[y][x] = next;
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
+        const newTiles = m.tiles.map(row => row.map(t => ({ ...t })));
+        for (let dy = 0; dy < sel.h; dy++) {
+          const ty = sel.y + dy;
+          if (ty < 0 || ty >= m.meta.height) continue;
+          for (let dx = 0; dx < sel.w; dx++) {
+            const tx = sel.x + dx;
+            if (tx < 0 || tx >= m.meta.width) continue;
+            newTiles[ty][tx] = { type: 'empty' };
           }
         }
-      }
-      const updatedNotes = prev.notes.filter(n => !notesToRemove.has(n.id));
-      const updated: DungeonMap = { ...prev, tiles: newTiles, notes: updatedNotes };
+        const notesToRemove = new Set(
+          m.notes
+            .filter(n => n.x >= sel.x && n.x < sel.x + sel.w && n.y >= sel.y && n.y < sel.y + sel.h)
+            .map(n => n.id)
+        );
+        for (let y = 0; y < m.meta.height; y++) {
+          for (let x = 0; x < m.meta.width; x++) {
+            if (newTiles[y][x].noteId !== undefined && notesToRemove.has(newTiles[y][x].noteId!)) {
+              const next = { ...newTiles[y][x] };
+              delete next.noteId;
+              newTiles[y][x] = next;
+            }
+          }
+        }
+        return { ...m, tiles: newTiles, notes: m.notes.filter(n => !notesToRemove.has(n.id)) };
+      });
       debouncedSave(updated);
       return updated;
     });
-  }, [copySelection, debouncedSave]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [copySelection, debouncedSave, activeLevelIndex]);
 
-  /**
-   * Paste the clipboard buffer at the given position on the map. Notes
-   * in the clipboard are remapped to fresh ids so they don't collide
-   * with existing map notes. This is a single undoable step.
-   */
   const pasteClipboard = useCallback((ox: number, oy: number) => {
     if (!clipboard) return;
     const buf = clipboard;
-    setMap(prev => {
-      pushHistory(prev);
-      const newTiles = prev.tiles.map(row => row.map(t => ({ ...t })));
-      // Build a fresh id mapping for pasted notes.
-      const idOffset = nextIdAfter(prev.notes) - 1;
-      const idMap = new Map<number, number>();
-      for (const n of buf.notes) idMap.set(n.id, n.id + idOffset);
-      for (let dy = 0; dy < buf.height; dy++) {
-        const ty = oy + dy;
-        if (ty < 0 || ty >= prev.meta.height) continue;
-        for (let dx = 0; dx < buf.width; dx++) {
-          const tx = ox + dx;
-          if (tx < 0 || tx >= prev.meta.width) continue;
-          const src = buf.tiles[dy][dx];
-          const next: Tile = { type: src.type };
-          // Preserve the per-tile theme override so a pasted tile keeps
-          // its original visual style in mixed-theme maps.
-          if (src.theme) next.theme = src.theme;
-          if (src.noteId !== undefined) {
-            const remapped = idMap.get(src.noteId);
-            if (remapped !== undefined) next.noteId = remapped;
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
+        const newTiles = m.tiles.map(row => row.map(t => ({ ...t })));
+        const idOffset = nextIdAfter(m.notes) - 1;
+        const idMap = new Map<number, number>();
+        for (const n of buf.notes) idMap.set(n.id, n.id + idOffset);
+        for (let dy = 0; dy < buf.height; dy++) {
+          const ty = oy + dy;
+          if (ty < 0 || ty >= m.meta.height) continue;
+          for (let dx = 0; dx < buf.width; dx++) {
+            const tx = ox + dx;
+            if (tx < 0 || tx >= m.meta.width) continue;
+            const src = buf.tiles[dy][dx];
+            const next: Tile = { type: src.type };
+            if (src.theme) next.theme = src.theme;
+            if (src.noteId !== undefined) {
+              const remapped = idMap.get(src.noteId);
+              if (remapped !== undefined) next.noteId = remapped;
+            }
+            newTiles[ty][tx] = next;
           }
-          newTiles[ty][tx] = next;
         }
-      }
-      const remappedNotes: MapNote[] = buf.notes.map(n => ({
-        ...n,
-        id: n.id + idOffset,
-        x: n.x + ox,
-        y: n.y + oy,
-      }));
-      // Filter out pasted notes that fall outside the map boundaries.
-      const validNotes = remappedNotes.filter(
-        n => n.x >= 0 && n.x < prev.meta.width && n.y >= 0 && n.y < prev.meta.height
-      );
-      const updatedNotes = [...prev.notes, ...validNotes];
-      const updated: DungeonMap = { ...prev, tiles: newTiles, notes: updatedNotes };
+        const remappedNotes: MapNote[] = buf.notes.map(n => ({
+          ...n, id: n.id + idOffset, x: n.x + ox, y: n.y + oy,
+        }));
+        const validNotes = remappedNotes.filter(
+          n => n.x >= 0 && n.x < m.meta.width && n.y >= 0 && n.y < m.meta.height
+        );
+        return { ...m, tiles: newTiles, notes: [...m.notes, ...validNotes] };
+      });
       debouncedSave(updated);
       return updated;
     });
-    // Bump the note-id allocator past the ids we just assigned.
     if (buf.notes.length > 0) {
       const highestGen = nextIdAfter(buf.notes) - 1;
       setNextNoteId(prev => prev + highestGen);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
+
+  // ── Level management ──────────────────────────────────────────────────
+
+  const switchLevel = useCallback((idx: number) => {
+    setProject(prev => {
+      if (idx < 0 || idx >= prev.levels.length || idx === activeLevelIndex) return prev;
+      const updated = { ...prev, activeLevelIndex: idx };
+      debouncedSave(updated);
+      return updated;
+    });
+    setActiveLevelIndex(idx);
+    setProject(prev => {
+      const level = prev.levels[idx];
+      if (level) {
+        syncIdsToLevel(level);
+        const h = getHistory(idx);
+        setCanUndo(h.past.length > 0);
+        setCanRedo(h.future.length > 0);
+      }
+      setSelectedNoteId(null);
+      return prev;
+    });
+
+  }, [debouncedSave, activeLevelIndex]);
+
+  const addLevel = useCallback((name?: string) => {
+    setProject(prev => {
+      const idx = prev.levels.length;
+      const fresh = createDefaultMap(name ?? `Level ${idx + 1}`);
+      const updated: DungeonProject = {
+        ...prev, levels: [...prev.levels, fresh], activeLevelIndex: idx,
+      };
+      debouncedSave(updated);
+      setActiveLevelIndex(idx);
+      syncIdsToLevel(fresh);
+      setCanUndo(false);
+      setCanRedo(false);
+      setSelectedNoteId(null);
+      return updated;
+    });
+
+  }, [debouncedSave]);
+
+  const renameLevel = useCallback((idx: number, name: string) => {
+    setProject(prev => {
+      if (idx < 0 || idx >= prev.levels.length) return prev;
+      const newLevels = prev.levels.map((lvl, i) =>
+        i === idx ? { ...lvl, meta: { ...lvl.meta, name } } : lvl,
+      );
+      const updated = { ...prev, levels: newLevels };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const deleteLevel = useCallback((idx: number) => {
+    setProject(prev => {
+      if (prev.levels.length <= 1 || idx < 0 || idx >= prev.levels.length) return prev;
+      const newLevels = prev.levels.filter((_, i) => i !== idx);
+      const newLinks = prev.stairLinks
+        .filter(l => l.fromLevel !== idx && l.toLevel !== idx)
+        .map(l => ({
+          ...l,
+          fromLevel: l.fromLevel > idx ? l.fromLevel - 1 : l.fromLevel,
+          toLevel: l.toLevel > idx ? l.toLevel - 1 : l.toLevel,
+        }));
+      let newActive = activeLevelIndex;
+      if (idx === activeLevelIndex) newActive = Math.min(idx, newLevels.length - 1);
+      else if (idx < activeLevelIndex) newActive = activeLevelIndex - 1;
+      const newHistoryMap = new Map<number, LevelHistory>();
+      for (const [key, val] of historyRef.current.entries()) {
+        if (key === idx) continue;
+        newHistoryMap.set(key > idx ? key - 1 : key, val);
+      }
+      historyRef.current = newHistoryMap;
+      const updated: DungeonProject = {
+        ...prev, levels: newLevels, stairLinks: newLinks, activeLevelIndex: newActive,
+      };
+      debouncedSave(updated);
+      setActiveLevelIndex(newActive);
+      syncIdsToLevel(newLevels[newActive]);
+      const h = getHistory(newActive);
+      setCanUndo(h.past.length > 0);
+      setCanRedo(h.future.length > 0);
+      setSelectedNoteId(null);
+      return updated;
+    });
+
+  }, [debouncedSave, activeLevelIndex]);
+
+  const duplicateLevel = useCallback((idx: number) => {
+    setProject(prev => {
+      if (idx < 0 || idx >= prev.levels.length) return prev;
+      const source = prev.levels[idx];
+      const copy: DungeonMap = JSON.parse(JSON.stringify(source));
+      copy.meta = { ...copy.meta, name: `${source.meta.name} (copy)` };
+      const newIdx = idx + 1;
+      const newLevels = [...prev.levels.slice(0, newIdx), copy, ...prev.levels.slice(newIdx)];
+      const newLinks = prev.stairLinks.map(l => ({
+        ...l,
+        fromLevel: l.fromLevel >= newIdx ? l.fromLevel + 1 : l.fromLevel,
+        toLevel: l.toLevel >= newIdx ? l.toLevel + 1 : l.toLevel,
+      }));
+      const newHistoryMap = new Map<number, LevelHistory>();
+      for (const [key, val] of historyRef.current.entries()) {
+        newHistoryMap.set(key >= newIdx ? key + 1 : key, val);
+      }
+      historyRef.current = newHistoryMap;
+      const updated: DungeonProject = {
+        ...prev, levels: newLevels, stairLinks: newLinks, activeLevelIndex: newIdx,
+      };
+      debouncedSave(updated);
+      setActiveLevelIndex(newIdx);
+      syncIdsToLevel(copy);
+      setCanUndo(false);
+      setCanRedo(false);
+      setSelectedNoteId(null);
+      return updated;
+    });
+
+  }, [debouncedSave]);
+
+  const reorderLevels = useCallback((fromIdx: number, toIdx: number) => {
+    setProject(prev => {
+      if (fromIdx === toIdx || fromIdx < 0 || fromIdx >= prev.levels.length) return prev;
+      const clamped = Math.max(0, Math.min(prev.levels.length - 1, toIdx));
+      if (fromIdx === clamped) return prev;
+      const newLevels = [...prev.levels];
+      const [moved] = newLevels.splice(fromIdx, 1);
+      newLevels.splice(clamped, 0, moved);
+      const ordered = [...prev.levels.keys()];
+      const reordered = [...ordered];
+      const [movedIdx] = reordered.splice(fromIdx, 1);
+      reordered.splice(clamped, 0, movedIdx);
+      const indexMap = new Map<number, number>();
+      for (let i = 0; i < reordered.length; i++) indexMap.set(reordered[i], i);
+      const newLinks = prev.stairLinks.map(l => ({
+        ...l,
+        fromLevel: indexMap.get(l.fromLevel) ?? l.fromLevel,
+        toLevel: indexMap.get(l.toLevel) ?? l.toLevel,
+      }));
+      const newHistoryMap = new Map<number, LevelHistory>();
+      for (const [key, val] of historyRef.current.entries()) {
+        newHistoryMap.set(indexMap.get(key) ?? key, val);
+      }
+      historyRef.current = newHistoryMap;
+      const newActive = indexMap.get(activeLevelIndex) ?? activeLevelIndex;
+      const updated: DungeonProject = {
+        ...prev, levels: newLevels, stairLinks: newLinks, activeLevelIndex: newActive,
+      };
+      debouncedSave(updated);
+      setActiveLevelIndex(newActive);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex]);
+
+  const setProjectName = useCallback((name: string) => {
+    setProject(prev => {
+      const updated = { ...prev, name };
+      debouncedSave(updated);
+      return updated;
+    });
   }, [debouncedSave]);
 
   return {
-    map,
-    selectedNoteId,
-    setSelectedNoteId,
-    setTile,
-    fillTiles,
-    setTiles,
-    getTileType,
-    setMapName,
-    resizeMap,
-    clearMap,
-    newMap,
-    loadMapData,
-    generateMap,
-    applyGeneratedRegion,
-    addNote,
-    updateNote,
-    deleteNote,
-    setTileSize,
-    setTheme,
-    undo,
-    redo,
-    canUndo,
-    canRedo,
-    // Fog of war
-    setFogCells,
-    fillAllFog,
-    setFogEnabled,
-    setDynamicFogEnabled,
-    setExplored,
-    resetExplored,
-    // Tokens
-    addToken,
-    moveToken,
-    removeToken,
-    updateToken,
-    // Initiative
-    reorderInitiative,
-    clearInitiative,
-    // Annotations
-    addAnnotation,
-    removeAnnotation,
-    clearAnnotations,
-    // Clipboard
-    copySelection,
-    cutSelection,
-    pasteClipboard,
-    // Shape markers
-    addMarker,
-    removeMarker,
-    clearMarkers,
-    // Background image
-    setBackgroundImage,
-    clearBackgroundImage,
-    updateBackgroundImage,
-    // Light sources
-    addLightSource,
-    removeLightSource,
-    clearLightSources,
+    map, project, activeLevelIndex,
+    selectedNoteId, setSelectedNoteId,
+    setTile, fillTiles, setTiles, getTileType,
+    setMapName, resizeMap, clearMap, newMap,
+    loadMapData, loadProjectData,
+    generateMap, applyGeneratedRegion,
+    addNote, updateNote, deleteNote,
+    setTileSize, setTheme,
+    undo, redo, canUndo, canRedo,
+    setFogCells, fillAllFog, setFogEnabled,
+    setDynamicFogEnabled, setExplored, resetExplored,
+    addToken, moveToken, removeToken, updateToken,
+    reorderInitiative, clearInitiative,
+    addAnnotation, removeAnnotation, clearAnnotations,
+    copySelection, cutSelection, pasteClipboard,
+    addMarker, removeMarker, clearMarkers,
+    setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
+    addLightSource, removeLightSource, clearLightSources,
+    switchLevel, addLevel, renameLevel, deleteLevel,
+    duplicateLevel, reorderLevels, setProjectName,
   };
 }

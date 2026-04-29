@@ -1,18 +1,49 @@
-import type { DungeonMap, ViewMode } from '../types/map';
-import { TOKEN_KIND_COLORS } from '../types/map';
+import type { DungeonMap, DungeonProject, ViewMode } from '../types/map';
+import { TOKEN_KIND_COLORS, isDungeonProject } from '../types/map';
 import type { TileTheme } from '../themes/index';
 import { ICON_BY_ID } from './iconLibrary';
 import { renderMapToCanvas } from './renderMap';
+import { wrapMapAsProject } from './storage';
 
-export function exportMapJSON(map: DungeonMap): void {
-  const json = JSON.stringify(map, null, 2);
+export function exportProjectJSON(project: DungeonProject): void {
+  const json = JSON.stringify(project, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${map.meta.name.replace(/\s+/g, '_') || 'dungeon'}.json`;
+  a.download = `${project.name.replace(/\s+/g, '_') || 'dungeon'}.json`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+export function exportMapJSON(map: DungeonMap): void {
+  // For backward-compat, single-level export still uses the project wrapper.
+  exportProjectJSON(wrapMapAsProject(map));
+}
+
+/**
+ * Import a JSON file that may be either a bare `DungeonMap` (legacy) or a
+ * `DungeonProject` (multi-level). Returns a `DungeonProject` in both cases.
+ */
+export function importProjectJSON(file: File): Promise<DungeonProject> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const data = JSON.parse(e.target?.result as string);
+        if (isDungeonProject(data)) {
+          resolve(data as DungeonProject);
+        } else {
+          // Legacy bare DungeonMap — wrap it.
+          resolve(wrapMapAsProject(data as DungeonMap));
+        }
+      } catch {
+        reject(new Error('Invalid JSON file'));
+      }
+    };
+    reader.onerror = () => reject(new Error('Failed to read file'));
+    reader.readAsText(file);
+  });
 }
 
 export function importMapJSON(file: File): Promise<DungeonMap> {
@@ -20,8 +51,14 @@ export function importMapJSON(file: File): Promise<DungeonMap> {
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const map = JSON.parse(e.target?.result as string) as DungeonMap;
-        resolve(map);
+        const data = JSON.parse(e.target?.result as string);
+        if (isDungeonProject(data)) {
+          // Multi-level project — return the active level as a bare map.
+          const proj = data as DungeonProject;
+          resolve(proj.levels[proj.activeLevelIndex] ?? proj.levels[0]);
+        } else {
+          resolve(data as DungeonMap);
+        }
       } catch {
         reject(new Error('Invalid JSON file'));
       }
