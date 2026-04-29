@@ -77,7 +77,15 @@ const CustomThemeDialog: React.FC<CustomThemeDialogProps> = ({
   };
 
   const addCustomTile = () => {
-    const label = `Custom Tile ${draft.customTiles.length + 1}`;
+    const usedNumbers = new Set(
+      draft.customTiles
+        .map(tile => /^Custom Tile (\d+)$/.exec(tile.label.trim())?.[1])
+        .filter((n): n is string => n !== undefined)
+        .map(Number),
+    );
+    let nextNumber = 1;
+    while (usedNumbers.has(nextNumber)) nextNumber++;
+    const label = `Custom Tile ${nextNumber}`;
     const id = `custom:${slugify(label)}-${uniqueSuffix()}` as const;
     const tile: CustomTileDefinition = {
       id,

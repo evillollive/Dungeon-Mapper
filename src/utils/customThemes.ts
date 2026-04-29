@@ -21,7 +21,7 @@ function getCustomImage(dataUrl: string): HTMLImageElement | null {
 
 function customTileFallbackLabel(type: CustomTileType): string {
   const id = type.replace(/^custom:/, '');
-  return id.slice(0, 2).toUpperCase() || '?';
+  return id.slice(0, 4).toUpperCase() || '?';
 }
 
 export function findCustomTheme(
