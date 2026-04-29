@@ -3,7 +3,7 @@ import type { CustomThemeDefinition, ToolType, TileType, MarkerShape, MeasureSha
 import type { BackgroundImage } from '../types/map';
 import { ALL_TILE_TYPES, TILE_LABELS, MARKER_SHAPES, MARKER_COLORS, MARKER_SHAPE_LABELS, MEASURE_SHAPES, MEASURE_SHAPE_LABELS, LIGHT_SOURCE_PRESETS, isBuiltInTileType } from '../types/map';
 import { drawTileOverlay } from '../themes/tileOverlays';
-import { buildThemeList, getThemeWithCustom } from '../utils/customThemes';
+import { buildThemeList, getCustomTileLabel, getThemeWithCustom } from '../utils/customThemes';
 import TokenToolsSection from './TokenToolsSection';
 
 interface ToolbarProps {
@@ -132,7 +132,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
     return map;
   }, [theme]);
   const tileLabel = (tileType: TileType): string =>
-    tileLabels.get(tileType) ?? (isBuiltInTileType(tileType) ? TILE_LABELS[tileType] : tileType.replace(/^custom:/, ''));
+    tileLabels.get(tileType) ?? (isBuiltInTileType(tileType) ? TILE_LABELS[tileType] : getCustomTileLabel(tileType, customThemes) ?? 'Custom Tile');
   const paletteTiles = React.useMemo(() => {
     const customTiles = theme.tiles
       .map(t => t.id)

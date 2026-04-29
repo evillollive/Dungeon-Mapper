@@ -1,4 +1,4 @@
-import type { BuiltInTileType, CustomThemeDefinition, CustomTileType, TileType } from '../types/map';
+import type { BuiltInTileType, CustomThemeDefinition, TileType } from '../types/map';
 import { isBuiltInTileType } from '../types/map';
 import type { TileTheme } from '../themes';
 import { getTheme, THEME_LIST } from '../themes';
@@ -19,9 +19,8 @@ function getCustomImage(dataUrl: string): HTMLImageElement | null {
   return img;
 }
 
-function customTileFallbackLabel(type: CustomTileType): string {
-  const id = type.replace(/^custom:/, '');
-  return id.slice(0, 4).toUpperCase() || '?';
+function customTileFallbackLabel(): string {
+  return 'CUST';
 }
 
 export function findCustomTheme(
@@ -113,7 +112,7 @@ export function createCustomTileTheme(
         id: tile.id,
         label: isBuiltInTileType(tile.id) ? (definition.tileLabels[tile.id] || tile.label) : tile.label,
       })),
-      ...customTiles.map(tile => ({ id: tile.id, label: tile.label || customTileFallbackLabel(tile.id) })),
+      ...customTiles.map(tile => ({ id: tile.id, label: tile.label || customTileFallbackLabel() })),
     ],
     drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
       if (isBuiltInTileType(type)) {
@@ -142,7 +141,7 @@ export function createCustomTileTheme(
         ctx.font = `bold ${Math.max(8, size * 0.38)}px sans-serif`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(customTileFallbackLabel(type), px + size / 2, py + size / 2);
+        ctx.fillText(customTileFallbackLabel(), px + size / 2, py + size / 2);
       }
 
       ctx.strokeStyle = this.gridColor;
