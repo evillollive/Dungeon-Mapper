@@ -20,9 +20,16 @@ function slugify(value: string): string {
   return slug || 'custom';
 }
 
+function uniqueSuffix(): string {
+  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
+    return crypto.randomUUID().slice(0, 8);
+  }
+  return `${Math.random().toString(36).slice(2, 8)}-${performance.now().toString(36).replace('.', '')}`;
+}
+
 function newThemeFromBase(baseThemeId: string): CustomThemeDefinition {
   const base = getThemeWithCustom(baseThemeId);
-  const id = `custom-theme:${Date.now().toString(36)}` as const;
+  const id = `custom-theme:${uniqueSuffix()}` as const;
   return {
     id,
     name: 'Custom Theme',
@@ -71,7 +78,7 @@ const CustomThemeDialog: React.FC<CustomThemeDialogProps> = ({
 
   const addCustomTile = () => {
     const label = `Custom Tile ${draft.customTiles.length + 1}`;
-    const id = `custom:${slugify(label)}-${Date.now().toString(36)}` as const;
+    const id = `custom:${slugify(label)}-${uniqueSuffix()}` as const;
     const tile: CustomTileDefinition = {
       id,
       label,

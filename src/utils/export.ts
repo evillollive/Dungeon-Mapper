@@ -5,6 +5,8 @@ import { ICON_BY_ID } from './iconLibrary';
 import { renderMapToCanvas } from './renderMap';
 import { wrapMapAsProject } from './storage';
 
+const CUSTOM_TILE_SVG_FALLBACK_COLOR = '#777777';
+
 export function exportProjectJSON(project: DungeonProject): void {
   const json = JSON.stringify(project, null, 2);
   const blob = new Blob([json], { type: 'application/json' });
@@ -137,7 +139,7 @@ export function exportMapSVG(
       // themes") so mixed-style maps export with each tile in its original
       // theme color. Falls back to the map theme when no override / resolver.
       const tileTheme = tile.theme && resolveTheme ? resolveTheme(tile.theme) : theme;
-      const fill = tileTheme.tileColors[tile.type] ?? '#777777';
+      const fill = tileTheme.tileColors[tile.type] ?? CUSTOM_TILE_SVG_FALLBACK_COLOR;
       svg += `<rect x="${x * tileSize}" y="${y * tileSize}" width="${tileSize}" height="${tileSize}" fill="${fill}" stroke="#2d3561" stroke-width="0.5"/>`;
     }
   }
