@@ -1,10 +1,9 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { CustomThemeDefinition, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
 import type { BackgroundImage } from '../types/map';
-import { ALL_TILE_TYPES, TILE_LABELS, MARKER_SHAPES, MARKER_COLORS, MARKER_SHAPE_LABELS, MEASURE_SHAPES, MEASURE_SHAPE_LABELS, LIGHT_SOURCE_PRESETS, isBuiltInTileType } from '../types/map';
-import { drawTileOverlay } from '../themes/tileOverlays';
-import { buildThemeList, getCustomTileLabel, getThemeWithCustom } from '../utils/customThemes';
-import TokenToolsSection from './TokenToolsSection';
+import DrawToolsTab from './DrawToolsTab';
+import TacticalToolsTab from './TacticalToolsTab';
+import AdvancedToolsTab from './AdvancedToolsTab';
 
 interface ToolbarProps {
   activeTool: ToolType;
@@ -18,15 +17,8 @@ interface ToolbarProps {
   onTogglePreserveOnThemeSwitch: () => void;
   onOpenCustomThemeBuilder: () => void;
   fogEnabled: boolean;
-  /**
-   * GM-only preview toggle. The fog-of-war controls themselves now live in
-   * the Player toolbar (the GM still drives the map even on the player
-   * side), but the GM may opt in to a translucent overlay so they can see
-   * which cells are currently hidden from players.
-   */
   gmShowFog: boolean;
   onToggleGmShowFog: () => void;
-  /** Open the procedural map-generation dialog. GM-only. */
   onOpenGenerateMap: () => void;
   // Shape marker tool settings
   markerShape: MarkerShape;
@@ -66,756 +58,124 @@ interface ToolbarProps {
   onClearGmDrawings: () => void;
 }
 
-const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
-  { id: 'paint',      label: 'Paint',       shortcut: 'P', icon: '✏️' },
-  { id: 'erase',      label: 'Erase',       shortcut: 'E', icon: '🧹' },
-  { id: 'fill',       label: 'Fill',        shortcut: 'F', icon: '🪣' },
-  { id: 'note',       label: 'Add Note',    shortcut: 'N', icon: '📍' },
-  { id: 'line',       label: 'Line',        shortcut: 'L', icon: '📏' },
-  { id: 'rect',       label: 'Rectangle',   shortcut: 'R', icon: '⬛' },
-  { id: 'select',     label: 'Select',      shortcut: 'S', icon: '⬜' },
+type ToolbarTab = 'draw' | 'tactical' | 'advanced';
+
+const TAB_META: { id: ToolbarTab; label: string; icon: string; title: string }[] = [
+  { id: 'draw',     label: 'Draw',     icon: '✏️', title: 'Drawing tools, tile palette, and theme selection' },
+  { id: 'tactical', label: 'Tactical', icon: '⚔️', title: 'Fog, FOV, measurement, tokens, markers, and lighting' },
+  { id: 'advanced', label: 'Advanced', icon: '⚙️', title: 'Background image, stair links, and GM annotations' },
 ];
 
-const GM_DRAW_COLORS = ['#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c', '#74c0fc', '#b197fc', '#f783ac', '#ffffff'];
-const GM_BRUSH_WIDTHS: { value: number; label: string }[] = [
-  { value: 0.12, label: 'Thin' },
-  { value: 0.25, label: 'Medium' },
-  { value: 0.5,  label: 'Thick' },
-];
+const TOOLBAR_TAB_STORAGE_KEY = 'dungeon-mapper:toolbar-tab';
 
-function TilePreview({
-  type,
-  size = 28,
-  themeId,
-  customThemes = [],
-}: { type: TileType; size?: number; themeId: string; customThemes?: readonly CustomThemeDefinition[] }) {
-  const canvasRef = React.useRef<HTMLCanvasElement>(null);
-
-  React.useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const theme = getThemeWithCustom(themeId, customThemes);
-    canvas.width = size;
-    canvas.height = size;
-
-    // Draw themed tile at position (0,0).
-    theme.drawTile(ctx, type, 0, 0, size);
-    // Add print-mode-inspired glyph overlay.
-    if (isBuiltInTileType(type)) {
-      drawTileOverlay(ctx, type, 0, 0, size, theme.tileColors[type]);
-    }
-  }, [type, size, themeId, customThemes]);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="tile-preview"
-      style={{
-        display: 'inline-block',
-        width: size,
-        height: size,
-        border: '1px solid #2d3561',
-        flexShrink: 0,
-        verticalAlign: 'middle',
-      }}
-    />
-  );
+function loadInitialTab(): ToolbarTab {
+  if (typeof window === 'undefined') return 'draw';
+  try {
+    const stored = window.localStorage.getItem(TOOLBAR_TAB_STORAGE_KEY);
+    if (stored === 'draw' || stored === 'tactical' || stored === 'advanced') return stored;
+  } catch { /* ignore */ }
+  return 'draw';
 }
 
-const Toolbar: React.FC<ToolbarProps> = ({
-  activeTool, activeTile, themeId, customThemes = [], onSetTool, onSetTile,
-  onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch, onOpenCustomThemeBuilder,
-  fogEnabled, gmShowFog, onToggleGmShowFog, onOpenGenerateMap,
-  markerShape, markerColor, markerSize, onSetMarkerShape, onSetMarkerColor,
-  onSetMarkerSize, onClearMarkers,
-  backgroundImage, onImportBackgroundImage, onUpdateBackgroundImage, onClearBackgroundImage,
-  measureShape, measureFeetPerCell, onSetMeasureShape, onSetMeasureFeetPerCell,
-  lightPreset, lightRadius, lightColor, onSetLightPreset, onSetLightRadius, onSetLightColor, onClearLightSources,
-  stairLinkSource, stairLinkCount, onClearStairLinks,
-  gmDrawColor, gmDrawWidth, onSetGmDrawColor, onSetGmDrawWidth, onClearGmDrawings,
-}) => {
-  const theme = getThemeWithCustom(themeId, customThemes);
-  const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
-  const bgFileRef = React.useRef<HTMLInputElement>(null);
-  const tileLabels = React.useMemo(() => {
-    const map = new Map<TileType, string>();
-    for (const t of theme.tiles) map.set(t.id, t.label);
-    return map;
-  }, [theme]);
-  const tileLabel = (tileType: TileType): string =>
-    tileLabels.get(tileType) ?? (isBuiltInTileType(tileType) ? TILE_LABELS[tileType] : getCustomTileLabel(tileType, customThemes) ?? 'Custom Tile');
-  const paletteTiles = React.useMemo(() => {
-    const customTiles = theme.tiles
-      .map(t => t.id)
-      .filter(t => !isBuiltInTileType(t));
-    return [...ALL_TILE_TYPES, ...customTiles];
-  }, [theme.tiles]);
+const Toolbar: React.FC<ToolbarProps> = (props) => {
+  const [activeTab, setActiveTab] = useState<ToolbarTab>(loadInitialTab);
+
+  const handleSetTab = (tab: ToolbarTab) => {
+    setActiveTab(tab);
+    try {
+      window.localStorage.setItem(TOOLBAR_TAB_STORAGE_KEY, tab);
+    } catch { /* ignore */ }
+  };
+
   return (
     <div className="toolbar">
-      <div className="toolbar-section">
-        <div className="toolbar-label">TOOLS</div>
-        {TOOLS.map(tool => (
+      {/* Tab bar */}
+      <div className="toolbar-tabs" role="tablist" aria-label="Toolbar sections">
+        {TAB_META.map(tab => (
           <button
-            key={tool.id}
+            key={tab.id}
             type="button"
-            className={`tool-btn ${activeTool === tool.id ? 'active' : ''}`}
-            onClick={() => onSetTool(tool.id)}
-            title={`${tool.label} [${tool.shortcut}]`}
-            aria-label={`${tool.label} tool`}
-            aria-pressed={activeTool === tool.id}
-            aria-keyshortcuts={tool.shortcut}
+            role="tab"
+            className={`toolbar-tab-btn ${activeTab === tab.id ? 'active' : ''}`}
+            onClick={() => handleSetTab(tab.id)}
+            title={tab.title}
+            aria-label={`${tab.label} tab`}
+            aria-selected={activeTab === tab.id}
+            aria-controls={`toolbar-panel-${tab.id}`}
           >
-            <span className="tool-icon" aria-hidden="true">{tool.icon}</span>
-            <span className="tool-name">{tool.label}</span>
-            <span className="tool-shortcut" aria-hidden="true">[{tool.shortcut}]</span>
+            <span aria-hidden="true">{tab.icon}</span>
+            <span>{tab.label}</span>
           </button>
         ))}
       </div>
 
-      <div className="toolbar-section">
-        <div className="toolbar-label">THEME</div>
-        <label
-          className="tool-btn"
-          style={{ cursor: 'pointer' }}
-          title="Map theme — choose the visual style used to render tiles"
-        >
-          <span className="tool-icon">🗺</span>
-          <span className="tool-name">Theme</span>
-          <select
-            className="grid-select"
-            value={themeId}
-            onChange={e => onSetTheme(e.target.value, preserveOnThemeSwitch)}
-            onClick={e => e.stopPropagation()}
-            title="Map theme"
-          >
-            {themeList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-          </select>
-        </label>
-        <button
-          type="button"
-          className="tool-btn"
-          onClick={onOpenCustomThemeBuilder}
-          title="Create or edit project-scoped custom themes and custom tiles"
-          aria-label="Open custom theme builder"
-        >
-          <span className="tool-icon" aria-hidden="true">🧩</span>
-          <span className="tool-name">Custom</span>
-        </button>
-        <label
-          className={`tool-btn ${preserveOnThemeSwitch ? 'active' : ''}`}
-          style={{ cursor: 'pointer' }}
-          title="When on, switching themes keeps any tiles you've already painted in their original style instead of restyling them. Lets you combine terrain styles on one map. Off by default — newly painted tiles always use the currently selected theme."
-        >
-          <span className="tool-icon" aria-hidden="true">🎨</span>
-          <span className="tool-name">Preserve</span>
-          <input
-            type="checkbox"
-            checked={preserveOnThemeSwitch}
-            onChange={onTogglePreserveOnThemeSwitch}
-            aria-label="Preserve existing tiles when switching themes"
-            style={{ margin: 0 }}
+      {/* Tab panels */}
+      <div
+        className="toolbar-tab-panel"
+        role="tabpanel"
+        id={`toolbar-panel-${activeTab}`}
+        aria-label={`${TAB_META.find(t => t.id === activeTab)?.label ?? ''} tools`}
+      >
+        {activeTab === 'draw' && (
+          <DrawToolsTab
+            activeTool={props.activeTool}
+            activeTile={props.activeTile}
+            themeId={props.themeId}
+            customThemes={props.customThemes ?? []}
+            onSetTool={props.onSetTool}
+            onSetTile={props.onSetTile}
+            onSetTheme={props.onSetTheme}
+            preserveOnThemeSwitch={props.preserveOnThemeSwitch}
+            onTogglePreserveOnThemeSwitch={props.onTogglePreserveOnThemeSwitch}
+            onOpenCustomThemeBuilder={props.onOpenCustomThemeBuilder}
+            onOpenGenerateMap={props.onOpenGenerateMap}
           />
-        </label>
-        <button
-          type="button"
-          className="tool-btn"
-          onClick={onOpenGenerateMap}
-          title="Procedurally generate a random map (dungeon, terrain, cavern, …) in the current theme. Replaces the current map; tile / fog changes can be undone. [G]"
-          aria-label="Generate map"
-          aria-keyshortcuts="G"
-        >
-          <span className="tool-icon" aria-hidden="true">🎲</span>
-          <span className="tool-name">Generate</span>
-          <span className="tool-shortcut" aria-hidden="true">[G]</span>
-        </button>
-      </div>
-
-      <div className="toolbar-section">
-        <div className="toolbar-label">FOG OF WAR</div>
-        <label
-          className={`tool-btn ${gmShowFog ? 'active' : ''}`}
-          style={{ cursor: 'pointer' }}
-          title={
-            fogEnabled
-              ? 'Show Fog (preview) — overlay a translucent grey wash on cells that are currently hidden from players. The map stays visible to you; this is a GM-only preview. Fog controls live on the Player toolbar.'
-              : 'Show Fog has no effect until fog-of-war is enabled. Switch to the Player view to enable fog and reveal/hide cells.'
-          }
-        >
-          <span className="tool-icon" aria-hidden="true">🌫</span>
-          <span className="tool-name">Show Fog</span>
-          <input
-            type="checkbox"
-            checked={gmShowFog}
-            onChange={onToggleGmShowFog}
-            disabled={!fogEnabled}
-            aria-label="Show fog preview overlay"
-            style={{ margin: 0 }}
-          />
-        </label>
-        <button
-          type="button"
-          className={`tool-btn ${activeTool === 'fov' ? 'active' : ''}`}
-          onClick={() => onSetTool(activeTool === 'fov' ? 'paint' : 'fov')}
-          title="Line of Sight — click a cell to visualize which cells are visible from that point, with walls blocking the view. Click the same cell again to clear. [O]"
-          aria-label="Line of Sight / FOV tool"
-          aria-pressed={activeTool === 'fov'}
-          aria-keyshortcuts="O"
-        >
-          <span className="tool-icon" aria-hidden="true">👁</span>
-          <span className="tool-name">Sight</span>
-          <span className="tool-shortcut" aria-hidden="true">[O]</span>
-        </button>
-      </div>
-
-      <div className="toolbar-section">
-        <div className="toolbar-label">MEASURE</div>
-        <button
-          type="button"
-          className={`tool-btn ${activeTool === 'measure' ? 'active' : ''}`}
-          onClick={() => onSetTool('measure')}
-          title="Measure distance — click and drag to measure distance between two points. Choose shape for area templates (circle, cone, line). [M]"
-          aria-label="Measure tool"
-          aria-pressed={activeTool === 'measure'}
-          aria-keyshortcuts="M"
-        >
-          <span className="tool-icon" aria-hidden="true">📐</span>
-          <span className="tool-name">Measure</span>
-          <span className="tool-shortcut" aria-hidden="true">[M]</span>
-        </button>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Shape</div>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {MEASURE_SHAPES.map(s => (
-            <button
-              key={s}
-              type="button"
-              className={`tile-btn ${measureShape === s ? 'active' : ''}`}
-              onClick={() => onSetMeasureShape(s)}
-              title={MEASURE_SHAPE_LABELS[s]}
-              aria-label={`${MEASURE_SHAPE_LABELS[s]} measurement shape`}
-              aria-pressed={measureShape === s}
-              style={{ padding: 2, width: 'auto', fontSize: '0.6rem' }}
-            >
-              <span aria-hidden="true" style={{ fontSize: 14 }}>
-                {s === 'ruler' ? '📏' : s === 'circle' ? '⭕' : s === 'cone' ? '🔺' : '╱'}
-              </span>
-              <span className="tile-btn-label" style={{ fontSize: '0.55rem' }}>{MEASURE_SHAPE_LABELS[s]}</span>
-            </button>
-          ))}
-        </div>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Scale</div>
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          <input
-            type="number"
-            min={1}
-            max={100}
-            value={measureFeetPerCell}
-            onChange={e => {
-              const v = Number(e.target.value);
-              if (v >= 1 && v <= 100) onSetMeasureFeetPerCell(v);
-            }}
-            title={`Scale: ${measureFeetPerCell} ft per cell`}
-            aria-label="Feet per cell"
-            style={{ width: 48, textAlign: 'center', fontSize: '0.7rem' }}
-          />
-          <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>ft/cell</span>
-        </div>
-      </div>
-
-      <div className="toolbar-section">
-        <div className="toolbar-label">TILES</div>
-        <div className="tile-palette">
-          {paletteTiles.map(tileType => (
-            <button
-              key={tileType}
-              type="button"
-              className={`tile-btn ${activeTile === tileType ? 'active' : ''}`}
-              onClick={() => onSetTile(tileType)}
-              title={tileLabel(tileType)}
-              aria-label={`${tileLabel(tileType)} tile`}
-              aria-pressed={activeTile === tileType}
-            >
-              <TilePreview type={tileType} size={22} themeId={themeId} customThemes={customThemes} />
-              <span className="tile-btn-label">{tileLabel(tileType)}</span>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <TokenToolsSection activeTool={activeTool} onSetTool={onSetTool} />
-
-      <div className="toolbar-section">
-        <div className="toolbar-label">MARKERS</div>
-        <button
-          type="button"
-          className={`tool-btn ${activeTool === 'marker' ? 'active' : ''}`}
-          onClick={() => onSetTool('marker')}
-          title="Place a shape marker (spell area, hazard zone, etc.)"
-          aria-label="Place marker"
-          aria-pressed={activeTool === 'marker'}
-        >
-          <span className="tool-icon" aria-hidden="true">🔵</span>
-          <span className="tool-name">Place</span>
-        </button>
-        <button
-          type="button"
-          className={`tool-btn ${activeTool === 'remove-marker' ? 'active' : ''}`}
-          onClick={() => onSetTool('remove-marker')}
-          title="Remove a marker — click a marker to delete it."
-          aria-label="Remove marker"
-          aria-pressed={activeTool === 'remove-marker'}
-        >
-          <span className="tool-icon" aria-hidden="true">✕</span>
-          <span className="tool-name">Remove</span>
-        </button>
-        <button
-          type="button"
-          className="tool-btn"
-          onClick={onClearMarkers}
-          title="Remove all markers from the map."
-          aria-label="Clear all markers"
-        >
-          <span className="tool-icon" aria-hidden="true">🗑</span>
-          <span className="tool-name">Clear All</span>
-        </button>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Shape</div>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {MARKER_SHAPES.map(s => (
-            <button
-              key={s}
-              type="button"
-              className={`tile-btn ${markerShape === s ? 'active' : ''}`}
-              onClick={() => onSetMarkerShape(s)}
-              title={MARKER_SHAPE_LABELS[s]}
-              aria-label={`${MARKER_SHAPE_LABELS[s]} marker shape`}
-              aria-pressed={markerShape === s}
-              style={{ padding: 2, width: 'auto' }}
-            >
-              <span aria-hidden="true" style={{ fontSize: 16 }}>
-                {s === 'circle' ? '●' : s === 'square' ? '■' : '◆'}
-              </span>
-            </button>
-          ))}
-        </div>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Color</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
-          {MARKER_COLORS.map(c => (
-            <button
-              key={c}
-              type="button"
-              className={`tile-btn ${markerColor === c ? 'active' : ''}`}
-              onClick={() => onSetMarkerColor(c)}
-              title={`Color: ${c}`}
-              aria-label={`Marker color ${c}`}
-              aria-pressed={markerColor === c}
-              style={{ padding: 2, width: 'auto', justifyContent: 'center' }}
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  display: 'inline-block',
-                  width: 18,
-                  height: 18,
-                  background: c,
-                  border: '1px solid #2d3561',
-                }}
-              />
-            </button>
-          ))}
-        </div>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Radius</div>
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          <input
-            type="range"
-            min={1}
-            max={10}
-            value={markerSize}
-            onChange={e => onSetMarkerSize(Number(e.target.value))}
-            title={`Marker radius: ${markerSize} tiles`}
-            aria-label="Marker radius"
-            style={{ flex: 1 }}
-          />
-          <span style={{ fontSize: '0.7rem', minWidth: 16, textAlign: 'center' }}>{markerSize}</span>
-        </div>
-      </div>
-
-      <div className="toolbar-section">
-        <div className="toolbar-label">BACKGROUND</div>
-        <input
-          ref={bgFileRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp"
-          style={{ display: 'none' }}
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = () => {
-              const dataUrl = reader.result as string;
-              onImportBackgroundImage({
-                dataUrl,
-                offsetX: 0,
-                offsetY: 0,
-                scale: 1,
-                opacity: 0.5,
-              });
-            };
-            reader.readAsDataURL(file);
-            // Reset so the same file can be re-imported.
-            e.target.value = '';
-          }}
-        />
-        <button
-          type="button"
-          className="tool-btn"
-          onClick={() => bgFileRef.current?.click()}
-          title="Import a PNG/JPG image as a background layer behind the tile grid. Useful for tracing existing battlemaps."
-          aria-label="Import background image"
-        >
-          <span className="tool-icon" aria-hidden="true">🖼</span>
-          <span className="tool-name">Import</span>
-        </button>
-        {backgroundImage && (
-          <>
-            <button
-              type="button"
-              className="tool-btn"
-              onClick={onClearBackgroundImage}
-              title="Remove the background image."
-              aria-label="Remove background image"
-            >
-              <span className="tool-icon" aria-hidden="true">✕</span>
-              <span className="tool-name">Remove</span>
-            </button>
-            <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Opacity</div>
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={Math.round(backgroundImage.opacity * 100)}
-                onChange={e => onUpdateBackgroundImage({ opacity: Number(e.target.value) / 100 })}
-                title={`Background opacity: ${Math.round(backgroundImage.opacity * 100)}%`}
-                aria-label="Background image opacity"
-                style={{ flex: 1 }}
-              />
-              <span style={{ fontSize: '0.7rem', minWidth: 24, textAlign: 'center' }}>
-                {Math.round(backgroundImage.opacity * 100)}%
-              </span>
-            </div>
-            <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Scale</div>
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              <input
-                type="range"
-                min={10}
-                max={500}
-                value={Math.round(backgroundImage.scale * 100)}
-                onChange={e => onUpdateBackgroundImage({ scale: Number(e.target.value) / 100 })}
-                title={`Background scale: ${Math.round(backgroundImage.scale * 100)}%`}
-                aria-label="Background image scale"
-                style={{ flex: 1 }}
-              />
-              <span style={{ fontSize: '0.7rem', minWidth: 28, textAlign: 'center' }}>
-                {Math.round(backgroundImage.scale * 100)}%
-              </span>
-            </div>
-            <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Offset X</div>
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              <input
-                type="range"
-                min={-50}
-                max={50}
-                step={0.5}
-                value={backgroundImage.offsetX}
-                onChange={e => onUpdateBackgroundImage({ offsetX: Number(e.target.value) })}
-                title={`Background X offset: ${backgroundImage.offsetX} tiles`}
-                aria-label="Background image X offset"
-                style={{ flex: 1 }}
-              />
-              <span style={{ fontSize: '0.7rem', minWidth: 24, textAlign: 'center' }}>
-                {backgroundImage.offsetX}
-              </span>
-            </div>
-            <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Offset Y</div>
-            <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-              <input
-                type="range"
-                min={-50}
-                max={50}
-                step={0.5}
-                value={backgroundImage.offsetY}
-                onChange={e => onUpdateBackgroundImage({ offsetY: Number(e.target.value) })}
-                title={`Background Y offset: ${backgroundImage.offsetY} tiles`}
-                aria-label="Background image Y offset"
-                style={{ flex: 1 }}
-              />
-              <span style={{ fontSize: '0.7rem', minWidth: 24, textAlign: 'center' }}>
-                {backgroundImage.offsetY}
-              </span>
-            </div>
-          </>
         )}
-      </div>
-
-      <div className="toolbar-section">
-        <div className="toolbar-label">LIGHT</div>
-        <button
-          type="button"
-          className={`tool-btn ${activeTool === 'light' ? 'active' : ''}`}
-          onClick={() => onSetTool('light')}
-          title="Place a light source — click a cell to place a torch, lantern, or magical light. Illuminated cells are visible through fog when Dynamic Fog is enabled. [I]"
-          aria-label="Place light source"
-          aria-pressed={activeTool === 'light'}
-          aria-keyshortcuts="I"
-        >
-          <span className="tool-icon" aria-hidden="true">🕯</span>
-          <span className="tool-name">Place</span>
-          <span className="tool-shortcut" aria-hidden="true">[I]</span>
-        </button>
-        <button
-          type="button"
-          className={`tool-btn ${activeTool === 'remove-light' ? 'active' : ''}`}
-          onClick={() => onSetTool('remove-light')}
-          title="Remove a light source — click a cell containing a light to delete it."
-          aria-label="Remove light source"
-          aria-pressed={activeTool === 'remove-light'}
-        >
-          <span className="tool-icon" aria-hidden="true">✕</span>
-          <span className="tool-name">Remove</span>
-        </button>
-        <button
-          type="button"
-          className="tool-btn"
-          onClick={onClearLightSources}
-          title="Remove all light sources from the map."
-          aria-label="Clear all light sources"
-        >
-          <span className="tool-icon" aria-hidden="true">🗑</span>
-          <span className="tool-name">Clear All</span>
-        </button>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Preset</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-          {LIGHT_SOURCE_PRESETS.map(p => (
-            <button
-              key={p.id}
-              type="button"
-              className={`tile-btn ${lightPreset === p.id ? 'active' : ''}`}
-              onClick={() => onSetLightPreset(p.id)}
-              title={`${p.label} — radius ${p.radius} cells`}
-              aria-label={`${p.label} light preset`}
-              aria-pressed={lightPreset === p.id}
-              style={{ padding: '2px 4px', width: 'auto' }}
-            >
-              <span aria-hidden="true" style={{ fontSize: 14 }}>{p.icon}</span>
-              <span className="tile-btn-label" style={{ fontSize: '0.55rem' }}>{p.label}</span>
-            </button>
-          ))}
-        </div>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Radius</div>
-        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-          <input
-            type="range"
-            min={1}
-            max={20}
-            value={lightRadius}
-            onChange={e => onSetLightRadius(Number(e.target.value))}
-            title={`Light radius: ${lightRadius} cells`}
-            aria-label="Light radius in cells"
-            style={{ flex: 1 }}
+        {activeTab === 'tactical' && (
+          <TacticalToolsTab
+            activeTool={props.activeTool}
+            onSetTool={props.onSetTool}
+            fogEnabled={props.fogEnabled}
+            gmShowFog={props.gmShowFog}
+            onToggleGmShowFog={props.onToggleGmShowFog}
+            markerShape={props.markerShape}
+            markerColor={props.markerColor}
+            markerSize={props.markerSize}
+            onSetMarkerShape={props.onSetMarkerShape}
+            onSetMarkerColor={props.onSetMarkerColor}
+            onSetMarkerSize={props.onSetMarkerSize}
+            onClearMarkers={props.onClearMarkers}
+            measureShape={props.measureShape}
+            measureFeetPerCell={props.measureFeetPerCell}
+            onSetMeasureShape={props.onSetMeasureShape}
+            onSetMeasureFeetPerCell={props.onSetMeasureFeetPerCell}
+            lightPreset={props.lightPreset}
+            lightRadius={props.lightRadius}
+            lightColor={props.lightColor}
+            onSetLightPreset={props.onSetLightPreset}
+            onSetLightRadius={props.onSetLightRadius}
+            onSetLightColor={props.onSetLightColor}
+            onClearLightSources={props.onClearLightSources}
           />
-          <span style={{ fontSize: '0.7rem', minWidth: 20, textAlign: 'center' }}>{lightRadius}</span>
-        </div>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Color</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
-          {[
-            { color: '#f97316', label: 'Torch orange' },
-            { color: '#fbbf24', label: 'Lantern amber' },
-            { color: '#fef08a', label: 'Pale yellow' },
-            { color: '#ffffff', label: 'White' },
-            { color: '#a78bfa', label: 'Magical violet' },
-            { color: '#34d399', label: 'Arcane green' },
-            { color: '#60a5fa', label: 'Ice blue' },
-            { color: '#f87171', label: 'Infernal red' },
-          ].map(({ color, label }) => (
-            <button
-              key={color}
-              type="button"
-              className={`tile-btn ${lightColor === color ? 'active' : ''}`}
-              onClick={() => onSetLightColor(color)}
-              title={label}
-              aria-label={`Light color: ${label}`}
-              aria-pressed={lightColor === color}
-              style={{ padding: 2, width: 'auto', justifyContent: 'center' }}
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  display: 'inline-block',
-                  width: 18,
-                  height: 18,
-                  background: color,
-                  border: '1px solid #2d3561',
-                  borderRadius: '50%',
-                }}
-              />
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── STAIR LINKS ── */}
-      <div className="toolbar-section">
-        <div className="toolbar-label">STAIR LINKS</div>
-        <button
-          type="button"
-          className={`tool-btn ${activeTool === 'link-stair' ? 'active' : ''}`}
-          onClick={() => onSetTool('link-stair')}
-          title="Link Stairs — click a stairs tile, switch levels, click the destination stairs tile to connect them. [K]"
-          aria-label="Link Stairs tool"
-          aria-pressed={activeTool === 'link-stair'}
-        >
-          <span className="tool-icon" aria-hidden="true">🔗</span>
-          <span className="tool-name">Link</span>
-          <span className="tool-shortcut" aria-hidden="true">[K]</span>
-        </button>
-        {activeTool === 'link-stair' && (
-          <div className="toolbar-sub-label" style={{ fontSize: '0.6rem', opacity: 0.8, marginTop: 4, lineHeight: 1.3 }}>
-            {stairLinkSource
-              ? `Source: (${stairLinkSource.x},${stairLinkSource.y}) on L${stairLinkSource.level + 1}. Switch levels and click destination stairs.`
-              : 'Click a stairs tile to start linking.'}
-          </div>
         )}
-        <button
-          type="button"
-          className="tool-btn"
-          onClick={onClearStairLinks}
-          title="Remove all stair links involving this level."
-          aria-label="Clear stair links for this level"
-          disabled={stairLinkCount === 0}
-        >
-          <span className="tool-icon" aria-hidden="true">🗑</span>
-          <span className="tool-name">Clear Links</span>
-        </button>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.6rem', opacity: 0.6, marginTop: 2 }}>
-          {stairLinkCount} link{stairLinkCount !== 1 ? 's' : ''} total
-        </div>
-      </div>
-
-      {/* ── GM DRAW ── */}
-      <div className="toolbar-section">
-        <div className="toolbar-label">GM DRAW</div>
-        <button
-          type="button"
-          className={`tool-btn ${activeTool === 'gmdraw' ? 'active' : ''}`}
-          onClick={() => onSetTool('gmdraw')}
-          title="GM Draw — freehand annotations visible only in GM view. [D]"
-          aria-label="GM Draw tool"
-          aria-pressed={activeTool === 'gmdraw'}
-        >
-          <span className="tool-icon" aria-hidden="true">🖊️</span>
-          <span className="tool-name">Draw</span>
-          <span className="tool-shortcut" aria-hidden="true">[D]</span>
-        </button>
-        <button
-          type="button"
-          className={`tool-btn ${activeTool === 'gmerase' ? 'active' : ''}`}
-          onClick={() => onSetTool('gmerase')}
-          title="GM Erase — click a GM drawing to remove it."
-          aria-label="GM Erase tool"
-          aria-pressed={activeTool === 'gmerase'}
-        >
-          <span className="tool-icon" aria-hidden="true">🧽</span>
-          <span className="tool-name">Erase</span>
-        </button>
-        <button
-          type="button"
-          className="tool-btn"
-          onClick={onClearGmDrawings}
-          title="Remove all GM drawings from the map."
-          aria-label="Clear all GM drawings"
-        >
-          <span className="tool-icon" aria-hidden="true">🗑</span>
-          <span className="tool-name">Clear All</span>
-        </button>
-
-        {/* Color swatches */}
-        <div className="toolbar-sub-label" style={{ fontSize: '0.6rem', opacity: 0.7, marginTop: 6 }}>Color</div>
-        <div
-          className="tile-palette"
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(4, 1fr)',
-            gap: 4,
-          }}
-        >
-          {GM_DRAW_COLORS.map(c => (
-            <button
-              key={c}
-              type="button"
-              className={`tile-btn ${gmDrawColor === c ? 'active' : ''}`}
-              onClick={() => onSetGmDrawColor(c)}
-              title={`Color: ${c}`}
-              aria-label={`GM pen color ${c}`}
-              aria-pressed={gmDrawColor === c}
-              style={{ padding: 2, width: 'auto', justifyContent: 'center' }}
-            >
-              <span
-                aria-hidden="true"
-                style={{
-                  display: 'inline-block',
-                  width: 22,
-                  height: 22,
-                  background: c,
-                  border: '1px solid #2d3561',
-                }}
-              />
-            </button>
-          ))}
-        </div>
-
-        {/* Brush widths */}
-        <div
-          style={{
-            marginTop: 6,
-            display: 'grid',
-            gridTemplateColumns: `repeat(${GM_BRUSH_WIDTHS.length}, 1fr)`,
-            gap: 4,
-          }}
-        >
-          {GM_BRUSH_WIDTHS.map(b => (
-            <button
-              key={b.value}
-              type="button"
-              className={`tool-btn ${Math.abs(gmDrawWidth - b.value) < 1e-6 ? 'active' : ''}`}
-              onClick={() => onSetGmDrawWidth(b.value)}
-              title={`${b.label} brush`}
-              aria-label={`${b.label} GM brush width`}
-              aria-pressed={Math.abs(gmDrawWidth - b.value) < 1e-6}
-              style={{
-                width: 'auto',
-                flexDirection: 'column',
-                gap: 2,
-                padding: '4px 4px',
-                textAlign: 'center',
-              }}
-            >
-              <span
-                className="tool-icon"
-                aria-hidden="true"
-                style={{
-                  display: 'inline-block',
-                  width: Math.max(6, b.value * 32),
-                  height: Math.max(6, b.value * 32),
-                  background: gmDrawColor,
-                  borderRadius: '50%',
-                }}
-              />
-              <span className="tool-name" style={{ flex: 'none' }}>{b.label}</span>
-            </button>
-          ))}
-        </div>
+        {activeTab === 'advanced' && (
+          <AdvancedToolsTab
+            activeTool={props.activeTool}
+            onSetTool={props.onSetTool}
+            backgroundImage={props.backgroundImage}
+            onImportBackgroundImage={props.onImportBackgroundImage}
+            onUpdateBackgroundImage={props.onUpdateBackgroundImage}
+            onClearBackgroundImage={props.onClearBackgroundImage}
+            stairLinkSource={props.stairLinkSource}
+            stairLinkCount={props.stairLinkCount}
+            onClearStairLinks={props.onClearStairLinks}
+            gmDrawColor={props.gmDrawColor}
+            gmDrawWidth={props.gmDrawWidth}
+            onSetGmDrawColor={props.onSetGmDrawColor}
+            onSetGmDrawWidth={props.onSetGmDrawWidth}
+            onClearGmDrawings={props.onClearGmDrawings}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,91 +1,15 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
-import type { CustomThemeDefinition, DungeonMap, DungeonProject, StairLink, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource } from '../types/map';
+import { useState, useCallback, useRef } from 'react';
+import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource } from '../types/map';
 import { createEmptyGrid, createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
-import { saveProject, loadProject, migrateFromLocalStorage } from '../utils/storage';
-import { wrapMapAsProject } from '../utils/storage';
+import { saveProject } from '../utils/storage';
 import { reThemeNotes } from '../utils/reThemeNotes';
+import { createDefaultProject, nextIdAfter, updateActiveLevel } from './mapStateUtils';
+import { useMapHistory } from './useMapHistory';
+import { useMapClipboard } from './useMapClipboard';
+import { useLevelManagement } from './useLevelManagement';
+import { useMapPersistence } from './useMapPersistence';
 
-const DEFAULT_WIDTH = 32;
-const DEFAULT_HEIGHT = 32;
-const DEFAULT_TILE_SIZE = 20;
-
-function createDefaultMap(name = 'Level 1'): DungeonMap {
-  return {
-    meta: { name, width: DEFAULT_WIDTH, height: DEFAULT_HEIGHT, tileSize: DEFAULT_TILE_SIZE },
-    tiles: createEmptyGrid(DEFAULT_WIDTH, DEFAULT_HEIGHT),
-    notes: [],
-    fog: createFogGrid(DEFAULT_WIDTH, DEFAULT_HEIGHT, true),
-    fogEnabled: true,
-    tokens: [],
-    annotations: [],
-    markers: [],
-    initiative: [],
-    lightSources: [],
-  };
-}
-
-function createDefaultProject(): DungeonProject {
-  return {
-    name: 'New Dungeon',
-    levels: [createDefaultMap()],
-    activeLevelIndex: 0,
-    stairLinks: [],
-    customThemes: [],
-  };
-}
-
-function withDefaults(map: DungeonMap): DungeonMap {
-  return {
-    ...map,
-    fog: map.fog ?? createFogGrid(map.meta.width, map.meta.height, true),
-    fogEnabled: map.fogEnabled ?? true,
-    tokens: map.tokens ?? [],
-    annotations: map.annotations ?? [],
-    markers: map.markers ?? [],
-    initiative: map.initiative ?? [],
-    lightSources: map.lightSources ?? [],
-  };
-}
-
-function withProjectDefaults(project: DungeonProject): DungeonProject {
-  return {
-    ...project,
-    levels: project.levels.map(withDefaults),
-    stairLinks: project.stairLinks ?? [],
-    customThemes: project.customThemes ?? [],
-  };
-}
-
-function nextIdAfter(items: { id: number }[] | undefined): number {
-  if (!items || items.length === 0) return 1;
-  return Math.max(...items.map(i => i.id)) + 1;
-}
-
-interface HistorySnapshot {
-  tiles: Tile[][];
-  fog: boolean[][];
-  notes: MapNote[];
-  width: number;
-  height: number;
-}
-
-interface LevelHistory {
-  past: HistorySnapshot[];
-  future: HistorySnapshot[];
-}
-
-interface ClipboardBuffer {
-  tiles: Tile[][];
-  notes: MapNote[];
-  width: number;
-  height: number;
-}
-
-let clipboard: ClipboardBuffer | null = null;
-
-export function getClipboard(): ClipboardBuffer | null {
-  return clipboard;
-}
+export { getClipboard } from './useMapClipboard';
 
 export function useMapState() {
   const [project, setProject] = useState<DungeonProject>(createDefaultProject);
@@ -96,20 +20,8 @@ export function useMapState() {
   const nextMarkerIdRef = useRef(1);
   const nextLightIdRef = useRef(1);
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
-  const [canUndo, setCanUndo] = useState(false);
-  const [canRedo, setCanRedo] = useState(false);
 
-  const historyRef = useRef<Map<number, LevelHistory>>(new Map());
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  function getHistory(levelIdx: number): LevelHistory {
-    let h = historyRef.current.get(levelIdx);
-    if (!h) {
-      h = { past: [], future: [] };
-      historyRef.current.set(levelIdx, h);
-    }
-    return h;
-  }
 
   const map = project.levels[activeLevelIndex] ?? project.levels[0];
 
@@ -121,19 +33,14 @@ export function useMapState() {
     nextLightIdRef.current = nextIdAfter(level.lightSources);
   }
 
-  useEffect(() => {
-    migrateFromLocalStorage().catch(() => {});
-    loadProject().then(loaded => {
-      if (loaded) {
-        const ready = withProjectDefaults(loaded);
-        setProject(ready);
-        const idx = Math.min(ready.activeLevelIndex, ready.levels.length - 1);
-        setActiveLevelIndex(idx);
-        syncIdsToLevel(ready.levels[idx]);
-      }
-    }).catch(() => {});
-
-  }, []);
+  function resetIds() {
+    setNextNoteId(1);
+    nextTokenIdRef.current = 1;
+    nextStrokeIdRef.current = 1;
+    nextLightIdRef.current = 1;
+    nextMarkerIdRef.current = 1;
+    setSelectedNoteId(null);
+  }
 
   const debouncedSave = useCallback((proj: DungeonProject) => {
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
@@ -142,33 +49,37 @@ export function useMapState() {
     }, 500);
   }, []);
 
-  const MAX_HISTORY_SIZE = 50;
+  // ── Sub-hooks ─────────────────────────────────────────────────────────
 
-  function pushHistory(prev: DungeonMap, levelIdx: number) {
-    const snap: HistorySnapshot = {
-      tiles: prev.tiles,
-      fog: prev.fog ?? createFogGrid(prev.meta.width, prev.meta.height, false),
-      notes: prev.notes,
-      width: prev.meta.width,
-      height: prev.meta.height,
-    };
-    const h = getHistory(levelIdx);
-    h.past = [...h.past.slice(-(MAX_HISTORY_SIZE - 1)), snap];
-    h.future = [];
-    setCanUndo(true);
-    setCanRedo(false);
-  }
+  const history = useMapHistory(setProject, debouncedSave, activeLevelIndex);
+  const { pushHistory, undo, redo, canUndo, canRedo } = history;
 
-  function updateActiveLevel(
-    proj: DungeonProject,
-    levelIdx: number,
-    updater: (prev: DungeonMap) => DungeonMap,
-  ): DungeonProject {
-    const newLevels = proj.levels.map((lvl, i) =>
-      i === levelIdx ? updater(lvl) : lvl,
-    );
-    return { ...proj, levels: newLevels, activeLevelIndex: levelIdx };
-  }
+  const persistence = useMapPersistence(
+    setProject, setActiveLevelIndex, debouncedSave,
+    history.historyRef, history.setCanUndo, history.setCanRedo,
+    syncIdsToLevel, resetIds, setSelectedNoteId,
+  );
+  const { loadMapData, loadProjectData, newMap } = persistence;
+
+  const clipboardHook = useMapClipboard(
+    map, setProject, debouncedSave, activeLevelIndex,
+    pushHistory, setNextNoteId,
+  );
+  const { copySelection, cutSelection, pasteClipboard } = clipboardHook;
+
+  const levelMgmt = useLevelManagement(
+    setProject, debouncedSave, activeLevelIndex, setActiveLevelIndex,
+    history.historyRef, history.getHistory,
+    history.setCanUndo, history.setCanRedo,
+    syncIdsToLevel, setSelectedNoteId,
+  );
+  const {
+    switchLevel, addLevel, renameLevel, deleteLevel,
+    duplicateLevel, reorderLevels, setProjectName,
+    addStairLink, removeStairLink,
+  } = levelMgmt;
+
+  // ── Tile operations ───────────────────────────────────────────────────
 
   const setTile = useCallback((x: number, y: number, type: TileType) => {
     setProject(prev => {
@@ -289,30 +200,9 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-    setNextNoteId(1);
-    nextTokenIdRef.current = 1;
-    nextStrokeIdRef.current = 1;
-    nextLightIdRef.current = 1;
-    nextMarkerIdRef.current = 1;
-    setSelectedNoteId(null);
+    resetIds();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSave, activeLevelIndex]);
-
-  const newMap = useCallback(() => {
-    const fresh = createDefaultProject();
-    historyRef.current = new Map();
-    setCanUndo(false);
-    setCanRedo(false);
-    setProject(fresh);
-    setActiveLevelIndex(0);
-    debouncedSave(fresh);
-    setNextNoteId(1);
-    nextTokenIdRef.current = 1;
-    nextStrokeIdRef.current = 1;
-    nextLightIdRef.current = 1;
-    nextMarkerIdRef.current = 1;
-    setSelectedNoteId(null);
-  }, [debouncedSave]);
 
   const generateMap = useCallback((tiles: Tile[][], width: number, height: number, notes: MapNote[] = [], name?: string) => {
     setProject(prev => {
@@ -373,32 +263,7 @@ export function useMapState() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSave, activeLevelIndex]);
 
-  const loadMapData = useCallback((loaded: DungeonMap) => {
-    const proj = withProjectDefaults(wrapMapAsProject(withDefaults(loaded)));
-    historyRef.current = new Map();
-    setCanUndo(false);
-    setCanRedo(false);
-    setProject(proj);
-    setActiveLevelIndex(0);
-    debouncedSave(proj);
-    syncIdsToLevel(proj.levels[0]);
-    setSelectedNoteId(null);
-
-  }, [debouncedSave]);
-
-  const loadProjectData = useCallback((loaded: DungeonProject) => {
-    const proj = withProjectDefaults(loaded);
-    historyRef.current = new Map();
-    setCanUndo(false);
-    setCanRedo(false);
-    const idx = Math.min(proj.activeLevelIndex, proj.levels.length - 1);
-    setProject(proj);
-    setActiveLevelIndex(idx);
-    debouncedSave(proj);
-    syncIdsToLevel(proj.levels[idx]);
-    setSelectedNoteId(null);
-
-  }, [debouncedSave]);
+  // ── Notes ─────────────────────────────────────────────────────────────
 
   const addNote = useCallback((x: number, y: number) => {
     setProject(prev => {
@@ -446,6 +311,8 @@ export function useMapState() {
     setSelectedNoteId(sel => sel === id ? null : sel);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSave, activeLevelIndex]);
+
+  // ── Theme ─────────────────────────────────────────────────────────────
 
   const setTileSize = useCallback((tileSize: number) => {
     setProject(prev => {
@@ -519,52 +386,6 @@ export function useMapState() {
       return updated;
     });
   }, [debouncedSave]);
-
-  const undo = useCallback(() => {
-    const h = getHistory(activeLevelIndex);
-    if (h.past.length === 0) return;
-    setProject(prev => {
-      const prevMap = prev.levels[activeLevelIndex];
-      const previous = h.past[h.past.length - 1];
-      h.past = h.past.slice(0, -1);
-      h.future = [...h.future, {
-        tiles: prevMap.tiles,
-        fog: prevMap.fog ?? createFogGrid(prevMap.meta.width, prevMap.meta.height, false),
-        notes: prevMap.notes, width: prevMap.meta.width, height: prevMap.meta.height,
-      }];
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m, meta: { ...m.meta, width: previous.width, height: previous.height },
-        tiles: previous.tiles, fog: previous.fog, notes: previous.notes,
-      }));
-      debouncedSave(updated);
-      setCanUndo(h.past.length > 0);
-      setCanRedo(true);
-      return updated;
-    });
-  }, [debouncedSave, activeLevelIndex]);
-
-  const redo = useCallback(() => {
-    const h = getHistory(activeLevelIndex);
-    if (h.future.length === 0) return;
-    setProject(prev => {
-      const prevMap = prev.levels[activeLevelIndex];
-      const next = h.future[h.future.length - 1];
-      h.future = h.future.slice(0, -1);
-      h.past = [...h.past, {
-        tiles: prevMap.tiles,
-        fog: prevMap.fog ?? createFogGrid(prevMap.meta.width, prevMap.meta.height, false),
-        notes: prevMap.notes, width: prevMap.meta.width, height: prevMap.meta.height,
-      }];
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m, meta: { ...m.meta, width: next.width, height: next.height },
-        tiles: next.tiles, fog: next.fog, notes: next.notes,
-      }));
-      debouncedSave(updated);
-      setCanUndo(true);
-      setCanRedo(h.future.length > 0);
-      return updated;
-    });
-  }, [debouncedSave, activeLevelIndex]);
 
   // ── Fog of war ────────────────────────────────────────────────────────
 
@@ -724,6 +545,8 @@ export function useMapState() {
     });
   }, [debouncedSave, activeLevelIndex]);
 
+  // ── Annotations ───────────────────────────────────────────────────────
+
   const addAnnotation = useCallback((stroke: Omit<AnnotationStroke, 'id'>) => {
     const newId = nextStrokeIdRef.current;
     nextStrokeIdRef.current = newId + 1;
@@ -755,6 +578,8 @@ export function useMapState() {
       return updated;
     });
   }, [debouncedSave, activeLevelIndex]);
+
+  // ── Markers ───────────────────────────────────────────────────────────
 
   const addMarker = useCallback((shape: MarkerShape, x: number, y: number, color: string, size: number): number | null => {
     const newId = nextMarkerIdRef.current;
@@ -793,6 +618,8 @@ export function useMapState() {
     });
   }, [debouncedSave, activeLevelIndex]);
 
+  // ── Light sources ─────────────────────────────────────────────────────
+
   const addLightSource = useCallback((x: number, y: number, radius: number, color: string, label: string): number | null => {
     const newId = nextLightIdRef.current;
     let placed = false;
@@ -830,6 +657,8 @@ export function useMapState() {
     });
   }, [debouncedSave, activeLevelIndex]);
 
+  // ── Background image ──────────────────────────────────────────────────
+
   const setBackgroundImage = useCallback((bg: BackgroundImage) => {
     setProject(prev => {
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, backgroundImage: bg }));
@@ -857,299 +686,6 @@ export function useMapState() {
       return updated;
     });
   }, [debouncedSave, activeLevelIndex]);
-
-  // ── Clipboard ─────────────────────────────────────────────────────────
-
-  const copySelection = useCallback((sel: { x: number; y: number; w: number; h: number }) => {
-    const { tiles: mapTiles, notes: mapNotes, meta } = map;
-    const bufTiles: Tile[][] = [];
-    for (let dy = 0; dy < sel.h; dy++) {
-      const row: Tile[] = [];
-      for (let dx = 0; dx < sel.w; dx++) {
-        const ty = sel.y + dy;
-        const tx = sel.x + dx;
-        if (ty >= 0 && ty < meta.height && tx >= 0 && tx < meta.width) {
-          row.push({ ...mapTiles[ty][tx] });
-        } else {
-          row.push({ type: 'empty' });
-        }
-      }
-      bufTiles.push(row);
-    }
-    const bufNotes: MapNote[] = mapNotes
-      .filter(n => n.x >= sel.x && n.x < sel.x + sel.w && n.y >= sel.y && n.y < sel.y + sel.h)
-      .map(n => ({ ...n, x: n.x - sel.x, y: n.y - sel.y }));
-    clipboard = { tiles: bufTiles, notes: bufNotes, width: sel.w, height: sel.h };
-  }, [map]);
-
-  const cutSelection = useCallback((sel: { x: number; y: number; w: number; h: number }) => {
-    copySelection(sel);
-    setProject(prev => {
-      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
-        const newTiles = m.tiles.map(row => row.map(t => ({ ...t })));
-        for (let dy = 0; dy < sel.h; dy++) {
-          const ty = sel.y + dy;
-          if (ty < 0 || ty >= m.meta.height) continue;
-          for (let dx = 0; dx < sel.w; dx++) {
-            const tx = sel.x + dx;
-            if (tx < 0 || tx >= m.meta.width) continue;
-            newTiles[ty][tx] = { type: 'empty' };
-          }
-        }
-        const notesToRemove = new Set(
-          m.notes
-            .filter(n => n.x >= sel.x && n.x < sel.x + sel.w && n.y >= sel.y && n.y < sel.y + sel.h)
-            .map(n => n.id)
-        );
-        for (let y = 0; y < m.meta.height; y++) {
-          for (let x = 0; x < m.meta.width; x++) {
-            if (newTiles[y][x].noteId !== undefined && notesToRemove.has(newTiles[y][x].noteId!)) {
-              const next = { ...newTiles[y][x] };
-              delete next.noteId;
-              newTiles[y][x] = next;
-            }
-          }
-        }
-        return { ...m, tiles: newTiles, notes: m.notes.filter(n => !notesToRemove.has(n.id)) };
-      });
-      debouncedSave(updated);
-      return updated;
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [copySelection, debouncedSave, activeLevelIndex]);
-
-  const pasteClipboard = useCallback((ox: number, oy: number) => {
-    if (!clipboard) return;
-    const buf = clipboard;
-    setProject(prev => {
-      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
-        const newTiles = m.tiles.map(row => row.map(t => ({ ...t })));
-        const idOffset = nextIdAfter(m.notes) - 1;
-        const idMap = new Map<number, number>();
-        for (const n of buf.notes) idMap.set(n.id, n.id + idOffset);
-        for (let dy = 0; dy < buf.height; dy++) {
-          const ty = oy + dy;
-          if (ty < 0 || ty >= m.meta.height) continue;
-          for (let dx = 0; dx < buf.width; dx++) {
-            const tx = ox + dx;
-            if (tx < 0 || tx >= m.meta.width) continue;
-            const src = buf.tiles[dy][dx];
-            const next: Tile = { type: src.type };
-            if (src.theme) next.theme = src.theme;
-            if (src.noteId !== undefined) {
-              const remapped = idMap.get(src.noteId);
-              if (remapped !== undefined) next.noteId = remapped;
-            }
-            newTiles[ty][tx] = next;
-          }
-        }
-        const remappedNotes: MapNote[] = buf.notes.map(n => ({
-          ...n, id: n.id + idOffset, x: n.x + ox, y: n.y + oy,
-        }));
-        const validNotes = remappedNotes.filter(
-          n => n.x >= 0 && n.x < m.meta.width && n.y >= 0 && n.y < m.meta.height
-        );
-        return { ...m, tiles: newTiles, notes: [...m.notes, ...validNotes] };
-      });
-      debouncedSave(updated);
-      return updated;
-    });
-    if (buf.notes.length > 0) {
-      const highestGen = nextIdAfter(buf.notes) - 1;
-      setNextNoteId(prev => prev + highestGen);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
-
-  // ── Level management ──────────────────────────────────────────────────
-
-  const switchLevel = useCallback((idx: number) => {
-    setProject(prev => {
-      if (idx < 0 || idx >= prev.levels.length || idx === activeLevelIndex) return prev;
-      const updated = { ...prev, activeLevelIndex: idx };
-      debouncedSave(updated);
-      return updated;
-    });
-    setActiveLevelIndex(idx);
-    setProject(prev => {
-      const level = prev.levels[idx];
-      if (level) {
-        syncIdsToLevel(level);
-        const h = getHistory(idx);
-        setCanUndo(h.past.length > 0);
-        setCanRedo(h.future.length > 0);
-      }
-      setSelectedNoteId(null);
-      return prev;
-    });
-
-  }, [debouncedSave, activeLevelIndex]);
-
-  const addLevel = useCallback((name?: string) => {
-    setProject(prev => {
-      const idx = prev.levels.length;
-      const fresh = createDefaultMap(name ?? `Level ${idx + 1}`);
-      const updated: DungeonProject = {
-        ...prev, levels: [...prev.levels, fresh], activeLevelIndex: idx,
-      };
-      debouncedSave(updated);
-      setActiveLevelIndex(idx);
-      syncIdsToLevel(fresh);
-      setCanUndo(false);
-      setCanRedo(false);
-      setSelectedNoteId(null);
-      return updated;
-    });
-
-  }, [debouncedSave]);
-
-  const renameLevel = useCallback((idx: number, name: string) => {
-    setProject(prev => {
-      if (idx < 0 || idx >= prev.levels.length) return prev;
-      const newLevels = prev.levels.map((lvl, i) =>
-        i === idx ? { ...lvl, meta: { ...lvl.meta, name } } : lvl,
-      );
-      const updated = { ...prev, levels: newLevels };
-      debouncedSave(updated);
-      return updated;
-    });
-  }, [debouncedSave]);
-
-  const deleteLevel = useCallback((idx: number) => {
-    setProject(prev => {
-      if (prev.levels.length <= 1 || idx < 0 || idx >= prev.levels.length) return prev;
-      const newLevels = prev.levels.filter((_, i) => i !== idx);
-      const newLinks = prev.stairLinks
-        .filter(l => l.fromLevel !== idx && l.toLevel !== idx)
-        .map(l => ({
-          ...l,
-          fromLevel: l.fromLevel > idx ? l.fromLevel - 1 : l.fromLevel,
-          toLevel: l.toLevel > idx ? l.toLevel - 1 : l.toLevel,
-        }));
-      let newActive = activeLevelIndex;
-      if (idx === activeLevelIndex) newActive = Math.min(idx, newLevels.length - 1);
-      else if (idx < activeLevelIndex) newActive = activeLevelIndex - 1;
-      const newHistoryMap = new Map<number, LevelHistory>();
-      for (const [key, val] of historyRef.current.entries()) {
-        if (key === idx) continue;
-        newHistoryMap.set(key > idx ? key - 1 : key, val);
-      }
-      historyRef.current = newHistoryMap;
-      const updated: DungeonProject = {
-        ...prev, levels: newLevels, stairLinks: newLinks, activeLevelIndex: newActive,
-      };
-      debouncedSave(updated);
-      setActiveLevelIndex(newActive);
-      syncIdsToLevel(newLevels[newActive]);
-      const h = getHistory(newActive);
-      setCanUndo(h.past.length > 0);
-      setCanRedo(h.future.length > 0);
-      setSelectedNoteId(null);
-      return updated;
-    });
-
-  }, [debouncedSave, activeLevelIndex]);
-
-  const duplicateLevel = useCallback((idx: number) => {
-    setProject(prev => {
-      if (idx < 0 || idx >= prev.levels.length) return prev;
-      const source = prev.levels[idx];
-      const copy: DungeonMap = JSON.parse(JSON.stringify(source));
-      copy.meta = { ...copy.meta, name: `${source.meta.name} (copy)` };
-      const newIdx = idx + 1;
-      const newLevels = [...prev.levels.slice(0, newIdx), copy, ...prev.levels.slice(newIdx)];
-      const newLinks = prev.stairLinks.map(l => ({
-        ...l,
-        fromLevel: l.fromLevel >= newIdx ? l.fromLevel + 1 : l.fromLevel,
-        toLevel: l.toLevel >= newIdx ? l.toLevel + 1 : l.toLevel,
-      }));
-      const newHistoryMap = new Map<number, LevelHistory>();
-      for (const [key, val] of historyRef.current.entries()) {
-        newHistoryMap.set(key >= newIdx ? key + 1 : key, val);
-      }
-      historyRef.current = newHistoryMap;
-      const updated: DungeonProject = {
-        ...prev, levels: newLevels, stairLinks: newLinks, activeLevelIndex: newIdx,
-      };
-      debouncedSave(updated);
-      setActiveLevelIndex(newIdx);
-      syncIdsToLevel(copy);
-      setCanUndo(false);
-      setCanRedo(false);
-      setSelectedNoteId(null);
-      return updated;
-    });
-
-  }, [debouncedSave]);
-
-  const reorderLevels = useCallback((fromIdx: number, toIdx: number) => {
-    setProject(prev => {
-      if (fromIdx === toIdx || fromIdx < 0 || fromIdx >= prev.levels.length) return prev;
-      const clamped = Math.max(0, Math.min(prev.levels.length - 1, toIdx));
-      if (fromIdx === clamped) return prev;
-      const newLevels = [...prev.levels];
-      const [moved] = newLevels.splice(fromIdx, 1);
-      newLevels.splice(clamped, 0, moved);
-      const ordered = [...prev.levels.keys()];
-      const reordered = [...ordered];
-      const [movedIdx] = reordered.splice(fromIdx, 1);
-      reordered.splice(clamped, 0, movedIdx);
-      const indexMap = new Map<number, number>();
-      for (let i = 0; i < reordered.length; i++) indexMap.set(reordered[i], i);
-      const newLinks = prev.stairLinks.map(l => ({
-        ...l,
-        fromLevel: indexMap.get(l.fromLevel) ?? l.fromLevel,
-        toLevel: indexMap.get(l.toLevel) ?? l.toLevel,
-      }));
-      const newHistoryMap = new Map<number, LevelHistory>();
-      for (const [key, val] of historyRef.current.entries()) {
-        newHistoryMap.set(indexMap.get(key) ?? key, val);
-      }
-      historyRef.current = newHistoryMap;
-      const newActive = indexMap.get(activeLevelIndex) ?? activeLevelIndex;
-      const updated: DungeonProject = {
-        ...prev, levels: newLevels, stairLinks: newLinks, activeLevelIndex: newActive,
-      };
-      debouncedSave(updated);
-      setActiveLevelIndex(newActive);
-      return updated;
-    });
-  }, [debouncedSave, activeLevelIndex]);
-
-  const setProjectName = useCallback((name: string) => {
-    setProject(prev => {
-      const updated = { ...prev, name };
-      debouncedSave(updated);
-      return updated;
-    });
-  }, [debouncedSave]);
-
-  const addStairLink = useCallback((link: StairLink) => {
-    setProject(prev => {
-      const filtered = prev.stairLinks.filter(
-        l => !(l.fromLevel === link.fromLevel && l.fromCell.x === link.fromCell.x && l.fromCell.y === link.fromCell.y)
-      );
-      const updated: DungeonProject = { ...prev, stairLinks: [...filtered, link] };
-      debouncedSave(updated);
-      return updated;
-    });
-  }, [debouncedSave]);
-
-  const removeStairLink = useCallback((fromLevel: number, fromX: number, fromY: number) => {
-    setProject(prev => {
-      const filtered = prev.stairLinks.filter(
-        l => !(
-          (l.fromLevel === fromLevel && l.fromCell.x === fromX && l.fromCell.y === fromY) ||
-          (l.toLevel === fromLevel && l.toCell.x === fromX && l.toCell.y === fromY)
-        )
-      );
-      const updated: DungeonProject = { ...prev, stairLinks: filtered };
-      debouncedSave(updated);
-      return updated;
-    });
-  }, [debouncedSave]);
 
   return {
     map, project, activeLevelIndex,

@@ -23,6 +23,10 @@ import { computeLightVisible } from './utils/lightSources';
 import { buildThemeList, getThemeWithCustom } from './utils/customThemes';
 import { ALL_TILE_TYPES, isBuiltInTileType, type ToolType, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape, type LightSourcePreset, LIGHT_SOURCE_PRESETS } from './types/map';
 import LevelTabs from './components/LevelTabs';
+import { ToolContext, type ToolContextValue } from './contexts/ToolContext';
+import { MapContext, type MapContextValue } from './contexts/MapContext';
+import { ViewContext, type ViewContextValue } from './contexts/ViewContext';
+import { ActionContext, type ActionContextValue } from './contexts/ActionContext';
 import './App.css';
 
 const UI_SCALE_STORAGE_KEY = 'dungeon-mapper:ui-scale';
@@ -402,7 +406,7 @@ function App() {
     setViewMode(prev => {
       const next: ViewMode = prev === 'gm' ? 'player' : 'gm';
       handleSetActiveTool(next === 'player' ? 'pdraw' : 'paint');
-      announce(next === 'player' ? 'Switched to Player view' : 'Switched to GM view');
+      announce(next === 'player' ? 'Switched to Present mode' : 'Switched to Edit mode');
       try {
         window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, next);
       } catch {
@@ -675,7 +679,80 @@ function App() {
     },
   });
 
+  // ── Context values ──────────────────────────────────────────────────
+  const toolContextValue = useMemo<ToolContextValue>(() => ({
+    activeTool, setActiveTool: handleSetActiveTool,
+    activeTile, setActiveTile,
+    markerShape, markerColor, markerSize,
+    setMarkerShape, setMarkerColor, setMarkerSize,
+    measureShape, measureFeetPerCell,
+    setMeasureShape, setMeasureFeetPerCell,
+    lightPreset, lightRadius, lightColor,
+    setLightPreset, setLightRadius, setLightColor,
+    drawColor, drawWidth, setDrawColor, setDrawWidth,
+    gmDrawColor, gmDrawWidth, setGmDrawColor, setGmDrawWidth,
+  }), [
+    activeTool, handleSetActiveTool, activeTile, setActiveTile,
+    markerShape, markerColor, markerSize, setMarkerShape, setMarkerColor, setMarkerSize,
+    measureShape, measureFeetPerCell, setMeasureShape, setMeasureFeetPerCell,
+    lightPreset, lightRadius, lightColor, setLightPreset, setLightRadius, setLightColor,
+    drawColor, drawWidth, setDrawColor, setDrawWidth,
+    gmDrawColor, gmDrawWidth, setGmDrawColor, setGmDrawWidth,
+  ]);
+
+  const mapContextValue = useMemo<MapContextValue>(() => ({
+    map, project, activeLevelIndex, themeId, customThemes,
+  }), [map, project, activeLevelIndex, themeId, customThemes]);
+
+  const viewContextValue = useMemo<ViewContextValue>(() => ({
+    viewMode, printMode, uiScale, gmShowFog,
+  }), [viewMode, printMode, uiScale, gmShowFog]);
+
+  const actionContextValue = useMemo<ActionContextValue>(() => ({
+    setTile, setTiles, fillTiles,
+    setMapName, resizeMap, clearMap, newMap, loadProjectData,
+    generateMap, applyGeneratedRegion,
+    addNote, updateNote, deleteNote,
+    setTileSize, setTheme, saveCustomTheme, deleteCustomTheme,
+    undo: handleUndo, redo: handleRedo, canUndo, canRedo,
+    setFogCells, fillAllFog, setFogEnabled,
+    setDynamicFogEnabled, setExplored, resetExplored,
+    addToken, moveToken, removeToken, updateToken,
+    reorderInitiative, clearInitiative,
+    addAnnotation, removeAnnotation, clearAnnotations,
+    copySelection, cutSelection, pasteClipboard,
+    addMarker, removeMarker, clearMarkers,
+    setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
+    addLightSource, removeLightSource, clearLightSources,
+    switchLevel, addLevel, renameLevel, deleteLevel,
+    duplicateLevel, reorderLevels,
+    addStairLink, removeStairLink,
+  }), [
+    setTile, setTiles, fillTiles,
+    setMapName, resizeMap, clearMap, newMap, loadProjectData,
+    generateMap, applyGeneratedRegion,
+    addNote, updateNote, deleteNote,
+    setTileSize, setTheme, saveCustomTheme, deleteCustomTheme,
+    handleUndo, handleRedo, canUndo, canRedo,
+    setFogCells, fillAllFog, setFogEnabled,
+    setDynamicFogEnabled, setExplored, resetExplored,
+    addToken, moveToken, removeToken, updateToken,
+    reorderInitiative, clearInitiative,
+    addAnnotation, removeAnnotation, clearAnnotations,
+    copySelection, cutSelection, pasteClipboard,
+    addMarker, removeMarker, clearMarkers,
+    setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
+    addLightSource, removeLightSource, clearLightSources,
+    switchLevel, addLevel, renameLevel, deleteLevel,
+    duplicateLevel, reorderLevels,
+    addStairLink, removeStairLink,
+  ]);
+
   return (
+    <ToolContext.Provider value={toolContextValue}>
+    <MapContext.Provider value={mapContextValue}>
+    <ViewContext.Provider value={viewContextValue}>
+    <ActionContext.Provider value={actionContextValue}>
     <div className="app">
       <a className="skip-link" href="#dm-canvas-area">Skip to map canvas</a>
       <MapHeader
@@ -718,7 +795,7 @@ function App() {
       />
       <div className="app-body">
         {viewMode === 'gm' ? (
-          <nav aria-label="GM tools">
+          <nav aria-label="Edit tools">
             <Toolbar
               activeTool={activeTool}
               activeTile={activeTile}
@@ -782,7 +859,7 @@ function App() {
             />
           </nav>
         ) : (
-          <nav aria-label="Player tools">
+          <nav aria-label="Present tools">
             <PlayerToolbar
               activeTool={activeTool}
               onSetTool={handleSetActiveTool}
@@ -994,6 +1071,10 @@ function App() {
         onCancel={handleIconPickerCancel}
       />
     </div>
+    </ActionContext.Provider>
+    </ViewContext.Provider>
+    </MapContext.Provider>
+    </ToolContext.Provider>
   );
 }
 
