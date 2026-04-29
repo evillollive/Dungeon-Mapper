@@ -15,16 +15,13 @@ interface CustomThemeDialogProps {
 
 const editableBuiltInTiles: BuiltInTileType[] = ALL_TILE_TYPES;
 
-function slugify(value: string): string {
-  const slug = value.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
-  return slug || 'custom';
-}
-
 function uniqueSuffix(): string {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID().slice(0, 8);
   }
-  return `${Math.random().toString(36).slice(2, 8)}-${performance.now().toString(36).replace('.', '')}`;
+  const randomA = Math.random().toString(36).slice(2).padEnd(8, '0').slice(0, 8);
+  const randomB = Math.random().toString(36).slice(2).padEnd(8, '0').slice(0, 8);
+  return `${Date.now().toString(36)}-${randomA}${randomB}`;
 }
 
 function newThemeFromBase(baseThemeId: string): CustomThemeDefinition {
@@ -86,7 +83,7 @@ const CustomThemeDialog: React.FC<CustomThemeDialogProps> = ({
     let nextNumber = 1;
     while (usedNumbers.has(nextNumber)) nextNumber++;
     const label = `Custom Tile ${nextNumber}`;
-    const id = `custom:${slugify(label)}-${uniqueSuffix()}` as const;
+    const id = `custom:${uniqueSuffix()}` as const;
     const tile: CustomTileDefinition = {
       id,
       label,
