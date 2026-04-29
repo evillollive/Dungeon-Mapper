@@ -407,6 +407,26 @@ Features that extend dungeon mapping depth and personalization.
 - ✅ Clear All button to remove all GM drawings from the map
 - ✅ Dashed pattern renders consistently in live canvas, PNG export (`renderMap.ts`), and SVG export (`export.ts`)
 
+**~~6.1 — Touch & Pointer Event Foundation~~** ✅ COMPLETE
+- ✅ All mouse events in MapCanvas replaced with Pointer Events API (`onPointerDown`, `onPointerMove`, `onPointerUp`, `onPointerLeave`, `onPointerCancel`)
+- ✅ `getTileCoords` and `getFractionalCoords` accept generic `{clientX, clientY}` for unified mouse/touch/pen input
+- ✅ `touch-action: none` CSS on canvas prevents browser scroll/zoom interference
+- ✅ Pinch-to-zoom gesture: two-finger distance tracking scales zoom between 0.25×–4×
+- ✅ Two-finger pan gesture: midpoint delta tracking for smooth touch panning
+- ✅ Long-press (400ms) on touch starts pan mode, replacing right-click for touch devices
+- ✅ Pointer capture (`setPointerCapture`/`releasePointerCapture`) for reliable drag tracking
+- ✅ `onPointerCancel` handling commits in-progress strokes on interrupted gestures
+- ✅ `onWheel` retained for mouse scroll panning (Shift+wheel)
+
+**~~6.2 — Responsive Layout Overhaul~~** ✅ COMPLETE
+- ✅ Desktop (>1024px): full 3-column layout unchanged, panel toggles hidden
+- ✅ Tablet landscape (768–1024px): 2-column grid, collapsible left toolbar, right panel as overlay drawer, header labels hidden, toolbar tab labels icon-only
+- ✅ Tablet portrait / large phone (480–768px): single-column grid, toolbar as bottom sheet, stacked header layout, reduced header buttons
+- ✅ Phone (<480px): minimal header (center controls hidden), nearly full-width right drawer, compact zoom controls, smaller level tabs
+- ✅ Toolbar collapse/expand toggle with `▶`/`◀` indicators
+- ✅ Right panel slide-in drawer with smooth CSS transition, toggle button at canvas edge
+- ✅ All breakpoints use progressive enhancement — no separate mobile codebase
+
 ### Far Future
 
 Items that may be revisited someday but are not on the active roadmap. Most require backend infrastructure or a fundamentally different scope (world-scale mapping).
@@ -777,24 +797,26 @@ Convert to installable Progressive Web App:
 - ~~**Phase 5.2** — Sample & Default Maps~~ ✅
 - ~~**Phase 5.3** — Custom Tile/Theme Creation~~ ✅
 - ~~**Phase 7.5** — GM Drawing / Annotation Tools~~ ✅
+- ~~**Phase 6.1** — Touch & Pointer Events~~ ✅
+- ~~**Phase 6.2** — Responsive Layout~~ ✅
 
 ### Medium-Term — Active Roadmap (Phase 6)
 
 Recommended implementation order based on dependency analysis, impact, and effort:
 
-**Sprint 1: Foundation (enables everything else)**
-1. **Phase 6 Refactoring** — Split MapCanvas, useMapState, and introduce React Contexts
+**Sprint 1: Foundation (enables everything else)** ✅ COMPLETE
+1. ~~**Phase 6 Refactoring** — Split MapCanvas, useMapState, and introduce React Contexts~~ ✅
    - *Why first:* Every subsequent phase modifies these files. Splitting them first prevents merge conflicts and makes parallel work possible. Also enables testing.
    - *Effort:* Medium (restructuring, no new features)
    - *Risk:* Low (pure refactoring, no behavior change)
 
-2. **Phase 6.1 — Touch & Pointer Events** — Replace mouse events with Pointer Events API
+2. ~~**Phase 6.1 — Touch & Pointer Events** — Replace mouse events with Pointer Events API~~ ✅
    - *Why second:* Foundation for all mobile/tablet work. Small, self-contained change.
    - *Effort:* Low-medium
    - *Risk:* Low (Pointer Events are a superset of mouse events)
 
-**Sprint 2: UI/UX Overhaul**
-3. **Phase 6.2 — Responsive Layout** — Breakpoint system, collapsible panels, drawer-based right panel
+**Sprint 2: UI/UX Overhaul** (in progress)
+3. ~~**Phase 6.2 — Responsive Layout** — Breakpoint system, collapsible panels, drawer-based right panel~~ ✅
    - *Why:* Largest UX improvement — reduces clutter for desktop users AND enables tablet use
    - *Effort:* Medium-high
    - *Dependency:* Benefits from refactored Toolbar (Sprint 1)
@@ -885,6 +907,8 @@ Recommended implementation order based on dependency analysis, impact, and effor
 | Refactoring before features | 2026-04-29 | Splitting MapCanvas (1,925 lines) and useMapState (1,177 lines) before adding new features prevents merge conflicts, enables testing, and makes parallel development possible — every Sprint 2–4 phase touches these files |
 | Tabbed toolbar over accordion | 2026-04-29 | Tabs (Draw/Tactical/Generate/Advanced) provide clearer mental model than accordion sections — user sees exactly 4 categories, each tab shows only relevant controls; accordion still shows all section headers creating visual noise |
 | Asset/stamp library as top new feature | 2026-04-29 | Biggest competitive gap: Dungeondraft has 1000+ objects, Inkarnate 10K+, DungeonFog 3K+; Dungeon Mapper has 30 token icons but zero placeable map objects (furniture, vegetation, dungeon dressing) |
+| CSS media queries over container queries | 2026-04-29 | Media queries have universal browser support and are simpler to reason about for the 4-breakpoint strategy (>1024, 768–1024, 480–768, <480px); container queries would be useful for component-level responsive behavior but add complexity without clear benefit at the app shell level |
+| Right panel as overlay drawer | 2026-04-29 | At tablet widths the right panel (initiative + notes) becomes an overlay drawer rather than being hidden entirely — preserves quick access to game state while giving the canvas maximum screen area; toggle button at canvas edge is discoverable without being intrusive |
 
 ---
 
@@ -967,6 +991,12 @@ Recommended implementation order based on dependency analysis, impact, and effor
 - All 13 themes: wall tiles now use `jitterColor` + `drawWallDepth` for visual depth (shadow for fantasy themes, neon glow for sci-fi, hard-edge for modern)
 - No changes to print mode — all art upgrades are screen-mode only
 - Priority order updated to show 4.5.2 as next
+
+**2026-04-29 — Phase 6.1 + 6.2 implemented: Touch Events & Responsive Layout**
+- Phase 6.1: All MapCanvas mouse events replaced with Pointer Events API; pinch-to-zoom and two-finger pan gestures; long-press pan for touch; pointer capture for reliable drag; `onPointerCancel` for interrupted gestures
+- Phase 6.2: 4-breakpoint responsive CSS (>1024px, 768–1024, 480–768, <480px); collapsible left toolbar with toggle; right panel as slide-in overlay drawer; header simplification at narrow widths; toolbar as bottom sheet on portrait tablets/phones
+- Sprint 1 (Foundation) fully complete; Sprint 2 (UI/UX) in progress
+- 2 new design decisions logged (media queries over container queries, right panel as overlay drawer)
 
 **2026-04-28 — Phase 4.5 added: Art & Visual Polish roadmap**
 - New Part 3b: Competitor Art & Visual Style Analysis — detailed review of Azgaar, Watabou, Mipui, Donjon, Dave's Mapper, and HexTML art approaches

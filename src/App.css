@@ -1466,3 +1466,244 @@
   margin: 4px 0 0 0;
   font-style: italic;
 }
+
+/* ── Panel toggle buttons ──────────────────────────────────── */
+.panel-toggle {
+  background: #ece6d6;
+  border: 1px solid #c2bbab;
+  color: #6a6258;
+  font-size: var(--fs-14);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, color 0.15s;
+  z-index: 12;
+  flex-shrink: 0;
+}
+.panel-toggle:hover {
+  background: #d9d2c2;
+  color: #2a2620;
+}
+
+/* Toolbar toggle sits at the top of the left nav */
+.toolbar-toggle {
+  width: 100%;
+  height: 28px;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  border-bottom: 1px solid #c2bbab;
+}
+
+/* Right-panel toggle floats at the right edge of the canvas area.
+   On desktop it's a narrow vertical strip; responsive rules make it
+   more prominent on narrower viewports. */
+.right-panel-toggle {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 48px;
+  border-radius: 4px 0 0 4px;
+  border-right: none;
+  z-index: 12;
+}
+
+/* Desktop: toggle buttons are hidden by default — panels always visible.
+   Show only at responsive breakpoints (see media queries below). */
+@media (min-width: 1025px) {
+  .toolbar-toggle { display: none; }
+  .right-panel-toggle { display: none; }
+  .right-panel-drawer { display: flex !important; }
+}
+
+/* Collapsed toolbar nav: show only the toggle button */
+.nav-collapsed {
+  width: auto !important;
+  min-width: 0 !important;
+}
+.nav-collapsed > .toolbar {
+  display: none;
+}
+
+/* ── Responsive layout: right panel drawer ───────────────── */
+.right-panel-drawer {
+  transition: transform 0.2s ease-in-out;
+}
+
+/* ── Responsive: Tablet landscape (768–1024px) ──────────── */
+@media (max-width: 1024px) {
+  .app-body {
+    /* Two-column: left toolbar + canvas (right panel overlays) */
+    grid-template-columns:
+      clamp(140px, calc(160px * var(--ui-base-scale) * var(--ui-scale)), 28vw)
+      1fr;
+  }
+
+  /* Toolbar collapsed = icon-rail width */
+  .app-body.toolbar-collapsed {
+    grid-template-columns: 32px 1fr;
+  }
+
+  /* Right panel becomes an overlay drawer */
+  .right-panel-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: clamp(220px, 40vw, 360px);
+    height: 100vh;
+    z-index: 50;
+    box-shadow: -4px 0 16px rgba(0, 0, 0, 0.2);
+    transform: translateX(100%);
+  }
+  .right-panel-drawer.open {
+    transform: translateX(0);
+  }
+
+  /* Show panel toggle buttons */
+  .toolbar-toggle { display: flex; }
+  .right-panel-toggle { display: flex; }
+
+  /* Header: hide verbose labels, keep icons */
+  .header-center .header-label {
+    display: none;
+  }
+  .app-title {
+    font-size: var(--fs-13);
+    letter-spacing: 1px;
+  }
+  .header-left {
+    min-width: 160px;
+  }
+
+  /* Toolbar tab labels hidden, show only icons */
+  .toolbar-tab-btn span:last-child {
+    display: none;
+  }
+  .toolbar-tab-btn {
+    padding: 6px 2px 5px;
+  }
+}
+
+/* ── Responsive: Tablet portrait / large phone (480–768px) ── */
+@media (max-width: 768px) {
+  .app-body {
+    grid-template-columns: 1fr;
+  }
+
+  /* Toolbar becomes a bottom sheet */
+  .app-body > nav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 40;
+    max-height: 50vh;
+    background: #ffffff;
+    border-top: 2px solid #8a7f66;
+    box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
+  }
+  .app-body > nav > .toolbar {
+    border-right: none;
+  }
+
+  /* Collapsed nav = minimized at bottom */
+  .app-body > nav.nav-collapsed {
+    max-height: 32px;
+  }
+  .app-body > nav.nav-collapsed > .toolbar-toggle {
+    border-bottom: none;
+  }
+
+  /* Toolbar toggle at bottom: horizontal strip */
+  .toolbar-toggle {
+    border-bottom: none;
+    border-top: none;
+    height: 32px;
+  }
+
+  /* Right panel drawer wider on portrait tablets */
+  .right-panel-drawer {
+    width: clamp(260px, 55vw, 400px);
+  }
+
+  /* Header simplification: stack layout */
+  .map-header {
+    padding: 4px 8px;
+    gap: 6px;
+  }
+  .header-left {
+    min-width: 120px;
+    flex: 1 1 100%;
+    order: 1;
+  }
+  .header-center {
+    order: 3;
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+  .header-right {
+    order: 2;
+    flex: 1 1 auto;
+    justify-content: flex-end;
+  }
+  /* Hide less-used header buttons on tablet portrait */
+  .header-right .header-btn:nth-child(n+6) {
+    display: none;
+  }
+
+  /* Keep the last button (Shortcuts) visible */
+  .header-right .header-btn:last-of-type {
+    display: inline-flex;
+  }
+}
+
+/* ── Responsive: Phone (<480px) ─────────────────────────── */
+@media (max-width: 480px) {
+  .app-title {
+    font-size: var(--fs-11);
+    letter-spacing: 0;
+  }
+  .map-name-input {
+    min-width: 80px;
+    font-size: var(--fs-11);
+  }
+  .header-center {
+    font-size: var(--fs-10);
+  }
+
+  /* Right panel drawer = nearly full width */
+  .right-panel-drawer {
+    width: 85vw;
+  }
+
+  /* Header: hide center controls entirely, overflow into modal */
+  .header-center {
+    display: none;
+  }
+
+  /* Only show essential header buttons */
+  .header-right .header-btn:nth-child(n+3) {
+    display: none;
+  }
+  .header-right .header-btn:last-of-type {
+    display: inline-flex;
+  }
+
+  /* Level tabs: smaller padding */
+  .level-tab {
+    padding: 3px 8px;
+    font-size: var(--fs-10);
+  }
+
+  /* Zoom controls: compact */
+  .zoom-controls {
+    padding: 2px 6px;
+    gap: 4px;
+  }
+  .zoom-hint {
+    display: none;
+  }
+}
