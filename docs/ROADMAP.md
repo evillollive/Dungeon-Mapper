@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
-> **Last updated:** 2026-04-29
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 7.1, 7.3, & 7.5 complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete.
+> **Last updated:** 2026-04-30
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 7.1, 7.3, & 7.5 complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6).
 
 ---
 
@@ -672,13 +672,68 @@ The toolbar renders 11 sections unconditionally. Splitting into tab-based sub-co
 
 Based on this expanded competitor analysis, the following features represent realistic, high-impact additions that don't require backend infrastructure:
 
-**6.4 — Asset/Stamp Library** *(high impact, medium effort)*
-- Expand the current 30+ SVG icon library to 200+ placeable object stamps (furniture, vegetation, dungeon dressing, sci-fi props)
-- Stamps would be placed on the map as decorative elements on top of tiles (not replacing tiles)
-- Per-theme stamp sets matching the 13 visual themes
-- Custom stamp upload (user PNG/SVG images, similar to existing custom tile upload)
-- Competitors: Dungeondraft has 1000+ objects, Inkarnate has 10K+, DungeonFog has 3K+
-- This is the single most impactful missing feature for visual map quality
+**6.4 — Asset/Stamp Library** *(high impact, medium effort — broken into 6 sub-phases)*
+
+The stamp library is the single most impactful missing feature for visual map quality. Competitors: Dungeondraft has 1000+ objects, Inkarnate 10K+, DungeonFog 3K+; Dungeon Mapper currently has 30 token icons but zero placeable map objects. Each sub-phase is independently shippable.
+
+**6.4.1 — Stamp Data Model & Placement Engine** *(foundation, low effort)*
+- Define `StampDef` type (id, name, category, themeId, svgPath/paths, viewBox) in `types/map.ts`
+- Define `PlacedStamp` type (stampId, x, y, rotation, scale, flipX, flipY, opacity, locked) on `DungeonMap`
+- Add `stamps?: PlacedStamp[]` field to `DungeonMap` interface
+- Add `'stamp' | 'move-stamp' | 'remove-stamp'` to `ToolType` union
+- Wire undo/redo support for stamp add/move/remove in `useMapState`
+- No UI yet — just the data layer and state management
+
+**6.4.2 — Core Stamp Rendering & Canvas Interaction** *(foundation, low effort)*
+- Render `PlacedStamp[]` on canvas (new `canvasStampRenderer.ts` module, follows existing pattern)
+- Click-to-place stamp at cell position with snap-to-grid
+- Click stamp to select → drag to move, Delete to remove
+- Render stamp selection handles (bounding box outline)
+- Include stamps in PNG/SVG export via `renderMap.ts`
+- Include stamps in JSON save/load round-trip
+
+**6.4.3 — Stamp Picker UI & First 40 Universal Stamps** *(first visible feature, medium effort)*
+- Create `StampPicker.tsx` component (grid of stamp thumbnails with category tabs, search filter)
+- Add STAMPS section to `AdvancedToolsTab.tsx` toolbar with [Y] keyboard shortcut
+- Create `src/stamps/stampLibrary.ts` with the first 40 universal stamps across 5 categories:
+  - Furniture (10): table, chair, bed, bookshelf, chest, barrel, crate, throne, altar, fireplace
+  - Dungeon Dressing (10): skull, bones, rubble, cobweb, torch-sconce, chain, cage, well, fountain, statue
+  - Nature (10): tree, bush, rock, mushroom, flower, vine, log, stump, pond, campfire
+  - Structures (5): column, archway, bridge-plank, ladder, lever
+  - Markers (5): X-mark, arrow, exclamation, question-mark, flag
+- SVG paths use 512×512 viewBox (same convention as existing `iconLibrary.ts`)
+
+**6.4.4 — Stamp Transform Controls** *(polish, low effort)*
+- Rotation: 90° snap with R key, free rotation with drag handle
+- Scale: resize handle on selection bounding box (0.25×–4× range)
+- Flip: H/V flip via context buttons or keyboard shortcuts
+- Opacity slider (10%–100%) in stamp options bar
+- Lock/unlock stamps to prevent accidental moves
+- Z-order: bring-to-front / send-to-back for overlapping stamps
+
+**6.4.5 — Per-Theme Stamp Sets (160+ stamps)** *(content, high effort — can be split further)*
+- Extend `stampLibrary.ts` with theme-tagged stamps, 10–15 per theme:
+  - Dungeon: iron maiden, portcullis, sarcophagus, brazier, weapon rack, etc.
+  - Castle: banner, chandelier, tapestry, armor stand, candelabra, etc.
+  - Wilderness: tent, animal tracks, fallen tree, berry bush, antler, etc.
+  - Starship: console, cryo-pod, airlock, reactor, terminal, etc.
+  - Alien: egg cluster, tentacle, crystal, spore, bio-pod, etc.
+  - Cyberpunk: neon sign, dumpster, hologram, drone, server rack, etc.
+  - Steampunk: gear, pipe, gauge, boiler, clockwork, etc.
+  - Old West: cactus, wagon wheel, trough, hitching post, saloon door, etc.
+  - Pirate: anchor, cannon, treasure map, rum barrel, ship wheel, etc.
+  - Desert: oasis palm, sand dune, scarab, obelisk, tent, etc.
+  - Ancient: hieroglyph, broken column, urn, mosaic, slab, etc.
+  - Modern City: trash can, bench, lamppost, fire hydrant, mailbox, etc.
+  - Post-Apocalypse: radiation sign, wrecked car, barbed wire, gas mask, etc.
+- Stamp picker shows "All" + per-theme filter tabs
+- This sub-phase can itself be delivered incrementally (a few themes at a time)
+
+**6.4.6 — Custom Stamp Upload** *(extension, low effort)*
+- Upload user PNG/SVG images as custom stamps (reuses pattern from custom tile upload)
+- Custom stamps stored as data URLs in `DungeonProject.customStamps?: CustomStampDef[]`
+- Appear in a "Custom" category in the stamp picker
+- Import/export with JSON project files
 
 **6.5 — Wall & Path Drawing Tools** *(medium impact, medium effort)*
 - Free-form wall drawing (not just tile-based walls) — click to place wall segments along grid edges
@@ -848,25 +903,50 @@ Recommended implementation order based on dependency analysis, impact, and effor
    - *Dependency:* Standalone, can ship anytime after 6.3
 
 **Sprint 4: New Features**
-8. **Phase 6.4 — Asset/Stamp Library** — 200+ placeable objects, per-theme sets, custom upload
-   - *Why:* Highest-impact new feature for visual map quality — biggest competitive gap
-   - *Effort:* Medium-high
+8. **Phase 6.4.1 — Stamp Data Model & Placement Engine** — Types, state management, undo/redo
+   - *Why:* Foundation for all stamp features — no UI, just data layer
+   - *Effort:* Low
    - *Dependency:* Benefits from refactored MapCanvas (Sprint 1)
 
-9. **Phase 6.6 — Scene/Room Templates** — Save/reuse room configurations
-   - *Why:* Builds on existing clipboard infrastructure, high user value
+9. **Phase 6.4.2 — Stamp Rendering & Canvas Interaction** — Draw stamps on canvas, click-to-place, drag-to-move
+   - *Why:* Makes stamps functional end-to-end
    - *Effort:* Low
-   - *Dependency:* None
+   - *Dependency:* Requires 6.4.1
 
-10. **Phase 6.5 — Wall & Path Tools** — Free-form wall drawing along grid edges
+10. **Phase 6.4.3 — Stamp Picker UI & First 40 Stamps** — Picker component, toolbar integration, 40 universal SVG stamps
+    - *Why:* First user-visible stamp feature — immediately usable
+    - *Effort:* Medium
+    - *Dependency:* Requires 6.4.2
+
+11. **Phase 6.4.4 — Stamp Transform Controls** — Rotation, scale, flip, opacity, lock, z-order
+    - *Why:* Polish that makes stamps flexible enough for real use
+    - *Effort:* Low
+    - *Dependency:* Requires 6.4.2
+
+12. **Phase 6.4.5 — Per-Theme Stamp Sets (160+ stamps)** — 10–15 stamps per theme, theme-filtered picker
+    - *Why:* Bulk content that closes the competitive gap
+    - *Effort:* High (mostly SVG authoring, can deliver incrementally per theme)
+    - *Dependency:* Requires 6.4.3
+
+13. **Phase 6.4.6 — Custom Stamp Upload** — User PNG/SVG upload, project-scoped storage
+    - *Why:* Lets users bring their own assets (matches custom tile upload pattern)
+    - *Effort:* Low
+    - *Dependency:* Requires 6.4.3
+
+14. **Phase 6.6 — Scene/Room Templates** — Save/reuse room configurations
+    - *Why:* Builds on existing clipboard infrastructure, high user value
+    - *Effort:* Low
+    - *Dependency:* None
+
+15. **Phase 6.5 — Wall & Path Tools** — Free-form wall drawing along grid edges
     - *Why:* Fills a competitive gap vs Dungeondraft/DungeonFog
     - *Effort:* Medium
     - *Dependency:* Benefits from refactored MapCanvas
 
 **Later / As Needed:**
-11. **Phase 6.7 — Map Linking & Journal** — Rich notes, cross-map references
-12. **Phase 6.8 — Audio Ambiance** — Per-map ambient audio
-13. **Phase 6.9 — Animated Tokens** — Smooth movement, spell effects
+16. **Phase 6.7 — Map Linking & Journal** — Rich notes, cross-map references
+17. **Phase 6.8 — Audio Ambiance** — Per-map ambient audio
+18. **Phase 6.9 — Animated Tokens** — Smooth movement, spell effects
 
 ---
 
@@ -913,6 +993,7 @@ Recommended implementation order based on dependency analysis, impact, and effor
 | Refactoring before features | 2026-04-29 | Splitting MapCanvas (1,925 lines) and useMapState (1,177 lines) before adding new features prevents merge conflicts, enables testing, and makes parallel development possible — every Sprint 2–4 phase touches these files |
 | Tabbed toolbar over accordion | 2026-04-29 | Tabs (Draw/Tactical/Generate/Advanced) provide clearer mental model than accordion sections — user sees exactly 4 categories, each tab shows only relevant controls; accordion still shows all section headers creating visual noise |
 | Asset/stamp library as top new feature | 2026-04-29 | Biggest competitive gap: Dungeondraft has 1000+ objects, Inkarnate 10K+, DungeonFog 3K+; Dungeon Mapper has 30 token icons but zero placeable map objects (furniture, vegetation, dungeon dressing) |
+| Phase 6.4 split into 6 sub-phases | 2026-04-30 | 200+ stamps + data model + UI + transforms + custom upload is too large for a single phase; splitting into 6.4.1 (data model) → 6.4.2 (canvas) → 6.4.3 (picker + 40 stamps) → 6.4.4 (transforms) → 6.4.5 (160+ theme stamps) → 6.4.6 (custom upload) makes each chunk independently shippable, enables incremental commits, and allows 6.4.4/6.4.5/6.4.6 to proceed in parallel |
 | CSS media queries over container queries | 2026-04-29 | Media queries have universal browser support and are simpler to reason about for the 4-breakpoint strategy (>1024, 768–1024, 480–768, <480px); container queries would be useful for component-level responsive behavior but add complexity without clear benefit at the app shell level |
 | Right panel as overlay drawer | 2026-04-29 | At tablet widths the right panel (initiative + notes) becomes an overlay drawer rather than being hidden entirely — preserves quick access to game state while giving the canvas maximum screen area; toggle button at canvas edge is discoverable without being intrusive |
 
