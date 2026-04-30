@@ -229,6 +229,10 @@ interface MapCanvasProps {
   onStairNavigate?: (x: number, y: number) => void;
   /** Index of the currently active level. */
   activeLevelIndex?: number;
+  /** Called on two-finger tap gesture (mobile undo shortcut). */
+  onUndo?: () => void;
+  /** Called on three-finger tap gesture (mobile redo shortcut). */
+  onRedo?: () => void;
 }
 
 export interface MapCanvasHandle {
@@ -251,6 +255,11 @@ export interface MapCanvasHandle {
 
 const MINIMAP_MAX_W = 160;
 const MINIMAP_MAX_H = 120;
+
+/** Max ms between first pointer down and last pointer up to count as a "tap" gesture. */
+const GESTURE_TAP_TIMEOUT_MS = 300;
+/** Max px any pointer may move during a multi-finger tap before it's treated as a drag. */
+const GESTURE_MOVE_THRESHOLD_PX = 15;
 
 function bresenhamLine(x0: number, y0: number, x1: number, y1: number): { x: number; y: number }[] {
   const points: { x: number; y: number }[] = [];
@@ -598,6 +607,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   onStairLinkClick,
   onStairNavigate,
   activeLevelIndex = 0,
+  onUndo,
+  onRedo,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -631,6 +642,13 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   // grabbed, so the token follows the cursor without snapping its
   // top-left to the cursor cell.
   const draggingTokenRef = useRef<{ id: number; lastX: number; lastY: number; offsetX: number; offsetY: number } | null>(null);
+  // ── Multi-finger gesture tracking for undo/redo shortcuts ─────────
+  // Track the maximum number of simultaneous pointers during a gesture
+  // and whether any pointer moved significantly. Two-finger tap = undo,
+  // three-finger tap = redo.
+  const gestureMaxPointersRef = useRef(0);
+  const gestureMovedRef = useRef(false);
+  const gestureStartTimeRef = useRef(0);
   // Forward reference for the canvas's `fitToScreen` action so the
   // imperative handle (defined before `handleFitToScreen` is in scope) can
   // dispatch to the latest implementation.
@@ -1594,8 +1612,18 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
     activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
+    // Track multi-finger gesture for undo/redo shortcuts.
+    const pointerCount = activePointersRef.current.size;
+    if (pointerCount === 1) {
+      gestureMaxPointersRef.current = 1;
+      gestureMovedRef.current = false;
+      gestureStartTimeRef.current = Date.now();
+    } else {
+      gestureMaxPointersRef.current = Math.max(gestureMaxPointersRef.current, pointerCount);
+    }
+
     // Two-finger gesture start: pinch-to-zoom or two-finger pan.
-    if (activePointersRef.current.size === 2) {
+    if (pointerCount === 2) {
       // Cancel any single-finger operation in progress.
       isMouseDownRef.current = false;
       if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
@@ -1609,7 +1637,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
 
     // More than 2 fingers — ignore.
-    if (activePointersRef.current.size > 2) return;
+    if (pointerCount > 2) return;
 
     // Single pointer: right-click or pen barrel button → pan.
     if (e.button === 2) {
@@ -1695,7 +1723,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   }, [getTileCoords, tiles, onStairNavigate]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    const prev = activePointersRef.current.get(e.pointerId);
     activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+
+    // Mark multi-finger gesture as "moved" if any pointer moves > 15px.
+    if (prev && !gestureMovedRef.current) {
+      const dist = Math.hypot(e.clientX - prev.x, e.clientY - prev.y);
+      if (dist > GESTURE_MOVE_THRESHOLD_PX) gestureMovedRef.current = true;
+    }
 
     // Two-finger gesture: pinch-to-zoom + pan.
     if (activePointersRef.current.size === 2) {
@@ -1844,9 +1879,15 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // Clear long-press timer.
     if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
 
-    // If all fingers lifted, reset multi-touch state.
+    // If all fingers lifted, reset multi-touch state and check for gesture.
     if (activePointersRef.current.size === 0) {
       pinchStartDistRef.current = null;
+      // Detect multi-finger tap gestures: quick (< 300ms), minimal movement.
+      const elapsed = Date.now() - gestureStartTimeRef.current;
+      if (!gestureMovedRef.current && elapsed < GESTURE_TAP_TIMEOUT_MS) {
+        if (gestureMaxPointersRef.current === 2 && onUndo) { onUndo(); return; }
+        if (gestureMaxPointersRef.current === 3 && onRedo) { onRedo(); return; }
+      }
     }
     // If returning from 2 fingers to 1, don't start a draw operation.
     if (activePointersRef.current.size >= 1) {
@@ -1913,7 +1954,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setIsDragging(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth]);
+  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo]);
 
   const handlePointerLeave = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     activePointersRef.current.delete(e.pointerId);

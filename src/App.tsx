@@ -2,6 +2,7 @@ import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import MapCanvas, { type MapCanvasHandle } from './components/MapCanvas';
 import Toolbar from './components/Toolbar';
 import PlayerToolbar from './components/PlayerToolbar';
+import MobileToolbar from './components/MobileToolbar';
 import NotesPanel from './components/NotesPanel';
 import InitiativePanel from './components/InitiativePanel';
 import IconPicker from './components/IconPicker';
@@ -228,6 +229,17 @@ function App() {
   // Collapsible toolbar (left) and drawer panel (right) for tablet/mobile.
   const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
+
+  // ── Mobile detection (≤768px) ─────────────────────────────────────
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' && window.matchMedia('(max-width: 768px)').matches,
+  );
+  useEffect(() => {
+    const mql = window.matchMedia('(max-width: 768px)');
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mql.addEventListener('change', handler);
+    return () => mql.removeEventListener('change', handler);
+  }, []);
 
   // FOV / Line-of-Sight state. The origin is the cell the user clicked
   // with the FOV tool; the visible set is recomputed whenever the origin
@@ -797,8 +809,40 @@ function App() {
         onReorder={reorderLevels}
         stairLinks={project.stairLinks}
       />
-      <div className={`app-body${toolbarCollapsed ? ' toolbar-collapsed' : ''}`}>
-        {viewMode === 'gm' ? (
+      <div className={`app-body${toolbarCollapsed ? ' toolbar-collapsed' : ''}${isMobile ? ' app-body--mobile' : ''}`}>
+        {isMobile ? (
+          /* ── Mobile toolbar (≤768px) ─────────────────────────── */
+          <MobileToolbar
+            viewMode={viewMode}
+            activeTool={activeTool}
+            activeTile={activeTile}
+            onSetTool={handleSetActiveTool}
+            drawColor={drawColor}
+            drawWidth={drawWidth}
+            onSetDrawColor={setDrawColor}
+            onSetDrawWidth={setDrawWidth}
+            gmDrawColor={gmDrawColor}
+            gmDrawWidth={gmDrawWidth}
+            onSetGmDrawColor={setGmDrawColor}
+            onSetGmDrawWidth={setGmDrawWidth}
+            measureShape={measureShape}
+            onSetMeasureShape={setMeasureShape}
+            markerShape={markerShape}
+            markerColor={markerColor}
+            markerSize={markerSize}
+            onSetMarkerShape={setMarkerShape}
+            onSetMarkerColor={setMarkerColor}
+            onSetMarkerSize={setMarkerSize}
+            onClearFog={handleClearFog}
+            onFillFog={handleResetFog}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            canUndo={canUndo}
+            canRedo={canRedo}
+            onOpenGenerateMap={handleOpenGenerateMap}
+            onToggleViewMode={switchViewMode}
+          />
+        ) : viewMode === 'gm' ? (
           <nav aria-label="Edit tools" className={toolbarCollapsed ? 'nav-collapsed' : ''}>
             <button
               type="button"
@@ -963,6 +1007,8 @@ function App() {
             onStairLinkClick={handleStairLinkClick}
             onStairNavigate={handleStairNavigate}
             activeLevelIndex={activeLevelIndex}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
           />
         </main>
         <button
