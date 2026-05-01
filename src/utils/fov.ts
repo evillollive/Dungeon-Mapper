@@ -153,6 +153,9 @@ function castOctant(
       if (curStart < curEnd) continue;
 
       // Compute the column bounds from the slope range.
+      // The ±0.5 offsets account for cell edges vs. centers: leftSlope
+      // uses (col-0.5)/(r+0.5) and rightSlope uses (col+0.5)/(r-0.5),
+      // so we invert those to find the column range.
       const minCol = Math.max(0, Math.floor(curEnd * rNear - 0.5));
       const maxCol = Math.min(r, Math.floor(curStart * rFar + 0.5));
 
