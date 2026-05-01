@@ -12,7 +12,7 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **13 preset theme modes** — Castle, Dungeon, Starship, Alien World, Lost Civilization, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City, Pirate, Desert — each with unique per-theme art for floors, walls, doors, water, treasure, traps, and start tiles (see [Preset Modes](#preset-modes) below)
 - **Custom themes** — project-scoped custom theme builder with editable tile colors, labels, grid color, and optional uploaded tile graphics (see [Custom Themes](#custom-themes) below)
 - **Multi-level dungeons** — create multi-floor projects with level tabs, stair links between levels, per-level undo history, and double-click stair navigation (see [Multi-Level Dungeons](#multi-level-dungeons) below)
-- **Sample maps** — 26 bundled sample projects (28 levels) across all 13 themes for onboarding and inspiration (see [Sample Maps](#sample-maps) below)
+- **Sample maps** — 26 bundled sample projects (including 2 multi-level maps totaling 28 levels) across all 13 themes for onboarding and inspiration (see [Sample Maps](#sample-maps) below)
 - **Themed canvas** — per-theme grid colors, deterministic tile color jitter, and wall depth/shadow effects for a rich, organic look; warm parchment background with pixel-sharp rendering
 - **Print mode** — toggle a high-contrast black-and-white renderer for printer-friendly output, with cross-hatched walls and stipple-shaded water
 - **Tabbed toolbar** — GM tools organized into three tabs (Draw, Tactical, Advanced) for progressive disclosure and reduced clutter
@@ -72,7 +72,7 @@ Print mode swaps the colored theme renderer for a high-contrast black-on-parchme
 
 ## Custom Themes
 
-The GM toolbar's theme section includes a **Custom Theme** builder for creating project-scoped custom themes:
+The toolbar's theme section (Draw tab) includes a **Custom Theme** builder for creating project-scoped custom themes:
 
 - **Base theme** — custom themes inherit from one of the 13 built-in themes, getting its tile rendering and grid color as defaults.
 - **Editable properties** — change the theme name, grid line color, and per-tile colors and labels for all built-in tile types.
@@ -276,7 +276,7 @@ the same registry these shortcuts are defined in.
 | `O` | Line-of-Sight / FOV tool — click a cell to see what is visible from it |
 | `M` | Measure / Distance tool — click and drag to measure distances |
 | `I` | Light Source tool — click a cell to place a light source (Illuminate) |
-| `D` | GM Draw tool — freehand GM-only annotations (dashed lines, hidden from Present view) |
+| `D` | GM Draw tool — freehand annotations visible only in Edit mode (dashed lines, hidden from Present view) |
 | `K` | Stair Link tool — click stairs to link between levels |
 
 ### View
