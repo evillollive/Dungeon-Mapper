@@ -1,6 +1,148 @@
-import type { TileTheme } from './index';
-import type { TileType } from '../types/map';
+import type { TileDrawContext, TileTheme } from './index';
+import type { BuiltInTileType, TileType } from '../types/map';
 import { jitterColor, drawWallDepth, tileHash } from './artUtils';
+
+function roundedRectPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+): void {
+  const r = Math.min(radius, width / 2, height / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + width - r, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + r);
+  ctx.lineTo(x + width, y + height - r);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - r, y + height);
+  ctx.lineTo(x + r, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function drawStoneBlock(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+): void {
+  const gradient = ctx.createLinearGradient(x, y, x, y + height);
+  gradient.addColorStop(0, '#f2f4ee');
+  gradient.addColorStop(0.28, '#bfc5be');
+  gradient.addColorStop(0.72, '#858d88');
+  gradient.addColorStop(1, '#424947');
+
+  roundedRectPath(ctx, x, y, width, height, radius);
+  ctx.fillStyle = gradient;
+  ctx.fill();
+
+  ctx.strokeStyle = '#101312';
+  ctx.lineWidth = Math.max(0.75, Math.min(width, height) * 0.08);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+  ctx.lineWidth = Math.max(0.75, Math.min(width, height) * 0.06);
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y + ctx.lineWidth);
+  ctx.lineTo(x + width - radius, y + ctx.lineWidth);
+  ctx.moveTo(x + ctx.lineWidth, y + radius);
+  ctx.lineTo(x + ctx.lineWidth, y + height - radius);
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(0,0,0,0.45)';
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y + height - ctx.lineWidth);
+  ctx.lineTo(x + width - radius, y + height - ctx.lineWidth);
+  ctx.moveTo(x + width - ctx.lineWidth, y + radius);
+  ctx.lineTo(x + width - ctx.lineWidth, y + height - radius);
+  ctx.stroke();
+}
+
+function isWallLike(baseType: BuiltInTileType | undefined): boolean {
+  return baseType === 'wall' || baseType === 'secret-door';
+}
+
+function drawWallSeam(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  s: number,
+  x: number,
+  y: number,
+  orientation: 'horizontal' | 'vertical',
+): void {
+  const h = tileHash(x + 13, y + 29);
+  ctx.strokeStyle = 'rgba(20,24,23,0.55)';
+  ctx.lineWidth = Math.max(0.5, s * 0.035);
+  ctx.beginPath();
+  if (orientation === 'horizontal') {
+    const sx = px + s * (0.35 + h * 0.3);
+    ctx.moveTo(sx, py + s * 0.28);
+    ctx.lineTo(sx, py + s * 0.72);
+  } else {
+    const sy = py + s * (0.35 + h * 0.3);
+    ctx.moveTo(px + s * 0.28, sy);
+    ctx.lineTo(px + s * 0.72, sy);
+  }
+  ctx.stroke();
+}
+
+function drawDungeonWall(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  s: number,
+  x: number,
+  y: number,
+  context?: TileDrawContext,
+): void {
+  const north = isWallLike(context?.getTileBaseType(x, y - 1));
+  const east = isWallLike(context?.getTileBaseType(x + 1, y));
+  const south = isWallLike(context?.getTileBaseType(x, y + 1));
+  const west = isWallLike(context?.getTileBaseType(x - 1, y));
+  const horizontal = east || west;
+  const vertical = north || south;
+  const straightHorizontal = east && west && !north && !south;
+  const straightVertical = north && south && !east && !west;
+  const t = Math.max(5, s * 0.58);
+  const half = s / 2;
+  const band = t / 2;
+  const r = Math.max(2, s * 0.12);
+
+  ctx.fillStyle = '#111514';
+  ctx.fillRect(px, py, s, s);
+  ctx.fillStyle = 'rgba(0,0,0,0.55)';
+  ctx.fillRect(px + s * 0.08, py + s * 0.1, s * 0.94, s * 0.94);
+
+  if (straightHorizontal) {
+    drawStoneBlock(ctx, px - s * 0.02, py + half - band, s * 1.04, t, r);
+    drawWallSeam(ctx, px, py, s, x, y, 'horizontal');
+    return;
+  }
+
+  if (straightVertical) {
+    drawStoneBlock(ctx, px + half - band, py - s * 0.02, t, s * 1.04, r);
+    drawWallSeam(ctx, px, py, s, x, y, 'vertical');
+    return;
+  }
+
+  if (north) drawStoneBlock(ctx, px + half - band, py - s * 0.02, t, half + band, r);
+  if (south) drawStoneBlock(ctx, px + half - band, py + half - band, t, half + band + s * 0.02, r);
+  if (west) drawStoneBlock(ctx, px - s * 0.02, py + half - band, half + band, t, r);
+  if (east) drawStoneBlock(ctx, px + half - band, py + half - band, half + band + s * 0.02, t, r);
+
+  if (!horizontal && !vertical) {
+    drawStoneBlock(ctx, px + s * 0.14, py + s * 0.14, s * 0.72, s * 0.72, r);
+  } else {
+    drawStoneBlock(ctx, px + half - band, py + half - band, t, t, r);
+  }
+}
 
 // Dungeon theme: a gritty subterranean crawl — damp stone walls, rough flagged
 // floors, iron-bound timber doors, and torchlit gold accents. This carries the
@@ -33,7 +175,7 @@ export const dungeonTheme: TileTheme = {
     treasure: '#d4af37', start: '#2e8b57',
   },
   gridColor: '#2d3561',
-  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
+  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number, context?: TileDrawContext) {
     const px = x * size;
     const py = y * size;
     const color = this.tileColors[type];
@@ -79,36 +221,13 @@ export const dungeonTheme: TileTheme = {
       case 'wall': {
         ctx.fillStyle = jitterColor(color, x, y, 0.06);
         ctx.fillRect(px, py, size, size);
-        drawWallDepth(ctx, px, py, size, 'shadow', color, 0.5);
-        ctx.fillStyle = '#262626';
-        ctx.fillRect(px + 2, py + 2, s - 4, s - 4);
-        ctx.fillStyle = '#4a4a4a';
-        ctx.fillRect(px + 2, py + 2, s - 4, 2);
-        ctx.fillRect(px + 2, py + 2, 2, s - 4);
-        // Rough stone block mortar lines
-        const wh = tileHash(x, y);
-        ctx.strokeStyle = '#2a2a2a';
-        ctx.lineWidth = 0.5;
-        ctx.beginPath();
-        ctx.moveTo(px + 2, py + Math.round(s / 3));
-        ctx.lineTo(px + s - 2, py + Math.round(s / 3));
-        ctx.moveTo(px + 2, py + Math.round(s * 2 / 3));
-        ctx.lineTo(px + s - 2, py + Math.round(s * 2 / 3));
-        // Vertical mortar seam offset by hash
-        const vx = px + 2 + (s - 4) * (0.3 + wh * 0.4);
-        ctx.moveTo(vx, py + 2);
-        ctx.lineTo(vx, py + s - 2);
-        ctx.stroke();
+        drawWallDepth(ctx, px, py, size, 'shadow', color, 0.6);
+        drawDungeonWall(ctx, px, py, s, x, y, context);
         break;
       }
 
       case 'secret-door': {
-        // Render as a wall, with a faint 'S' overlay for the mapper.
-        ctx.fillStyle = '#262626';
-        ctx.fillRect(px + 2, py + 2, s - 4, s - 4);
-        ctx.fillStyle = '#4a4a4a';
-        ctx.fillRect(px + 2, py + 2, s - 4, 2);
-        ctx.fillRect(px + 2, py + 2, 2, s - 4);
+        drawDungeonWall(ctx, px, py, s, x, y, context);
         const fontSize = Math.max(7, Math.floor(s * 0.6));
         ctx.font = `bold ${fontSize}px "Courier New", monospace`;
         ctx.textAlign = 'center';

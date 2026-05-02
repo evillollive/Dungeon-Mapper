@@ -6,6 +6,7 @@ import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from '../utils/tokenVisibility';
 import { ICON_BY_ID } from '../utils/iconLibrary';
+import type { TileDrawContext } from '../themes';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
 // evoking traditional engineering / quad-ruled graph paper regardless of theme.
@@ -780,6 +781,13 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.restore();
     }
 
+    const tileDrawContext: TileDrawContext = {
+      getTileBaseType: (x, y) => {
+        const type = tiles[y]?.[x]?.type;
+        return type ? getSemanticTileType(type, customThemes) : undefined;
+      },
+    };
+
     for (let y = 0; y < meta.height; y++) {
       for (let x = 0; x < meta.width; x++) {
         const tile = tiles[y]?.[x];
@@ -794,7 +802,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
             // "preserve tiles when switching themes" mode) so mixed-style
             // maps render each tile in its original theme.
             const tileTheme = tile.theme ? getThemeWithCustom(tile.theme, customThemes) : theme;
-            tileTheme.drawTile(ctx, tile.type, x, y, tileSize);
+            tileTheme.drawTile(ctx, tile.type, x, y, tileSize, tileDrawContext);
             // Draw print-mode-inspired glyph overlay for quick identification.
             if (isBuiltInTileType(tile.type)) {
               drawTileOverlay(ctx, tile.type, x, y, tileSize, tileTheme.tileColors[tile.type]);

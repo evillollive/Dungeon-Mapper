@@ -1,5 +1,9 @@
 import type { BuiltInTileType, TileType } from '../types/map';
 
+export interface TileDrawContext {
+  getTileBaseType(x: number, y: number): BuiltInTileType | undefined;
+}
+
 export interface TileTheme {
   id: string;
   name: string;
@@ -9,7 +13,7 @@ export interface TileTheme {
   tileColors: Record<BuiltInTileType, string> & Record<string, string>;
   /** Per-theme grid line colour. Replaces the old hardcoded #2d3561. */
   gridColor: string;
-  drawTile(ctx: CanvasRenderingContext2D, id: TileType, x: number, y: number, size: number): void;
+  drawTile(ctx: CanvasRenderingContext2D, id: TileType, x: number, y: number, size: number, context?: TileDrawContext): void;
 }
 
 import { dungeonTheme } from './dungeon';
