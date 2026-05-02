@@ -14,6 +14,7 @@ import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from './tokenVisibility';
 import { ICON_BY_ID } from './iconLibrary';
 import { getSemanticTileType, getThemeWithCustom } from './customThemes';
+import type { TileDrawContext } from '../themes';
 
 // Screen-mode canvas styling (mirrored from MapCanvas.tsx).
 const SCREEN_BG = '#f4f1e4';
@@ -121,6 +122,13 @@ export function renderMapToCanvas(
   ctx.fillStyle = printMode ? PRINT_BG : SCREEN_BG;
   ctx.fillRect(0, 0, canvasW, canvasH);
 
+  const tileDrawContext: TileDrawContext = {
+    getTileBaseType: (x, y) => {
+      const type = map.tiles[y]?.[x]?.type;
+      return type ? getSemanticTileType(type, customThemes) : undefined;
+    },
+  };
+
   // Tiles
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
@@ -130,7 +138,7 @@ export function renderMapToCanvas(
         drawPrintTile(ctx, getSemanticTileType(tile.type, customThemes), x, y, tileSize);
       } else if (tile.type !== 'empty') {
         const tileTheme = tile.theme ? getThemeWithCustom(tile.theme, customThemes) : theme;
-        tileTheme.drawTile(ctx, tile.type, x, y, tileSize);
+        tileTheme.drawTile(ctx, tile.type, x, y, tileSize, tileDrawContext);
         if (isBuiltInTileType(tile.type)) {
           drawTileOverlay(ctx, tile.type, x, y, tileSize, tileTheme.tileColors[tile.type]);
         }
