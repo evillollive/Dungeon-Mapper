@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-04-30
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 7.1, 7.3, & 7.5 complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 7.1, 7.3, & 7.5 complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6).
 
 ---
 
@@ -676,13 +676,13 @@ Based on this expanded competitor analysis, the following features represent rea
 
 The stamp library is the single most impactful missing feature for visual map quality. Competitors: Dungeondraft has 1000+ objects, Inkarnate 10K+, DungeonFog 3K+; Dungeon Mapper currently has 30 token icons but zero placeable map objects. Each sub-phase is independently shippable.
 
-**6.4.1 — Stamp Data Model & Placement Engine** *(foundation, low effort)*
-- Define `StampDef` type (id, name, category, themeId, svgPath/paths, viewBox) in `types/map.ts`
-- Define `PlacedStamp` type (stampId, x, y, rotation, scale, flipX, flipY, opacity, locked) on `DungeonMap`
-- Add `stamps?: PlacedStamp[]` field to `DungeonMap` interface
-- Add `'stamp' | 'move-stamp' | 'remove-stamp'` to `ToolType` union
-- Wire undo/redo support for stamp add/move/remove in `useMapState`
-- No UI yet — just the data layer and state management
+**~~6.4.1 — Stamp Data Model & Placement Engine~~** ✅ COMPLETE *(foundation, low effort)*
+- ✅ Defined `StampDef` type (id, name, category, themeId, svgPath/paths, viewBox) in `types/map.ts`
+- ✅ Defined `PlacedStamp` type (stampId, x, y, rotation, scale, flipX, flipY, opacity, locked) on `DungeonMap`
+- ✅ Added `stamps?: PlacedStamp[]` field to `DungeonMap` interface
+- ✅ Added `'stamp' | 'move-stamp' | 'remove-stamp'` to `ToolType` union
+- ✅ Wired undo/redo support for stamp add/move/remove in `useMapState`
+- ✅ No UI yet — just the data layer and state management
 
 **6.4.2 — Core Stamp Rendering & Canvas Interaction** *(foundation, low effort)*
 - Render `PlacedStamp[]` on canvas (new `canvasStampRenderer.ts` module, follows existing pattern)
@@ -860,6 +860,7 @@ Converted to installable Progressive Web App:
 - ~~**Phase 6.2** — Responsive Layout~~ ✅
 - ~~**Phase 6.3** — Mobile-First Tool UX~~ ✅
 - ~~**Phase 6.3.1** — PWA Support~~ ✅
+- ~~**Phase 6.4.1** — Stamp Data Model & Placement Engine~~ ✅
 
 ### Medium-Term — Active Roadmap (Phase 6)
 
@@ -903,7 +904,7 @@ Recommended implementation order based on dependency analysis, impact, and effor
    - *Dependency:* Standalone, can ship anytime after 6.3
 
 **Sprint 4: New Features**
-8. **Phase 6.4.1 — Stamp Data Model & Placement Engine** — Types, state management, undo/redo
+8. ~~**Phase 6.4.1 — Stamp Data Model & Placement Engine** — Types, state management, undo/redo~~ ✅
    - *Why:* Foundation for all stamp features — no UI, just data layer
    - *Effort:* Low
    - *Dependency:* Benefits from refactored MapCanvas (Sprint 1)
@@ -1000,6 +1001,14 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-02 — Phase 6.4.1 complete: Stamp Data Model & Placement Engine shipped**
+- Added stamp data model types: `StampDef`, `StampSvgPath`, `StampCategory`, `PlacedStamp`, and `StampPlacementOptions`
+- Added `DungeonMap.stamps` with defaults for new maps, loaded/imported legacy maps, generated maps, cleared maps, and resized maps
+- Added stamp tool ids (`stamp`, `move-stamp`, `remove-stamp`) to the shared `ToolType` union
+- Added stamp state operations in `useMapState`: add, move, remove, and clear stamps
+- Extended undo/redo snapshots so stamp placement, movement, removal, and clearing can be undone/redone
+- Exposed stamp actions through `ActionContext` for Phase 6.4.2 canvas interaction and Phase 6.4.3 picker UI
 
 **2026-04-29 — Phase 7.5 complete: GM Drawing / Annotation Tools shipped**
 - GM freehand drawing tool (`gmdraw` ToolType) with [D] keyboard shortcut in the GM toolbar

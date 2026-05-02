@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource, PlacedStamp, StampPlacementOptions } from '../types/map';
 import { createEmptyGrid, createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
 import { saveProject } from '../utils/storage';
 import { reThemeNotes } from '../utils/reThemeNotes';
@@ -19,6 +19,7 @@ export function useMapState() {
   const nextStrokeIdRef = useRef(1);
   const nextMarkerIdRef = useRef(1);
   const nextLightIdRef = useRef(1);
+  const nextStampIdRef = useRef(1);
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -31,6 +32,7 @@ export function useMapState() {
     nextStrokeIdRef.current = nextIdAfter(level.annotations);
     nextMarkerIdRef.current = nextIdAfter(level.markers);
     nextLightIdRef.current = nextIdAfter(level.lightSources);
+    nextStampIdRef.current = nextIdAfter(level.stamps);
   }
 
   function resetIds() {
@@ -39,6 +41,7 @@ export function useMapState() {
     nextStrokeIdRef.current = 1;
     nextLightIdRef.current = 1;
     nextMarkerIdRef.current = 1;
+    nextStampIdRef.current = 1;
     setSelectedNoteId(null);
   }
 
@@ -174,6 +177,9 @@ export function useMapState() {
           lightSources: (m.lightSources ?? []).filter(
             ls => ls.x >= 0 && ls.x < width && ls.y >= 0 && ls.y < height,
           ),
+          stamps: (m.stamps ?? []).filter(
+            stamp => stamp.x >= 0 && stamp.x < width && stamp.y >= 0 && stamp.y < height,
+          ),
         };
       });
       debouncedSave(updated);
@@ -196,6 +202,7 @@ export function useMapState() {
         initiative: [],
         lightSources: [],
         markers: [],
+        stamps: [],
       }));
       debouncedSave(updated);
       return updated;
@@ -213,7 +220,7 @@ export function useMapState() {
         tiles, notes,
         fog: createFogGrid(width, height, true),
         fogEnabled: m.fogEnabled ?? true,
-        tokens: [], annotations: [], initiative: [],
+        tokens: [], annotations: [], initiative: [], stamps: [],
       }));
       debouncedSave(updated);
       return updated;
@@ -221,6 +228,7 @@ export function useMapState() {
     setNextNoteId(nextIdAfter(notes));
     nextTokenIdRef.current = 1;
     nextStrokeIdRef.current = 1;
+    nextStampIdRef.current = 1;
     setSelectedNoteId(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSave, activeLevelIndex]);
@@ -657,6 +665,91 @@ export function useMapState() {
     });
   }, [debouncedSave, activeLevelIndex]);
 
+  // ── Stamps ────────────────────────────────────────────────────────────
+
+  const addStamp = useCallback((stampId: string, x: number, y: number, options: StampPlacementOptions = {}): number | null => {
+    const trimmedStampId = stampId.trim();
+    if (!trimmedStampId) return null;
+    const newId = nextStampIdRef.current;
+    let placed = false;
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      if (x < 0 || y < 0 || x >= prevMap.meta.width || y >= prevMap.meta.height) return prev;
+      pushHistory(prevMap, activeLevelIndex);
+      placed = true;
+      const stamp: PlacedStamp = {
+        id: newId,
+        stampId: trimmedStampId,
+        x,
+        y,
+        rotation: options.rotation ?? 0,
+        scale: Math.max(0.01, options.scale ?? 1),
+        flipX: options.flipX ?? false,
+        flipY: options.flipY ?? false,
+        opacity: Math.min(1, Math.max(0, options.opacity ?? 1)),
+        locked: options.locked ?? false,
+      };
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m,
+        stamps: [...(m.stamps ?? []), stamp],
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+    if (placed) {
+      nextStampIdRef.current = newId + 1;
+      return newId;
+    }
+    return null;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
+
+  const moveStamp = useCallback((id: number, x: number, y: number) => {
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      const existing = (prevMap.stamps ?? []).find(stamp => stamp.id === id);
+      if (!existing || existing.locked) return prev;
+      const cx = Math.min(Math.max(0, x), prevMap.meta.width - 1);
+      const cy = Math.min(Math.max(0, y), prevMap.meta.height - 1);
+      if (cx === existing.x && cy === existing.y) return prev;
+      pushHistory(prevMap, activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m,
+        stamps: (m.stamps ?? []).map(stamp => stamp.id === id ? { ...stamp, x: cx, y: cy } : stamp),
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
+
+  const removeStamp = useCallback((id: number) => {
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      if (!(prevMap.stamps ?? []).some(stamp => stamp.id === id)) return prev;
+      pushHistory(prevMap, activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m,
+        stamps: (m.stamps ?? []).filter(stamp => stamp.id !== id),
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
+
+  const clearStamps = useCallback(() => {
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      if ((prevMap.stamps ?? []).length === 0) return prev;
+      pushHistory(prevMap, activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, stamps: [] }));
+      debouncedSave(updated);
+      return updated;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
+
   // ── Background image ──────────────────────────────────────────────────
 
   const setBackgroundImage = useCallback((bg: BackgroundImage) => {
@@ -706,6 +799,7 @@ export function useMapState() {
     addMarker, removeMarker, clearMarkers,
     setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
     addLightSource, removeLightSource, clearLightSources,
+    addStamp, moveStamp, removeStamp, clearStamps,
     switchLevel, addLevel, renameLevel, deleteLevel,
     duplicateLevel, reorderLevels, setProjectName,
     addStairLink, removeStairLink,

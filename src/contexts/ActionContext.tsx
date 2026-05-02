@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { BackgroundImage, CustomThemeDefinition, StairLink, TileType, TokenKind, MarkerShape, AnnotationStroke } from '../types/map';
+import type { BackgroundImage, CustomThemeDefinition, StairLink, TileType, TokenKind, MarkerShape, AnnotationStroke, StampPlacementOptions } from '../types/map';
 
 export interface ActionContextValue {
   // Tile operations
@@ -62,6 +62,11 @@ export interface ActionContextValue {
   addLightSource: (x: number, y: number, radius: number, color: string, label: string) => number | null;
   removeLightSource: (id: number) => void;
   clearLightSources: () => void;
+  // Stamps
+  addStamp: (stampId: string, x: number, y: number, options?: StampPlacementOptions) => number | null;
+  moveStamp: (id: number, x: number, y: number) => void;
+  removeStamp: (id: number) => void;
+  clearStamps: () => void;
   // Level management
   switchLevel: (idx: number) => void;
   addLevel: (name?: string) => void;
