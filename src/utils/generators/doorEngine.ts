@@ -917,7 +917,26 @@ export function applyDoors(
     );
   }
 
-  // Step H: dev-only assertion.
+  // Step I: orphan cleanup — convert any passable cells that are
+  // unreachable from the start into `wall`. This handles corridor
+  // fragments that were severed by sealing (step B) or door thinning
+  // (step F) but weren't caught by the room-level connectivity checks
+  // because the rooms themselves remained reachable via other openings.
+  const startForCleanup = findStartCell(grid, rooms, startRoomIndex);
+  if (startForCleanup) {
+    const reachableForCleanup = bfsConnectivity(grid, startForCleanup.x, startForCleanup.y);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (reachableForCleanup[y * w + x]) continue;
+        const t = grid[y][x];
+        if (isConnectivityPassable(t)) {
+          grid[y][x] = 'wall';
+        }
+      }
+    }
+  }
+
+  // Step J: dev-only assertion.
   if (import.meta.env?.DEV) {
     assertDoorsValid(grid);
   }

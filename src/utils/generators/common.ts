@@ -55,9 +55,13 @@ export const DIRS_8: readonly [number, number][] = [
 ];
 
 /**
- * Replace every `empty` cell that touches a `floor` cell (4-connected) with
+ * Replace every `empty` cell that touches a `floor` cell (8-connected) with
  * a `wall`. This is the standard "outline the rooms" pass shared by the
  * rooms-and-corridors and cavern generators so floors always end up bounded.
+ *
+ * Using 8-connectivity (cardinal + diagonal) ensures that wall corners are
+ * filled in — two walls meeting at a right angle won't leave a visible gap
+ * at the diagonal cell between them.
  */
 export function outlineWalls(grid: TypeGrid): void {
   const h = grid.length;
@@ -66,7 +70,7 @@ export function outlineWalls(grid: TypeGrid): void {
   for (let y = 0; y < h; y++) {
     for (let x = 0; x < w; x++) {
       if (grid[y][x] !== 'empty') continue;
-      for (const [dx, dy] of DIRS_4) {
+      for (const [dx, dy] of DIRS_8) {
         if (getCell(grid, x + dx, y + dy) === 'floor') {
           toWall.push([x, y]);
           break;
