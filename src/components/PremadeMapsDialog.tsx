@@ -30,6 +30,7 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
   }, []);
 
   const [themeFilter, setThemeFilter] = useState<string>(ALL_THEMES);
+  const [confirmLoadId, setConfirmLoadId] = useState<string | null>(null);
   const filtered = useMemo(
     () => PREMADE_MAP_SUMMARIES.filter(summary =>
       themeFilter === ALL_THEMES || summary.themeId === themeFilter
@@ -62,13 +63,12 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
 
   const handleLoad = () => {
     if (!selected) return;
-    if (currentHasContent) {
-      const ok = window.confirm(
-        'Load this sample map? Your current project will be replaced.'
-      );
-      if (!ok) return;
+    if (currentHasContent && confirmLoadId !== selected.id) {
+      setConfirmLoadId(selected.id);
+      return;
     }
     onLoadProject(buildPremadeProject(selected.id));
+    setConfirmLoadId(null);
   };
 
   return (
@@ -93,7 +93,13 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
 
         <label className="generate-dialog-row">
           <span>Theme</span>
-          <select value={themeFilter} onChange={e => setThemeFilter(e.target.value)}>
+          <select
+            value={themeFilter}
+            onChange={e => {
+              setThemeFilter(e.target.value);
+              setConfirmLoadId(null);
+            }}
+          >
             <option value={ALL_THEMES}>All themes</option>
             {themes.map(theme => (
               <option key={theme.id} value={theme.id}>{theme.label}</option>
@@ -108,7 +114,10 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
                 key={summary.id}
                 summary={summary}
                 selected={summary.id === selected?.id}
-                onSelect={() => setSelectedId(summary.id)}
+                onSelect={() => {
+                  setSelectedId(summary.id);
+                  setConfirmLoadId(null);
+                }}
               />
             ))}
           </div>
@@ -138,7 +147,9 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
 
         {currentHasContent && (
           <div className="generate-dialog-warning" role="alert">
-            ⚠️ Loading a sample map replaces the current project.
+            {confirmLoadId === selected?.id
+              ? '⚠️ Click Confirm Load to replace the current project with this sample map.'
+              : '⚠️ Loading a sample map replaces the current project.'}
           </div>
         )}
 
@@ -150,7 +161,7 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
             onClick={handleLoad}
             disabled={!selected}
           >
-            Load Sample
+            {confirmLoadId === selected?.id ? 'Confirm Load' : 'Load Sample'}
           </button>
         </div>
       </div>
