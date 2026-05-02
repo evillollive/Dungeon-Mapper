@@ -2,6 +2,11 @@ import type { TileDrawContext, TileTheme } from './index';
 import type { BuiltInTileType, TileType } from '../types/map';
 import { jitterColor, drawWallDepth, tileHash } from './artUtils';
 
+const WALL_SEAM_HASH_OFFSET_X = 13;
+const WALL_SEAM_HASH_OFFSET_Y = 29;
+const WALL_THICKNESS_RATIO = 0.58;
+const WALL_CORNER_RADIUS_RATIO = 0.12;
+
 function roundedRectPath(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -77,7 +82,7 @@ function drawWallSeam(
   y: number,
   orientation: 'horizontal' | 'vertical',
 ): void {
-  const h = tileHash(x + 13, y + 29);
+  const h = tileHash(x + WALL_SEAM_HASH_OFFSET_X, y + WALL_SEAM_HASH_OFFSET_Y);
   ctx.strokeStyle = 'rgba(20,24,23,0.55)';
   ctx.lineWidth = Math.max(0.5, s * 0.035);
   ctx.beginPath();
@@ -110,10 +115,10 @@ function drawDungeonWall(
   const vertical = north || south;
   const straightHorizontal = east && west && !north && !south;
   const straightVertical = north && south && !east && !west;
-  const t = Math.max(5, s * 0.58);
+  const t = Math.max(5, s * WALL_THICKNESS_RATIO);
   const half = s / 2;
   const band = t / 2;
-  const r = Math.max(2, s * 0.12);
+  const r = Math.max(2, s * WALL_CORNER_RADIUS_RATIO);
 
   ctx.fillStyle = '#111514';
   ctx.fillRect(px, py, s, s);
