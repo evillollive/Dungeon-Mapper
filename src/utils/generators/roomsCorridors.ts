@@ -320,6 +320,12 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   for (const d of corridorBridges) {
     if (getCell(grid, d.x, d.y) === 'wall') setCell(grid, d.x, d.y, 'floor');
   }
+  // Second outline pass: bridge cells just carved from wall→floor may have
+  // diagonal neighbors that are still `empty` (the first outlineWalls pass
+  // didn't cover them because there was no adjacent floor at that time).
+  // Re-running outlineWalls fills these corner gaps so rooms always have
+  // complete wall frames with no missing corners.
+  outlineWalls(grid);
 
   // Resolve the per-room archetype before placing POIs so the bias loop
   // can consult it. Skipped when the theme has no palette or labeling is
