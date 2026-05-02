@@ -30,6 +30,7 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
   }, []);
 
   const [themeFilter, setThemeFilter] = useState<string>(ALL_THEMES);
+  const [confirmLoad, setConfirmLoad] = useState(false);
   const filtered = useMemo(
     () => PREMADE_MAP_SUMMARIES.filter(summary =>
       themeFilter === ALL_THEMES || summary.themeId === themeFilter
@@ -60,13 +61,15 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
     [currentSelectedId, filtered]
   );
 
+  useEffect(() => {
+    setConfirmLoad(false);
+  }, [currentSelectedId, currentHasContent]);
+
   const handleLoad = () => {
     if (!selected) return;
-    if (currentHasContent) {
-      const ok = window.confirm(
-        'Load this sample map? Your current project will be replaced.'
-      );
-      if (!ok) return;
+    if (currentHasContent && !confirmLoad) {
+      setConfirmLoad(true);
+      return;
     }
     onLoadProject(buildPremadeProject(selected.id));
   };
@@ -138,7 +141,9 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
 
         {currentHasContent && (
           <div className="generate-dialog-warning" role="alert">
-            ⚠️ Loading a sample map replaces the current project.
+            {confirmLoad
+              ? '⚠️ Click Confirm Load to replace the current project with this sample map.'
+              : '⚠️ Loading a sample map replaces the current project.'}
           </div>
         )}
 
@@ -150,7 +155,7 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
             onClick={handleLoad}
             disabled={!selected}
           >
-            Load Sample
+            {confirmLoad ? 'Confirm Load' : 'Load Sample'}
           </button>
         </div>
       </div>
