@@ -153,6 +153,66 @@ export const LIGHT_SOURCE_PRESETS: {
   { id: 'magical', label: 'Magical', radius: 8, color: '#a78bfa', icon: '✨' },
   { id: 'custom',  label: 'Custom',  radius: 5, color: '#ffffff', icon: '💡' },
 ];
+
+// ── Asset / Stamp Library ───────────────────────────────────────────────────
+
+export type StampCategory =
+  | 'furniture'
+  | 'dungeon-dressing'
+  | 'nature'
+  | 'structures'
+  | 'markers'
+  | 'custom';
+
+export interface StampSvgPath {
+  path: string;
+  fill?: string;
+  stroke?: string;
+  strokeWidth?: number;
+}
+
+export interface StampDef {
+  id: string;
+  name: string;
+  category: StampCategory;
+  /** Optional theme id; absent means the stamp is universal. */
+  themeId?: string;
+  /** SVG viewBox, e.g. "0 0 512 512". */
+  viewBox: string;
+  /** Single-path shorthand for simple stamps. */
+  svgPath?: string;
+  /** Multi-path definition for stamps that need layered fills/strokes. */
+  paths?: StampSvgPath[];
+}
+
+export interface PlacedStamp {
+  id: number;
+  stampId: string;
+  /** Tile-aligned X coordinate of the stamp center. */
+  x: number;
+  /** Tile-aligned Y coordinate of the stamp center. */
+  y: number;
+  /** Rotation in degrees. */
+  rotation: number;
+  /** Uniform scale factor. */
+  scale: number;
+  flipX: boolean;
+  flipY: boolean;
+  /** Opacity from 0 to 1. */
+  opacity: number;
+  /** Locked stamps cannot be moved by the placement engine. */
+  locked: boolean;
+}
+
+export interface StampPlacementOptions {
+  rotation?: number;
+  scale?: number;
+  flipX?: boolean;
+  flipY?: boolean;
+  opacity?: number;
+  locked?: boolean;
+}
+
 export const MARKER_COLORS = [
   '#dc2626', '#f97316', '#eab308', '#22c55e',
   '#3b82f6', '#a855f7', '#ec4899', '#1f2937',
@@ -254,6 +314,8 @@ export interface DungeonMap {
    * visual when dynamic fog is off. Optional; treat absent as no lights.
    */
   lightSources?: LightSource[];
+  /** Placeable map-object stamps such as furniture, dressing, or markers. */
+  stamps?: PlacedStamp[];
 }
 
 // ── Multi-Level Project ────────────────────────────────────────────────────
@@ -323,6 +385,8 @@ export type ToolType =
   | 'light' | 'remove-light'
   // Stair link tool — click stairs to link them between levels.
   | 'link-stair'
+  // Stamp placement foundation.
+  | 'stamp' | 'move-stamp' | 'remove-stamp'
   // GM drawing tools — freehand annotations visible only in GM view.
   | 'gmdraw' | 'gmerase';
 
