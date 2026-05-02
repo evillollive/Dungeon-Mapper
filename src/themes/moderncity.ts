@@ -15,6 +15,7 @@ export const moderncityTheme: TileTheme = {
     { id: 'stairs-up', label: 'Stairs Up' }, { id: 'stairs-down', label: 'Stairs Down' },
     { id: 'water', label: 'Fountain' }, { id: 'pillar', label: 'Lamp Post' },
     { id: 'trap', label: 'Manhole' }, { id: 'treasure', label: 'ATM' }, { id: 'start', label: 'Bus Stop' },
+    { id: 'background', label: 'Asphalt' },
   ],
   emptyTileId: 'empty',
   cssVars: {},
@@ -28,6 +29,7 @@ export const moderncityTheme: TileTheme = {
     'stairs-up': '#cfcfcf', 'stairs-down': '#9a9a9a',
     water: '#4ea7d8', pillar: '#2a2a2a', trap: '#3a3a3a',
     treasure: '#1f7a3a', start: '#d24545',
+    background: '#1a1a1a',
   },
   gridColor: '#2a2a2a',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
@@ -527,6 +529,19 @@ export const moderncityTheme: TileTheme = {
         // Base
         ctx.fillStyle = '#4a4a4a';
         ctx.fillRect(cx - 2, py + s - 3, 4, 2);
+        break;
+      }
+
+      case 'background': {
+        ctx.fillStyle = '#1a1a1a';
+        ctx.fillRect(px, py, s, s);
+        for (let i = 0; i < 20; i++) {
+          const dx = px + tileHash(x * 11 + i, y * 7) * s;
+          const dy = py + tileHash(x * 3 + i, y * 13 + i) * s;
+          const shade = tileHash(x * 5 + i, y * 9 + i);
+          ctx.fillStyle = shade > 0.5 ? '#222222' : '#181818';
+          ctx.fillRect(dx, dy, 1, 1);
+        }
         break;
       }
     }

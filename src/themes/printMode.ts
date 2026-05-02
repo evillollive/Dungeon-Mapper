@@ -340,6 +340,21 @@ export function drawPrintTile(
       ctx.fill();
       break;
     }
+
+    case 'background': {
+      // Light stipple pattern to indicate filled background space.
+      ctx.fillStyle = PRINT_FG;
+      const dotR = Math.max(0.5, s * 0.03);
+      const step = Math.max(3, Math.round(s / 4));
+      for (let dy = step / 2; dy < s; dy += step) {
+        for (let dx = step / 2; dx < s; dx += step) {
+          ctx.beginPath();
+          ctx.arc(px + dx, py + dy, dotR, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      break;
+    }
   }
 
   ctx.restore();

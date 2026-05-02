@@ -173,6 +173,7 @@ export const dungeonTheme: TileTheme = {
     { id: 'stairs-up', label: 'Stairs Up' }, { id: 'stairs-down', label: 'Stairs Down' },
     { id: 'water', label: 'Underground Pool' }, { id: 'pillar', label: 'Pillar' },
     { id: 'trap', label: 'Trap' }, { id: 'treasure', label: 'Treasure' }, { id: 'start', label: 'Entrance' },
+    { id: 'background', label: 'Cave Rock' },
   ],
   emptyTileId: 'empty',
   cssVars: {},
@@ -186,6 +187,7 @@ export const dungeonTheme: TileTheme = {
     'stairs-up': '#7a9e7e', 'stairs-down': '#5a7a5e',
     water: '#1a4f7a', pillar: '#5a5a5a', trap: '#8e1e1e',
     treasure: '#d4af37', start: '#2e8b57',
+    background: '#2a2218',
   },
   gridColor: '#2d3561',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number, context?: TileDrawContext) {
@@ -635,6 +637,28 @@ export const dungeonTheme: TileTheme = {
         ctx.closePath();
         ctx.fill();
         ctx.fillRect(cx - 1, py + s - 10, 2, 4);
+        break;
+      }
+
+      case 'background': {
+        ctx.fillStyle = '#2a2218';
+        ctx.fillRect(px, py, s, s);
+        ctx.strokeStyle = '#1a1610';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < 8; i++) {
+          const h = tileHash(x * 13 + i, y * 7 + i);
+          const lx = px + h * s;
+          const ly = py + tileHash(x + i, y * 3 + i) * s;
+          ctx.beginPath();
+          ctx.moveTo(lx, ly);
+          ctx.lineTo(lx + (h - 0.5) * s * 0.3, ly + (tileHash(x * 5 + i, y) - 0.5) * s * 0.3);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 6; i++) {
+          const h = tileHash(x * 9 + i, y * 11 + i);
+          ctx.fillStyle = jitterColor('#3a3228', 15, x * 7 + i, y * 3 + i);
+          ctx.fillRect(px + h * s * 0.9, py + tileHash(x + i * 3, y * 5) * s * 0.9, 2, 2);
+        }
         break;
       }
     }

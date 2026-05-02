@@ -18,6 +18,7 @@ export const alienTheme: TileTheme = {
     { id: 'stairs-up', label: 'Tendril Up' }, { id: 'stairs-down', label: 'Tendril Down' },
     { id: 'water', label: 'Acid Pool' }, { id: 'pillar', label: 'Crystal Spire' },
     { id: 'trap', label: 'Spore Burst' }, { id: 'treasure', label: 'Crystal Cluster' }, { id: 'start', label: 'Landing Site' },
+    { id: 'background', label: 'Alien Terrain' },
   ],
   emptyTileId: 'empty',
   cssVars: {},
@@ -31,6 +32,7 @@ export const alienTheme: TileTheme = {
     'stairs-up': '#9affc8', 'stairs-down': '#5acc8a',
     water: '#7aff3a', pillar: '#d8a0ff',
     trap: '#ffe040', treasure: '#ff60d0', start: '#40ffe0',
+    background: '#0a1a0a',
   },
   gridColor: '#2d1a3a',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
@@ -532,6 +534,28 @@ export const alienTheme: TileTheme = {
         ctx.beginPath();
         ctx.arc(cx, cy, s * 0.06, 0, Math.PI * 2);
         ctx.fill();
+        break;
+      }
+
+      case 'background': {
+        ctx.fillStyle = '#0a1a0a';
+        ctx.fillRect(px, py, s, s);
+        ctx.strokeStyle = '#1a3a1a';
+        ctx.lineWidth = 0.7;
+        for (let i = 0; i < 6; i++) {
+          const h = tileHash(x * 7 + i, y * 11 + i);
+          const startX = px + h * s;
+          const startY = py + tileHash(x + i, y * 5 + i) * s;
+          ctx.beginPath();
+          ctx.moveTo(startX, startY);
+          ctx.quadraticCurveTo(
+            px + tileHash(x * 3 + i, y * 9) * s,
+            py + tileHash(x * 13 + i, y * 3) * s,
+            px + tileHash(x * 9 + i, y + i) * s,
+            py + tileHash(x * 2 + i, y * 7 + i) * s
+          );
+          ctx.stroke();
+        }
         break;
       }
     }

@@ -15,6 +15,7 @@ export const pirateTheme: TileTheme = {
     { id: 'stairs-up', label: 'Ladder Up' }, { id: 'stairs-down', label: 'Hold Down' },
     { id: 'water', label: 'Bilge' }, { id: 'pillar', label: 'Mast' },
     { id: 'trap', label: 'Cannon' }, { id: 'treasure', label: 'Booty' }, { id: 'start', label: 'Anchor' },
+    { id: 'background', label: 'Ocean' },
   ],
   emptyTileId: 'empty',
   cssVars: {},
@@ -28,6 +29,7 @@ export const pirateTheme: TileTheme = {
     'stairs-up': '#a07a4a', 'stairs-down': '#6a4a28',
     water: '#1e6890', pillar: '#3a2410',
     trap: '#2a2a2a', treasure: '#d4af37', start: '#c0c0c0',
+    background: '#0a1a2a',
   },
   gridColor: '#2a1a0a',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
@@ -528,6 +530,23 @@ export const pirateTheme: TileTheme = {
         ctx.moveTo(cx + s * 0.22, py + s * 0.62);
         ctx.lineTo(cx + s * 0.18, py + s * 0.58);
         ctx.stroke();
+        break;
+      }
+
+      case 'background': {
+        ctx.fillStyle = '#0a1a2a';
+        ctx.fillRect(px, py, s, s);
+        ctx.strokeStyle = '#1a3a5a';
+        ctx.lineWidth = 0.7;
+        for (let i = 0; i < 4; i++) {
+          const wy = py + (i + 0.5) * s / 4;
+          const offset = tileHash(x * 7 + i, y * 3) * 4;
+          ctx.beginPath();
+          ctx.moveTo(px, wy + offset);
+          ctx.quadraticCurveTo(px + s * 0.25, wy - 3 + offset, px + s * 0.5, wy + offset);
+          ctx.quadraticCurveTo(px + s * 0.75, wy + 3 + offset, px + s, wy + offset);
+          ctx.stroke();
+        }
         break;
       }
     }

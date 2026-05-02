@@ -15,6 +15,7 @@ export const steampunkTheme: TileTheme = {
     { id: 'stairs-up', label: 'Gantry Up' }, { id: 'stairs-down', label: 'Gantry Down' },
     { id: 'water', label: 'Steam Pipe' }, { id: 'pillar', label: 'Piston' },
     { id: 'trap', label: 'Pressure Plate' }, { id: 'treasure', label: 'Contraption' }, { id: 'start', label: 'Engine' },
+    { id: 'background', label: 'Metal Plating' },
   ],
   emptyTileId: 'empty',
   cssVars: {},
@@ -28,6 +29,7 @@ export const steampunkTheme: TileTheme = {
     'stairs-up': '#8a7040', 'stairs-down': '#6a5030',
     water: '#1a4a3a', pillar: '#8b6914', trap: '#cc4400',
     treasure: '#d4af37', start: '#5a9040',
+    background: '#1a1a20',
   },
   gridColor: '#3a2810',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
@@ -542,6 +544,24 @@ export const steampunkTheme: TileTheme = {
         ctx.moveTo(cx - s * 0.1, cy + s * 0.06);
         ctx.lineTo(cx - s * 0.1 + s * 0.04, cy + s * 0.03);
         ctx.stroke();
+        break;
+      }
+
+      case 'background': {
+        ctx.fillStyle = '#1a1a20';
+        ctx.fillRect(px, py, s, s);
+        ctx.strokeStyle = '#2a2a30';
+        ctx.lineWidth = 0.5;
+        ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
+        ctx.fillStyle = '#2a2a32';
+        const rivetR = s * 0.04;
+        const margin = s * 0.12;
+        ctx.beginPath();
+        ctx.arc(px + margin, py + margin, rivetR, 0, Math.PI * 2);
+        ctx.arc(px + s - margin, py + margin, rivetR, 0, Math.PI * 2);
+        ctx.arc(px + margin, py + s - margin, rivetR, 0, Math.PI * 2);
+        ctx.arc(px + s - margin, py + s - margin, rivetR, 0, Math.PI * 2);
+        ctx.fill();
         break;
       }
     }

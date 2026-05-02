@@ -64,7 +64,8 @@ export function drawTileOverlay(
     type === 'wall' ||
     type === 'secret-door' ||
     type === 'water' ||
-    type === 'pillar'
+    type === 'pillar' ||
+    type === 'background'
   ) {
     return;
   }

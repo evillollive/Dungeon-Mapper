@@ -23,6 +23,7 @@ export const ancientTheme: TileTheme = {
     { id: 'stairs-up', label: 'Steps Up' }, { id: 'stairs-down', label: 'Steps Down' },
     { id: 'water', label: 'Reflecting Pool' }, { id: 'pillar', label: 'Pillar' },
     { id: 'trap', label: 'Cursed Glyph' }, { id: 'treasure', label: 'Sarcophagus' }, { id: 'start', label: 'Obelisk' },
+    { id: 'background', label: 'Sandstone' },
   ],
   emptyTileId: 'empty',
   cssVars: {},
@@ -38,6 +39,7 @@ export const ancientTheme: TileTheme = {
     'stairs-up': '#bfa570', 'stairs-down': '#9a7e4a',
     water: '#2a7a8a', pillar: '#c8b88a',
     trap: '#a02e1e', treasure: '#b89048', start: '#3a2a1a',
+    background: '#2a2418',
   },
   gridColor: '#4a3a20',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
@@ -585,6 +587,29 @@ export const ancientTheme: TileTheme = {
           ctx.moveTo(cx - halfW, bandY);
           ctx.lineTo(cx + halfW, bandY);
           ctx.stroke();
+        }
+        break;
+      }
+
+      case 'background': {
+        ctx.fillStyle = '#2a2418';
+        ctx.fillRect(px, py, s, s);
+        ctx.strokeStyle = '#1e1a10';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < 5; i++) {
+          const h = tileHash(x * 7 + i, y * 11 + i);
+          const lx = px + h * s;
+          const ly = py + tileHash(x + i, y * 5 + i) * s;
+          ctx.beginPath();
+          ctx.moveTo(lx, ly);
+          ctx.lineTo(lx + (tileHash(x * 3 + i, y * 9) - 0.5) * s * 0.3, ly + (tileHash(x * 13 + i, y) - 0.5) * s * 0.25);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 6; i++) {
+          ctx.fillStyle = jitterColor('#342e20', 10, x * 9 + i, y * 3 + i);
+          ctx.beginPath();
+          ctx.arc(px + tileHash(x * 5 + i, y * 7) * s, py + tileHash(x + i * 4, y * 9) * s, 0.7 + tileHash(x + i, y + i) * 0.8, 0, Math.PI * 2);
+          ctx.fill();
         }
         break;
       }
