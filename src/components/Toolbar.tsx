@@ -57,6 +57,10 @@ interface ToolbarProps {
   onSetGmDrawColor: (c: string) => void;
   onSetGmDrawWidth: (w: number) => void;
   onClearGmDrawings: () => void;
+  // Stamp picker state
+  selectedStampId: string | null;
+  onSelectStamp: (stampId: string) => void;
+  onClearStamps: () => void;
 }
 
 type ToolbarTab = 'draw' | 'tactical' | 'advanced';
@@ -131,6 +135,9 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             onOpenCustomThemeBuilder={props.onOpenCustomThemeBuilder}
             onOpenGenerateMap={props.onOpenGenerateMap}
             onOpenPremadeMaps={props.onOpenPremadeMaps}
+            selectedStampId={props.selectedStampId}
+            onSelectStamp={props.onSelectStamp}
+            onClearStamps={props.onClearStamps}
           />
         )}
         {activeTab === 'tactical' && (

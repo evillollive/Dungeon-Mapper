@@ -926,6 +926,9 @@ function App() {
               onSetGmDrawColor={setGmDrawColor}
               onSetGmDrawWidth={setGmDrawWidth}
               onClearGmDrawings={handleClearGmDrawings}
+              selectedStampId={selectedStampId}
+              onSelectStamp={(id: string) => { setSelectedStampId(id); }}
+              onClearStamps={clearStamps}
             />
             )}
           </nav>
