@@ -153,6 +153,45 @@ function octagonMask(width: number, height: number): boolean[][] {
   return m;
 }
 
+/**
+ * Ship / vessel shape — an elongated hull oriented left-to-right.
+ * The stern (left) is wider and the bow (right) tapers to a point.
+ * Width should be at least 2× height for a convincing vessel silhouette.
+ */
+function shipMask(width: number, height: number): boolean[][] {
+  const m = makeMask(width, height, false);
+  const cy = (height - 1) / 2;
+  // The hull spans x ∈ [1, width-2] with varying half-width.
+  // Stern occupies the left ~20%, body is the middle ~60%, bow tapers
+  // over the right ~20%.
+  const sternEnd = Math.floor(width * 0.18);
+  const bowStart = Math.floor(width * 0.78);
+  const maxHalf = (height - 2) / 2;  // max half-width (at the widest)
+
+  for (let x = 1; x < width - 1; x++) {
+    let half: number;
+    if (x <= sternEnd) {
+      // Stern: slightly rounded, ~85% of max width tapering to ~70% at
+      // the very back edge.
+      const t = (x - 1) / Math.max(1, sternEnd - 1);  // 0 at left edge → 1
+      half = maxHalf * (0.7 + 0.15 * t);
+    } else if (x >= bowStart) {
+      // Bow: taper smoothly to a point.
+      const t = (x - bowStart) / Math.max(1, width - 2 - bowStart);  // 0→1
+      half = maxHalf * (1 - t * t);  // quadratic taper for a curved prow
+    } else {
+      // Body: full width.
+      half = maxHalf;
+    }
+    const yMin = Math.max(1, Math.round(cy - half));
+    const yMax = Math.min(height - 2, Math.round(cy + half));
+    for (let y = yMin; y <= yMax; y++) {
+      m[y][x] = true;
+    }
+  }
+  return m;
+}
+
 // ---------------------------------------------------------------------------
 // Registry
 // ---------------------------------------------------------------------------
@@ -205,6 +244,12 @@ const SHAPES: DungeonShape[] = [
     name: 'Octagon',
     description: 'Octagonal dungeon with clipped corners.',
     mask: octagonMask,
+  },
+  {
+    id: 'ship',
+    name: 'Ship',
+    description: 'Ship hull shape — wide stern, tapered bow.',
+    mask: shipMask,
   },
 ];
 
