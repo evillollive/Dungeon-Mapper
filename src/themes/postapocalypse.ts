@@ -15,6 +15,7 @@ export const postapocalypseTheme: TileTheme = {
     { id: 'stairs-up', label: 'Debris Up' }, { id: 'stairs-down', label: 'Debris Down' },
     { id: 'water', label: 'Toxic Pool' }, { id: 'pillar', label: 'Rubble Pile' },
     { id: 'trap', label: 'Landmine' }, { id: 'treasure', label: 'Supplies' }, { id: 'start', label: 'Shelter' },
+    { id: 'background', label: 'Rubble' },
   ],
   emptyTileId: 'empty',
   cssVars: {},
@@ -28,6 +29,7 @@ export const postapocalypseTheme: TileTheme = {
     'stairs-up': '#7a6a4a', 'stairs-down': '#5a4a3a',
     water: '#2a4a1a', pillar: '#5a4a38', trap: '#8e3e1e',
     treasure: '#c09820', start: '#4a7a2a',
+    background: '#2a2018',
   },
   gridColor: '#2a2018',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
@@ -497,6 +499,29 @@ export const postapocalypseTheme: TileTheme = {
         ctx.strokeStyle = '#5a5a5a';
         ctx.lineWidth = 0.5;
         ctx.strokeRect(cx - s * 0.1, py + s * 0.5, s * 0.2, s * 0.4);
+        break;
+      }
+
+      case 'background': {
+        ctx.fillStyle = '#2a2018';
+        ctx.fillRect(px, py, s, s);
+        ctx.strokeStyle = '#1a1810';
+        ctx.lineWidth = 0.7;
+        for (let i = 0; i < 6; i++) {
+          const h = tileHash(x * 11 + i, y * 7 + i);
+          const lx = px + h * s;
+          const ly = py + tileHash(x + i, y * 5 + i) * s;
+          ctx.beginPath();
+          ctx.moveTo(lx, ly);
+          ctx.lineTo(lx + (tileHash(x * 3 + i, y * 9) - 0.5) * s * 0.5, ly + (tileHash(x * 5 + i, y) - 0.5) * s * 0.5);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 4; i++) {
+          ctx.fillStyle = jitterColor('#3a3020', 15, x * 9 + i, y * 3 + i);
+          const rx = px + tileHash(x * 7 + i, y * 11) * s * 0.9;
+          const ry = py + tileHash(x + i * 5, y * 9) * s * 0.9;
+          ctx.fillRect(rx, ry, 2 + tileHash(x + i, y + i) * 2, 1.5);
+        }
         break;
       }
     }

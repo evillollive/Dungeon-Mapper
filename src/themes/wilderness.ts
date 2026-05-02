@@ -15,6 +15,7 @@ export const wildernessTheme: TileTheme = {
     { id: 'stairs-up', label: 'Hill Up' }, { id: 'stairs-down', label: 'Hill Down' },
     { id: 'water', label: 'River' }, { id: 'pillar', label: 'Boulder' },
     { id: 'trap', label: 'Snare' }, { id: 'treasure', label: 'Cache' }, { id: 'start', label: 'Camp' },
+    { id: 'background', label: 'Undergrowth' },
   ],
   emptyTileId: 'empty',
   cssVars: {},
@@ -28,6 +29,7 @@ export const wildernessTheme: TileTheme = {
     'stairs-up': '#7a9e7e', 'stairs-down': '#5a7a5e',
     water: '#1e5f8e', pillar: '#6a4a2a', trap: '#8e1e1e',
     treasure: '#d4af37', start: '#50fa7b',
+    background: '#1a2a10',
   },
   gridColor: '#1a3a10',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
@@ -452,6 +454,26 @@ export const wildernessTheme: TileTheme = {
           ctx.lineTo(cx + fOff * s + s * 0.04, cy + s * 0.05);
           ctx.closePath();
           ctx.fill();
+        }
+        break;
+      }
+
+      case 'background': {
+        ctx.fillStyle = '#1a2a10';
+        ctx.fillRect(px, py, s, s);
+        for (let i = 0; i < 14; i++) {
+          const gx = px + tileHash(x * 11 + i, y * 7) * s;
+          const gy = py + tileHash(x * 3 + i, y * 13 + i) * s;
+          ctx.strokeStyle = jitterColor('#2a4a18', 20, x * 7 + i, y + i);
+          ctx.lineWidth = 0.5;
+          ctx.beginPath();
+          ctx.moveTo(gx, gy);
+          ctx.lineTo(gx + (tileHash(x + i, y * 9) - 0.5) * 4, gy - 2 - tileHash(x * 5 + i, y) * 4);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 5; i++) {
+          ctx.fillStyle = jitterColor('#2a3a18', 10, x * 9 + i, y * 3 + i);
+          ctx.fillRect(px + tileHash(x * 7 + i, y * 5) * s, py + tileHash(x + i * 2, y * 11) * s, 1, 1);
         }
         break;
       }

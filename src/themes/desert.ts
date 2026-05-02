@@ -15,6 +15,7 @@ export const desertTheme: TileTheme = {
     { id: 'stairs-up', label: 'Steps Up' }, { id: 'stairs-down', label: 'Steps Down' },
     { id: 'water', label: 'Oasis' }, { id: 'pillar', label: 'Cactus' },
     { id: 'trap', label: 'Quicksand' }, { id: 'treasure', label: 'Relic' }, { id: 'start', label: 'Caravan' },
+    { id: 'background', label: 'Sand' },
   ],
   emptyTileId: 'empty',
   cssVars: {},
@@ -28,6 +29,7 @@ export const desertTheme: TileTheme = {
     'stairs-up': '#c8a058', 'stairs-down': '#a07a40',
     water: '#3a9ec8', pillar: '#3a7a3a',
     trap: '#8b6914', treasure: '#d4af37', start: '#c83838',
+    background: '#3a3020',
   },
   gridColor: '#6a5020',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
@@ -522,6 +524,27 @@ export const desertTheme: TileTheme = {
         ctx.moveTo(px + 2, py + s - 3);
         ctx.lineTo(px + s - 2, py + s - 3);
         ctx.stroke();
+        break;
+      }
+
+      case 'background': {
+        ctx.fillStyle = '#3a3020';
+        ctx.fillRect(px, py, s, s);
+        ctx.strokeStyle = '#4a4030';
+        ctx.lineWidth = 0.6;
+        for (let i = 0; i < 3; i++) {
+          const dy = py + (i + 0.3) * s / 3;
+          const offset = tileHash(x * 5 + i, y * 9) * 3;
+          ctx.beginPath();
+          ctx.moveTo(px, dy + offset);
+          ctx.quadraticCurveTo(px + s * 0.3, dy - 2 + offset, px + s * 0.6, dy + 1 + offset);
+          ctx.quadraticCurveTo(px + s * 0.8, dy + 3 + offset, px + s, dy + offset);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 8; i++) {
+          ctx.fillStyle = jitterColor('#4a3e2a', 10, x * 11 + i, y * 7 + i);
+          ctx.fillRect(px + tileHash(x * 3 + i, y * 11) * s, py + tileHash(x * 9 + i, y + i) * s, 1, 1);
+        }
         break;
       }
     }

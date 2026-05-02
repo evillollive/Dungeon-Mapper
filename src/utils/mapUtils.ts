@@ -90,4 +90,5 @@ export const TILE_COLORS: Record<BuiltInTileType, string> = {
   trap: '#8e1e1e',
   treasure: '#d4af37',
   start: '#2e8b57',
+  background: '#2a2218',
 };

@@ -15,6 +15,7 @@ export const oldwestTheme: TileTheme = {
     { id: 'stairs-up', label: 'Stairs Up' }, { id: 'stairs-down', label: 'Stairs Down' },
     { id: 'water', label: 'Water Trough' }, { id: 'pillar', label: 'Post' },
     { id: 'trap', label: 'Bear Trap' }, { id: 'treasure', label: 'Gold' }, { id: 'start', label: 'Entrance' },
+    { id: 'background', label: 'Dusty Ground' },
   ],
   emptyTileId: 'empty',
   cssVars: {},
@@ -28,6 +29,7 @@ export const oldwestTheme: TileTheme = {
     'stairs-up': '#a0956a', 'stairs-down': '#857a55',
     water: '#3a7a9e', pillar: '#8b6914', trap: '#8b0000',
     treasure: '#d4af37', start: '#4a7a2a',
+    background: '#2a2010',
   },
   gridColor: '#3a2a18',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
@@ -470,6 +472,27 @@ export const oldwestTheme: TileTheme = {
         ctx.beginPath();
         ctx.arc(cx + s * 0.04, doorTop + 2, 1.5, 0, Math.PI * 2);
         ctx.fill();
+        break;
+      }
+
+      case 'background': {
+        ctx.fillStyle = '#2a2010';
+        ctx.fillRect(px, py, s, s);
+        ctx.strokeStyle = '#1e1808';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < 4; i++) {
+          const h = tileHash(x * 9 + i, y * 7 + i);
+          const lx = px + h * s * 0.8 + s * 0.1;
+          const ly = py + tileHash(x + i * 3, y * 11 + i) * s;
+          ctx.beginPath();
+          ctx.moveTo(lx, ly);
+          ctx.lineTo(lx + (tileHash(x * 3 + i, y * 5) - 0.5) * s * 0.4, ly + (tileHash(x * 7 + i, y) - 0.5) * s * 0.3);
+          ctx.stroke();
+        }
+        for (let i = 0; i < 6; i++) {
+          ctx.fillStyle = jitterColor('#3a3018', 12, x * 5 + i, y * 9 + i);
+          ctx.fillRect(px + tileHash(x * 11 + i, y * 3) * s, py + tileHash(x + i, y * 7 + i) * s, 1.5, 1.5);
+        }
         break;
       }
     }

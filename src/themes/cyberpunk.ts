@@ -15,6 +15,7 @@ export const cyberpunkTheme: TileTheme = {
     { id: 'stairs-up', label: 'Ramp Up' }, { id: 'stairs-down', label: 'Ramp Down' },
     { id: 'water', label: 'Acid Pool' }, { id: 'pillar', label: 'Terminal' },
     { id: 'trap', label: 'Turret' }, { id: 'treasure', label: 'Chip Cache' }, { id: 'start', label: 'Spawn' },
+    { id: 'background', label: 'Circuit Grid' },
   ],
   emptyTileId: 'empty',
   cssVars: {},
@@ -28,6 +29,7 @@ export const cyberpunkTheme: TileTheme = {
     'stairs-up': '#00ffff', 'stairs-down': '#00cccc',
     water: '#002244', pillar: '#1a001a', trap: '#ff0000',
     treasure: '#ffff00', start: '#00ff00',
+    background: '#0a0a14',
   },
   gridColor: '#1a0a2a',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
@@ -511,6 +513,27 @@ export const cyberpunkTheme: TileTheme = {
         ctx.beginPath();
         ctx.arc(cx, cy, s * 0.05, 0, Math.PI * 2);
         ctx.fill();
+        break;
+      }
+
+      case 'background': {
+        ctx.fillStyle = '#0a0a14';
+        ctx.fillRect(px, py, s, s);
+        ctx.lineWidth = 0.5;
+        const colors = ['#00ffff', '#ff00ff', '#40ff40'];
+        for (let i = 0; i < 5; i++) {
+          const h = tileHash(x * 7 + i, y * 11 + i);
+          ctx.strokeStyle = colors[i % 3];
+          ctx.globalAlpha = 0.25;
+          ctx.beginPath();
+          const ly = py + h * s;
+          ctx.moveTo(px, ly);
+          const mid = px + tileHash(x * 3 + i, y) * s;
+          ctx.lineTo(mid, ly);
+          ctx.lineTo(mid, ly + (tileHash(x + i, y * 5) - 0.5) * s * 0.4);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
         break;
       }
     }

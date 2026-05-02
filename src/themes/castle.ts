@@ -18,6 +18,7 @@ export const castleTheme: TileTheme = {
     { id: 'stairs-up', label: 'Stairs Up' }, { id: 'stairs-down', label: 'Stairs Down' },
     { id: 'water', label: 'Moat' }, { id: 'pillar', label: 'Column' },
     { id: 'trap', label: 'Murder Hole' }, { id: 'treasure', label: 'Royal Hoard' }, { id: 'start', label: 'Great Hall' },
+    { id: 'background', label: 'Stone' },
   ],
   emptyTileId: 'empty',
   cssVars: {},
@@ -31,6 +32,7 @@ export const castleTheme: TileTheme = {
     'stairs-up': '#c8b88a', 'stairs-down': '#a89868',
     water: '#2a6a9e', pillar: '#9a8a6a',
     trap: '#8e1e1e', treasure: '#d4af37', start: '#a0202a',
+    background: '#3a3028',
   },
   gridColor: '#5a4a30',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
@@ -469,6 +471,31 @@ export const castleTheme: TileTheme = {
         ctx.strokeStyle = '#e0c060';
         ctx.lineWidth = 0.5;
         ctx.stroke();
+        break;
+      }
+
+      case 'background': {
+        ctx.fillStyle = '#3a3028';
+        ctx.fillRect(px, py, s, s);
+        ctx.strokeStyle = '#2a2018';
+        ctx.lineWidth = 0.5;
+        const brickH = s / 4;
+        for (let row = 0; row < 4; row++) {
+          const offset = row % 2 === 0 ? 0 : s / 2;
+          ctx.beginPath();
+          ctx.moveTo(px, py + row * brickH);
+          ctx.lineTo(px + s, py + row * brickH);
+          ctx.stroke();
+          for (let col = 0; col < 3; col++) {
+            const bx = px + offset + col * s;
+            if (bx > px && bx < px + s) {
+              ctx.beginPath();
+              ctx.moveTo(bx, py + row * brickH);
+              ctx.lineTo(bx, py + (row + 1) * brickH);
+              ctx.stroke();
+            }
+          }
+        }
         break;
       }
     }

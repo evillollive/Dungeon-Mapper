@@ -4,7 +4,7 @@ export type BuiltInTileType =
   | 'trapped-door-h' | 'trapped-door-v'
   | 'portcullis' | 'archway' | 'barricade'
   | 'stairs-up' | 'stairs-down' | 'water' | 'pillar'
-  | 'trap' | 'treasure' | 'start';
+  | 'trap' | 'treasure' | 'start' | 'background';
 
 export type CustomTileType = `custom:${string}`;
 export type TileType = BuiltInTileType | CustomTileType;
@@ -425,7 +425,7 @@ export const BUILT_IN_TILE_TYPES: BuiltInTileType[] = [
   'trapped-door-h', 'trapped-door-v',
   'portcullis', 'archway', 'barricade',
   'stairs-up', 'stairs-down', 'water', 'pillar',
-  'trap', 'treasure', 'start',
+  'trap', 'treasure', 'start', 'background',
 ];
 
 export function isBuiltInTileType(type: TileType): type is BuiltInTileType {
@@ -453,6 +453,7 @@ export const TILE_LABELS: Record<BuiltInTileType, string> = {
   trap: 'Trap',
   treasure: 'Treasure',
   start: 'Start',
+  background: 'Background',
 };
 
 // Tile types shown in the toolbar palette. The 'empty' tile is intentionally
@@ -466,5 +467,5 @@ export const ALL_TILE_TYPES: BuiltInTileType[] = [
   'trapped-door-h', 'trapped-door-v',
   'portcullis', 'archway', 'barricade',
   'stairs-up', 'stairs-down', 'water', 'pillar',
-  'trap', 'treasure', 'start',
+  'trap', 'treasure', 'start', 'background',
 ];

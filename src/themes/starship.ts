@@ -18,6 +18,7 @@ export const starshipTheme: TileTheme = {
     { id: 'stairs-up', label: 'Ladder Up' }, { id: 'stairs-down', label: 'Ladder Down' },
     { id: 'water', label: 'Coolant' }, { id: 'pillar', label: 'Support' },
     { id: 'trap', label: 'Laser Grid' }, { id: 'treasure', label: 'Data Core' }, { id: 'start', label: 'Airlock' },
+    { id: 'background', label: 'Space' },
   ],
   emptyTileId: 'empty',
   cssVars: {},
@@ -31,6 +32,7 @@ export const starshipTheme: TileTheme = {
     'stairs-up': '#00ff9f', 'stairs-down': '#00cc7a',
     water: '#0066aa', pillar: '#334466', trap: '#ff0066',
     treasure: '#ff9900', start: '#00ffcc',
+    background: '#020408',
   },
   gridColor: '#1a3050',
   drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
@@ -535,6 +537,24 @@ export const starshipTheme: TileTheme = {
         ctx.beginPath(); ctx.arc(cx, cy + dotDist, dotR, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.arc(cx - dotDist, cy, dotR, 0, Math.PI * 2); ctx.fill();
         ctx.beginPath(); ctx.arc(cx + dotDist, cy, dotR, 0, Math.PI * 2); ctx.fill();
+        break;
+      }
+
+      case 'background': {
+        ctx.fillStyle = '#020408';
+        ctx.fillRect(px, py, s, s);
+        for (let i = 0; i < 12; i++) {
+          const sx = px + tileHash(x * 11 + i, y * 7) * s;
+          const sy = py + tileHash(x * 3 + i, y * 13 + i) * s;
+          const brightness = tileHash(x * 5 + i, y * 9 + i);
+          const r = brightness > 0.7 ? 0.8 + brightness * 0.5 : 0.5;
+          ctx.fillStyle = brightness > 0.8 ? '#aaccff' : '#ffffff';
+          ctx.globalAlpha = 0.3 + brightness * 0.7;
+          ctx.beginPath();
+          ctx.arc(sx, sy, r, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.globalAlpha = 1;
         break;
       }
     }
