@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
-> **Last updated:** 2026-04-30
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 7.1, 7.3, & 7.5 complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6).
+> **Last updated:** 2026-05-02
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 7.1, 7.3, & 7.5 complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6).
 
 ---
 
@@ -909,7 +909,7 @@ Recommended implementation order based on dependency analysis, impact, and effor
    - *Effort:* Low
    - *Dependency:* Benefits from refactored MapCanvas (Sprint 1)
 
-9. **Phase 6.4.2 — Stamp Rendering & Canvas Interaction** — Draw stamps on canvas, click-to-place, drag-to-move
+9. ~~**Phase 6.4.2 — Stamp Rendering & Canvas Interaction** — Draw stamps on canvas, click-to-place, drag-to-move~~ ✅
    - *Why:* Makes stamps functional end-to-end
    - *Effort:* Low
    - *Dependency:* Requires 6.4.1
@@ -1001,6 +1001,18 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-02 — Phase 6.4.2 complete: Stamp Rendering & Canvas Interaction shipped**
+- Created stamp catalog (`src/utils/stampCatalog.ts`) with 8 built-in universal stamps (chest, table, chair, barrel, campfire, skull, tree, pillar)
+- Added `drawStamp()` rendering function in MapCanvas — renders SVG-path stamps at tile coordinates with rotation, scale, flip, and opacity
+- Added `findStampAt()` hit-testing for stamp click detection
+- Added stamp placement via `stamp` tool (click-to-place using `selectedStampId`)
+- Added stamp dragging via `move-stamp` tool (drag to reposition, respects `locked` flag)
+- Added stamp removal via `remove-stamp` tool (click to delete)
+- Added `selectedStampId` to ToolContext for stamp selection state
+- Wired stamp callbacks (`onAddStamp`, `onMoveStamp`, `onRemoveStamp`) from App.tsx → MapCanvas
+- Added stamp rendering in high-DPI PNG export (`renderMap.ts`) and SVG export (`export.ts`)
+- Added appropriate cursor styles for all stamp tools (copy, grab, not-allowed)
 
 **2026-05-02 — Phase 6.4.1 complete: Stamp Data Model & Placement Engine shipped**
 - Added stamp data model types: `StampDef`, `StampSvgPath`, `StampCategory`, `PlacedStamp`, and `StampPlacementOptions`

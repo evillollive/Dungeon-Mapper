@@ -35,6 +35,9 @@ export interface ToolContextValue {
   gmDrawWidth: number;
   setGmDrawColor: (c: string) => void;
   setGmDrawWidth: (w: number) => void;
+  // Stamp tool settings
+  selectedStampId: string | null;
+  setSelectedStampId: (id: string | null) => void;
 }
 
 export const ToolContext = createContext<ToolContextValue | null>(null);

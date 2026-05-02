@@ -207,6 +207,8 @@ function App() {
   // color/width preferences.
   const [gmDrawColor, setGmDrawColor] = useState<string>('#ff6b6b');
   const [gmDrawWidth, setGmDrawWidth] = useState<number>(0.25);
+  // Stamp tool settings — currently selected stamp definition id.
+  const [selectedStampId, setSelectedStampId] = useState<string | null>(null);
   // Marker tool settings — shape, color, radius (in tiles).
   const [markerShape, setMarkerShape] = useState<MarkerShape>('circle');
   const [markerColor, setMarkerColor] = useState<string>('#dc2626');
@@ -712,6 +714,7 @@ function App() {
     setLightPreset, setLightRadius, setLightColor,
     drawColor, drawWidth, setDrawColor, setDrawWidth,
     gmDrawColor, gmDrawWidth, setGmDrawColor, setGmDrawWidth,
+    selectedStampId, setSelectedStampId,
   }), [
     activeTool, handleSetActiveTool, activeTile, setActiveTile,
     markerShape, markerColor, markerSize, setMarkerShape, setMarkerColor, setMarkerSize,
@@ -719,6 +722,7 @@ function App() {
     lightPreset, lightRadius, lightColor, setLightPreset, setLightRadius, setLightColor,
     drawColor, drawWidth, setDrawColor, setDrawWidth,
     gmDrawColor, gmDrawWidth, setGmDrawColor, setGmDrawWidth,
+    selectedStampId, setSelectedStampId,
   ]);
 
   const mapContextValue = useMemo<MapContextValue>(() => ({
@@ -1008,6 +1012,10 @@ function App() {
             onRemoveLightSource={removeLightSource}
             lightRadius={lightRadius}
             lightColor={lightColor}
+            onAddStamp={addStamp}
+            onMoveStamp={moveStamp}
+            onRemoveStamp={removeStamp}
+            selectedStampId={selectedStampId}
             stairLinks={activeStairLinks}
             stairLinkSource={activeTool === 'link-stair' ? stairLinkSource : null}
             onStairLinkClick={handleStairLinkClick}

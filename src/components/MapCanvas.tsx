@@ -1,11 +1,12 @@
 import React, { useRef, useEffect, useMemo, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
-import type { CustomThemeDefinition, DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource, PlacedStamp, StampPlacementOptions } from '../types/map';
 import { TOKEN_KIND_COLORS, isBuiltInTileType } from '../types/map';
 import { getSemanticTileType, getThemeWithCustom, preloadCustomThemeImages } from '../utils/customThemes';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from '../utils/tokenVisibility';
 import { ICON_BY_ID } from '../utils/iconLibrary';
+import { getStampDef } from '../utils/stampCatalog';
 import type { TileDrawContext } from '../themes';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
@@ -220,6 +221,15 @@ interface MapCanvasProps {
   lightRadius?: number;
   /** Current light glow color (preview ghost). */
   lightColor?: string;
+  // ── Stamp tool callbacks ────────────────────────────────────────────
+  /** Called when user clicks a cell with the stamp tool to place a stamp. */
+  onAddStamp?: (stampId: string, x: number, y: number, options?: StampPlacementOptions) => number | null;
+  /** Called when user drags a stamp to a new position. */
+  onMoveStamp?: (id: number, x: number, y: number) => void;
+  /** Called when user clicks a stamp with the remove-stamp tool. */
+  onRemoveStamp?: (id: number) => void;
+  /** Currently selected stamp id for placement. */
+  selectedStampId?: string | null;
   /** Stair links involving the active level (for rendering indicators). */
   stairLinks?: import('../types/map').StairLink[];
   /** Pending stair link source (shown as highlight when link-stair tool active). */
@@ -554,6 +564,94 @@ function findTokenAt(tokens: Token[] | undefined, fx: number, fy: number): Token
   return null;
 }
 
+/** Hit-test placed stamps at the given fractional tile coordinate.
+ * Each stamp occupies a 1×1 cell region centered on (stamp.x + 0.5, stamp.y + 0.5)
+ * scaled by stamp.scale. Returns the topmost matching stamp. */
+function findStampAt(stamps: PlacedStamp[] | undefined, fx: number, fy: number): PlacedStamp | null {
+  if (!stamps || stamps.length === 0) return null;
+  for (let i = stamps.length - 1; i >= 0; i--) {
+    const s = stamps[i];
+    const cx = s.x + 0.5;
+    const cy = s.y + 0.5;
+    const halfSize = (s.scale || 1) * 0.5;
+    if (Math.abs(fx - cx) <= halfSize && Math.abs(fy - cy) <= halfSize) return s;
+  }
+  return null;
+}
+
+/** Render a placed stamp on the canvas. The stamp is drawn as an SVG path
+ * scaled to fit a 1-tile cell (times scale factor), respecting rotation,
+ * flip, and opacity. */
+function drawStamp(
+  ctx: CanvasRenderingContext2D,
+  stamp: PlacedStamp,
+  tileSize: number,
+  isSelected: boolean = false,
+) {
+  const def = getStampDef(stamp.stampId);
+  if (!def) return;
+
+  const cx = (stamp.x + 0.5) * tileSize;
+  const cy = (stamp.y + 0.5) * tileSize;
+  const scale = stamp.scale || 1;
+  const drawSize = tileSize * scale;
+
+  ctx.save();
+  ctx.globalAlpha = stamp.opacity ?? 1;
+  ctx.translate(cx, cy);
+
+  if (stamp.rotation) {
+    ctx.rotate((stamp.rotation * Math.PI) / 180);
+  }
+  if (stamp.flipX) ctx.scale(-1, 1);
+  if (stamp.flipY) ctx.scale(1, -1);
+
+  // Parse viewBox to get SVG coordinate system dimensions.
+  const vb = def.viewBox.split(/\s+/).map(Number);
+  const vbW = vb[2] || 512;
+  const vbH = vb[3] || 512;
+  const svgScale = drawSize / Math.max(vbW, vbH);
+
+  ctx.translate(-drawSize / 2, -drawSize / 2);
+  ctx.scale(svgScale, svgScale);
+
+  // Render multi-path or single-path.
+  if (def.paths && def.paths.length > 0) {
+    for (const p of def.paths) {
+      const path2d = new Path2D(p.path);
+      if (p.fill) {
+        ctx.fillStyle = p.fill;
+        ctx.fill(path2d);
+      }
+      if (p.stroke) {
+        ctx.strokeStyle = p.stroke;
+        ctx.lineWidth = p.strokeWidth ?? 1;
+        ctx.stroke(path2d);
+      }
+    }
+  } else if (def.svgPath) {
+    const path2d = new Path2D(def.svgPath);
+    ctx.fillStyle = '#4a4a4a';
+    ctx.fill(path2d);
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = Math.max(1, 2 / svgScale);
+    ctx.stroke(path2d);
+  }
+
+  ctx.restore();
+
+  // Selection highlight ring.
+  if (isSelected) {
+    ctx.save();
+    ctx.strokeStyle = '#ffd400';
+    ctx.lineWidth = Math.max(2, tileSize * 0.08);
+    ctx.setLineDash([4, 3]);
+    const halfDraw = drawSize / 2 + 2;
+    ctx.strokeRect(cx - halfDraw, cy - halfDraw, halfDraw * 2, halfDraw * 2);
+    ctx.restore();
+  }
+}
+
 const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   map,
   activeTool,
@@ -603,6 +701,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   onRemoveLightSource,
   lightRadius = 4,
   lightColor = '#f97316',
+  onAddStamp,
+  onMoveStamp,
+  onRemoveStamp,
+  selectedStampId,
   stairLinks,
   stairLinkSource,
   onStairLinkClick,
@@ -643,6 +745,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   // grabbed, so the token follows the cursor without snapping its
   // top-left to the cursor cell.
   const draggingTokenRef = useRef<{ id: number; lastX: number; lastY: number; offsetX: number; offsetY: number } | null>(null);
+  // Stamp currently being dragged via the move-stamp tool.
+  const draggingStampRef = useRef<{ id: number; lastX: number; lastY: number; offsetX: number; offsetY: number } | null>(null);
   // ── Multi-finger gesture tracking for undo/redo shortcuts ─────────
   // Track the maximum number of simultaneous pointers during a gesture
   // and whether any pointer moved significantly. Two-finger tap = undo,
@@ -689,6 +793,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const tokens = useMemo(() => map.tokens ?? [], [map.tokens]);
   const annotations = useMemo(() => map.annotations ?? [], [map.annotations]);
   const markers = useMemo(() => map.markers ?? [], [map.markers]);
+  const stamps = useMemo(() => map.stamps ?? [], [map.stamps]);
   const fog = map.fog;
   const fogActive = (map.fogEnabled ?? false);
   const isPlayerView = viewMode === 'player';
@@ -887,6 +992,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     if (!printMode && lightSources && lightSources.length > 0) {
       for (const ls of lightSources) {
         drawLightIcon(ctx, ls, tileSize);
+      }
+    }
+
+    // Placed stamps — rendered between light icons and tokens so they
+    // appear as map furniture/dressing beneath the tactical token layer.
+    if (stamps.length > 0) {
+      for (const stamp of stamps) {
+        drawStamp(ctx, stamp, tileSize);
       }
     }
 
@@ -1363,7 +1476,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex]);
 
   // Minimap render
   useEffect(() => {
@@ -1542,6 +1655,20 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       if (ls) onRemoveLightSource?.(ls.id);
       return;
     }
+    if (activeTool === 'stamp') {
+      if (selectedStampId) {
+        onAddStamp?.(selectedStampId, x, y);
+      }
+      return;
+    }
+    if (activeTool === 'remove-stamp') {
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        const s = findStampAt(stamps, fc.x, fc.y);
+        if (s) onRemoveStamp?.(s.id);
+      }
+      return;
+    }
     if (activeTool === 'link-stair') {
       onStairLinkClick?.(x, y);
       return;
@@ -1591,7 +1718,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     onAddToken, onRemoveToken, onRemoveAnnotation, meta.width, meta.height,
     onAddMarker, onRemoveMarker, markerShape, markerColor, markerSize, markers,
     getFractionalCoords, onFovClick, lightSources, onAddLightSource, onRemoveLightSource,
-    onStairLinkClick,
+    onStairLinkClick, stamps, selectedStampId, onAddStamp, onRemoveStamp,
   ]);
 
   /* ── Multi-touch gesture tracking ─────────────────────────── */
@@ -1703,6 +1830,23 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       return;
     }
 
+    if (activeTool === 'move-stamp' && coords) {
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        const s = findStampAt(stamps, fc.x, fc.y);
+        if (s && !s.locked) {
+          draggingStampRef.current = {
+            id: s.id,
+            lastX: s.x,
+            lastY: s.y,
+            offsetX: coords.x - s.x,
+            offsetY: coords.y - s.y,
+          };
+        }
+      }
+      return;
+    }
+
     if (activeTool === 'line' || activeTool === 'rect' || activeTool === 'measure' || isFogDragTool) {
       if (coords) {
         setDragStart(coords);
@@ -1719,7 +1863,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     } else {
       handleCanvasAction(e);
     }
-  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens, zoom]);
+  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens, stamps, zoom]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const coords = getTileCoords(e);
@@ -1864,6 +2008,19 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       return;
     }
 
+    // Stamp drag — works in GM view.
+    if (activeTool === 'move-stamp' && draggingStampRef.current && coords) {
+      const drag = draggingStampRef.current;
+      const targetX = coords.x - drag.offsetX;
+      const targetY = coords.y - drag.offsetY;
+      if (targetX !== drag.lastX || targetY !== drag.lastY) {
+        drag.lastX = targetX;
+        drag.lastY = targetY;
+        onMoveStamp?.(drag.id, targetX, targetY);
+      }
+      return;
+    }
+
     if ((activeTool === 'line' || activeTool === 'rect' || activeTool === 'measure' || isFogDragTool) && isDragging && coords) {
       setDragEnd(coords);
     } else if (activeTool === 'select' && isDragging && coords && dragStart) {
@@ -1877,7 +2034,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     } else if (activeTool === 'paint' || activeTool === 'erase') {
       handleCanvasAction(e);
     }
-  }, [activeTool, isDragging, dragStart, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, onMoveToken, zoom]);
+  }, [activeTool, isDragging, dragStart, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, onMoveToken, onMoveStamp, zoom]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -1938,6 +2095,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     if (draggingTokenRef.current) {
       draggingTokenRef.current = null;
     }
+    if (draggingStampRef.current) {
+      draggingStampRef.current = null;
+    }
 
     if (isMouseDownRef.current) {
       if ((activeTool === 'line' || activeTool === 'rect') && isDragging && dragStart && dragEnd) {
@@ -1982,6 +2142,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       lastDefogCellRef.current = null;
     }
     if (draggingTokenRef.current) draggingTokenRef.current = null;
+    if (draggingStampRef.current) draggingStampRef.current = null;
     if (isDragging) {
       setIsDragging(false);
       setDragStart(null);
@@ -2003,6 +2164,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       lastDefogCellRef.current = null;
     }
     if (draggingTokenRef.current) draggingTokenRef.current = null;
+    if (draggingStampRef.current) draggingStampRef.current = null;
     if (isDragging) {
       setIsDragging(false);
       setDragStart(null);
@@ -2083,6 +2245,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         || activeTool === 'token-monster-lg' ? 'copy'
     : activeTool === 'marker' ? 'copy'
     : activeTool === 'remove-marker' ? 'not-allowed'
+    : activeTool === 'stamp' ? 'copy'
+    : activeTool === 'move-stamp' ? 'grab'
+    : activeTool === 'remove-stamp' ? 'not-allowed'
     : activeTool === 'fov' ? 'crosshair'
     : 'crosshair';
 
