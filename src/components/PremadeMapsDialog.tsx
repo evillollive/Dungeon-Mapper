@@ -146,7 +146,7 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
         </div>
 
         {currentHasContent && (
-          <div className="generate-dialog-warning" role="status" aria-live="polite">
+          <div className="generate-dialog-warning" role="alert">
             {confirmLoadId === selected?.id
               ? '⚠️ Click Confirm Load to replace the current project with this sample map.'
               : '⚠️ Loading a sample map replaces the current project.'}
