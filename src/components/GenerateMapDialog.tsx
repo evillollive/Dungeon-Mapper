@@ -209,6 +209,9 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
   const [nameRooms, setNameRooms] = useState<boolean>(false);
   const showNameRooms = showLabelRoomsToggle && labelRooms;
 
+  // Fill empty cells with the theme background tile after generation.
+  const [fillBackground, setFillBackground] = useState<boolean>(false);
+
   // True when the current selection is large enough to host a generator
   // run. Falls back to false (and disables the toggle) when no selection
   // is active or the rectangle is too small to be useful.
@@ -279,6 +282,16 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
         dungeonShape: showDungeonShape ? dungeonShapeId : undefined,
         deadEndRemoval: showDeadEndRemoval ? deadEndRemoval : undefined,
       });
+      // Post-processing: fill remaining empty cells with background tile.
+      if (fillBackground) {
+        for (const row of result.tiles) {
+          for (let i = 0; i < row.length; i++) {
+            if (row[i].type === 'empty') {
+              row[i] = { type: 'background' };
+            }
+          }
+        }
+      }
       const suggestedName = `Generated ${generator.name}`;
       if (intoSelection && selection) {
         onGenerate(result, suggestedName, selection);
@@ -542,6 +555,17 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
             </span>
           </label>
         )}
+
+        <label className="generate-dialog-row generate-dialog-checkbox">
+          <input
+            type="checkbox"
+            checked={fillBackground}
+            onChange={e => setFillBackground(e.target.checked)}
+          />
+          <span>
+            Fill empty space with background tile
+          </span>
+        </label>
 
         <label className="generate-dialog-row">
           <span>Seed</span>
