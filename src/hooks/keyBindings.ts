@@ -430,6 +430,9 @@ export const TOOL_SHORTCUTS: Record<ToolType, string | undefined> = {
   light: 'I',
   'remove-light': undefined,
   'link-stair': 'K',
+  stamp: undefined,
+  'move-stamp': undefined,
+  'remove-stamp': undefined,
   gmdraw: 'D',
   gmerase: undefined,
 };
