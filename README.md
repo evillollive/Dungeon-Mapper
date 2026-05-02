@@ -1,22 +1,27 @@
 # ⚔ Dungeon Mapper
 
-A retro-styled, interactive grid-based dungeon map editor built with Vite + React + TypeScript.
+A retro-styled, interactive grid-based dungeon map editor built with Vite + React + TypeScript. Installable as a Progressive Web App with full offline support and touch/tablet-friendly UI.
 
-> _Screenshots: drop captures of the editor into a `docs/screenshots/` folder and reference them here, e.g. `![Editor](docs/screenshots/editor.png)`. Suggested shots: the empty editor at default zoom, a painted map in the Dungeon theme, the same map switched to Wilderness, the Player View with fog-of-war partially revealed, and Print mode active._
+> _Screenshots: drop captures of the editor into a `docs/screenshots/` folder and reference them here, e.g. `![Editor](docs/screenshots/editor.png)`. Suggested shots: the empty editor at default zoom, a painted map in the Dungeon theme, the same map switched to Wilderness, the Present View with fog-of-war partially revealed, and Print mode active._
 
 ## Features
 
 - **Grid editor** — configurable map from 8×8 up to 128×128 (selectable widths/heights: 8, 16, 24, 32, 48, 64, 96, 128), default 32×32
 - **Tile size** — selectable tile size (12, 16, 20, 24, 32 px), default 20 px
-- **19 paintable tile types** — Floor, Wall, Door (H/V), Secret Door, Locked Door (H/V), Trapped Door (H/V), Portcullis, Archway, Barricade, Stairs Up/Down, Water, Pillar, Trap, Treasure, Start (use the Erase tool to clear a tile back to empty)
-- **13 preset theme modes** — Castle, Dungeon, Starship, Alien World, Lost Civilization, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City, Pirate, Desert (see [Preset Modes](#preset-modes) below)
-- **Graph-paper canvas** — light parchment background with cyan grid lines, evoking traditional engineering / quad-ruled graph paper
-- **Print mode** — toggle a high-contrast black-and-white renderer for printer-friendly output
-- **GM drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`, Line-of-Sight / FOV `O`, Measure `M`, Light Source `I`
+- **20 paintable tile types** — Floor, Wall, Door (H/V), Secret Door, Locked Door (H/V), Trapped Door (H/V), Portcullis, Archway, Barricade, Stairs Up/Down, Water, Pillar, Trap, Treasure, Start, plus project-scoped custom tiles (use the Erase tool to clear a tile back to empty)
+- **13 preset theme modes** — Castle, Dungeon, Starship, Alien World, Lost Civilization, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City, Pirate, Desert — each with unique per-theme art for floors, walls, doors, water, treasure, traps, and start tiles (see [Preset Modes](#preset-modes) below)
+- **Custom themes** — project-scoped custom theme builder with editable tile colors, labels, grid color, and optional uploaded tile graphics (see [Custom Themes](#custom-themes) below)
+- **Multi-level dungeons** — create multi-floor projects with level tabs, stair links between levels, per-level undo history, and double-click stair navigation (see [Multi-Level Dungeons](#multi-level-dungeons) below)
+- **Sample maps** — 26 bundled sample projects (including 2 multi-level maps totaling 28 levels) across all 13 themes for onboarding and inspiration (see [Sample Maps](#sample-maps) below)
+- **Themed canvas** — per-theme grid colors, deterministic tile color jitter, and wall depth/shadow effects for a rich, organic look; warm parchment background with pixel-sharp rendering
+- **Print mode** — toggle a high-contrast black-and-white renderer for printer-friendly output, with cross-hatched walls and stipple-shaded water
+- **Tabbed toolbar** — GM tools organized into three tabs (Draw, Tactical, Advanced) for progressive disclosure and reduced clutter
+- **Drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`, Line-of-Sight / FOV `O`, Measure `M`, Light Source `I`, GM Draw `D`
+- **GM drawing tools** — freehand GM-only annotations with dashed line rendering, hidden from Present view in canvas, PNG, and SVG exports (`D` shortcut)
 - **Copy / Paste / Cut** — select a region with the Select tool, then `Ctrl+C` to copy, `Ctrl+X` to cut, `Ctrl+V` to paste tiles and notes at the selection origin with a live preview overlay
 - **Procedural map generation** — toolbar **🎲 Generate** opens a dialog with four algorithms (Rooms & Corridors, Open Terrain, Cavern, Village), a deterministic seed, a density slider, per-generator tile-mix sliders, corridor strategy and shape controls, optional theme room labels with procedural names, and an opt-in **Generate into selection** mode that stamps a generated map into an active selection rectangle without disturbing the rest of the map (see [Map Generation](#map-generation) below)
-- **Player view** — header **🛡 GM View / 👁 Player View** toggle swaps to a player-safe toolbar with a freehand drawing pen, an eraser, fog-of-war controls, and token tools (see [Player View](#player-view) below)
-- **Fog of war** — per-cell hidden / revealed flags with a Defog brush, Reveal `V` / Hide `H` drag-rectangles, Reset Fog (re-cover the map), Clear Fog (reveal everything), an optional GM **🌫 Show Fog** preview overlay, and **Dynamic Fog** mode that auto-reveals cells visible from player tokens with 3-state rendering (hidden / explored / visible)
+- **Edit / Present views** — header **👁 Present** toggle swaps to a player-safe toolbar with a freehand drawing pen, an eraser, fog-of-war controls, and token tools (see [Present View](#present-view) below)
+- **Fog of war** — per-cell hidden / revealed flags with a Defog brush, Reveal `V` / Hide `H` drag-rectangles, Reset Fog (re-cover the map), Clear Fog (reveal everything), an optional GM **🌫 Show Fog** preview overlay, fog edge feathering, and **Dynamic Fog** mode that auto-reveals cells visible from player tokens with 3-state rendering (hidden / explored / visible)
 - **Tokens with icon library** — drop Player, NPC, and Monster tokens (small 1×1, medium 2×2, large 3×3) onto the map with a searchable icon picker (30+ icons in 6 categories); Move Token to drag, Remove Token to delete
 - **Initiative panel** — a turn-order list in the right-hand sidebar that mirrors placed tokens; the GM can drag entries to reorder, rename them inline, or clear the list (see [Initiative](#initiative) below)
 - **Shape / area markers** — place colored shape overlays (circle, square, diamond) on the map for marking spell areas, hazard zones, and tactical effects; 8 color options with adjustable radius (see [Markers](#markers) below)
@@ -24,15 +29,16 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **Light sources** — place light sources on the map from preset profiles (torch, lantern, magical, custom) with adjustable radius and color; integrates with dynamic fog to illuminate cells within range (see [Light Sources](#light-sources) below)
 - **Background image import** — import a PNG/JPG as a background layer behind the tile grid for tracing existing battlemaps; adjustable opacity, scale, and position (see [Background Image](#background-image) below)
 - **Player annotations** — freehand pen with eight color swatches and Thin / Medium / Thick brush widths; per-stroke eraser and a Clear All button
-- **Zoom & pan** — `+` / `-` / `Reset` / `Fit` controls along the bottom of the map; right-click drag to pan; mouse-wheel zoom while holding `Shift` (or with Caps Lock on)
-- **Undo / Redo** — up to 50 steps (`Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z`)
-- **Room notes** — numbered annotations placed on the map with labels and descriptions; in Player View, notes that sit under fog are hidden from the side panel
+- **Zoom & pan** — `+` / `-` / `Reset` / `Fit` controls along the bottom of the map; right-click drag (or long-press on touch) to pan; mouse-wheel zoom while holding `Shift` (or with Caps Lock on); pinch-to-zoom and two-finger pan on touch devices
+- **Undo / Redo** — up to 50 steps per level (`Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z`)
+- **Room notes** — numbered annotations placed on the map with labels and descriptions; in Present view, notes that sit under fog are hidden from the side panel
 - **Auto-save** — map state persisted to IndexedDB on every change (migrates legacy localStorage data automatically)
 - **Line-of-Sight / FOV** — click any cell to visualize which cells are visible from that point, with walls blocking the view; click the same cell again to clear (`O` shortcut)
-- **Export / Import** — JSON round-trip, PNG canvas export, SVG vector export, and a print-optimized high-DPI PNG export dialog with page tiling
+- **Export / Import** — JSON round-trip, PNG canvas export, SVG vector export, and a print-optimized high-DPI PNG export dialog with page tiling and optional scale bar
 - **Adjustable UI scale** — header **UI** dropdown rescales chrome text and controls (50%, 75%, 100%, 125%, 150%) and remembers your choice across sessions
 - **Preserve-tiles toggle** — when enabled (toolbar **🎨 Preserve**), switching themes keeps already-painted tiles in their original style so you can mix terrain styles from multiple themes on a single map
-- **Light parchment aesthetic** — warm off-white background, deep brick-red accents, and pixel-sharp canvas rendering for a graph-paper feel
+- **Mobile & tablet support** — responsive layout with 4 breakpoints, dedicated mobile bottom toolbar, touch gestures (pinch-to-zoom, two-finger pan, long-press pan), and gesture shortcuts (two-finger tap = undo, three-finger tap = redo)
+- **Progressive Web App** — installable on desktop and mobile with full offline support via service worker caching
 
 ## Preset Modes
 
@@ -40,7 +46,9 @@ Dungeon Mapper ships with two kinds of presets: **theme modes** that re-skin the
 
 ### Theme modes
 
-Each theme keeps the same underlying tile types but renames them and re-renders them with setting-appropriate glyphs and colors. Maps stay portable across themes — swapping themes restyles the whole map without losing any tile data. Enable the toolbar **🎨 Preserve** toggle if you want already-painted tiles to keep their original theme style when you switch themes (so you can blend, say, Wilderness terrain with a Dungeon crawl on a single map). The themes are listed alphabetically in the **🗺 Theme** dropdown.
+Each theme keeps the same underlying tile types but renames them and re-renders them with setting-appropriate glyphs, colors, and procedural art. Every theme features unique floor textures (e.g., Dungeon flagstone mortar, Starship deck plating, Wilderness grass blades, Cyberpunk circuit traces), distinct wall rendering (Castle ashlar masonry, Cyberpunk holographic force-fields, Wilderness dense foliage), themed doors, and per-theme treasure, trap, start, and water art. Tiles have deterministic color jitter for subtle per-cell variation, and walls display theme-appropriate depth effects (shadows, glows, or hard edges). Grid lines use per-theme colors for immersion (e.g., warm amber for Castle, neon for Cyberpunk, earthy olive for Wilderness).
+
+Maps stay portable across themes — swapping themes restyles the whole map without losing any tile data. Enable the toolbar **🎨 Preserve** toggle if you want already-painted tiles to keep their original theme style when you switch themes (so you can blend, say, Wilderness terrain with a Dungeon crawl on a single map). The themes are listed alphabetically in the **🗺 Theme** dropdown.
 
 | Theme | Setting | Tile flavor (Floor / Wall / Door / Secret Door / Locked Door / Trapped Door / Portcullis / Archway / Barricade / Water / Pillar / Trap / Treasure / Start) |
 | --- | --- | --- |
@@ -60,20 +68,47 @@ Each theme keeps the same underlying tile types but renames them and re-renders 
 
 ### Print mode
 
-Print mode swaps the colored theme renderer for a high-contrast black-on-parchment monochrome view. Tiles are drawn as bold pixel glyphs and the grid is darkened so exported PNG/SVG files (or a browser print) read clearly on a black-and-white printer. Toggle it on or off at any time without affecting your map data.
+Print mode swaps the colored theme renderer for a high-contrast black-on-parchment monochrome view. Tiles are drawn as bold pixel glyphs, walls use cross-hatching, water uses stipple shading, and the grid is darkened so exported PNG/SVG files (or a browser print) read clearly on a black-and-white printer. Toggle it on or off at any time without affecting your map data.
 
-## Player View
+## Custom Themes
 
-The header **🛡 GM View / 👁 Player View** button swaps Dungeon Mapper between two toolbars that share the same map:
+The toolbar's theme section (Draw tab) includes a **Custom Theme** builder for creating project-scoped custom themes:
 
-- **GM View** is the full editor: paint tiles, place notes, switch themes, etc.
-- **Player View** is a player-safe surface for use at the table. The tile-paint palette is hidden so the map can't be accidentally redrawn, and a different toolbar is exposed: fog-of-war controls, a freehand pen for table annotations, and tokens.
+- **Base theme** — custom themes inherit from one of the 13 built-in themes, getting its tile rendering and grid color as defaults.
+- **Editable properties** — change the theme name, grid line color, and per-tile colors and labels for all built-in tile types.
+- **Custom tile palette** — add user-defined tile entries with a label, semantic base behavior (floor, wall, door, etc.), color fallback, and optional uploaded PNG/JPEG/WebP graphic stored as a data URL.
+- **Base behavior** — custom tiles inherit line-of-sight blocking, dynamic fog interaction, light visibility, and print-mode fallback from their assigned base behavior.
+- **Persistence** — custom themes round-trip through JSON export/import and IndexedDB auto-save. They are project-scoped, so each project can have its own theme customizations.
+
+## Multi-Level Dungeons
+
+Dungeon Mapper supports multi-floor projects with level management and inter-level navigation:
+
+- **Level tabs** — a tab bar below the header with controls to add, rename (double-click), duplicate, delete, and drag-to-reorder levels.
+- **Per-level undo** — each level maintains its own 50-step undo/redo history.
+- **Stair links** — use the Stair Link tool (`K`) to connect stairs-up and stairs-down tiles between levels. Click a stairs tile to set the source, switch levels, then click the destination stairs to create a link.
+- **Link badges** — linked stairs show blue "L#" badges on the canvas indicating the destination level. Level tabs show a 🔗 badge with the link count.
+- **Stair navigation** — double-click a linked stairs tile to jump to the destination level and auto-center the viewport on the arrival cell.
+- **Link management** — the STAIR LINKS toolbar section provides the Link tool, a Clear Links button, and a link count display. Links auto-reindex when levels are deleted, duplicated, or reordered.
+- **Keyboard shortcuts** — `PageUp` / `PageDown` to cycle between levels; `K` to activate the Stair Link tool.
+- **Full round-trip** — multi-level projects export/import as JSON with all stair links preserved. IndexedDB auto-save handles legacy single-map migration automatically.
+
+## Sample Maps
+
+The header's **Samples** button opens a gallery of 26 bundled sample projects (28 playable levels) across all 13 themes. Sample maps showcase each theme's art, tile variety, and generator capabilities — including rooms-and-corridors dungeons, villages, caverns, and open-terrain maps. Two multi-level samples (ISS Constellation and Temple of the Forgotten Sun) demonstrate stair links between levels. Loaded samples are fully editable and treated as new projects.
+
+## Present View
+
+The header **👁 Present** button swaps Dungeon Mapper between two toolbars that share the same map:
+
+- **Edit mode** is the full editor: paint tiles, place notes, switch themes, etc.
+- **Present mode** is a player-safe surface for use at the table. The tile-paint palette is hidden so the map can't be accidentally redrawn, and a different toolbar is exposed: fog-of-war controls, a freehand pen for table annotations, and tokens.
 
 Your view-mode preference is remembered across sessions.
 
 ### Fog of war
 
-New maps start with fog enabled and every cell hidden so the Player View is safe to share with the table by default. You can toggle fog on or off per map from the Player toolbar's **🌫 Enabled** checkbox. While fog is enabled:
+New maps start with fog enabled and every cell hidden so the Present view is safe to share with the table by default. You can toggle fog on or off per map from the Present toolbar's **🌫 Enabled** checkbox. While fog is enabled:
 
 - **Defog** — freehand brush; drag across the map to wipe fog away cell-by-cell.
 - **Reveal `V`** / **Hide `H`** — drag a rectangle of cells to expose or re-cover them.
@@ -82,11 +117,11 @@ New maps start with fog enabled and every cell hidden so the Player View is safe
 - **Dynamic** — toggle auto-reveal mode. When enabled, cells visible from any player token are automatically revealed using line-of-sight. The fog uses 3-state rendering: **hidden** (opaque, never seen), **explored** (dimmed, previously visible but no longer in line-of-sight), and **visible** (clear, currently in line-of-sight of a player token). The explored grid persists with the map.
 - **Reset Explored** — (appears when Dynamic is enabled) clears all explored memory so previously seen cells return to fully fogged.
 
-In Player View, fogged cells are covered by an opaque overlay and any room notes that sit under fog are omitted from the side panel so they don't leak hidden rooms. In GM View, the toolbar's **🌫 Show Fog** checkbox layers a translucent grey wash over the same cells so the GM can preview what's hidden from players without losing their own view of the map.
+In Present view, fogged cells are covered by an opaque overlay (with soft gradient feathering at revealed/hidden boundaries) and any room notes that sit under fog are omitted from the side panel so they don't leak hidden rooms. In Edit mode, the toolbar's **🌫 Show Fog** checkbox layers a translucent grey wash over the same cells so the GM can preview what's hidden from players without losing their own view of the map.
 
 ### Drawing pen
 
-The Player toolbar exposes a freehand drawing tool for live table annotations:
+The Present toolbar exposes a freehand drawing tool for live table annotations:
 
 - **Draw** / **Erase** — sketch over the map with the pen, or click an individual stroke to remove it.
 - **Pen colors** — eight preset swatches (red, orange, yellow, green, blue, purple, near-black, white).
@@ -106,21 +141,21 @@ Tokens, fog flags, and player annotations are all stored on the map and survive 
 
 ### Initiative
 
-A right-hand **Initiative** panel is shown in both GM and Player views. Tokens are appended to the list as they are placed on the map and removed automatically when their token is deleted. Click an entry to highlight the matching token on the map (a yellow ring is drawn around it); click the same entry again to clear the highlight.
+A right-hand **Initiative** panel is shown in both Edit and Present views. Tokens are appended to the list as they are placed on the map and removed automatically when their token is deleted. Click an entry to highlight the matching token on the map (a yellow ring is drawn around it); click the same entry again to clear the highlight.
 
-In **GM View** the panel is fully editable:
+In **Edit mode** the panel is fully editable:
 
 - **Drag** an entry up or down to change the turn order.
 - **✎ Rename** an entry inline so the displayed label can be something other than the token's auto-generated name.
 - **Clear** wipes the initiative list (tokens themselves stay on the map).
 
-In **Player View** the panel is read-only — no rename, reorder, or clear. When fog is enabled, tokens whose footprint sits entirely under fog are also omitted from the list so it doesn't leak the existence of hidden enemies.
+In **Present mode** the panel is read-only — no rename, reorder, or clear. When fog is enabled, tokens whose footprint sits entirely under fog are also omitted from the list so it doesn't leak the existence of hidden enemies.
 
 The initiative order is persisted with the map (auto-save and JSON export).
 
 ### Markers
 
-The GM toolbar's **MARKERS** section provides shape overlay tools for marking spell areas, hazard zones, and other tactical effects on the map:
+The toolbar's **MARKERS** section (Tactical tab) provides shape overlay tools for marking spell areas, hazard zones, and other tactical effects on the map:
 
 - **Place** — click on the map to drop a colored shape marker at the cursor position.
 - **Remove** — click an existing marker to delete it.
@@ -133,7 +168,7 @@ Markers are rendered with transparency so the underlying map remains visible. Th
 
 ### Measure
 
-The GM toolbar's **MEASURE** section provides on-canvas distance measurement:
+The toolbar's **MEASURE** section (Tactical tab) provides on-canvas distance measurement:
 
 - **Measure tool** (`M`) — click and drag on the map to measure the distance between two cells.
 - **Shape** — choose between four measurement shapes:
@@ -147,7 +182,7 @@ Measurements are drawn as cyan overlays with a pill-shaped distance readout. Dis
 
 ### Light Sources
 
-The GM toolbar's **LIGHT** section lets you place light sources on the map for illumination effects:
+The toolbar's **LIGHT** section (Tactical tab) lets you place light sources on the map for illumination effects:
 
 - **Place** (`I`) — click a cell to drop a light source at that position.
 - **Remove** — click an existing light source to delete it.
@@ -169,7 +204,7 @@ Notes within the selection are remapped to fresh IDs on paste to avoid collision
 
 ### Background Image
 
-The GM toolbar's **BACKGROUND** section lets you import an image to display behind the tile grid — useful for tracing existing battlemaps or using pre-made art as a backdrop:
+The toolbar's **BACKGROUND** section (Advanced tab) lets you import an image to display behind the tile grid — useful for tracing existing battlemaps or using pre-made art as a backdrop:
 
 - **Import** — opens a file picker for PNG, JPEG, or WebP images. The image is loaded as a data URL and stored with the map.
 - **Remove** — clears the background image.
@@ -181,7 +216,7 @@ The background image is hidden in Print mode. It is included in PNG exports (cap
 
 ## Map Generation
 
-The toolbar **🎲 Generate** button (in the **THEME** section of the GM toolbar) opens a procedural map-generation dialog. Generated maps use the standard tile types (Floor, Wall, Door, Secret Door, Locked Door, Trapped Door, Portcullis, Archway, Barricade, Stairs, Water, Pillar, Trap, Treasure, Start) so the result is rendered in whatever theme the map currently uses — switching the theme afterwards restyles the generated map without losing any tile data.
+The toolbar **🎲 Generate** button (in the **THEME** section of the Draw tab) opens a procedural map-generation dialog. Generated maps use the standard tile types (Floor, Wall, Door, Secret Door, Locked Door, Trapped Door, Portcullis, Archway, Barricade, Stairs, Water, Pillar, Trap, Treasure, Start) so the result is rendered in whatever theme the map currently uses — switching the theme afterwards restyles the generated map without losing any tile data.
 
 ### Algorithms
 
@@ -241,15 +276,17 @@ the same registry these shortcuts are defined in.
 | `O` | Line-of-Sight / FOV tool — click a cell to see what is visible from it |
 | `M` | Measure / Distance tool — click and drag to measure distances |
 | `I` | Light Source tool — click a cell to place a light source (Illuminate) |
+| `D` | GM Draw tool — freehand annotations visible only in Edit mode (dashed lines, hidden from Present view) |
+| `K` | Stair Link tool — click stairs to link between levels |
 
 ### View
 
 | Shortcut | Action |
 | --- | --- |
 | `Shift+P` | Toggle Print / B&W mode |
-| `Shift+V` | Toggle GM ↔ Player view |
-| `T` / `Shift+T` | Cycle to next / previous theme (GM view) |
-| `[` / `]` | Cycle to previous / next tile in the palette (GM view) |
+| `Shift+V` | Toggle Edit ↔ Present view |
+| `T` / `Shift+T` | Cycle to next / previous theme (Edit mode) |
+| `[` / `]` | Cycle to previous / next tile in the palette (Edit mode) |
 | `Ctrl+=` *or* `Ctrl++` | Increase UI scale |
 | `Ctrl+-` | Decrease UI scale |
 
@@ -263,6 +300,7 @@ the same registry these shortcuts are defined in.
 | Arrow keys | Pan the canvas (focus the canvas first by clicking it or via the **Skip to map canvas** link) |
 | `Shift` + mouse wheel | Zoom in / out (Caps Lock also enables wheel zoom without `Shift`) |
 | Right-click drag | Pan the canvas |
+| `PageUp` / `PageDown` | Switch to previous / next level (multi-level projects) |
 
 ### Edit
 
@@ -280,7 +318,7 @@ the same registry these shortcuts are defined in.
 
 | Shortcut | Action |
 | --- | --- |
-| `G` | Open the Generate Map dialog (GM view) |
+| `G` | Open the Generate Map dialog (Edit mode) |
 | `Ctrl+Alt+N` *or* `Ctrl+N` | New map (with confirmation) |
 | `Ctrl+O` | Import map from JSON |
 | `Ctrl+S` | Export map as JSON |
@@ -357,13 +395,13 @@ Your work is auto-saved to the browser's IndexedDB on every change, but the head
 
 ### Export
 
-- **↓ JSON** — writes the full map (tiles, notes, grid size, theme, name, and other metadata) to a `.json` file. This is the only format that round-trips back into the editor.
+- **↓ JSON** — writes the full project (all levels, tiles, notes, tokens, stair links, grid size, theme, name, custom theme data, and other metadata) to a `.json` file. This is the only format that round-trips back into the editor.
 - **↓ PNG** — saves a rasterized snapshot of the current canvas as a `.png` image. Great for sharing or printing, but it cannot be re-imported.
 - **↓ SVG** — saves a vector rendering of the map as an `.svg` file, with each tile and numbered note drawn as scalable shapes. Like PNG, this is for sharing/printing only — it cannot be re-imported.
 - **🖨 Print Export** (`Ctrl+Shift+P`) — opens a dialog for high-resolution, print-ready PNG output at 1 inch per tile. Options include:
   - **Resolution (DPI)** — choose the output DPI (300 DPI recommended).
   - **Page Size** — select a page preset to split large maps into printable page tiles.
-  - **View Mode** — export as GM (full map) or Player (fog hides content).
+  - **View Mode** — export as Edit (full map) or Present (fog hides content).
   - **Black & White** — toggle print mode for monochrome output.
   - The dialog shows the computed output dimensions and page count before exporting.
 
@@ -373,11 +411,50 @@ If **🖨 Print** mode is active, PNG/SVG exports use the high-contrast black-an
 
 The **↑ Import** button in the header opens a file picker and loads a previously exported map back into the editor, replacing the current map.
 
-- **Supported file type:** `.json` files produced by Dungeon Mapper's **↓ JSON** export. The file picker is restricted to `.json`, and the file is parsed as a `DungeonMap` object (tiles, notes, theme, grid size, map name, etc.).
+- **Supported file type:** `.json` files produced by Dungeon Mapper's **↓ JSON** export. The file picker is restricted to `.json`, and the file is parsed as a `DungeonProject` (multi-level project with tiles, notes, theme, grid size, map name, stair links, etc.). Legacy single-map files are automatically upgraded to a one-level project on import.
 - **Not supported:** PNG and SVG exports cannot be imported — they are image-only renders, not editable map data. No third-party formats (Dungeondraft, Universal VTT, images, CSV, etc.) are accepted.
 - **On error:** if the selected file isn't valid JSON, an alert is shown ("Failed to import map: Invalid JSON file") and your current map is left untouched.
 
 Because importing replaces the current map, export your work first if you want to keep it.
+
+## Mobile & Touch Support
+
+Dungeon Mapper is fully usable on tablets and phones through progressive enhancement — a single responsive codebase adapts to all screen sizes:
+
+### Responsive layout
+
+Four CSS breakpoints adapt the UI:
+
+- **Desktop** (>1024px) — full 3-column layout: left toolbar, center canvas, right panels.
+- **Tablet landscape** (768–1024px) — 2-column grid with collapsible left toolbar (icon-only with slide-out detail), right panel as overlay drawer, icon-only header labels.
+- **Tablet portrait / large phone** (480–768px) — single-column grid with bottom toolbar, canvas fills viewport, stacked header.
+- **Phone** (<480px) — minimal header, nearly full-width drawers, compact controls.
+
+### Touch gestures
+
+All canvas interactions use the Pointer Events API, supporting mouse, touch, and stylus input:
+
+- **Pinch-to-zoom** — two-finger pinch to scale the canvas (0.25×–4×).
+- **Two-finger pan** — drag with two fingers to pan the canvas.
+- **Long-press pan** — long-press (400ms) starts pan mode, replacing right-click for touch devices.
+- **Two-finger tap** — undo. **Three-finger tap** — redo.
+
+### Mobile toolbar
+
+On screens ≤768px, a dedicated bottom toolbar replaces the desktop sidebar:
+
+- **Bottom bar** — 5–6 primary tool buttons with 44×44px touch targets (Draw, Erase, Fill, Fog/Defog, Select, More).
+- **"More" flyout** — slides up from the bottom with categorized tool grids (Drawing, Fog, Tactical, Tokens, Advanced).
+- **Floating action button (FAB)** — 56px circular undo button; long-press reveals a vertical menu with Undo, Redo, Generate, and Switch Mode.
+- **Tool options bar** — contextual controls above the bottom bar showing relevant settings for the active tool.
+
+### Progressive Web App (PWA)
+
+Dungeon Mapper can be installed as a standalone app on desktop and mobile devices:
+
+- **Install prompt** — browsers offer an "Add to Home Screen" or "Install" option for the app.
+- **Offline support** — all assets are cached by a service worker (Workbox) for full offline use.
+- **Standalone mode** — runs without browser chrome when installed, with proper safe-area handling for notched devices.
 
 ## Development
 
