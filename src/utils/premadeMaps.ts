@@ -77,6 +77,8 @@ const MEDIUM_MAP_DIMENSION = 56;
 const LARGE_MAP_TILE_SIZE = 12;
 const MEDIUM_MAP_TILE_SIZE = 16;
 const DEFAULT_PREMADE_TILE_SIZE = 20;
+// Safety guard for premade connectivity repair; normal maps converge once per disconnected component.
+const MAX_PREMADE_CONNECTION_ATTEMPTS = 128;
 const PASSABLE_TOKEN_TILE_TYPES = new Set<TileType>([
   'floor',
   'door-h',
@@ -98,6 +100,10 @@ const PREMADE_WALKABLE_TILE_TYPES = new Set<TileType>([
 ]);
 
 type Cell = { x: number; y: number };
+interface QueueEntry {
+  index: number;
+  dist: number;
+}
 
 function encounter(
   ally: [string, string],
@@ -876,31 +882,59 @@ function premadeConnectionCost(type: TileType): number {
   return Number.POSITIVE_INFINITY;
 }
 
+function pushQueue(heap: QueueEntry[], entry: QueueEntry): void {
+  heap.push(entry);
+  let index = heap.length - 1;
+  while (index > 0) {
+    const parent = Math.floor((index - 1) / 2);
+    if (heap[parent].dist <= entry.dist) break;
+    heap[index] = heap[parent];
+    index = parent;
+  }
+  heap[index] = entry;
+}
+
+function popQueue(heap: QueueEntry[]): QueueEntry | undefined {
+  const first = heap[0];
+  const last = heap.pop();
+  if (!first || !last) return first;
+  if (heap.length === 0) return first;
+  let index = 0;
+  while (true) {
+    const left = index * 2 + 1;
+    const right = left + 1;
+    if (left >= heap.length) break;
+    const child = right < heap.length && heap[right].dist < heap[left].dist ? right : left;
+    if (heap[child].dist >= last.dist) break;
+    heap[index] = heap[child];
+    index = child;
+  }
+  heap[index] = last;
+  return first;
+}
+
 function findConnectionPath(tiles: Tile[][], from: Cell[], to: Cell[]): Cell[] {
   const height = tiles.length;
   const width = tiles[0]?.length ?? 0;
   const total = width * height;
   const dist = Array.from({ length: total }, () => Number.POSITIVE_INFINITY);
-  const prev = Array.from<number | undefined>({ length: total });
+  const prev = new Array<number | undefined>(total);
   const visited = new Uint8Array(total);
   const targetKeys = new Set(to.map(cell => cell.y * width + cell.x));
+  const heap: QueueEntry[] = [];
 
   for (const cell of from) {
     const index = cell.y * width + cell.x;
     dist[index] = 0;
+    pushQueue(heap, { index, dist: 0 });
   }
 
   let targetIndex = -1;
-  while (targetIndex < 0) {
-    let current = -1;
-    let currentDist = Number.POSITIVE_INFINITY;
-    for (let i = 0; i < total; i++) {
-      if (!visited[i] && dist[i] < currentDist) {
-        current = i;
-        currentDist = dist[i];
-      }
-    }
-    if (current < 0) break;
+  while (targetIndex < 0 && heap.length > 0) {
+    const entry = popQueue(heap);
+    if (!entry || visited[entry.index]) continue;
+    const current = entry.index;
+    const currentDist = entry.dist;
     visited[current] = 1;
     if (targetKeys.has(current)) {
       targetIndex = current;
@@ -925,6 +959,7 @@ function findConnectionPath(tiles: Tile[][], from: Cell[], to: Cell[]): Cell[] {
       if (nextDist < dist[nextIndex]) {
         dist[nextIndex] = nextDist;
         prev[nextIndex] = current;
+        pushQueue(heap, { index: nextIndex, dist: nextDist });
       }
     }
   }
@@ -975,7 +1010,7 @@ function outlinePremadeConnections(tiles: Tile[][]): void {
 function connectPremadeLevel(tiles: Tile[][]): void {
   let components = collectWalkableComponents(tiles);
   let attempts = 0;
-  while (components.length > 1 && attempts < 128) {
+  while (components.length > 1 && attempts < MAX_PREMADE_CONNECTION_ATTEMPTS) {
     attempts++;
     const main = components[0];
     let bestPath: Cell[] = [];
