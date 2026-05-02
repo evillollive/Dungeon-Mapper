@@ -210,7 +210,7 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
   const showNameRooms = showLabelRoomsToggle && labelRooms;
 
   // Fill empty cells with the theme background tile after generation.
-  const [fillBackground, setFillBackground] = useState<boolean>(false);
+  const [fillBackground, setFillBackground] = useState<boolean>(true);
 
   // True when the current selection is large enough to host a generator
   // run. Falls back to false (and disables the toggle) when no selection
