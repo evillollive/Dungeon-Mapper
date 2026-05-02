@@ -77,6 +77,8 @@ const MEDIUM_MAP_DIMENSION = 56;
 const LARGE_MAP_TILE_SIZE = 12;
 const MEDIUM_MAP_TILE_SIZE = 16;
 const DEFAULT_PREMADE_TILE_SIZE = 20;
+// Safety guard for premade connectivity repair; normal maps converge once per disconnected component.
+const MAX_PREMADE_CONNECTION_ATTEMPTS = 128;
 const PASSABLE_TOKEN_TILE_TYPES = new Set<TileType>([
   'floor',
   'door-h',
@@ -92,6 +94,16 @@ const PASSABLE_TOKEN_TILE_TYPES = new Set<TileType>([
   'treasure',
   'start',
 ]);
+const PREMADE_WALKABLE_TILE_TYPES = new Set<TileType>([
+  ...PASSABLE_TOKEN_TILE_TYPES,
+  'secret-door',
+]);
+
+type Cell = { x: number; y: number };
+interface QueueEntry {
+  index: number;
+  dist: number;
+}
 
 function encounter(
   ally: [string, string],
@@ -800,6 +812,10 @@ function isPassable(type: TileType): boolean {
   return PASSABLE_TOKEN_TILE_TYPES.has(type);
 }
 
+function isPremadeWalkable(type: TileType): boolean {
+  return PREMADE_WALKABLE_TILE_TYPES.has(type);
+}
+
 function tileSizeFor(width: number, height: number): number {
   const maxDim = Math.max(width, height);
   if (maxDim >= LARGE_MAP_DIMENSION) return LARGE_MAP_TILE_SIZE;
@@ -824,6 +840,197 @@ function collectCells(tiles: Tile[][], predicate: (tile: Tile, x: number, y: num
 
 function distance(a: { x: number; y: number }, b: { x: number; y: number }): number {
   return Math.hypot(a.x - b.x, a.y - b.y);
+}
+
+function collectWalkableComponents(tiles: Tile[][]): Cell[][] {
+  const height = tiles.length;
+  const width = tiles[0]?.length ?? 0;
+  const visited = Array.from({ length: height }, () => Array.from({ length: width }, () => false));
+  const components: Cell[][] = [];
+  const dirs: readonly [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (visited[y][x] || !isPremadeWalkable(tiles[y][x].type)) continue;
+      const component: Cell[] = [];
+      const queue: Cell[] = [{ x, y }];
+      visited[y][x] = true;
+      let head = 0;
+      while (head < queue.length) {
+        const cell = queue[head++];
+        component.push(cell);
+        for (const [dx, dy] of dirs) {
+          const nx = cell.x + dx;
+          const ny = cell.y + dy;
+          if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+          if (visited[ny][nx] || !isPremadeWalkable(tiles[ny][nx].type)) continue;
+          visited[ny][nx] = true;
+          queue.push({ x: nx, y: ny });
+        }
+      }
+      components.push(component);
+    }
+  }
+
+  return components.sort((a, b) => b.length - a.length);
+}
+
+function premadeConnectionCost(type: TileType): number {
+  if (isPremadeWalkable(type)) return 1;
+  if (type === 'empty') return 2;
+  if (type === 'wall') return 3;
+  return Number.POSITIVE_INFINITY;
+}
+
+function pushQueue(heap: QueueEntry[], entry: QueueEntry): void {
+  heap.push(entry);
+  let index = heap.length - 1;
+  while (index > 0) {
+    const parent = Math.floor((index - 1) / 2);
+    if (heap[parent].dist <= entry.dist) break;
+    heap[index] = heap[parent];
+    index = parent;
+  }
+  heap[index] = entry;
+}
+
+function popQueue(heap: QueueEntry[]): QueueEntry | undefined {
+  const first = heap[0];
+  const last = heap.pop();
+  if (!first || !last) return first;
+  if (heap.length === 0) return first;
+  let index = 0;
+  while (true) {
+    const left = index * 2 + 1;
+    const right = left + 1;
+    if (left >= heap.length) break;
+    const child = right < heap.length && heap[right].dist < heap[left].dist ? right : left;
+    if (heap[child].dist >= last.dist) break;
+    heap[index] = heap[child];
+    index = child;
+  }
+  heap[index] = last;
+  return first;
+}
+
+function findConnectionPath(tiles: Tile[][], from: Cell[], to: Cell[]): Cell[] {
+  const height = tiles.length;
+  const width = tiles[0]?.length ?? 0;
+  const total = width * height;
+  const dist = Array.from({ length: total }, () => Number.POSITIVE_INFINITY);
+  const prev = new Array<number | undefined>(total);
+  // Packed numeric flags keep repeated pathfinding inexpensive on large premade sample grids.
+  const visited = new Uint8Array(total);
+  const targetKeys = new Set(to.map(cell => cell.y * width + cell.x));
+  const heap: QueueEntry[] = [];
+
+  for (const cell of from) {
+    const index = cell.y * width + cell.x;
+    dist[index] = 0;
+    pushQueue(heap, { index, dist: 0 });
+  }
+
+  let targetIndex = -1;
+  while (targetIndex < 0 && heap.length > 0) {
+    const entry = popQueue(heap);
+    if (!entry || visited[entry.index]) continue;
+    const current = entry.index;
+    const currentDist = entry.dist;
+    visited[current] = 1;
+    if (targetKeys.has(current)) {
+      targetIndex = current;
+      break;
+    }
+
+    const x = current % width;
+    const y = Math.floor(current / width);
+    const neighbors: Cell[] = [
+      { x: x + 1, y },
+      { x: x - 1, y },
+      { x, y: y + 1 },
+      { x, y: y - 1 },
+    ];
+    for (const next of neighbors) {
+      if (next.x < 0 || next.y < 0 || next.x >= width || next.y >= height) continue;
+      const nextIndex = next.y * width + next.x;
+      if (visited[nextIndex]) continue;
+      const stepCost = premadeConnectionCost(tiles[next.y][next.x].type);
+      if (!Number.isFinite(stepCost)) continue;
+      const nextDist = currentDist + stepCost;
+      if (nextDist < dist[nextIndex]) {
+        dist[nextIndex] = nextDist;
+        prev[nextIndex] = current;
+        pushQueue(heap, { index: nextIndex, dist: nextDist });
+      }
+    }
+  }
+
+  if (targetIndex < 0) return [];
+  const path: Cell[] = [];
+  for (let cursor: number | undefined = targetIndex; cursor !== undefined; cursor = prev[cursor]) {
+    const x = cursor % width;
+    const y = Math.floor(cursor / width);
+    path.push({ x, y });
+  }
+  return path.reverse();
+}
+
+function connectionPathCost(tiles: Tile[][], path: Cell[]): number {
+  return path.reduce((sum, cell) => sum + premadeConnectionCost(tiles[cell.y][cell.x].type), 0);
+}
+
+function carvePremadeConnection(tiles: Tile[][], path: Cell[]): void {
+  for (const cell of path) {
+    const tile = tiles[cell.y][cell.x];
+    if (tile.type === 'empty' || tile.type === 'wall') {
+      tiles[cell.y][cell.x] = { ...tile, type: 'floor' };
+    }
+  }
+}
+
+function outlinePremadeConnections(tiles: Tile[][]): void {
+  const height = tiles.length;
+  const width = tiles[0]?.length ?? 0;
+  const toWall: Cell[] = [];
+  const dirs: readonly [number, number][] = [[1, 0], [-1, 0], [0, 1], [0, -1]];
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      if (tiles[y][x].type !== 'empty') continue;
+      if (dirs.some(([dx, dy]) => {
+        const tile = tiles[y + dy]?.[x + dx];
+        return tile && isPremadeWalkable(tile.type);
+      })) {
+        toWall.push({ x, y });
+      }
+    }
+  }
+  for (const cell of toWall) {
+    tiles[cell.y][cell.x] = { ...tiles[cell.y][cell.x], type: 'wall' };
+  }
+}
+
+function connectPremadeLevel(tiles: Tile[][]): void {
+  let components = collectWalkableComponents(tiles);
+  let attempts = 0;
+  while (components.length > 1 && attempts < MAX_PREMADE_CONNECTION_ATTEMPTS) {
+    attempts++;
+    const main = components[0];
+    let bestPath: Cell[] = [];
+    let bestCost = Number.POSITIVE_INFINITY;
+    for (const component of components.slice(1)) {
+      const path = findConnectionPath(tiles, main, component);
+      if (path.length === 0) continue;
+      const cost = connectionPathCost(tiles, path);
+      if (cost < bestCost) {
+        bestCost = cost;
+        bestPath = path;
+      }
+    }
+    if (bestPath.length === 0) break;
+    carvePremadeConnection(tiles, bestPath);
+    outlinePremadeConnections(tiles);
+    components = collectWalkableComponents(tiles);
+  }
 }
 
 function findStartCell(tiles: Tile[][]): { x: number; y: number } {
@@ -964,6 +1171,7 @@ function buildLevel(spec: LevelSpec): DungeonMap {
   });
 
   const tiles = generated.tiles.map(row => row.map(tile => ({ ...tile })));
+  connectPremadeLevel(tiles);
   const tokens = placeTokens(tiles, spec.tokenTheme);
   const notes = describeNotes(generated.notes, spec.noteFlavor);
   return {
