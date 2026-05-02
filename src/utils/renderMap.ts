@@ -7,12 +7,13 @@
  * visible canvas or its device-pixel-ratio scaling.
  */
 
-import type { CustomThemeDefinition, DungeonMap, ViewMode, Token, ShapeMarker, AnnotationStroke } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, ViewMode, Token, ShapeMarker, AnnotationStroke, PlacedStamp } from '../types/map';
 import { TOKEN_KIND_COLORS, isBuiltInTileType } from '../types/map';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from './tokenVisibility';
 import { ICON_BY_ID } from './iconLibrary';
+import { getStampDef } from './stampCatalog';
 import { getSemanticTileType, getThemeWithCustom } from './customThemes';
 import type { TileDrawContext } from '../themes';
 
@@ -210,6 +211,11 @@ export function renderMapToCanvas(
   // Shape markers
   for (const marker of map.markers ?? []) {
     renderMarker(ctx, marker, tileSize);
+  }
+
+  // Stamps
+  for (const stamp of map.stamps ?? []) {
+    renderStamp(ctx, stamp, tileSize);
   }
 
   // Tokens
@@ -414,5 +420,50 @@ function renderMarker(
   ctx.strokeStyle = marker.color;
   ctx.lineWidth = Math.max(1, tileSize * 0.08);
   ctx.stroke();
+  ctx.restore();
+}
+
+function renderStamp(
+  ctx: CanvasRenderingContext2D,
+  stamp: PlacedStamp,
+  tileSize: number,
+) {
+  const def = getStampDef(stamp.stampId);
+  if (!def) return;
+
+  const cx = (stamp.x + 0.5) * tileSize;
+  const cy = (stamp.y + 0.5) * tileSize;
+  const scale = stamp.scale || 1;
+  const drawSize = tileSize * scale;
+
+  ctx.save();
+  ctx.globalAlpha = stamp.opacity ?? 1;
+  ctx.translate(cx, cy);
+  if (stamp.rotation) ctx.rotate((stamp.rotation * Math.PI) / 180);
+  if (stamp.flipX) ctx.scale(-1, 1);
+  if (stamp.flipY) ctx.scale(1, -1);
+
+  const vb = def.viewBox.split(/\s+/).map(Number);
+  const vbW = vb[2] || 512;
+  const vbH = vb[3] || 512;
+  const svgScale = drawSize / Math.max(vbW, vbH);
+
+  ctx.translate(-drawSize / 2, -drawSize / 2);
+  ctx.scale(svgScale, svgScale);
+
+  if (def.paths && def.paths.length > 0) {
+    for (const p of def.paths) {
+      const path2d = new Path2D(p.path);
+      if (p.fill) { ctx.fillStyle = p.fill; ctx.fill(path2d); }
+      if (p.stroke) { ctx.strokeStyle = p.stroke; ctx.lineWidth = p.strokeWidth ?? 1; ctx.stroke(path2d); }
+    }
+  } else if (def.svgPath) {
+    const path2d = new Path2D(def.svgPath);
+    ctx.fillStyle = '#4a4a4a';
+    ctx.fill(path2d);
+    ctx.strokeStyle = '#1a1a1a';
+    ctx.lineWidth = Math.max(1, 2 / svgScale);
+    ctx.stroke(path2d);
+  }
   ctx.restore();
 }

@@ -2,6 +2,7 @@ import type { CustomThemeDefinition, DungeonMap, DungeonProject, ViewMode } from
 import { TOKEN_KIND_COLORS, isDungeonProject } from '../types/map';
 import type { TileTheme } from '../themes/index';
 import { ICON_BY_ID } from './iconLibrary';
+import { getStampDef } from './stampCatalog';
 import { renderMapToCanvas } from './renderMap';
 import { wrapMapAsProject } from './storage';
 
@@ -193,6 +194,39 @@ export function exportMapSVG(
       // diamond
       const dp = `M${mcx} ${mcy - mr} L${mcx + mr} ${mcy} L${mcx} ${mcy + mr} L${mcx - mr} ${mcy} Z`;
       svg += `<path d="${dp}" fill="${marker.color}" fill-opacity="0.25" stroke="${marker.color}" stroke-opacity="0.6" stroke-width="${sw}"/>`;
+    }
+  }
+
+  // Stamps: rendered as SVG paths with transforms.
+  for (const stamp of map.stamps ?? []) {
+    const def = getStampDef(stamp.stampId);
+    if (!def) continue;
+    const cx = (stamp.x + 0.5) * tileSize;
+    const cy = (stamp.y + 0.5) * tileSize;
+    const scale = stamp.scale || 1;
+    const drawSize = tileSize * scale;
+    const vb = def.viewBox.split(/\s+/).map(Number);
+    const vbW = vb[2] || 512;
+    const vbH = vb[3] || 512;
+    const svgScale = drawSize / Math.max(vbW, vbH);
+    const transforms: string[] = [];
+    transforms.push(`translate(${cx},${cy})`);
+    if (stamp.rotation) transforms.push(`rotate(${stamp.rotation})`);
+    if (stamp.flipX) transforms.push(`scale(-1,1)`);
+    if (stamp.flipY) transforms.push(`scale(1,-1)`);
+    transforms.push(`translate(${-drawSize / 2},${-drawSize / 2})`);
+    transforms.push(`scale(${svgScale})`);
+    const opacity = (stamp.opacity ?? 1) < 1 ? ` opacity="${stamp.opacity}"` : '';
+    if (def.paths && def.paths.length > 0) {
+      svg += `<g transform="${transforms.join(' ')}"${opacity}>`;
+      for (const p of def.paths) {
+        const fill = p.fill ? ` fill="${p.fill}"` : ' fill="none"';
+        const stroke = p.stroke ? ` stroke="${p.stroke}" stroke-width="${p.strokeWidth ?? 1}"` : '';
+        svg += `<path d="${p.path}"${fill}${stroke}/>`;
+      }
+      svg += `</g>`;
+    } else if (def.svgPath) {
+      svg += `<g transform="${transforms.join(' ')}"${opacity}><path d="${def.svgPath}" fill="#4a4a4a" stroke="#1a1a1a" stroke-width="${Math.max(1, 2 / svgScale)}"/></g>`;
     }
   }
 
