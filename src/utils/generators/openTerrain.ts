@@ -19,6 +19,10 @@ import type { GenerateContext, GeneratedMap } from './types';
 /**
  * Drop a circular blob of `tile` onto the grid using a simple random walk.
  * Used to scatter rocks, water, and clearings across an otherwise open map.
+ *
+ * Only stamps over `floor` cells so blobs stay inside the carved playable
+ * region — wall blobs (rocks / trees / dunes) won't bleed into the
+ * `empty` border that `carveOpenRegion` leaves around the map edge.
  */
 function paintBlob(
   grid: TypeGrid,
@@ -33,10 +37,84 @@ function paintBlob(
   let x = cx;
   let y = cy;
   for (let i = 0; i < size; i++) {
-    if (y >= 0 && y < h && x >= 0 && x < w) setCell(grid, x, y, tile);
+    if (y >= 0 && y < h && x >= 0 && x < w && grid[y][x] === 'floor') {
+      setCell(grid, x, y, tile);
+    }
     const [dx, dy] = rng.pick(DIRS_4);
     x += dx;
     y += dy;
+  }
+}
+
+/**
+ * Carve an organic `floor` region into an `empty` grid, leaving an
+ * irregular border of `empty` cells around the map edge so the
+ * generator's output works with the dialog's "Fill empty space with
+ * background tile" post-processing pass.
+ *
+ * The region is the intersection of two slightly-jagged bands: a
+ * vertical band whose per-column top / bottom margins vary by a small
+ * amount, and a horizontal band whose per-row left / right margins
+ * vary similarly. Margins are smoothed with a 1-pass neighbour average
+ * so the boundary reads as a wavering coastline rather than per-cell
+ * noise. On very small maps the inset is reduced so the playable area
+ * never collapses below ~half the map dimensions.
+ */
+function carveOpenRegion(grid: TypeGrid, rng: Rng, width: number, height: number): void {
+  // Scale the inset to the map size — keep small maps mostly playable
+  // while still leaving a visible empty border.
+  const baseInset = Math.max(0, Math.min(2, Math.floor(Math.min(width, height) / 10)));
+  const maxExtra = Math.max(1, Math.min(3, Math.floor(Math.min(width, height) / 8)));
+
+  // Hard cap on total inset so the floor region keeps at least half the
+  // map's footprint along each axis even on tiny maps.
+  const maxTotalH = Math.max(0, Math.floor(height / 2) - 1);
+  const maxTotalW = Math.max(0, Math.floor(width / 2) - 1);
+
+  const randMargin = () => baseInset + rng.int(0, maxExtra);
+  const topMargin = Array.from({ length: width }, randMargin);
+  const botMargin = Array.from({ length: width }, randMargin);
+  const leftMargin = Array.from({ length: height }, randMargin);
+  const rightMargin = Array.from({ length: height }, randMargin);
+
+  // Single-pass neighbour smoothing avoids 1-cell spikes in the boundary.
+  const smooth = (arr: number[]) => {
+    if (arr.length < 3) return;
+    const out = arr.slice();
+    for (let i = 1; i < arr.length - 1; i++) {
+      out[i] = Math.round((arr[i - 1] + arr[i] + arr[i + 1]) / 3);
+    }
+    for (let i = 0; i < arr.length; i++) arr[i] = out[i];
+  };
+  smooth(topMargin);
+  smooth(botMargin);
+  smooth(leftMargin);
+  smooth(rightMargin);
+
+  // Clamp per-axis sums so the carved region never disappears.
+  for (let x = 0; x < width; x++) {
+    if (topMargin[x] + botMargin[x] > maxTotalH) {
+      const excess = topMargin[x] + botMargin[x] - maxTotalH;
+      topMargin[x] = Math.max(0, topMargin[x] - Math.ceil(excess / 2));
+      botMargin[x] = Math.max(0, botMargin[x] - Math.floor(excess / 2));
+    }
+  }
+  for (let y = 0; y < height; y++) {
+    if (leftMargin[y] + rightMargin[y] > maxTotalW) {
+      const excess = leftMargin[y] + rightMargin[y] - maxTotalW;
+      leftMargin[y] = Math.max(0, leftMargin[y] - Math.ceil(excess / 2));
+      rightMargin[y] = Math.max(0, rightMargin[y] - Math.floor(excess / 2));
+    }
+  }
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const inVertical = y >= topMargin[x] && y < height - botMargin[x];
+      const inHorizontal = x >= leftMargin[y] && x < width - rightMargin[y];
+      if (inVertical && inHorizontal) {
+        grid[y][x] = 'floor';
+      }
+    }
   }
 }
 
@@ -50,7 +128,8 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
   const { width, height, seed, density, themeId, tileMix } = ctx;
   const flavor = getOpenTerrainFlavor(themeId);
   const rng = makeRng(seed);
-  const grid = makeTypeGrid(width, height, 'floor');
+  const grid = makeTypeGrid(width, height, 'empty');
+  carveOpenRegion(grid, rng, width, height);
 
   const area = width * height;
   const d = clampDensity(density);
@@ -92,10 +171,12 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
       count: waterBlobs,
       sizeMin: 4,
       sizeMax: 12,
-      // Open-terrain blobs historically overwrote anything they touched
-      // (matching `paintBlob`); keep that contract so existing seeds
-      // reproduce identically.
-      overwrite: true,
+      // Open-terrain now carves an organic floor region inset from the
+      // map edge, so blobs must respect that boundary instead of
+      // overwriting empty border cells. `applyBlobs` with overwrite:false
+      // only stamps over `floor`, mirroring the inline `paintBlob` change
+      // above.
+      overwrite: false,
     },
     {
       kind: 'scatter',
