@@ -6,6 +6,7 @@ const WALL_SEAM_HASH_OFFSET_X = 13;
 const WALL_SEAM_HASH_OFFSET_Y = 29;
 const WALL_THICKNESS_RATIO = 0.58;
 const WALL_CORNER_RADIUS_RATIO = 0.12;
+const WALL_SEGMENT_OVERLAP_RATIO = 0.02;
 
 function roundedRectPath(
   ctx: CanvasRenderingContext2D,
@@ -107,40 +108,47 @@ function drawDungeonWall(
   y: number,
   context?: TileDrawContext,
 ): void {
-  const north = isWallLike(context?.getTileBaseType(x, y - 1));
-  const east = isWallLike(context?.getTileBaseType(x + 1, y));
-  const south = isWallLike(context?.getTileBaseType(x, y + 1));
-  const west = isWallLike(context?.getTileBaseType(x - 1, y));
-  const horizontal = east || west;
-  const vertical = north || south;
-  const straightHorizontal = east && west && !north && !south;
-  const straightVertical = north && south && !east && !west;
   const t = Math.max(5, s * WALL_THICKNESS_RATIO);
   const half = s / 2;
   const band = t / 2;
   const r = Math.max(2, s * WALL_CORNER_RADIUS_RATIO);
+  const overlap = s * WALL_SEGMENT_OVERLAP_RATIO;
 
   ctx.fillStyle = '#111514';
   ctx.fillRect(px, py, s, s);
   ctx.fillStyle = 'rgba(0,0,0,0.55)';
   ctx.fillRect(px + s * 0.08, py + s * 0.1, s * 0.94, s * 0.94);
 
+  if (!context) {
+    drawStoneBlock(ctx, px + s * 0.14, py + s * 0.14, s * 0.72, s * 0.72, r);
+    return;
+  }
+
+  const north = isWallLike(context.getTileBaseType(x, y - 1));
+  const east = isWallLike(context.getTileBaseType(x + 1, y));
+  const south = isWallLike(context.getTileBaseType(x, y + 1));
+  const west = isWallLike(context.getTileBaseType(x - 1, y));
+  const horizontal = east || west;
+  const vertical = north || south;
+  const straightHorizontal = east && west && !north && !south;
+  const straightVertical = north && south && !east && !west;
+
   if (straightHorizontal) {
-    drawStoneBlock(ctx, px - s * 0.02, py + half - band, s * 1.04, t, r);
+    drawStoneBlock(ctx, px - overlap, py + half - band, s + overlap * 2, t, r);
     drawWallSeam(ctx, px, py, s, x, y, 'horizontal');
     return;
   }
 
   if (straightVertical) {
-    drawStoneBlock(ctx, px + half - band, py - s * 0.02, t, s * 1.04, r);
+    drawStoneBlock(ctx, px + half - band, py - overlap, t, s + overlap * 2, r);
     drawWallSeam(ctx, px, py, s, x, y, 'vertical');
     return;
   }
 
-  if (north) drawStoneBlock(ctx, px + half - band, py - s * 0.02, t, half + band, r);
-  if (south) drawStoneBlock(ctx, px + half - band, py + half - band, t, half + band + s * 0.02, r);
-  if (west) drawStoneBlock(ctx, px - s * 0.02, py + half - band, half + band, t, r);
-  if (east) drawStoneBlock(ctx, px + half - band, py + half - band, half + band + s * 0.02, t, r);
+  if (north) drawStoneBlock(ctx, px + half - band, py - overlap, t, half + band, r);
+  if (south) drawStoneBlock(ctx, px + half - band, py + half - band, t, half + band + overlap, r);
+  if (west) drawStoneBlock(ctx, px - overlap, py + half - band, half + band, t, r);
+  if (east) drawStoneBlock(ctx, px + half - band, py + half - band, half + band + overlap, t, r);
 
   if (!horizontal && !vertical) {
     drawStoneBlock(ctx, px + s * 0.14, py + s * 0.14, s * 0.72, s * 0.72, r);
