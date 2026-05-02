@@ -887,7 +887,7 @@ function pushQueue(heap: QueueEntry[], entry: QueueEntry): void {
   let index = heap.length - 1;
   while (index > 0) {
     const parent = Math.floor((index - 1) / 2);
-    if (heap[parent].dist <= entry.dist) break;
+    if (parent < 0 || heap[parent].dist <= entry.dist) break;
     heap[index] = heap[parent];
     index = parent;
   }
@@ -919,6 +919,7 @@ function findConnectionPath(tiles: Tile[][], from: Cell[], to: Cell[]): Cell[] {
   const total = width * height;
   const dist = Array.from({ length: total }, () => Number.POSITIVE_INFINITY);
   const prev = new Array<number | undefined>(total);
+  // Packed numeric flags keep repeated pathfinding inexpensive on large premade sample grids.
   const visited = new Uint8Array(total);
   const targetKeys = new Set(to.map(cell => cell.y * width + cell.x));
   const heap: QueueEntry[] = [];
@@ -942,7 +943,7 @@ function findConnectionPath(tiles: Tile[][], from: Cell[], to: Cell[]): Cell[] {
     }
 
     const x = current % width;
-    const y = (current - x) / width;
+    const y = Math.floor(current / width);
     const neighbors: Cell[] = [
       { x: x + 1, y },
       { x: x - 1, y },
@@ -968,7 +969,7 @@ function findConnectionPath(tiles: Tile[][], from: Cell[], to: Cell[]): Cell[] {
   const path: Cell[] = [];
   for (let cursor: number | undefined = targetIndex; cursor !== undefined; cursor = prev[cursor]) {
     const x = cursor % width;
-    path.push({ x, y: (cursor - x) / width });
+    path.push({ x, y: Math.floor(cursor / width) });
   }
   return path.reverse();
 }
