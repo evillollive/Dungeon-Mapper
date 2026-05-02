@@ -887,7 +887,7 @@ function pushQueue(heap: QueueEntry[], entry: QueueEntry): void {
   let index = heap.length - 1;
   while (index > 0) {
     const parent = Math.floor((index - 1) / 2);
-    if (parent < 0 || heap[parent].dist <= entry.dist) break;
+    if (heap[parent].dist <= entry.dist) break;
     heap[index] = heap[parent];
     index = parent;
   }
@@ -969,7 +969,8 @@ function findConnectionPath(tiles: Tile[][], from: Cell[], to: Cell[]): Cell[] {
   const path: Cell[] = [];
   for (let cursor: number | undefined = targetIndex; cursor !== undefined; cursor = prev[cursor]) {
     const x = cursor % width;
-    path.push({ x, y: Math.floor(cursor / width) });
+    const y = Math.floor(cursor / width);
+    path.push({ x, y });
   }
   return path.reverse();
 }
