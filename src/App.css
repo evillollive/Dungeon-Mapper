@@ -2276,6 +2276,8 @@
 .level-tab {
   min-height: 44px;
 }
+/* Compact stamp-transform buttons are intentionally smaller — they live
+   inside the sidebar and are not primary touch targets on mobile. */
 .tool-btn.compact {
   min-height: 36px;
   min-width: 36px;

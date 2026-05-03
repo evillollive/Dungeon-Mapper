@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
-> **Last updated:** 2026-05-02
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 7.1, 7.3, & 7.5 complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6).
+> **Last updated:** 2026-05-03
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6).
 
 ---
 
@@ -547,40 +547,40 @@ The app has strong baseline accessibility that was built intentionally:
 
 ### Accessibility Gaps
 
-**1. No `prefers-reduced-motion` support**
+**~~1. No `prefers-reduced-motion` support~~** ✅ FIXED
 CSS transitions exist (e.g., `transition: background 0.12s, color 0.12s`) but no `@media (prefers-reduced-motion: reduce)` query to disable them for users who need reduced motion. While the animations are subtle, WCAG 2.3.3 requires respecting this preference.
 
-**Action:** Add a `prefers-reduced-motion` media query that sets all `transition-duration` and `animation-duration` to `0s`.
+**Action:** ~~Add a `prefers-reduced-motion` media query that sets all `transition-duration` and `animation-duration` to `0s`.~~ Done — global `*` selector in `@media (prefers-reduced-motion: reduce)`.
 
-**2. No dark mode / `prefers-color-scheme` support**
+**2. No dark mode / `prefers-color-scheme` support** ⏳ DEFERRED
 The app is light-theme only. Users with light sensitivity, low vision, or who simply prefer dark mode have no option. WCAG doesn't require dark mode, but it's an accessibility best practice — especially for an app used in long TTRPG sessions.
 
-**Action:** Add `prefers-color-scheme: dark` support with a manual toggle. Define CSS custom properties for all colors and swap them in dark mode.
+**Action:** Add `prefers-color-scheme: dark` support with a manual toggle. Define CSS custom properties for all colors and swap them in dark mode. *(Deferred: requires converting 336 hardcoded colors to CSS custom properties — full session.)*
 
-**3. No high-contrast mode**
+**~~3. No high-contrast mode~~** ✅ FIXED
 No `forced-colors` or `prefers-contrast: more` media query support. Users with Windows High Contrast Mode may see broken layouts.
 
-**Action:** Add `@media (forced-colors: active)` styles ensuring all interactive elements remain visible and distinguishable.
+**Action:** ~~Add `@media (forced-colors: active)` styles ensuring all interactive elements remain visible and distinguishable.~~ Done — buttons, dialogs, canvas, and focus indicators styled for forced-colors.
 
-**4. Touch target sizes below WCAG 2.5.8**
+**~~4. Touch target sizes below WCAG 2.5.8~~** ✅ FIXED
 Toolbar buttons are ~30–40px, below the WCAG recommended 44×44px minimum touch target. This affects both accessibility and mobile usability.
 
-**Action:** Increase all interactive element minimum sizes to 44×44px (or add sufficient spacing to create 44px effective targets).
+**Action:** ~~Increase all interactive element minimum sizes to 44×44px (or add sufficient spacing to create 44px effective targets).~~ Done — `.tool-btn`, `.toolbar-tab-btn`, `.zoom-controls button`, `.level-tab` all have `min-height: 44px`.
 
-**5. Focus trapping in modals is incomplete**
+**~~5. Focus trapping in modals is incomplete~~** ✅ FIXED
 Modals have `aria-modal="true"` and Escape dismissal, but there is no explicit focus trap preventing Tab from escaping the dialog into background elements. The `aria-modal` attribute hints to assistive technology but doesn't enforce focus containment.
 
-**Action:** Implement focus trap utility (or use a library like `focus-trap-react`) for all 6 dialog components.
+**Action:** ~~Implement focus trap utility (or use a library like `focus-trap-react`) for all 6 dialog components.~~ Done — `useFocusTrap` hook implemented and applied to all 6 dialogs.
 
-**6. Canvas content not accessible to screen readers**
+**~~6. Canvas content not accessible to screen readers~~** ✅ FIXED (partial)
 The canvas element has an `aria-label` describing the map but the actual map content (tiles, tokens, notes, markers) is not programmatically accessible. A screen reader user cannot discover or interact with individual map elements.
 
-**Action (partial):** Add an off-screen text description that summarizes the map state (room count, token positions, note summaries). Full canvas accessibility is an unsolved problem in the industry — even Foundry VTT and Roll20 have limited canvas screen reader support.
+**Action (partial):** ~~Add an off-screen text description that summarizes the map state (room count, token positions, note summaries).~~ Done — off-screen `.sr-only` div summarizes token/note/marker/stamp counts and fog status. Full canvas accessibility is an unsolved problem in the industry — even Foundry VTT and Roll20 have limited canvas screen reader support.
 
-**7. No announcements for tool actions**
+**~~7. No announcements for tool actions~~** ✅ FIXED
 When a user paints a tile, places a token, or toggles fog, there is no `aria-live` announcement confirming the action. The status message system exists but may not cover all actions.
 
-**Action:** Extend the `aria-live` region to announce key actions: tile painted, token placed, fog toggled, level switched, etc.
+**Action:** ~~Extend the `aria-live` region to announce key actions: tile painted, token placed, fog toggled, level switched, etc.~~ Done — announcements added for token, marker, stamp, light source, and FOV actions via `announce` prop on MapCanvas.
 
 ---
 
@@ -882,16 +882,17 @@ Recommended implementation order based on dependency analysis, impact, and effor
    - *Effort:* Low-medium
    - *Risk:* Low (Pointer Events are a superset of mouse events)
 
-**Sprint 2: UI/UX Overhaul** (in progress)
+**Sprint 2: UI/UX Overhaul** ✅ COMPLETE
 3. ~~**Phase 6.2 — Responsive Layout** — Breakpoint system, collapsible panels, drawer-based right panel~~ ✅
    - *Why:* Largest UX improvement — reduces clutter for desktop users AND enables tablet use
    - *Effort:* Medium-high
    - *Dependency:* Benefits from refactored Toolbar (Sprint 1)
 
-4. **Accessibility fixes** — prefers-reduced-motion, dark mode, focus traps, high-contrast, touch targets, action announcements
+4. ~~**Accessibility fixes (partial)** — prefers-reduced-motion, focus traps, high-contrast, touch targets, canvas summary, action announcements~~ ✅
    - *Why:* Ships alongside layout changes — same CSS files being modified
    - *Effort:* Low-medium
    - *Dependency:* Layout work in 6.2
+   - *Note:* Dark mode deferred to a dedicated session (requires converting 336 hardcoded colors to CSS custom properties)
 
 5. ~~**Mode rename** — "GM" → "Edit", "Player" → "Present"~~ ✅
    - *Why:* Trivial change, big clarity improvement, no dependencies
@@ -1006,6 +1007,16 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-03 — Accessibility fixes (partial) complete: 6 of 7 WCAG gaps addressed**
+- Added `@media (prefers-reduced-motion: reduce)` — disables all CSS transitions and animations for users who need reduced motion (WCAG 2.3.3)
+- Added `@media (forced-colors: active)` — ensures buttons, dialogs, focus indicators, and canvas remain visible in Windows High Contrast Mode
+- Increased touch target sizes to 44×44px minimum on toolbar buttons, tab buttons, zoom controls, and level tabs (WCAG 2.5.5)
+- Implemented `useFocusTrap` hook — traps Tab/Shift+Tab focus inside modals, moves focus on open, restores focus on close
+- Applied focus trap to all 6 dialog components: GenerateMapDialog, CustomThemeDialog, ExportDialog, PremadeMapsDialog, ShortcutsHelp, IconPicker
+- Added off-screen canvas state summary — screen readers can discover token count, note count, marker count, stamp count, and fog status
+- Extended action announcements via `aria-live` — token placed/removed, marker placed/removed, stamp placed/removed, light source placed/removed, FOV origin set
+- Dark mode (gap #2) deferred to a dedicated session — requires converting 336 hardcoded color values to CSS custom properties
 
 **2026-05-02 — Phase 6.4.3 complete: Stamp Picker UI & First 40 Stamps shipped**
 - Expanded stamp catalog from 8 to 40 universal SVG stamps across 5 categories: Furniture (8), Dungeon Dressing (12), Nature (8), Structures (8), Markers (6)

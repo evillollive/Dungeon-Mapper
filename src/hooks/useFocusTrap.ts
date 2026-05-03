@@ -34,6 +34,10 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>() {
     if (focusables.length > 0) {
       focusables[0].focus();
     } else {
+      // Ensure the container is focusable even if it doesn't have tabindex.
+      if (!container.hasAttribute('tabindex')) {
+        container.setAttribute('tabindex', '-1');
+      }
       container.focus();
     }
 

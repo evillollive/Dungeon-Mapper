@@ -2323,13 +2323,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   );
 
   const canvasStateSummary = useMemo(() => {
+    const pl = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}.`;
     const parts: string[] = [
       `Map: ${meta.name || 'Untitled'}, ${meta.width} by ${meta.height} tiles.`,
     ];
-    if (tokens.length > 0) parts.push(`${tokens.length} token${tokens.length === 1 ? '' : 's'}.`);
-    if (notes.length > 0) parts.push(`${notes.length} note${notes.length === 1 ? '' : 's'}.`);
-    if (markers.length > 0) parts.push(`${markers.length} marker${markers.length === 1 ? '' : 's'}.`);
-    if (stamps.length > 0) parts.push(`${stamps.length} stamp${stamps.length === 1 ? '' : 's'}.`);
+    if (tokens.length > 0) parts.push(pl(tokens.length, 'token'));
+    if (notes.length > 0) parts.push(pl(notes.length, 'note'));
+    if (markers.length > 0) parts.push(pl(markers.length, 'marker'));
+    if (stamps.length > 0) parts.push(pl(stamps.length, 'stamp'));
     if (fogActive) parts.push('Fog of war enabled.');
     return parts.join(' ');
   }, [meta.name, meta.width, meta.height, tokens.length, notes.length, markers.length, stamps.length, fogActive]);
