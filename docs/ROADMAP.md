@@ -914,7 +914,7 @@ Recommended implementation order based on dependency analysis, impact, and effor
    - *Effort:* Low
    - *Dependency:* Requires 6.4.1
 
-10. **Phase 6.4.3 — Stamp Picker UI & First 40 Stamps** — Picker component, toolbar integration, 40 universal SVG stamps
+10. ~~**Phase 6.4.3 — Stamp Picker UI & First 40 Stamps** — Picker component, toolbar integration, 40 universal SVG stamps~~ ✅
     - *Why:* First user-visible stamp feature — immediately usable
     - *Effort:* Medium
     - *Dependency:* Requires 6.4.2
@@ -1001,6 +1001,15 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-02 — Phase 6.4.3 complete: Stamp Picker UI & First 40 Stamps shipped**
+- Expanded stamp catalog from 8 to 40 universal SVG stamps across 5 categories: Furniture (8), Dungeon Dressing (12), Nature (8), Structures (8), Markers (6)
+- Created `StampPicker` component (`src/components/StampPicker.tsx`) with category filter tabs, scrollable grid, and SVG previews
+- Integrated stamp tool buttons (Place, Move, Remove, Clear) into the picker UI
+- Clicking a stamp auto-selects the 'stamp' placement tool if not already in a stamp tool mode
+- Added `STAMP_CATEGORY_LABELS` to stamp catalog for category display names
+- Integrated StampPicker into DrawToolsTab with props threaded through Toolbar from App.tsx
+- Added stamp picker CSS: category tab bar, responsive grid layout with SVG thumbnails, active states
 
 **2026-05-02 — Phase 6.4.2 complete: Stamp Rendering & Canvas Interaction shipped**
 - Created stamp catalog (`src/utils/stampCatalog.ts`) with 8 built-in universal stamps (chest, table, chair, barrel, campfire, skull, tree, pillar)

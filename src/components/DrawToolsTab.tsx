@@ -3,6 +3,7 @@ import type { CustomThemeDefinition, ToolType, TileType } from '../types/map';
 import { ALL_TILE_TYPES, TILE_LABELS, isBuiltInTileType } from '../types/map';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { buildThemeList, getCustomTileLabel, getThemeWithCustom } from '../utils/customThemes';
+import StampPicker from './StampPicker';
 
 interface DrawToolsTabProps {
   activeTool: ToolType;
@@ -17,6 +18,10 @@ interface DrawToolsTabProps {
   onOpenCustomThemeBuilder: () => void;
   onOpenGenerateMap: () => void;
   onOpenPremadeMaps: () => void;
+  // Stamp tool integration
+  selectedStampId: string | null;
+  onSelectStamp: (stampId: string) => void;
+  onClearStamps: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -73,6 +78,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   activeTool, activeTile, themeId, customThemes, onSetTool, onSetTile,
   onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
   onOpenCustomThemeBuilder, onOpenGenerateMap, onOpenPremadeMaps,
+  selectedStampId, onSelectStamp, onClearStamps,
 }) => {
   const theme = getThemeWithCustom(themeId, customThemes);
   const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
@@ -199,6 +205,14 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
           ))}
         </div>
       </div>
+
+      <StampPicker
+        activeTool={activeTool}
+        selectedStampId={selectedStampId}
+        onSetTool={onSetTool}
+        onSelectStamp={onSelectStamp}
+        onClearStamps={onClearStamps}
+      />
     </>
   );
 };
