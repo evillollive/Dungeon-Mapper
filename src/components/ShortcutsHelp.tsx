@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { KeyBinding, ShortcutCategory } from '../hooks/keyBindings';
 
 interface ShortcutsHelpProps {
@@ -9,6 +10,7 @@ interface ShortcutsHelpProps {
 const CATEGORY_ORDER: ShortcutCategory[] = ['Tools', 'View', 'Canvas', 'Edit', 'File', 'Help'];
 
 const ShortcutsHelp: React.FC<ShortcutsHelpProps> = ({ bindings, onClose }) => {
+  const focusTrapRef = useFocusTrap();
   // Esc closes the modal — handled here so the global shortcut hook can
   // suppress its own bindings while a modal is open without losing the
   // ability to dismiss it.
@@ -32,6 +34,7 @@ const ShortcutsHelp: React.FC<ShortcutsHelpProps> = ({ bindings, onClose }) => {
 
   return (
     <div
+      ref={focusTrapRef}
       className="generate-dialog-backdrop"
       onClick={e => { if (e.target === e.currentTarget) onClose(); }}
       role="dialog"

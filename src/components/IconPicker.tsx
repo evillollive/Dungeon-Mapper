@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import { ICONS, ICON_CATEGORIES, type IconDef } from '../utils/iconLibrary';
 
 interface IconPickerProps {
@@ -11,6 +12,7 @@ interface IconPickerProps {
 }
 
 const IconPicker: React.FC<IconPickerProps> = ({ open, onSelect, onCancel }) => {
+  const focusTrapRef = useFocusTrap();
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const inputRef = useRef<HTMLInputElement>(null);
@@ -71,6 +73,7 @@ const IconPicker: React.FC<IconPickerProps> = ({ open, onSelect, onCancel }) => 
 
   return (
     <div
+      ref={focusTrapRef}
       className="icon-picker-overlay"
       onClick={handleBackdropClick}
       onKeyDown={handleKeyDown}

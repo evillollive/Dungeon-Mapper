@@ -248,6 +248,8 @@ interface MapCanvasProps {
   onUndo?: () => void;
   /** Called on three-finger tap gesture (mobile redo shortcut). */
   onRedo?: () => void;
+  /** Announce a message to screen readers via the app-level aria-live region. */
+  announce?: (message: string) => void;
 }
 
 export interface MapCanvasHandle {
@@ -736,6 +738,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   activeLevelIndex = 0,
   onUndo,
   onRedo,
+  announce,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -1646,37 +1649,41 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       const px = Math.min(x, meta.width - size);
       const py = Math.min(y, meta.height - size);
       onAddToken(kind, px, py, undefined, size);
+      announce?.('Token placed');
       return;
     }
     if (activeTool === 'remove-token') {
       const t = findTokenAt(tokens, x + 0.5, y + 0.5);
       // The Remove Token tool can delete any token kind in either view.
-      if (t) onRemoveToken(t.id);
+      if (t) { onRemoveToken(t.id); announce?.('Token removed'); }
       return;
     }
     if (activeTool === 'marker') {
       onAddMarker(markerShape, x, y, markerColor, markerSize);
+      announce?.('Marker placed');
       return;
     }
     if (activeTool === 'remove-marker') {
       const fc = getFractionalCoords(e);
       if (fc) {
         const m = findMarkerAt(markers, fc.x, fc.y);
-        if (m) onRemoveMarker(m.id);
+        if (m) { onRemoveMarker(m.id); announce?.('Marker removed'); }
       }
       return;
     }
     if (activeTool === 'fov') {
       onFovClick?.(x, y);
+      announce?.('FOV origin set');
       return;
     }
     if (activeTool === 'light') {
       onAddLightSource?.(x, y);
+      announce?.('Light source placed');
       return;
     }
     if (activeTool === 'remove-light') {
       const ls = findLightSourceAt(lightSources, x, y);
-      if (ls) onRemoveLightSource?.(ls.id);
+      if (ls) { onRemoveLightSource?.(ls.id); announce?.('Light source removed'); }
       return;
     }
     if (activeTool === 'stamp') {
@@ -1691,7 +1698,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       }
       if (selectedStampId) {
         const newId = onAddStamp?.(selectedStampId, x, y);
-        if (newId != null) onSelectPlacedStamp?.(newId);
+        if (newId != null) { onSelectPlacedStamp?.(newId); announce?.('Stamp placed'); }
       }
       return;
     }
@@ -1711,6 +1718,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         if (s) {
           if (s.id === selectedPlacedStampId) onSelectPlacedStamp?.(null);
           onRemoveStamp?.(s.id);
+          announce?.('Stamp removed');
         }
       }
       return;
@@ -1764,7 +1772,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     onAddToken, onRemoveToken, onRemoveAnnotation, meta.width, meta.height,
     onAddMarker, onRemoveMarker, markerShape, markerColor, markerSize, markers,
     getFractionalCoords, onFovClick, lightSources, onAddLightSource, onRemoveLightSource,
-    onStairLinkClick, stamps, selectedStampId, selectedPlacedStampId, onAddStamp, onRemoveStamp, onSelectPlacedStamp,
+    onStairLinkClick, stamps, selectedStampId, selectedPlacedStampId, onAddStamp, onRemoveStamp, onSelectPlacedStamp, announce,
   ]);
 
   /* ── Multi-touch gesture tracking ─────────────────────────── */
@@ -2314,8 +2322,21 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     [meta.name, meta.width, meta.height, activeTool]
   );
 
+  const canvasStateSummary = useMemo(() => {
+    const parts: string[] = [
+      `Map: ${meta.name || 'Untitled'}, ${meta.width} by ${meta.height} tiles.`,
+    ];
+    if (tokens.length > 0) parts.push(`${tokens.length} token${tokens.length === 1 ? '' : 's'}.`);
+    if (notes.length > 0) parts.push(`${notes.length} note${notes.length === 1 ? '' : 's'}.`);
+    if (markers.length > 0) parts.push(`${markers.length} marker${markers.length === 1 ? '' : 's'}.`);
+    if (stamps.length > 0) parts.push(`${stamps.length} stamp${stamps.length === 1 ? '' : 's'}.`);
+    if (fogActive) parts.push('Fog of war enabled.');
+    return parts.join(' ');
+  }, [meta.name, meta.width, meta.height, tokens.length, notes.length, markers.length, stamps.length, fogActive]);
+
   return (
     <div className="canvas-wrapper" ref={containerRef}>
+      <div className="sr-only">{canvasStateSummary}</div>
       <div className="canvas-viewport" ref={viewportRef}>
         <div
           className="canvas-transform-container"

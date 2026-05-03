@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { DungeonProject } from '../types/map';
 import {
   PREMADE_MAP_SUMMARIES,
@@ -29,6 +30,7 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
       .sort((a, b) => a.label.localeCompare(b.label));
   }, []);
 
+  const focusTrapRef = useFocusTrap();
   const [themeFilter, setThemeFilter] = useState<string>(ALL_THEMES);
   const [confirmLoadId, setConfirmLoadId] = useState<string | null>(null);
   const filtered = useMemo(
@@ -73,6 +75,7 @@ const PremadeMapsDialog: React.FC<PremadeMapsDialogProps> = ({
 
   return (
     <div
+      ref={focusTrapRef}
       className="generate-dialog-backdrop"
       onClick={e => { if (e.target === e.currentTarget) onCancel(); }}
       role="dialog"
