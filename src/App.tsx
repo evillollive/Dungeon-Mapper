@@ -150,6 +150,9 @@ function App() {
     moveStamp,
     removeStamp,
     clearStamps,
+    updateStamp,
+    bringStampToFront,
+    sendStampToBack,
     switchLevel,
     addLevel,
     renameLevel,
@@ -209,6 +212,8 @@ function App() {
   const [gmDrawWidth, setGmDrawWidth] = useState<number>(0.25);
   // Stamp tool settings — currently selected stamp definition id.
   const [selectedStampId, setSelectedStampId] = useState<string | null>(null);
+  // Currently selected placed stamp id (for transform controls).
+  const [selectedPlacedStampId, setSelectedPlacedStampId] = useState<number | null>(null);
   // Marker tool settings — shape, color, radius (in tiles).
   const [markerShape, setMarkerShape] = useState<MarkerShape>('circle');
   const [markerColor, setMarkerColor] = useState<string>('#dc2626');
@@ -280,6 +285,11 @@ function App() {
       const next = typeof tool === 'function' ? tool(prev) : tool;
       if (prev === 'link-stair' && next !== 'link-stair') {
         setStairLinkSource(null);
+      }
+      // Deselect placed stamp when leaving stamp tools.
+      const isStampTool = (t: ToolType) => t === 'stamp' || t === 'move-stamp' || t === 'remove-stamp';
+      if (isStampTool(prev) && !isStampTool(next)) {
+        setSelectedPlacedStampId(null);
       }
       return next;
     });
@@ -700,6 +710,29 @@ function App() {
         switchLevel(activeLevelIndex - 1);
       }
     },
+    rotateStampCW: () => {
+      if (selectedPlacedStampId == null) return;
+      const stamp = (map.stamps ?? []).find(s => s.id === selectedPlacedStampId);
+      if (!stamp) return;
+      updateStamp(selectedPlacedStampId, { rotation: ((stamp.rotation || 0) + 90) % 360 });
+    },
+    flipStampH: () => {
+      if (selectedPlacedStampId == null) return;
+      const stamp = (map.stamps ?? []).find(s => s.id === selectedPlacedStampId);
+      if (!stamp) return;
+      updateStamp(selectedPlacedStampId, { flipX: !stamp.flipX });
+    },
+    flipStampV: () => {
+      if (selectedPlacedStampId == null) return;
+      const stamp = (map.stamps ?? []).find(s => s.id === selectedPlacedStampId);
+      if (!stamp) return;
+      updateStamp(selectedPlacedStampId, { flipY: !stamp.flipY });
+    },
+    deleteStamp: () => {
+      if (selectedPlacedStampId == null) return;
+      removeStamp(selectedPlacedStampId);
+      setSelectedPlacedStampId(null);
+    },
   });
 
   // ── Context values ──────────────────────────────────────────────────
@@ -715,6 +748,7 @@ function App() {
     drawColor, drawWidth, setDrawColor, setDrawWidth,
     gmDrawColor, gmDrawWidth, setGmDrawColor, setGmDrawWidth,
     selectedStampId, setSelectedStampId,
+    selectedPlacedStampId, setSelectedPlacedStampId,
   }), [
     activeTool, handleSetActiveTool, activeTile, setActiveTile,
     markerShape, markerColor, markerSize, setMarkerShape, setMarkerColor, setMarkerSize,
@@ -723,6 +757,7 @@ function App() {
     drawColor, drawWidth, setDrawColor, setDrawWidth,
     gmDrawColor, gmDrawWidth, setGmDrawColor, setGmDrawWidth,
     selectedStampId, setSelectedStampId,
+    selectedPlacedStampId, setSelectedPlacedStampId,
   ]);
 
   const mapContextValue = useMemo<MapContextValue>(() => ({
@@ -749,7 +784,7 @@ function App() {
     addMarker, removeMarker, clearMarkers,
     setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
     addLightSource, removeLightSource, clearLightSources,
-    addStamp, moveStamp, removeStamp, clearStamps,
+    addStamp, moveStamp, removeStamp, clearStamps, updateStamp, bringStampToFront, sendStampToBack,
     switchLevel, addLevel, renameLevel, deleteLevel,
     duplicateLevel, reorderLevels,
     addStairLink, removeStairLink,
@@ -769,7 +804,7 @@ function App() {
     addMarker, removeMarker, clearMarkers,
     setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
     addLightSource, removeLightSource, clearLightSources,
-    addStamp, moveStamp, removeStamp, clearStamps,
+    addStamp, moveStamp, removeStamp, clearStamps, updateStamp, bringStampToFront, sendStampToBack,
     switchLevel, addLevel, renameLevel, deleteLevel,
     duplicateLevel, reorderLevels,
     addStairLink, removeStairLink,
@@ -929,6 +964,13 @@ function App() {
               selectedStampId={selectedStampId}
               onSelectStamp={(id: string) => { setSelectedStampId(id); }}
               onClearStamps={clearStamps}
+              stamps={map.stamps ?? []}
+              selectedPlacedStampId={selectedPlacedStampId}
+              onSelectPlacedStamp={setSelectedPlacedStampId}
+              onUpdateStamp={updateStamp}
+              onRemoveStamp={removeStamp}
+              onBringStampToFront={bringStampToFront}
+              onSendStampToBack={sendStampToBack}
             />
             )}
           </nav>
@@ -1019,6 +1061,8 @@ function App() {
             onMoveStamp={moveStamp}
             onRemoveStamp={removeStamp}
             selectedStampId={selectedStampId}
+            selectedPlacedStampId={selectedPlacedStampId}
+            onSelectPlacedStamp={setSelectedPlacedStampId}
             stairLinks={activeStairLinks}
             stairLinkSource={activeTool === 'link-stair' ? stairLinkSource : null}
             onStairLinkClick={handleStairLinkClick}

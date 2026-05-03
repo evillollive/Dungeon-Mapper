@@ -518,6 +518,51 @@
   margin-top: 1px;
 }
 
+/* ── Stamp transform controls ───────────────────────────── */
+.stamp-transform-controls {
+  background: #eae5d8;
+  border: 1px solid #c4b99a;
+  border-radius: 4px;
+  padding: 4px 6px;
+  margin: 4px 0;
+}
+.stamp-transform-controls .toolbar-label {
+  display: flex;
+  align-items: center;
+}
+.stamp-transform-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0;
+  min-height: 26px;
+}
+.stamp-transform-label {
+  font-size: 0.7rem;
+  color: #4a4a4a;
+  min-width: 42px;
+  flex-shrink: 0;
+}
+.stamp-transform-value {
+  font-size: 0.65rem;
+  color: #666;
+  min-width: 30px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.tool-btn.compact {
+  padding: 2px 6px;
+  font-size: 0.8rem;
+  min-width: 28px;
+  min-height: 26px;
+}
+.stamp-slider {
+  flex: 1;
+  min-width: 60px;
+  height: 16px;
+  cursor: pointer;
+}
+
 /* ── Canvas Area ─────────────────────────────────────────── */
 .canvas-area {
   background: #e5e0d3;

@@ -230,6 +230,10 @@ interface MapCanvasProps {
   onRemoveStamp?: (id: number) => void;
   /** Currently selected stamp id for placement. */
   selectedStampId?: string | null;
+  /** Currently selected placed stamp id (for transform controls). */
+  selectedPlacedStampId?: number | null;
+  /** Callback to select a placed stamp on the canvas. */
+  onSelectPlacedStamp?: (id: number | null) => void;
   /** Stair links involving the active level (for rendering indicators). */
   stairLinks?: import('../types/map').StairLink[];
   /** Pending stair link source (shown as highlight when link-stair tool active). */
@@ -650,6 +654,24 @@ function drawStamp(
     ctx.strokeRect(cx - halfDraw, cy - halfDraw, halfDraw * 2, halfDraw * 2);
     ctx.restore();
   }
+
+  // Lock indicator badge.
+  if (stamp.locked) {
+    ctx.save();
+    const badgeSize = Math.max(10, tileSize * 0.25);
+    const bx = cx + drawSize / 2 - badgeSize * 0.4;
+    const by = cy - drawSize / 2 - badgeSize * 0.1;
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.beginPath();
+    ctx.arc(bx, by, badgeSize * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#ffd400';
+    ctx.font = `bold ${badgeSize * 0.7}px sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('🔒', bx, by);
+    ctx.restore();
+  }
 }
 
 const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
@@ -705,6 +727,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   onMoveStamp,
   onRemoveStamp,
   selectedStampId,
+  selectedPlacedStampId,
+  onSelectPlacedStamp,
   stairLinks,
   stairLinkSource,
   onStairLinkClick,
@@ -999,7 +1023,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // appear as map furniture/dressing beneath the tactical token layer.
     if (stamps.length > 0) {
       for (const stamp of stamps) {
-        drawStamp(ctx, stamp, tileSize);
+        drawStamp(ctx, stamp, tileSize, stamp.id === selectedPlacedStampId);
       }
     }
 
@@ -1476,7 +1500,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId]);
 
   // Minimap render
   useEffect(() => {
@@ -1656,8 +1680,27 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       return;
     }
     if (activeTool === 'stamp') {
+      // If clicking on an existing stamp, select it instead of placing a new one.
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        const existing = findStampAt(stamps, fc.x, fc.y);
+        if (existing) {
+          onSelectPlacedStamp?.(existing.id === selectedPlacedStampId ? null : existing.id);
+          return;
+        }
+      }
       if (selectedStampId) {
-        onAddStamp?.(selectedStampId, x, y);
+        const newId = onAddStamp?.(selectedStampId, x, y);
+        if (newId != null) onSelectPlacedStamp?.(newId);
+      }
+      return;
+    }
+    if (activeTool === 'move-stamp') {
+      // Click without drag = select/deselect.
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        const s = findStampAt(stamps, fc.x, fc.y);
+        onSelectPlacedStamp?.(s && s.id !== selectedPlacedStampId ? s.id : null);
       }
       return;
     }
@@ -1665,7 +1708,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       const fc = getFractionalCoords(e);
       if (fc) {
         const s = findStampAt(stamps, fc.x, fc.y);
-        if (s) onRemoveStamp?.(s.id);
+        if (s) {
+          if (s.id === selectedPlacedStampId) onSelectPlacedStamp?.(null);
+          onRemoveStamp?.(s.id);
+        }
       }
       return;
     }
@@ -1718,7 +1764,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     onAddToken, onRemoveToken, onRemoveAnnotation, meta.width, meta.height,
     onAddMarker, onRemoveMarker, markerShape, markerColor, markerSize, markers,
     getFractionalCoords, onFovClick, lightSources, onAddLightSource, onRemoveLightSource,
-    onStairLinkClick, stamps, selectedStampId, onAddStamp, onRemoveStamp,
+    onStairLinkClick, stamps, selectedStampId, selectedPlacedStampId, onAddStamp, onRemoveStamp, onSelectPlacedStamp,
   ]);
 
   /* ── Multi-touch gesture tracking ─────────────────────────── */
@@ -1835,6 +1881,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       if (fc) {
         const s = findStampAt(stamps, fc.x, fc.y);
         if (s && !s.locked) {
+          onSelectPlacedStamp?.(s.id);
           draggingStampRef.current = {
             id: s.id,
             lastX: s.x,
@@ -1863,7 +1910,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     } else {
       handleCanvasAction(e);
     }
-  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens, stamps, zoom]);
+  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens, stamps, zoom, onSelectPlacedStamp]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const coords = getTileCoords(e);

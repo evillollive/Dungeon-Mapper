@@ -82,6 +82,10 @@ export function useGlobalShortcuts(actions: ShortcutActions): KeyBinding[] {
       toggleFov:        () => actionsRef.current.toggleFov(),
       nextLevel:        () => actionsRef.current.nextLevel(),
       prevLevel:        () => actionsRef.current.prevLevel(),
+      rotateStampCW:    () => actionsRef.current.rotateStampCW(),
+      flipStampH:       () => actionsRef.current.flipStampH(),
+      flipStampV:       () => actionsRef.current.flipStampV(),
+      deleteStamp:      () => actionsRef.current.deleteStamp(),
     };
     return buildKeyBindings(dispatch);
     /* eslint-enable react-hooks/refs */

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { CustomThemeDefinition, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
+import type { CustomThemeDefinition, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset, PlacedStamp } from '../types/map';
 import type { BackgroundImage } from '../types/map';
 import DrawToolsTab from './DrawToolsTab';
 import TacticalToolsTab from './TacticalToolsTab';
@@ -61,6 +61,14 @@ interface ToolbarProps {
   selectedStampId: string | null;
   onSelectStamp: (stampId: string) => void;
   onClearStamps: () => void;
+  // Stamp transform controls
+  stamps: PlacedStamp[];
+  selectedPlacedStampId: number | null;
+  onSelectPlacedStamp: (id: number | null) => void;
+  onUpdateStamp: (id: number, patch: Partial<Omit<PlacedStamp, 'id' | 'stampId'>>) => void;
+  onRemoveStamp: (id: number) => void;
+  onBringStampToFront: (id: number) => void;
+  onSendStampToBack: (id: number) => void;
 }
 
 type ToolbarTab = 'draw' | 'tactical' | 'advanced';
@@ -138,6 +146,13 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             selectedStampId={props.selectedStampId}
             onSelectStamp={props.onSelectStamp}
             onClearStamps={props.onClearStamps}
+            stamps={props.stamps}
+            selectedPlacedStampId={props.selectedPlacedStampId}
+            onSelectPlacedStamp={props.onSelectPlacedStamp}
+            onUpdateStamp={props.onUpdateStamp}
+            onRemoveStamp={props.onRemoveStamp}
+            onBringStampToFront={props.onBringStampToFront}
+            onSendStampToBack={props.onSendStampToBack}
           />
         )}
         {activeTab === 'tactical' && (

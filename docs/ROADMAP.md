@@ -703,13 +703,18 @@ The stamp library is the single most impactful missing feature for visual map qu
   - Markers (5): X-mark, arrow, exclamation, question-mark, flag
 - SVG paths use 512×512 viewBox (same convention as existing `iconLibrary.ts`)
 
-**6.4.4 — Stamp Transform Controls** *(polish, low effort)*
-- Rotation: 90° snap with R key, free rotation with drag handle
-- Scale: resize handle on selection bounding box (0.25×–4× range)
-- Flip: H/V flip via context buttons or keyboard shortcuts
-- Opacity slider (10%–100%) in stamp options bar
-- Lock/unlock stamps to prevent accidental moves
-- Z-order: bring-to-front / send-to-back for overlapping stamps
+**~~6.4.4 — Stamp Transform Controls~~** ✅ COMPLETE *(polish, low effort)*
+- ✅ Click-to-select placed stamps on canvas (stamp and move-stamp tools) with yellow dashed selection highlight
+- ✅ Rotation: 90° snap with Shift+R keyboard shortcut + counter-clockwise/clockwise buttons in transform panel
+- ✅ Scale: slider control in transform panel (0.25×–4× range)
+- ✅ Flip: horizontal/vertical flip buttons in transform panel + Shift+H / Shift+V keyboard shortcuts
+- ✅ Opacity slider (10%–100%) in stamp transform panel
+- ✅ Lock/unlock stamps to prevent accidental moves — lock badge rendered on canvas
+- ✅ Z-order: bring-to-front / send-to-back buttons for overlapping stamps
+- ✅ Delete selected stamp via Delete/Backspace key or trash button
+- ✅ `updateStamp`, `bringStampToFront`, `sendStampToBack` actions in useMapState with undo/redo support
+- ✅ Transform panel appears in StampPicker when a placed stamp is selected
+- ✅ All transforms wired through ActionContext and ToolContext
 
 **6.4.5 — Per-Theme Stamp Sets (160+ stamps)** *(content, high effort — can be split further)*
 - Extend `stampLibrary.ts` with theme-tagged stamps, 10–15 per theme:
@@ -888,7 +893,7 @@ Recommended implementation order based on dependency analysis, impact, and effor
    - *Effort:* Low-medium
    - *Dependency:* Layout work in 6.2
 
-5. **Mode rename** — "GM" → "Edit", "Player" → "Present"
+5. ~~**Mode rename** — "GM" → "Edit", "Player" → "Present"~~ ✅
    - *Why:* Trivial change, big clarity improvement, no dependencies
    - *Effort:* Very low
 
@@ -919,7 +924,7 @@ Recommended implementation order based on dependency analysis, impact, and effor
     - *Effort:* Medium
     - *Dependency:* Requires 6.4.2
 
-11. **Phase 6.4.4 — Stamp Transform Controls** — Rotation, scale, flip, opacity, lock, z-order
+11. ~~**Phase 6.4.4 — Stamp Transform Controls** — Rotation, scale, flip, opacity, lock, z-order~~ ✅
     - *Why:* Polish that makes stamps flexible enough for real use
     - *Effort:* Low
     - *Dependency:* Requires 6.4.2
