@@ -2219,3 +2219,66 @@
 .app-body--mobile .canvas-area {
   margin-bottom: 0;
 }
+
+
+/* ── Accessibility: prefers-reduced-motion ─────────────── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+
+/* ── Accessibility: forced-colors / high-contrast ──────── */
+@media (forced-colors: active) {
+  .tool-btn,
+  .toolbar-tab-btn,
+  .level-tab,
+  .zoom-controls button {
+    border: 1px solid ButtonText;
+  }
+  .tool-btn.active,
+  .toolbar-tab-btn.active,
+  .level-tab.active {
+    border: 2px solid Highlight;
+    outline: 1px solid Highlight;
+  }
+  .generate-dialog-backdrop {
+    background: rgba(0, 0, 0, 0.8);
+  }
+  .generate-dialog {
+    border: 2px solid ButtonText;
+  }
+  canvas {
+    border: 1px solid ButtonText;
+  }
+  :focus-visible {
+    outline: 2px solid Highlight !important;
+    outline-offset: 2px !important;
+  }
+}
+
+
+/* ── Accessibility: touch target sizing (WCAG 2.5.5) ──── */
+.tool-btn {
+  min-height: 44px;
+}
+.toolbar-tab-btn {
+  min-height: 44px;
+}
+.zoom-controls button {
+  min-height: 44px;
+  min-width: 44px;
+}
+.level-tab {
+  min-height: 44px;
+}
+/* Compact stamp-transform buttons are intentionally smaller — they live
+   inside the sidebar and are not primary touch targets on mobile. */
+.tool-btn.compact {
+  min-height: 36px;
+  min-width: 36px;
+}

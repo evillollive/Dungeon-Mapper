@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import {
   GENERATOR_LIST,
   getGenerator,
@@ -116,6 +117,8 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
   const [density, setDensity] = useState<number>(1);
   const [seedText, setSeedText] = useState<string>(() => seedToString(randomSeed()));
   const [error, setError] = useState<string | null>(null);
+
+  const focusTrapRef = useFocusTrap();
 
   // Dialog-local size scaler — independent of the global --ui-scale so
   // tweaking it here doesn't double-scale with the app-wide setting.
@@ -305,6 +308,7 @@ const GenerateMapDialog: React.FC<GenerateMapDialogProps> = ({
 
   return (
     <div
+      ref={focusTrapRef}
       className="generate-dialog-backdrop"
       onClick={e => { if (e.target === e.currentTarget) onCancel(); }}
       role="dialog"

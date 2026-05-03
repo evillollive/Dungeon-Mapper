@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import {
   DPI_OPTIONS,
   PAGE_PRESETS,
@@ -24,6 +25,7 @@ const LARGE_IMAGE_THRESHOLD = 200_000_000;
 const ExportDialog: React.FC<ExportDialogProps> = ({
   map, themeId, printMode, viewMode, onClose, feetPerCell = 0, customThemes = [],
 }) => {
+  const focusTrapRef = useFocusTrap();
   const [dpi, setDpi] = useState<number>(300);
   const [pagePresetId, setPagePresetId] = useState<string>('none');
   const [usePrintMode, setUsePrintMode] = useState<boolean>(printMode);
@@ -77,6 +79,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
 
   return (
     <div
+      ref={focusTrapRef}
       className="generate-dialog-backdrop"
       role="dialog"
       aria-modal="true"

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { BuiltInTileType, CustomThemeDefinition, CustomTileDefinition } from '../types/map';
 import { ALL_TILE_TYPES, TILE_LABELS } from '../types/map';
 import { THEME_LIST } from '../themes';
@@ -47,6 +48,7 @@ const CustomThemeDialog: React.FC<CustomThemeDialogProps> = ({
   onClose,
 }) => {
   const initial = customThemes.find(t => t.id === activeThemeId) ?? customThemes[0] ?? newThemeFromBase('dungeon');
+  const focusTrapRef = useFocusTrap();
   const [draft, setDraft] = useState<CustomThemeDefinition>(initial);
   const [selectedId, setSelectedId] = useState<string>(initial.id);
   const baseTheme = useMemo(() => getThemeWithCustom(draft.baseThemeId), [draft.baseThemeId]);
@@ -134,6 +136,7 @@ const CustomThemeDialog: React.FC<CustomThemeDialogProps> = ({
 
   return (
     <div
+      ref={focusTrapRef}
       className="generate-dialog-backdrop"
       role="dialog"
       aria-modal="true"

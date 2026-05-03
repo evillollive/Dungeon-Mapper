@@ -1070,6 +1070,7 @@ function App() {
             activeLevelIndex={activeLevelIndex}
             onUndo={handleUndo}
             onRedo={handleRedo}
+            announce={announce}
           />
         </main>
         <button
