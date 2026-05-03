@@ -1003,6 +1003,16 @@ function App() {
               customStamps={customStamps}
               onSaveCustomStamp={saveCustomStamp}
               onDeleteCustomStamp={deleteCustomStamp}
+              wallColor={wallColor}
+              wallThickness={wallThickness}
+              onSetWallColor={setWallColor}
+              onSetWallThickness={setWallThickness}
+              pathColor={pathColor}
+              pathWidth={pathWidth}
+              onSetPathColor={setPathColor}
+              onSetPathWidth={setPathWidth}
+              onClearWalls={clearWallSegments}
+              onClearPaths={clearPathSegments}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             )}
