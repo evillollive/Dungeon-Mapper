@@ -302,7 +302,108 @@ export const BUILT_IN_STAMPS: StampDef[] = [
     viewBox: '0 0 512 512',
     svgPath: 'M320 192a64 64 0 1 1-128 0 64 64 0 0 1 128 0zm-64 64v160m-32-64h64m-64-48h64',
   },
-];
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Per-Theme Stamps (Phase 6.4.5)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── Dungeon ────────────────────────────────────────────────────────────────
+  {
+    id: 'dungeon-iron-maiden',
+    name: 'Iron Maiden',
+    category: 'dungeon-dressing',
+    themeId: 'dungeon',
+    viewBox: '0 0 512 512',
+    svgPath: 'M192 96h128v320c0 17.7-14.3 32-32 32h-64c-17.7 0-32-14.3-32-32V96zm0 0c0-17.7 14.3-32 32-32h64c17.7 0 32 14.3 32 32m-112 48h96m-96 64h96m-96 64h96m-48-176v16m0 40v16m0 40v16',
+  },
+  {
+    id: 'dungeon-portcullis',
+    name: 'Portcullis',
+    category: 'structures',
+    themeId: 'dungeon',
+    viewBox: '0 0 512 512',
+    svgPath: 'M112 96h288v320H112V96zm48 0v320m48-320v320m48-320v320m48-320v320m48-320v320M112 160h288M112 224h288M112 288h288M112 352h288',
+  },
+  {
+    id: 'dungeon-brazier',
+    name: 'Brazier',
+    category: 'dungeon-dressing',
+    themeId: 'dungeon',
+    viewBox: '0 0 512 512',
+    svgPath: 'M176 288h160v48H176v-48zm16-32h128l16 32H176l16-32zm48-128c0 0 32 48 48 64s-16 64-48 64-64-48-48-64 48-64 48-64zm-48 208v96m128-96v96m-64 0h-64m128 0h-64',
+  },
+  {
+    id: 'dungeon-weapon-rack',
+    name: 'Weapon Rack',
+    category: 'dungeon-dressing',
+    themeId: 'dungeon',
+    viewBox: '0 0 512 512',
+    svgPath: 'M144 128h224v256H144V128zm48 0v256m128-256v256M144 208h224M144 288h224m-176-80v-16l16-16m48 16v-16l16-16m48 16v-16l16-16m-128 160v16l16 16m48-16v16l16 16m48-16v16l16 16',
+  },
+  {
+    id: 'dungeon-chains',
+    name: 'Chains',
+    category: 'dungeon-dressing',
+    themeId: 'dungeon',
+    viewBox: '0 0 512 512',
+    svgPath: 'M208 96v64a32 32 0 0 0 32 32 32 32 0 0 0 32-32V96m-64 128v64a32 32 0 0 0 32 32 32 32 0 0 0 32-32V224m-64 128v64a32 32 0 0 0 32 32 32 32 0 0 0 32-32V352m-128-256v64a32 32 0 0 0 32 32m96-96v64a32 32 0 0 1-32 32',
+  },
+  {
+    id: 'dungeon-torch-sconce',
+    name: 'Torch Sconce',
+    category: 'dungeon-dressing',
+    themeId: 'dungeon',
+    viewBox: '0 0 512 512',
+    svgPath: 'M240 224h32v160h-32V224zm16-96c0 0 40 40 40 72s-17.9 48-40 48-40-16-40-48 40-72 40-72zm-48 256h96v16H208v-16zm32-288a8 8 0 1 1 0-16 8 8 0 0 1 0 16zm32 0a8 8 0 1 1 0-16 8 8 0 0 1 0 16z',
+  },
+  {
+    id: 'dungeon-pit',
+    name: 'Pit',
+    category: 'dungeon-dressing',
+    themeId: 'dungeon',
+    viewBox: '0 0 512 512',
+    svgPath: 'M256 128c70.7 0 128 57.3 128 128s-57.3 128-128 128-128-57.3-128-128 57.3-128 128-128zm0 32c53 0 96 43 96 96s-43 96-96 96-96-43-96-96 43-96 96-96zm0 32c35.3 0 64 28.7 64 64s-28.7 64-64 64-64-28.7-64-64 28.7-64 64-64z',
+  },
+  {
+    id: 'dungeon-cobweb',
+    name: 'Cobweb',
+    category: 'dungeon-dressing',
+    themeId: 'dungeon',
+    viewBox: '0 0 512 512',
+    svgPath: 'M96 96l160 160M96 96c0 80 32 128 80 160M96 96c80 0 128 32 160 80m-160 80c16 16 40 24 64 24m-64-24l160 0m-96-80c0 16 8 40 24 64m-24-64l0 160',
+  },
+  {
+    id: 'dungeon-gargoyle',
+    name: 'Gargoyle',
+    category: 'dungeon-dressing',
+    themeId: 'dungeon',
+    viewBox: '0 0 512 512',
+    svgPath: 'M256 128c-44.2 0-80 35.8-80 80v32h160v-32c0-44.2-35.8-80-80-80zm-48 48a16 16 0 1 1 0 32 16 16 0 0 1 0-32zm96 0a16 16 0 1 1 0 32 16 16 0 0 1 0-32zm-96 64v96l-32 48h48v-32l32 32 32-32v32h48l-32-48v-96m-64 96h128',
+  },
+  {
+    id: 'dungeon-manacles',
+    name: 'Manacles',
+    category: 'dungeon-dressing',
+    themeId: 'dungeon',
+    viewBox: '0 0 512 512',
+    svgPath: 'M176 192a48 48 0 1 1 96 0 48 48 0 0 1-96 0zm64 0a48 48 0 1 1 96 0 48 48 0 0 1-96 0zm-64 0h48m16 0h48m-80 48v128m-48-128v128m-16 0h16m48 0h16m-80 0v32m48-32v32',
+  },
+  {
+    id: 'dungeon-bone-pile',
+    name: 'Bone Pile',
+    category: 'dungeon-dressing',
+    themeId: 'dungeon',
+    viewBox: '0 0 512 512',
+    svgPath: 'M160 320h192v32H160v-32zm16-32l160 0m-144-32h128m-96-48l16 48m96-48l-16 48m-128-48l64 48m64-48l-64 48m-32 112a16 16 0 1 1 32 0 16 16 0 0 1-32 0zm96 0a16 16 0 1 1 32 0 16 16 0 0 1-32 0z',
+  },
+  {
+    id: 'dungeon-mossy-stone',
+    name: 'Mossy Stone',
+    category: 'nature',
+    themeId: 'dungeon',
+    viewBox: '0 0 512 512',
+    svgPath: 'M160 224h192v96H160v-96zm16 16h48v32h-48v-32zm64 0h48v32h-48v-32zm64 0h48v32h-48v-32zm-128 48h48v32h-48v-32zm64 0h48v32h-48v-32zm-48-96c-8 0-16 8-16 16m48-16c-4-12-12-16-24-16m96 16c8 0 16 8 16 16',
+  },
 
 /** All stamp categories with display labels. */
 export const STAMP_CATEGORY_LABELS: Record<string, string> = {
