@@ -111,15 +111,15 @@ const StampPicker: React.FC<StampPickerProps> = ({
           <div className="stamp-transform-row">
             <span className="stamp-transform-label">Rotate</span>
             <button type="button" className="tool-btn compact" onClick={() => handleRotate(-90)} title="Rotate 90° counter-clockwise" aria-label="Rotate counter-clockwise">↺</button>
-            <button type="button" className="tool-btn compact" onClick={() => handleRotate(90)} title="Rotate 90° clockwise [R]" aria-label="Rotate clockwise">↻</button>
+            <button type="button" className="tool-btn compact" onClick={() => handleRotate(90)} title="Rotate 90° clockwise [Shift+R]" aria-label="Rotate clockwise">↻</button>
             <span className="stamp-transform-value">{selectedPlaced.rotation}°</span>
           </div>
 
           {/* Flip */}
           <div className="stamp-transform-row">
             <span className="stamp-transform-label">Flip</span>
-            <button type="button" className={`tool-btn compact ${selectedPlaced.flipX ? 'active' : ''}`} onClick={handleFlipX} title="Flip horizontally [H]" aria-label="Flip horizontally" aria-pressed={selectedPlaced.flipX}>⇔</button>
-            <button type="button" className={`tool-btn compact ${selectedPlaced.flipY ? 'active' : ''}`} onClick={handleFlipY} title="Flip vertically [V]" aria-label="Flip vertically" aria-pressed={selectedPlaced.flipY}>⇕</button>
+            <button type="button" className={`tool-btn compact ${selectedPlaced.flipX ? 'active' : ''}`} onClick={handleFlipX} title="Flip horizontally [Shift+H]" aria-label="Flip horizontally" aria-pressed={selectedPlaced.flipX}>⇔</button>
+            <button type="button" className={`tool-btn compact ${selectedPlaced.flipY ? 'active' : ''}`} onClick={handleFlipY} title="Flip vertically [Shift+V]" aria-label="Flip vertically" aria-pressed={selectedPlaced.flipY}>⇕</button>
           </div>
 
           {/* Scale */}
@@ -172,7 +172,7 @@ const StampPicker: React.FC<StampPickerProps> = ({
               type="button"
               className="tool-btn compact"
               onClick={() => { onRemoveStamp(selectedPlacedStampId!); onSelectPlacedStamp(null); }}
-              title="Delete selected stamp [Delete]"
+              title="Delete selected stamp [Delete/Backspace]"
               aria-label="Delete stamp"
               style={{ color: '#dc2626' }}
             >🗑</button>

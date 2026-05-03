@@ -91,11 +91,11 @@ export interface ShortcutActions {
   nextLevel: () => void;
   /** Cycle to the previous dungeon level (PageUp). */
   prevLevel: () => void;
-  /** Rotate selected stamp 90° clockwise (R). */
+  /** Rotate selected stamp 90° clockwise (Shift+R). */
   rotateStampCW: () => void;
-  /** Flip selected stamp horizontally (H). */
+  /** Flip selected stamp horizontally (Shift+H). */
   flipStampH: () => void;
-  /** Flip selected stamp vertically (shift+H alias V removed — use UI). */
+  /** Flip selected stamp vertically (Shift+V). */
   flipStampV: () => void;
   /** Delete selected placed stamp (Delete/Backspace). */
   deleteStamp: () => void;
