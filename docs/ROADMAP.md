@@ -382,6 +382,19 @@ Features that extend dungeon mapping depth and personalization.
 - ✅ Custom tile base behavior feeds line-of-sight, dynamic fog, light visibility, and print-mode fallback semantics
 - ✅ Custom themes and custom tile definitions round-trip through project JSON export/import and IndexedDB autosave
 
+**5.4 — Premade Map Design Review** *(new — recurring sweep)*
+
+*Premade maps were authored organically alongside generator/theme work; some no longer read as the archetype they're named after (castle, ship, cavern, settlement, etc.). This phase introduces a structured audit pass that repeats whenever a new content tool ships.*
+
+- **Pass 1 — archetype audit (initial):**
+  - Walk each of the 26 bundled sample projects in `src/utils/premadeMaps.ts` and compare its layout against its intended design (castle, boat, dungeon, cavern, terrain, settlement, temple, etc.)
+  - Per-map polish: tighten room shapes, relocate/replace stamps and tokens, sharpen flavor notes, fix walkability issues that no longer match the archetype
+  - **Background fill audit:** every premade must have its empty cells filled with the theme `background` tile so maps don't render as floating geometry — matches the default behavior of the Generate dialog (opt-out, not opt-in)
+  - Tag each premade with its intended archetype in `PremadeMapSpec` so the gallery can group/filter by archetype, not just theme
+- **Pass 2 — after Phase 11 (Rivers) ships:** re-review every premade and add rivers/streams where the archetype calls for them — castle moat, wilderness river, pirate harbor/docks, swamp cavern stream, etc. Uses the same checklist as Pass 1
+- **Pass 3 — after each future content/art tool ships** (Phase 6.4.5 per-theme stamps, Phase 9 art presets, Phase 10 dynamic rooms, etc.): quick re-sweep to fold new stamps, presets, or shape features into existing premades where they improve showcase value
+- Outcome: bundled samples stay aligned with the app's current capabilities and serve as both onboarding and a feature showcase
+
 ### Completed Quality-of-Life Phases
 
 **~~7.1 — Print-Optimized Export~~** ✅ COMPLETE
@@ -491,7 +504,17 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - 8.3.2 — Persistent zoom + cursor-coordinate HUD overlaid bottom-right of canvas
 - 8.3.3 — Header simplification: collapse Export / Print / Samples / Help into one overflow menu
 
-📘 **README checkpoint #2:** Screenshots/GIFs of new UI layout.
+**8.4 — Generate Hub (dedicated window)**
+
+*Today the Generate and Samples buttons live inside the Draw tab (`DrawToolsTab.tsx`), which buries map-creation flows inside an unrelated tool category and gives users no preview of what they're getting. Competitors (Dungeondraft, DungeonFog, Worldographer) expose generation and template browsing as a dedicated surface. This sub-phase pulls those flows out into their own window/tab.*
+
+- 8.4.1 — New **Generate Hub** surface (full-size dialog or dockable window) that combines procedural generation and the premade map gallery in one place — left side picks generator type or premade archetype, right side previews the result with all parameters
+- 8.4.2 — All `GenerateMapDialog` controls move into the hub, including the **"Fill empty space with background tile"** toggle — which remains **on by default** so generated maps never read as floating geometry; user must explicitly opt out
+- 8.4.3 — All `PremadeMapsDialog` browsing moves into the hub, with archetype filtering surfaced from Phase 5.4's tagging
+- 8.4.4 — Reachable from the navigation rail (8.1) as its own icon, from the header File menu, and via the existing [G] shortcut
+- 8.4.5 — Remove the `🎲 Generate` and `📦 Samples` buttons from `DrawToolsTab` once the hub ships; Draw tab returns to drawing tools only
+
+📘 **README checkpoint #2:** Screenshots/GIFs of new UI layout *(includes the Generate Hub)*.
 
 ### Phase 9: Art System v2
 
@@ -585,6 +608,7 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - Bank tiles (sand/dirt/rock edges) per theme
 - Source / mouth markers
 - Branching tributaries
+- **Premade map re-review** (Phase 5.4 Pass 2): walk each bundled sample project and add rivers/streams where the archetype calls for them — castle moat, wilderness river, pirate harbor, swamp stream, etc. Uses the same per-map checklist as 5.4 Pass 1
 
 ### Phase 12: Final Pass — Accessibility, Codebase Audit & Documentation
 
@@ -1136,11 +1160,11 @@ Recommended implementation order based on dependency analysis, impact, and effor
     - *Dependency:* None — standalone
     - 📘 **README checkpoint #1** after completion: add "Development & Testing" section
 
-20. **Phase 8.1 → 8.2 → 8.3 — UI Redesign** — Navigation rail, docked inspector, command palette + HUD
-    - *Why:* Matches proven competitor layout (Dungeondraft: left icon rail + contextual panel + docked right inspector); reduces toolbar complexity
-    - *Effort:* Medium-high (3 sub-phases)
-    - *Dependency:* Benefits from test suite (Phase 7)
-    - 📘 **README checkpoint #2** after 8.3: screenshots/GIFs of new UI
+20. **Phase 8.1 → 8.2 → 8.3 → 8.4 — UI Redesign** — Navigation rail, docked inspector, command palette + HUD, **Generate Hub (dedicated window for generators + samples)**
+    - *Why:* Matches proven competitor layout (Dungeondraft: left icon rail + contextual panel + docked right inspector); reduces toolbar complexity; pulls map creation out of the Draw tab into its own surface
+    - *Effort:* Medium-high (4 sub-phases)
+    - *Dependency:* Benefits from test suite (Phase 7); 8.4 depends on 8.1 navigation rail being in place
+    - 📘 **README checkpoint #2** after 8.4: screenshots/GIFs of new UI (including Generate Hub)
 
 21. **Phase 9.1 → 9.2 → 9.3 → 9.4 → 9.5 — Art System v2** — Texture/paper layer, edge blending, hand-drawn mode, lighting/atmosphere, style presets
     - *Why:* Visual quality leap; parchment + hand-drawn mode are the most requested art features
@@ -1154,13 +1178,19 @@ Recommended implementation order based on dependency analysis, impact, and effor
     - *Dependency:* Test suite (Phase 7) strongly recommended
     - 📘 **README checkpoint #4** after 10.3: GIF of room overlap/merge
 
-23. **Phase 11.1 → 11.2 → 11.3 — Rivers** — Vector layer + manual tool, generator integration, polish (banks/branching)
-    - *Why:* Natural water features are a gap vs open-terrain competitors; vector layer enables future editing
+23. **Phase 11.1 → 11.2 → 11.3 — Rivers** — Vector layer + manual tool, generator integration, polish (banks/branching) + **Phase 5.4 Pass 2 premade re-review**
+    - *Why:* Natural water features are a gap vs open-terrain competitors; vector layer enables future editing; rivers also unblock the second sweep of the premade audit (moats, harbors, wilderness rivers)
     - *Effort:* Medium (3 sub-phases)
     - *Dependency:* Benefits from shape infrastructure (Phase 10)
     - 📘 **README checkpoint #5** after 11.1: GIF of drawing a river
 
-24. **Phase 12 — Final Pass: Accessibility, Codebase Audit & Documentation** — WCAG re-audit, refactor sweep, README overhaul, CONTRIBUTING.md, ARCHITECTURE.md, CHANGELOG.md
+24. **Phase 5.4 — Premade Map Design Review** — Recurring sweep that audits each bundled sample against its intended archetype (castle, boat, dungeon, cavern, etc.); ensures background tile fill on every premade; tags archetypes for hub filtering
+    - *Why:* Premades drift as new tools/themes ship; a structured sweep keeps the showcase aligned with current capabilities — and it's a natural recurring task triggered by Phases 6.4.5, 9, 10, and 11
+    - *Effort:* Low-medium per pass (mostly authoring)
+    - *Dependency:* Pass 1 standalone; Pass 2 after Phase 11; Pass 3 after each new content/art tool
+    - *Cross-link:* 8.4 surfaces the archetype tags in the Generate Hub
+
+25. **Phase 12 — Final Pass: Accessibility, Codebase Audit & Documentation** — WCAG re-audit, refactor sweep, README overhaul, CONTRIBUTING.md, ARCHITECTURE.md, CHANGELOG.md
     - *Why:* Closes the active roadmap with a clean, documented, tested codebase
     - *Effort:* Medium
     - *Dependency:* All prior phases complete
@@ -1226,10 +1256,23 @@ Recommended implementation order based on dependency analysis, impact, and effor
 | README/docs interspersed at checkpoints | 2026-05-03 | Five README checkpoint updates throughout Phases 7–11, plus a final overhaul in Phase 12; avoids one giant documentation dump at the end |
 | Dark mode → Far Future | 2026-05-03 | Not committed this round; requires converting 336+ hardcoded colors to CSS custom properties — substantial effort with no feature value |
 | River ↔ FOV interaction → Far Future | 2026-05-03 | Out of scope for v1 rivers; water reflecting torchlight / blocking movement is a polish feature that can layer on later |
+| Generate as a dedicated hub, not a Draw tab section | 2026-05-03 | Today Generate + Samples buttons live inside `DrawToolsTab`, which buries map-creation flows inside an unrelated tool category and gives no preview before commit; competitors (Dungeondraft, DungeonFog, Worldographer) expose generation as its own window — Phase 8.4 introduces a Generate Hub combining procedural generation and the premade gallery in one surface |
+| Background tile fill on by default for generated maps | 2026-05-03 | `GenerateMapDialog` already defaults `fillBackground` to `true`; codifying this as a design rule so future generator UIs (Phase 8.4 hub, mobile equivalents) keep it opt-out — empty cells render as floating geometry which never matches user intent for a finished map |
+| Premade maps must also default-fill the background tile | 2026-05-03 | Bundled samples in `src/utils/premadeMaps.ts` were authored before the background-fill default was standardized; Phase 5.4 Pass 1 audit makes background fill mandatory on every premade so generated and premade maps render consistently |
+| Premade map design review as a recurring sweep | 2026-05-03 | Premades drift as themes/generators/tools evolve — a one-time pass goes stale; Phase 5.4 defines repeating passes (initial archetype audit, post-rivers, post-each new content tool) so bundled samples stay representative of current capabilities |
+| Archetype tagging on premades | 2026-05-03 | Premades currently tag only by theme; adding an explicit archetype tag (castle, boat, dungeon, cavern, settlement, temple, etc.) lets the Generate Hub group/filter by intent and makes the 5.4 audit checklist concrete and verifiable |
 
 ---
 
 ## Changes History
+
+**2026-05-03 — Generate Hub, Premade Map Design Review, and default background-fill captured**
+- Added **Phase 5.4 — Premade Map Design Review** as a recurring sweep: Pass 1 audits each of the 26 bundled premades against its intended archetype (castle, boat, dungeon, cavern, etc.) and enforces background-tile fill on every map; Pass 2 re-reviews after Phase 11 (Rivers) to add moats/streams/harbors; Pass 3 re-sweeps after each new content/art tool (6.4.5, 9, 10)
+- Added **Phase 8.4 — Generate Hub (dedicated window)** to Phase 8: pulls Generate + Samples out of the Draw tab into a single dedicated surface (Dungeondraft / DungeonFog pattern), reachable from the rail, header File menu, and `[G]` shortcut; surfaces 5.4 archetype tags for filtering; preserves the "Fill empty space with background tile" toggle as on-by-default opt-out
+- Cross-linked **Phase 11.3 — River Polish** to 5.4 Pass 2 so the premade re-review ships alongside river polish
+- Codified that **background tile fill defaults to ON** for generated maps (already the case in `GenerateMapDialog.tsx`) and made it a Phase 5.4 audit requirement for premade maps
+- Updated **Part 5 priority order**: item 20 now spans 8.1 → 8.4; item 23 (Rivers) cross-links to the 5.4 Pass 2 re-review; new item 24 covers Phase 5.4
+- Logged 5 new design decisions: generate-as-dedicated-hub, background-fill-default-on, premade-background-fill, recurring premade design review, archetype tagging
 
 **2026-05-03 — Phases 7–12 roadmap approved and integrated**
 - Added **Phase 7: Test Infrastructure** — Vitest + React Testing Library setup, initial coverage for high-risk pure modules (useMapState, generators, FOV, stamps), component smoke tests
