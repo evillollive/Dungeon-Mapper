@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useMemo, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
-import type { CustomThemeDefinition, DungeonMap, StampDef, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource, PlacedStamp, StampPlacementOptions } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, StampDef, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment } from '../types/map';
 import { TOKEN_KIND_COLORS, isBuiltInTileType } from '../types/map';
 import { getSemanticTileType, getThemeWithCustom, preloadCustomThemeImages } from '../utils/customThemes';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
@@ -251,6 +251,23 @@ interface MapCanvasProps {
   onRedo?: () => void;
   /** Announce a message to screen readers via the app-level aria-live region. */
   announce?: (message: string) => void;
+  // ── Wall & Path tool props ────────────────────────────────────────────
+  /** Stroke color for the wall tool. */
+  wallColor?: string;
+  /** Stroke thickness for the wall tool (tile units). */
+  wallThickness?: number;
+  /** Stroke color for the path tool. */
+  pathColor?: string;
+  /** Stroke width for the path tool (tile units). */
+  pathWidth?: number;
+  /** Called when user completes a wall segment. */
+  onAddWallSegment?: (segment: Omit<WallSegment, 'id'>) => void;
+  /** Called when user clicks a wall segment with wall-erase tool. */
+  onRemoveWallSegment?: (id: number) => void;
+  /** Called when user completes a path segment. */
+  onAddPathSegment?: (segment: Omit<PathSegment, 'id'>) => void;
+  /** Called when user clicks a path segment with path-erase tool. */
+  onRemovePathSegment?: (id: number) => void;
 }
 
 export interface MapCanvasHandle {
