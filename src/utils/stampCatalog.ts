@@ -1,7 +1,7 @@
 /**
- * Built-in stamp catalog — 40 universal SVG stamps for immediate use.
+ * Built-in stamp catalog — 196 SVG stamps (40 universal + 156 per-theme).
  * Organized by category: furniture, dungeon-dressing, nature, structures, markers.
- * Phase 6.4.5 will add per-theme stamp sets (160+ stamps).
+ * Per-theme stamps are tagged with themeId and filtered via StampPicker.
  */
 import type { StampDef } from '../types/map';
 
@@ -591,6 +591,14 @@ export const BUILT_IN_STAMPS: StampDef[] = [
     themeId: 'wilderness',
     viewBox: '0 0 512 512',
     svgPath: 'M256 224c53 0 96 28.7 96 64v16c0 35.3-43 64-96 64s-96-28.7-96-64v-16c0-35.3 43-64 96-64zm-32 48a12 12 0 1 1 24 0 12 12 0 0 1-24 0zm32 0a12 12 0 1 1 24 0 12 12 0 0 1-24 0zm32 0a12 12 0 1 1 24 0 12 12 0 0 1-24 0z',
+  },
+  {
+    id: 'wilderness-standing-stone',
+    name: 'Standing Stone',
+    category: 'structures',
+    themeId: 'wilderness',
+    viewBox: '0 0 512 512',
+    svgPath: 'M224 160h64v224H224V160zm0 0c0-17.7 14.3-32 32-32s32 14.3 32 32m-80 224h128v16H192v-16zm32-176h32v16H224v-16zm0 48h32v16H224v-16zm0 48h32v16H224v-16z',
   },
 
   // ── Starship ───────────────────────────────────────────────────────────────

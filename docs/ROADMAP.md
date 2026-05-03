@@ -906,23 +906,25 @@ The stamp library is the single most impactful missing feature for visual map qu
 - ✅ Transform panel appears in StampPicker when a placed stamp is selected
 - ✅ All transforms wired through ActionContext and ToolContext
 
-**6.4.5 — Per-Theme Stamp Sets (160+ stamps)** *(content, high effort — can be split further)*
-- Extend `stampLibrary.ts` with theme-tagged stamps, 10–15 per theme:
-  - Dungeon: iron maiden, portcullis, sarcophagus, brazier, weapon rack, etc.
-  - Castle: banner, chandelier, tapestry, armor stand, candelabra, etc.
-  - Wilderness: tent, animal tracks, fallen tree, berry bush, antler, etc.
-  - Starship: console, cryo-pod, airlock, reactor, terminal, etc.
-  - Alien: egg cluster, tentacle, crystal, spore, bio-pod, etc.
-  - Cyberpunk: neon sign, dumpster, hologram, drone, server rack, etc.
-  - Steampunk: gear, pipe, gauge, boiler, clockwork, etc.
-  - Old West: cactus, wagon wheel, trough, hitching post, saloon door, etc.
-  - Pirate: anchor, cannon, treasure map, rum barrel, ship wheel, etc.
-  - Desert: oasis palm, sand dune, scarab, obelisk, tent, etc.
-  - Ancient: hieroglyph, broken column, urn, mosaic, slab, etc.
-  - Modern City: trash can, bench, lamppost, fire hydrant, mailbox, etc.
-  - Post-Apocalypse: radiation sign, wrecked car, barbed wire, gas mask, etc.
-- Stamp picker shows "All" + per-theme filter tabs
-- This sub-phase can itself be delivered incrementally (a few themes at a time)
+**~~6.4.5 — Per-Theme Stamp Sets (156 stamps)~~** ✅ COMPLETE
+- ✅ 156 per-theme stamps added to `stampCatalog.ts` (12 per theme × 13 themes), totalling 196 built-in stamps
+- ✅ Each stamp tagged with `themeId` for theme-aware filtering
+- ✅ StampPicker updated with `themeId` prop and "🎨 Theme" filter tab
+- ✅ "All" tab shows universal + current-theme stamps; category tabs filter theme-appropriately
+- ✅ Theme stamp sets:
+  - Dungeon: iron maiden, portcullis, brazier, weapon rack, chains, torch sconce, pit, cobweb, gargoyle, manacles, bone pile, mossy stone
+  - Castle: banner, chandelier, tapestry, armor stand, candelabra, stained glass, coat of arms, drawbridge, fountain, arrow slit, herald trumpet, battlement
+  - Wilderness: tent, animal tracks, fallen tree, berry bush, antler, stream, beehive, totem pole, fishing spot, wolf den, bird nest, standing stone
+  - Starship: console, cryo pod, airlock, reactor, terminal, escape pod, cargo crate, antenna, holo-table, blast door, med bay, viewport
+  - Alien: egg cluster, tentacle, crystal, spore pod, bio pod, slime pool, hive node, membrane, fungal growth, cocoon, acid vent, bio-light
+  - Cyberpunk: neon sign, dumpster, hologram, drone, server rack, vending machine, cyber arm, data port, hover bike, security camera, electric fence, junk pile
+  - Steampunk: gear, pipe, pressure gauge, boiler, clockwork, valve wheel, piston, telegraph, airship anchor, cog table, monocle, automaton
+  - Old West: cactus, wagon wheel, water trough, hitching post, saloon door, horseshoe, wanted poster, dynamite, mine cart, windmill, sheriff star, tumbleweed
+  - Pirate: anchor, cannon, treasure map, rum barrel, ship wheel, jolly roger, parrot perch, rope coil, plank, pirate chest, crow's nest, cutlass
+  - Desert: oasis palm, sand dune, scarab, obelisk, desert tent, sand pit, sphinx, sun dial, amphora, sand worm, mirage, camel
+  - Ancient: hieroglyph, broken column, urn, mosaic, stone slab, scroll, statue, carved face, offering bowl, sun disc, vine ruin, labyrinth
+  - Modern City: trash can, park bench, lamppost, fire hydrant, mailbox, traffic cone, parking meter, bus stop, sewer grate, dumpster, manhole, ATM
+  - Post-Apocalypse: radiation sign, wrecked car, barbed wire, gas mask, bunker hatch, toxic barrel, camp ruins, scrap pile, warning sign, chain fence, generator, hazmat suit
 
 **6.4.6 — Custom Stamp Upload** *(extension, low effort)* **✅ COMPLETE**
 - Upload user PNG/SVG images as custom stamps (reuses pattern from custom tile upload)
@@ -1127,7 +1129,7 @@ Recommended implementation order based on dependency analysis, impact, and effor
     - *Effort:* Low
     - *Dependency:* Requires 6.4.2
 
-12. **Phase 6.4.5 — Per-Theme Stamp Sets (160+ stamps)** — 10–15 stamps per theme, theme-filtered picker
+12. ~~**Phase 6.4.5 — Per-Theme Stamp Sets (156 stamps)** — 12 stamps per theme × 13 themes, theme-filtered picker~~ ✅
     - *Why:* Bulk content that closes the competitive gap
     - *Effort:* High (mostly SVG authoring, can deliver incrementally per theme)
     - *Dependency:* Requires 6.4.3
