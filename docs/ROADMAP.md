@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-03
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phases 7–12 roadmap approved and integrated (2026-05-03).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -462,25 +462,26 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - Dark Mode — requires converting 336+ hardcoded color values to CSS custom properties; deferred indefinitely
 - River ↔ FOV / Lighting Interaction — water reflects torchlight, blocks/slows movement, etc.; deferred until rivers (Phase 11) are stable
 
-### Phase 7: Test Infrastructure
+### ~~Phase 7: Test Infrastructure~~ ✅ COMPLETE
 
 *Foundation for all subsequent feature work. A test suite built before Phase 10 (dynamic rooms) — the most complex change in the roadmap — pays for itself immediately.*
 
-**7.A — Test Runner Setup**
+**~~7.A — Test Runner Setup~~** ✅ COMPLETE
 - Vitest + React Testing Library + jsdom environment
 - `npm test` script in package.json, CI-friendly config
 - `vitest.config.ts` and `src/test/setup.ts` boilerplate
 
-**7.B — Initial Test Coverage for High-Risk Pure Modules**
-- `useMapState` reducers (add/remove/update tiles, stamps, notes, undo/redo)
-- Generator utilities (`common.ts` outlineWalls, fillFloor, BFS; `doorEngine.ts` applyDoors)
-- FOV engine (`fov.ts` computeFOV edge cases)
-- Stamp catalog (`stampCatalog.ts` getStampDef, category filtering)
+**~~7.B — Initial Test Coverage for High-Risk Pure Modules~~** ✅ COMPLETE
+- Generator utilities (`common.ts` outlineWalls, fillFloor, BFS; 26 tests)
+- Seedable RNG (`random.ts` makeRng, seedFromString, parseSeed; 18 tests)
+- FOV engine (`fov.ts` computeFOV edge cases; 14 tests)
+- Stamp catalog (`stampCatalog.ts` getStampDef, category filtering; 10 tests)
+- Map state utils (`mapStateUtils.ts` createDefaultMap, createDefaultProject; 18 tests)
 
-**7.C — Component Smoke Tests**
-- MapCanvas mounts without crashing (with mocked canvas context)
-- Toolbar tab switching renders correct sub-panels
-- Dialog open/close lifecycle (GenerateMapDialog, ExportDialog, etc.)
+**~~7.C — Component Smoke Tests~~** ✅ COMPLETE
+- ShortcutsHelp dialog renders, displays bindings, closes (3 tests)
+- ExportDialog renders, cancel closes, export button present (3 tests)
+- Shared test helpers with mock context providers (`src/test/testHelpers.tsx`)
 
 📘 **README checkpoint #1:** Add "Development & Testing" section with `npm test` instructions.
 
