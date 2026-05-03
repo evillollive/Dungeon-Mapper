@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-03
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.6, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.6, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phases 7–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -444,6 +444,172 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 **Specialized Features**
 - Geomorphic Tile Assembly — assemble pre-drawn tile art with edge-matching constraints (inspired by Dave's Mapper)
 - Map Search & Organization — tags, folders, categories for organizing saved maps (depends on cloud storage)
+
+**Visual & Accessibility** *(deferred)*
+- Dark Mode — requires converting 336+ hardcoded color values to CSS custom properties; deferred indefinitely
+- River ↔ FOV / Lighting Interaction — water reflects torchlight, blocks/slows movement, etc.; deferred until rivers (Phase 11) are stable
+
+### Phase 7: Test Infrastructure
+
+*Foundation for all subsequent feature work. A test suite built before Phase 10 (dynamic rooms) — the most complex change in the roadmap — pays for itself immediately.*
+
+**7.A — Test Runner Setup**
+- Vitest + React Testing Library + jsdom environment
+- `npm test` script in package.json, CI-friendly config
+- `vitest.config.ts` and `src/test/setup.ts` boilerplate
+
+**7.B — Initial Test Coverage for High-Risk Pure Modules**
+- `useMapState` reducers (add/remove/update tiles, stamps, notes, undo/redo)
+- Generator utilities (`common.ts` outlineWalls, fillFloor, BFS; `doorEngine.ts` applyDoors)
+- FOV engine (`fov.ts` computeFOV edge cases)
+- Stamp catalog (`stampCatalog.ts` getStampDef, category filtering)
+
+**7.C — Component Smoke Tests**
+- MapCanvas mounts without crashing (with mocked canvas context)
+- Toolbar tab switching renders correct sub-panels
+- Dialog open/close lifecycle (GenerateMapDialog, ExportDialog, etc.)
+
+📘 **README checkpoint #1:** Add "Development & Testing" section with `npm test` instructions.
+
+### Phase 8: UI Redesign
+
+*Modernise the interface to match proven competitor patterns (Dungeondraft-style: left icon rail → contextual panel → docked right inspector). Existing 4-tab toolbar preserved as a fallback density mode.*
+
+**8.1 — Navigation Rail**
+- 8.1.1 — Left icon-rail component (vertical strip of mode icons: Draw, Tactical, Generate, Advanced — same groupings as today)
+- 8.1.2 — Contextual sub-panel that swaps based on selected rail mode (replaces center area of current toolbar)
+- 8.1.3 — Layout density toggle in Settings: **"Rail (new)" / "Tabs (classic)"** — old 4-tab toolbar preserved as fallback
+- 8.1.4 — Mobile: rail collapses to existing bottom toolbar (no change to MobileToolbar)
+
+**8.2 — Docked Inspector**
+- 8.2.1 — New `<SelectionInspector>` component, docked to right panel, shows properties of currently selected stamp / token / note / light
+- 8.2.2 — Migrate stamp transform controls out of StampPicker into the inspector
+- 8.2.3 — Inspector empty-state shows quick map info (dimensions, tile counts, theme)
+
+**8.3 — UI Polish**
+- 8.3.1 — Command palette (Ctrl/Cmd+K) — fuzzy search for tools, themes, dialogs, recent maps
+- 8.3.2 — Persistent zoom + cursor-coordinate HUD overlaid bottom-right of canvas
+- 8.3.3 — Header simplification: collapse Export / Print / Samples / Help into one overflow menu
+
+📘 **README checkpoint #2:** Screenshots/GIFs of new UI layout.
+
+### Phase 9: Art System v2
+
+*Visual quality leap: parchment textures, edge blending, hand-drawn mode, atmosphere, and per-map art style presets. All upgrades honor print-mode B&W contract.*
+
+**9.1 — Texture & Paper Layer**
+- Parchment / paper background layer with per-theme tinting
+- Optional grain noise + vignette
+- **Export toggle** on PNG/SVG export so users can include or exclude the paper texture
+
+**9.2 — Edge Blending**
+- Stochastic edge dithering between adjacent floor/wall/water tiles to soften grid stepping
+- Per-theme blend masks; falls back cleanly in print mode
+
+**9.3 — Hand-Drawn Mode**
+- Wobbly walls (Perlin-jittered stroke offsets)
+- Cross-hatch shading and ink texture (Dyson / Watabou inspired)
+- Honors print-mode B&W contract
+
+**9.4 — Lighting & Atmosphere**
+- Ambient occlusion in wall corners
+- Soft shadow falloff under stamps
+- Day/night/dusk color grading per scene
+
+**9.5 — Art Style Presets**
+- **Per-map** `artStylePreset` field on `DungeonMap`
+- Built-in presets: **Classic** (current), **Hand-Drawn**, **Painted**, **Minimal**, **Print**
+- Preset picker in Map settings; export honors active preset
+
+📘 **README checkpoint #3:** Showcase gallery of all presets across themes.
+
+### Phase 10: Dynamic Rooms (Shape Layer)
+
+*Transforms map editing from tile-only to shape+tile hybrid. Shapes rasterize to the existing tile grid; individual tile painting coexists with shapes (no lock). Merging is visual only — rooms remain separate logical objects.*
+
+**10.1 — Shape Data Model & Rasterizer**
+- New `RoomShape` type (rect for v1: position, dimensions, optional door hints, fill/wall tile overrides)
+- `DungeonMap.roomShapes: RoomShape[]` (additive — old maps unaffected)
+- Rasterizer (shapes → floor + wall tiles) runs on every shape edit; tile grid remains the source of truth for rendering
+- **Coexistence:** individual tile painting still works on top of rasterized output (no lock)
+- Undo/redo support for shape ops
+- Tests for rasterizer correctness (built on Phase 7)
+
+**10.2 — Rectangle Drawing & Resize**
+- New `room-rect` tool — drag to draw a rectangular room shape
+- Edit handles for resize / move
+- Live preview while dragging
+- Right-click / context menu to delete a room shape
+
+**10.3 — Visual Merging**
+- When two rectangles overlap or touch edges, the rasterizer dissolves shared interior walls
+- Room shapes remain **separate logical objects** (visual merge only — no auto-combined notes/IDs)
+- Door inference at touch boundaries (auto / open arch / wall — per-edge override)
+
+📘 **README checkpoint #4:** GIF of room overlap/merge.
+
+**10.4 — Generator Integration**
+- BSP / Rooms & Corridors generators emit `RoomShape[]` going forward (existing maps unaffected)
+- Generated rooms become editable as shapes immediately after generation
+
+**10.5 — Subtractive Shapes**
+- "Cut" rectangles for alcoves, pillars, courtyards
+- Per-edge wall override controls
+
+**10.6 — Additional Shapes**
+- Circle / ellipse room shape
+- Polygon room shape (click-to-add-vertex)
+- Same merge / subtract semantics as rectangles
+
+### Phase 11: Rivers
+
+*Rivers as a vector layer (like room shapes) that rasterizes to water tiles with directional flow metadata. Generator integration via opt-in checkbox + sliders.*
+
+**11.1 — Vector Layer & Manual Tool**
+- New `River` type (vector layer: control points, width, flow direction, type)
+- `DungeonMap.rivers: River[]`
+- Smooth curve rasterizer (Catmull-Rom or Bézier) → water tiles with directional flow attribute
+- New `river` tool — click control points; drag to set width
+- Edit handles for moving control points; right-click to delete a control point
+- Renders flow direction in screen mode (subtle ripple) and print mode (current arrows)
+
+📘 **README checkpoint #5:** GIF of drawing a river.
+
+**11.2 — Generator Integration**
+- Optional **"Add river"** checkbox in Generate dialog → reveals sliders: count, width, meander, source edge
+- Open Terrain & Cavern: rivers carve through `floor`/`empty` cells before wall placement
+- Village (BSP): rivers placed first; partitioning routes around them; bridges auto-inserted on roads that cross
+- Underground themes (Dungeon, Cavern): river checkbox available; produces "underground stream" with appropriate tile
+
+**11.3 — River Polish**
+- Bank tiles (sand/dirt/rock edges) per theme
+- Source / mouth markers
+- Branching tributaries
+
+### Phase 12: Final Pass — Accessibility, Codebase Audit & Documentation
+
+*Closing phase of the active roadmap. Ensures the codebase is clean, tested, documented, and accessible.*
+
+**12.1 — Accessibility Audit**
+- Re-audit against WCAG AA across all 13 themes (color contrast, focus order, keyboard reachability, touch target sizes)
+- User-test the canvas summary + aria-live announcements with real screen readers (NVDA, VoiceOver, TalkBack)
+- Fix any gaps surfaced
+- *(Dark mode is **not** in this phase — moved to Far Future)*
+
+**12.2 — Codebase Audit & Refactor**
+- Re-measure component sizes (MapCanvas, MobileToolbar, useMapState) and split any new god modules from Phases 8–11
+- Dead-code sweep
+- Performance profile against 128×128 maps with full feature stack
+- Bundle-size audit
+- Type-strictness sweep (`any`, missing nullable handling)
+- Expand test suite to fill gaps surfaced by audit
+
+**12.3 — README & Documentation Overhaul (Final Pass)**
+- Best-practice README: hero screenshot, badges, quick start, feature highlights, theme gallery, install/run, contributing, license
+- Animated GIFs of headline features
+- Add `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`
+- Verify `LICENSE` is present and correct
+- Move ROADMAP under a structured `docs/` tree with clean cross-links
 
 ### Phase 6: UI/UX Overhaul, Accessibility, Refactoring & Mobile
 
@@ -942,12 +1108,12 @@ Recommended implementation order based on dependency analysis, impact, and effor
     - *Effort:* High (mostly SVG authoring, can deliver incrementally per theme)
     - *Dependency:* Requires 6.4.3
 
-13. **Phase 6.4.6 — Custom Stamp Upload** — User PNG/SVG upload, project-scoped storage
+13. ~~**Phase 6.4.6 — Custom Stamp Upload** — User PNG/SVG upload, project-scoped storage~~ ✅
     - *Why:* Lets users bring their own assets (matches custom tile upload pattern)
     - *Effort:* Low
     - *Dependency:* Requires 6.4.3
 
-14. **Phase 6.6 — Scene/Room Templates** — Save/reuse room configurations
+14. ~~**Phase 6.6 — Scene/Room Templates** — Save/reuse room configurations~~ ✅
     - *Why:* Builds on existing clipboard infrastructure, high user value
     - *Effort:* Low
     - *Dependency:* None
@@ -961,6 +1127,43 @@ Recommended implementation order based on dependency analysis, impact, and effor
 16. **Phase 6.7 — Map Linking & Journal** — Rich notes, cross-map references
 17. **Phase 6.8 — Audio Ambiance** — Per-map ambient audio
 18. **Phase 6.9 — Animated Tokens** — Smooth movement, spell effects
+
+**Active Roadmap — Phases 7–12** (approved 2026-05-03):
+
+19. **Phase 7 — Test Infrastructure** — Vitest + React Testing Library setup, initial coverage for high-risk modules, component smoke tests
+    - *Why first:* Phase 10 (dynamic rooms) is the most complex change in the roadmap; a test suite built before that work pays for itself immediately
+    - *Effort:* Medium
+    - *Dependency:* None — standalone
+    - 📘 **README checkpoint #1** after completion: add "Development & Testing" section
+
+20. **Phase 8.1 → 8.2 → 8.3 — UI Redesign** — Navigation rail, docked inspector, command palette + HUD
+    - *Why:* Matches proven competitor layout (Dungeondraft: left icon rail + contextual panel + docked right inspector); reduces toolbar complexity
+    - *Effort:* Medium-high (3 sub-phases)
+    - *Dependency:* Benefits from test suite (Phase 7)
+    - 📘 **README checkpoint #2** after 8.3: screenshots/GIFs of new UI
+
+21. **Phase 9.1 → 9.2 → 9.3 → 9.4 → 9.5 — Art System v2** — Texture/paper layer, edge blending, hand-drawn mode, lighting/atmosphere, style presets
+    - *Why:* Visual quality leap; parchment + hand-drawn mode are the most requested art features
+    - *Effort:* High (5 sub-phases, can deliver incrementally)
+    - *Dependency:* None — standalone art work
+    - 📘 **README checkpoint #3** after 9.5: showcase gallery of all presets across themes
+
+22. **Phase 10.1 → 10.2 → 10.3 → 10.4 → 10.5 → 10.6 — Dynamic Rooms** — Shape data model, rectangle drawing, visual merging, generator integration, subtractive shapes, additional shapes (circle/polygon)
+    - *Why:* Biggest architectural change — transforms map editing from tile-only to shape+tile hybrid
+    - *Effort:* High (6 sub-phases)
+    - *Dependency:* Test suite (Phase 7) strongly recommended
+    - 📘 **README checkpoint #4** after 10.3: GIF of room overlap/merge
+
+23. **Phase 11.1 → 11.2 → 11.3 — Rivers** — Vector layer + manual tool, generator integration, polish (banks/branching)
+    - *Why:* Natural water features are a gap vs open-terrain competitors; vector layer enables future editing
+    - *Effort:* Medium (3 sub-phases)
+    - *Dependency:* Benefits from shape infrastructure (Phase 10)
+    - 📘 **README checkpoint #5** after 11.1: GIF of drawing a river
+
+24. **Phase 12 — Final Pass: Accessibility, Codebase Audit & Documentation** — WCAG re-audit, refactor sweep, README overhaul, CONTRIBUTING.md, ARCHITECTURE.md, CHANGELOG.md
+    - *Why:* Closes the active roadmap with a clean, documented, tested codebase
+    - *Effort:* Medium
+    - *Dependency:* All prior phases complete
 
 ---
 
@@ -1010,10 +1213,35 @@ Recommended implementation order based on dependency analysis, impact, and effor
 | Phase 6.4 split into 6 sub-phases | 2026-04-30 | 200+ stamps + data model + UI + transforms + custom upload is too large for a single phase; splitting into 6.4.1 (data model) → 6.4.2 (canvas) → 6.4.3 (picker + 40 stamps) → 6.4.4 (transforms) → 6.4.5 (160+ theme stamps) → 6.4.6 (custom upload) makes each chunk independently shippable, enables incremental commits, and allows 6.4.4/6.4.5/6.4.6 to proceed in parallel |
 | CSS media queries over container queries | 2026-04-29 | Media queries have universal browser support and are simpler to reason about for the 4-breakpoint strategy (>1024, 768–1024, 480–768, <480px); container queries would be useful for component-level responsive behavior but add complexity without clear benefit at the app shell level |
 | Right panel as overlay drawer | 2026-04-29 | At tablet widths the right panel (initiative + notes) becomes an overlay drawer rather than being hidden entirely — preserves quick access to game state while giving the canvas maximum screen area; toggle button at canvas edge is discoverable without being intrusive |
+| Test infrastructure before dynamic rooms | 2026-05-03 | Phase 10 is the most complex change in the roadmap; building tests first (Phase 7) lets us refactor with confidence and catch regressions early |
+| Navigation rail as additive density mode | 2026-05-03 | Old 4-tab toolbar kept as fallback under a Settings toggle ("Rail" / "Tabs"); can be removed later if rail proves out — no forced migration for existing users |
+| Inspector docked, not floating | 2026-05-03 | Docked to right panel (Inkarnate/Dungeondraft style) rather than modal-floating (Figma style); consistent with existing right-panel drawer pattern and user preference |
+| Art style presets stored per-map | 2026-05-03 | Per-map `artStylePreset` field lets a project mix styles across scenes (e.g., classic dungeon + hand-drawn overworld); more flexible than project-level |
+| Parchment layer optional in exports | 2026-05-03 | User-controllable export checkbox ("Include paper texture"); preserves clean transparent exports for VTT use while enabling print-ready parchment output |
+| Shape layer additive, no lock | 2026-05-03 | Tile painting remains available on top of rasterized room shapes; reduces friction vs a lock/unlock toggle — if coexistence proves clunky, a hotkey toggle can be added later |
+| Visual-only room merging | 2026-05-03 | Rooms remain separate logical objects when visually merged (walls dissolve, but IDs/notes stay independent); avoids ID/note disambiguation problems |
+| Generators emit shapes going forward only | 2026-05-03 | No migration of existing maps; backwards-compatible additive `roomShapes` field — only new generations produce shape data |
+| Rectangle-only shapes for v1 | 2026-05-03 | Ships incrementally; circles/polygons land in their own sub-phase (10.6) — keeps Phase 10.1–10.3 focused and shippable |
+| Rivers as vector layer | 2026-05-03 | Vector data structure (control points + width + flow direction) mirrors the room-shapes architecture; rasterizes to existing water tiles; preserves flow metadata for future features like animation |
+| README/docs interspersed at checkpoints | 2026-05-03 | Five README checkpoint updates throughout Phases 7–11, plus a final overhaul in Phase 12; avoids one giant documentation dump at the end |
+| Dark mode → Far Future | 2026-05-03 | Not committed this round; requires converting 336+ hardcoded colors to CSS custom properties — substantial effort with no feature value |
+| River ↔ FOV interaction → Far Future | 2026-05-03 | Out of scope for v1 rivers; water reflecting torchlight / blocking movement is a polish feature that can layer on later |
 
 ---
 
 ## Changes History
+
+**2026-05-03 — Phases 7–12 roadmap approved and integrated**
+- Added **Phase 7: Test Infrastructure** — Vitest + React Testing Library setup, initial coverage for high-risk pure modules (useMapState, generators, FOV, stamps), component smoke tests
+- Added **Phase 8: UI Redesign** — 8.1 Navigation Rail (left icon rail + contextual panel + density toggle), 8.2 Docked Inspector (right-panel property inspector), 8.3 UI Polish (command palette, zoom HUD, header simplification)
+- Added **Phase 9: Art System v2** — 9.1 Texture & Paper Layer (parchment background + export toggle), 9.2 Edge Blending (stochastic dithering), 9.3 Hand-Drawn Mode (wobbly walls + cross-hatch), 9.4 Lighting & Atmosphere (AO + day/night), 9.5 Art Style Presets (per-map presets: Classic/Hand-Drawn/Painted/Minimal/Print)
+- Added **Phase 10: Dynamic Rooms** — 10.1 Shape Data Model & Rasterizer, 10.2 Rectangle Drawing & Resize, 10.3 Visual Merging, 10.4 Generator Integration, 10.5 Subtractive Shapes, 10.6 Additional Shapes (circle/polygon)
+- Added **Phase 11: Rivers** — 11.1 Vector Layer & Manual Tool, 11.2 Generator Integration (opt-in checkbox + sliders), 11.3 Polish (banks/branching)
+- Added **Phase 12: Final Pass** — 12.1 Accessibility Audit, 12.2 Codebase Audit & Refactor, 12.3 README & Documentation Overhaul
+- **Far Future additions:** Dark Mode, River ↔ FOV/Lighting Interaction
+- **5 README checkpoints** interspersed throughout Phases 7–11 (after 7, 8.3, 9.5, 10.3, 11.1)
+- Priority order extended with items 19–24 covering the full Phase 7–12 sequence
+- 14 new design decisions logged (test-first, rail fallback, docked inspector, per-map presets, parchment export toggle, shape coexistence, visual merge, forward-only generators, rect-only v1, vector rivers, docs at checkpoints, dark mode deferred, river FOV deferred)
 
 **2026-05-03 — Accessibility fixes (partial) complete: 6 of 7 WCAG gaps addressed**
 - Added `@media (prefers-reduced-motion: reduce)` — disables all CSS transitions and animations for users who need reduced motion (WCAG 2.3.3)
