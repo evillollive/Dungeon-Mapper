@@ -137,6 +137,15 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
     },
     tool('tool.measure', 'm', 'Measure / Distance tool', 'measure'),
     tool('tool.linkStair', 'k', 'Link Stairs tool — connect stairs between levels', 'link-stair'),
+    tool('tool.wall', 'w', 'Wall drawing tool — draw walls along grid edges', 'wall'),
+    {
+      id: 'tool.path',
+      category: 'Tools',
+      keys: 'Shift+W',
+      description: 'Path/road drawing tool — draw free-form paths',
+      match: e => isPlainKey(e) && e.shiftKey && e.key.toLowerCase() === 'w',
+      action: () => actions.setActiveTool('path'),
+    },
     {
       id: 'tool.light',
       category: 'Tools',
@@ -477,4 +486,8 @@ export const TOOL_SHORTCUTS: Record<ToolType, string | undefined> = {
   'remove-stamp': undefined,
   gmdraw: 'D',
   gmerase: undefined,
+  wall: 'W',
+  'wall-erase': undefined,
+  path: 'Shift+W',
+  'path-erase': undefined,
 };

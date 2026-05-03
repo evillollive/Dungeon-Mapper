@@ -154,6 +154,12 @@ function App() {
     updateStamp,
     bringStampToFront,
     sendStampToBack,
+    addWallSegment,
+    removeWallSegment,
+    clearWallSegments,
+    addPathSegment,
+    removePathSegment,
+    clearPathSegments,
     saveCustomStamp,
     deleteCustomStamp,
     saveSceneTemplate,
@@ -223,6 +229,12 @@ function App() {
   const [selectedStampId, setSelectedStampId] = useState<string | null>(null);
   // Currently selected placed stamp id (for transform controls).
   const [selectedPlacedStampId, setSelectedPlacedStampId] = useState<number | null>(null);
+  // Wall tool settings — color and thickness for grid-edge walls.
+  const [wallColor, setWallColor] = useState<string>('#1a1a2e');
+  const [wallThickness, setWallThickness] = useState<number>(0.08);
+  // Path tool settings — color and width for free-form paths/roads.
+  const [pathColor, setPathColor] = useState<string>('#8B7355');
+  const [pathWidth, setPathWidth] = useState<number>(0.3);
   // Marker tool settings — shape, color, radius (in tiles).
   const [markerShape, setMarkerShape] = useState<MarkerShape>('circle');
   const [markerColor, setMarkerColor] = useState<string>('#dc2626');
@@ -758,6 +770,8 @@ function App() {
     gmDrawColor, gmDrawWidth, setGmDrawColor, setGmDrawWidth,
     selectedStampId, setSelectedStampId,
     selectedPlacedStampId, setSelectedPlacedStampId,
+    wallColor, wallThickness, setWallColor, setWallThickness,
+    pathColor, pathWidth, setPathColor, setPathWidth,
   }), [
     activeTool, handleSetActiveTool, activeTile, setActiveTile,
     markerShape, markerColor, markerSize, setMarkerShape, setMarkerColor, setMarkerSize,
@@ -767,6 +781,8 @@ function App() {
     gmDrawColor, gmDrawWidth, setGmDrawColor, setGmDrawWidth,
     selectedStampId, setSelectedStampId,
     selectedPlacedStampId, setSelectedPlacedStampId,
+    wallColor, wallThickness, setWallColor, setWallThickness,
+    pathColor, pathWidth, setPathColor, setPathWidth,
   ]);
 
   const mapContextValue = useMemo<MapContextValue>(() => ({
@@ -987,6 +1003,16 @@ function App() {
               customStamps={customStamps}
               onSaveCustomStamp={saveCustomStamp}
               onDeleteCustomStamp={deleteCustomStamp}
+              wallColor={wallColor}
+              wallThickness={wallThickness}
+              onSetWallColor={setWallColor}
+              onSetWallThickness={setWallThickness}
+              pathColor={pathColor}
+              pathWidth={pathWidth}
+              onSetPathColor={setPathColor}
+              onSetPathWidth={setPathWidth}
+              onClearWalls={clearWallSegments}
+              onClearPaths={clearPathSegments}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             )}
@@ -1081,6 +1107,14 @@ function App() {
             selectedStampId={selectedStampId}
             selectedPlacedStampId={selectedPlacedStampId}
             onSelectPlacedStamp={setSelectedPlacedStampId}
+            wallColor={wallColor}
+            wallThickness={wallThickness}
+            pathColor={pathColor}
+            pathWidth={pathWidth}
+            onAddWallSegment={addWallSegment}
+            onRemoveWallSegment={removeWallSegment}
+            onAddPathSegment={addPathSegment}
+            onRemovePathSegment={removePathSegment}
             stairLinks={activeStairLinks}
             stairLinkSource={activeTool === 'link-stair' ? stairLinkSource : null}
             onStairLinkClick={handleStairLinkClick}

@@ -73,6 +73,17 @@ interface ToolbarProps {
   customStamps?: readonly import('../types/map').StampDef[];
   onSaveCustomStamp?: (stamp: import('../types/map').StampDef) => void;
   onDeleteCustomStamp?: (stampId: string) => void;
+  // Wall & Path tools
+  wallColor: string;
+  wallThickness: number;
+  onSetWallColor: (c: string) => void;
+  onSetWallThickness: (w: number) => void;
+  pathColor: string;
+  pathWidth: number;
+  onSetPathColor: (c: string) => void;
+  onSetPathWidth: (w: number) => void;
+  onClearWalls: () => void;
+  onClearPaths: () => void;
   // Scene templates
   onOpenSceneTemplates: () => void;
 }
@@ -162,6 +173,16 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             customStamps={props.customStamps}
             onSaveCustomStamp={props.onSaveCustomStamp}
             onDeleteCustomStamp={props.onDeleteCustomStamp}
+            wallColor={props.wallColor}
+            wallThickness={props.wallThickness}
+            onSetWallColor={props.onSetWallColor}
+            onSetWallThickness={props.onSetWallThickness}
+            pathColor={props.pathColor}
+            pathWidth={props.pathWidth}
+            onSetPathColor={props.onSetPathColor}
+            onSetPathWidth={props.onSetPathWidth}
+            onClearWalls={props.onClearWalls}
+            onClearPaths={props.onClearPaths}
           />
         )}
         {activeTab === 'tactical' && (

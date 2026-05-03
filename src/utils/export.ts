@@ -160,6 +160,36 @@ export function exportMapSVG(
     svg += `<text x="${ncx}" y="${ncy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * 0.45)}" font-family="monospace" fill="#1a1a2e" font-weight="bold">${note.id}</text>`;
   });
 
+  // Wall segments: rendered as solid polylines along grid edges.
+  for (const seg of map.wallSegments ?? []) {
+    if (seg.points.length === 0) continue;
+    const w = Math.max(1, seg.thickness * tileSize);
+    if (seg.points.length === 1) {
+      const p = seg.points[0];
+      svg += `<circle cx="${p.x * tileSize}" cy="${p.y * tileSize}" r="${w / 2}" fill="${seg.color}"/>`;
+    } else {
+      const d = seg.points
+        .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x * tileSize} ${p.y * tileSize}`)
+        .join(' ');
+      svg += `<path d="${d}" stroke="${seg.color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+    }
+  }
+
+  // Path segments: rendered as semi-transparent polylines for roads/paths.
+  for (const seg of map.pathSegments ?? []) {
+    if (seg.points.length === 0) continue;
+    const w = Math.max(1, seg.width * tileSize);
+    if (seg.points.length === 1) {
+      const p = seg.points[0];
+      svg += `<circle cx="${p.x * tileSize}" cy="${p.y * tileSize}" r="${w / 2}" fill="${seg.color}" fill-opacity="0.7"/>`;
+    } else {
+      const d = seg.points
+        .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x * tileSize} ${p.y * tileSize}`)
+        .join(' ');
+      svg += `<path d="${d}" stroke="${seg.color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-opacity="0.7"/>`;
+    }
+  }
+
   // Annotations: GM strokes are excluded from player exports.
   for (const stroke of map.annotations ?? []) {
     if (isPlayerView && stroke.kind === 'gm') continue;

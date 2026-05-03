@@ -241,6 +241,41 @@ export interface AnnotationStroke {
   width: number;
 }
 
+// ── Wall & Path Segments ─────────────────────────────────────────────────
+
+/**
+ * A free-form wall segment drawn along grid edges. Each segment is a
+ * polyline whose points snap to grid-edge intersections (integer tile
+ * coordinates) so walls align with the grid. Walls are geometric overlays
+ * independent of the tile grid — they coexist with floor/wall tiles and
+ * are rendered on top of the tile layer.
+ */
+export interface WallSegment {
+  id: number;
+  /** Polyline points in tile coordinates (integers, snapped to grid intersections). */
+  points: { x: number; y: number }[];
+  /** Stroke color (CSS color string). */
+  color: string;
+  /** Stroke thickness in tile units (e.g., 0.08 = thin wall line). */
+  thickness: number;
+}
+
+/**
+ * A free-form path/road segment connecting areas with a natural-looking
+ * line. Unlike wall segments, path points are NOT snapped to grid edges —
+ * they use fractional tile coordinates for smooth, organic curves. Paths
+ * are rendered with rounded caps and joins for a softer appearance.
+ */
+export interface PathSegment {
+  id: number;
+  /** Polyline points in tile coordinates (fractional for smooth curves). */
+  points: { x: number; y: number }[];
+  /** Stroke color (CSS color string). */
+  color: string;
+  /** Stroke width in tile units (e.g., 0.3 = moderate road width). */
+  width: number;
+}
+
 /**
  * An imported background image rendered behind the tile grid. Useful for
  * tracing existing battlemaps or using pre-made art as a backdrop. The
@@ -318,6 +353,10 @@ export interface DungeonMap {
   lightSources?: LightSource[];
   /** Placeable map-object stamps such as furniture, dressing, or markers. */
   stamps?: PlacedStamp[];
+  /** Free-form wall segments drawn along grid edges. */
+  wallSegments?: WallSegment[];
+  /** Free-form path/road segments connecting areas. */
+  pathSegments?: PathSegment[];
 }
 
 // ── Multi-Level Project ────────────────────────────────────────────────────
@@ -413,7 +452,9 @@ export type ToolType =
   // Stamp placement foundation.
   | 'stamp' | 'move-stamp' | 'remove-stamp'
   // GM drawing tools — freehand annotations visible only in GM view.
-  | 'gmdraw' | 'gmerase';
+  | 'gmdraw' | 'gmerase'
+  // Wall & path tools — free-form wall/road drawing along grid edges.
+  | 'wall' | 'wall-erase' | 'path' | 'path-erase';
 
 export type ViewMode = 'gm' | 'player';
 

@@ -95,6 +95,12 @@ const ALL_TOOLS: ToolMeta[] = [
   { id: 'gmdraw',     icon: '🖊️', label: 'GM Draw' },
   { id: 'gmerase',    icon: '🧽', label: 'GM Erase'},
   { id: 'select',     icon: '⬜', label: 'Select'  },
+  // Wall & Path
+  { id: 'wall',       icon: '🧱', label: 'Wall'    },
+  { id: 'wall-erase', icon: '🧽', label: 'Rm Wall' },
+  { id: 'path',       icon: '🛤️', label: 'Path'    },
+  { id: 'path-erase', icon: '🧽', label: 'Rm Path' },
+  // Stamps
 ];
 
 /** Duration in ms a touch must be held to trigger the FAB long-press menu. */
@@ -122,6 +128,7 @@ const GM_CATEGORIES: ToolCategory[] = [
   { label: 'Tactical', tools: ['fov', 'measure', 'marker', 'remove-marker', 'light', 'remove-light'] },
   { label: 'Tokens',   tools: ['token-player', 'token-npc', 'token-monster', 'token-monster-md', 'token-monster-lg', 'move-token', 'remove-token'] },
   { label: 'Advanced', tools: ['link-stair', 'gmdraw', 'gmerase', 'select'] },
+  { label: 'Walls & Paths', tools: ['wall', 'wall-erase', 'path', 'path-erase'] },
 ];
 
 const PLAYER_CATEGORIES: ToolCategory[] = [

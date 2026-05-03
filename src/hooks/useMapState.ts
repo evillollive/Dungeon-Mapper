@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, SceneTemplate, StampDef, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource, PlacedStamp, StampPlacementOptions } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, SceneTemplate, StampDef, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment } from '../types/map';
 import { createEmptyGrid, createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
 import { saveProject } from '../utils/storage';
 import { reThemeNotes } from '../utils/reThemeNotes';
@@ -20,6 +20,8 @@ export function useMapState() {
   const nextMarkerIdRef = useRef(1);
   const nextLightIdRef = useRef(1);
   const nextStampIdRef = useRef(1);
+  const nextWallIdRef = useRef(1);
+  const nextPathIdRef = useRef(1);
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -33,6 +35,8 @@ export function useMapState() {
     nextMarkerIdRef.current = nextIdAfter(level.markers);
     nextLightIdRef.current = nextIdAfter(level.lightSources);
     nextStampIdRef.current = nextIdAfter(level.stamps);
+    nextWallIdRef.current = nextIdAfter(level.wallSegments);
+    nextPathIdRef.current = nextIdAfter(level.pathSegments);
   }
 
   function resetIds() {
@@ -42,6 +46,8 @@ export function useMapState() {
     nextLightIdRef.current = 1;
     nextMarkerIdRef.current = 1;
     nextStampIdRef.current = 1;
+    nextWallIdRef.current = 1;
+    nextPathIdRef.current = 1;
     setSelectedNoteId(null);
   }
 
@@ -859,6 +865,80 @@ export function useMapState() {
     });
   }, [debouncedSave]);
 
+  // ── Wall segments ─────────────────────────────────────────────────────
+
+  const addWallSegment = useCallback((segment: Omit<WallSegment, 'id'>) => {
+    const newId = nextWallIdRef.current;
+    nextWallIdRef.current = newId + 1;
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, wallSegments: [...(m.wallSegments ?? []), { ...segment, id: newId }],
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex, pushHistory]);
+
+  const removeWallSegment = useCallback((id: number) => {
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, wallSegments: (m.wallSegments ?? []).filter(w => w.id !== id),
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex, pushHistory]);
+
+  const clearWallSegments = useCallback(() => {
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, wallSegments: [],
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex, pushHistory]);
+
+  // ── Path segments ─────────────────────────────────────────────────────
+
+  const addPathSegment = useCallback((segment: Omit<PathSegment, 'id'>) => {
+    const newId = nextPathIdRef.current;
+    nextPathIdRef.current = newId + 1;
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, pathSegments: [...(m.pathSegments ?? []), { ...segment, id: newId }],
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex, pushHistory]);
+
+  const removePathSegment = useCallback((id: number) => {
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, pathSegments: (m.pathSegments ?? []).filter(p => p.id !== id),
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex, pushHistory]);
+
+  const clearPathSegments = useCallback(() => {
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, pathSegments: [],
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex, pushHistory]);
+
   // ── Scene templates ───────────────────────────────────────────────────
 
   const saveSceneTemplate = useCallback((name: string, sel: { x: number; y: number; w: number; h: number }) => {
@@ -1008,6 +1088,8 @@ export function useMapState() {
     setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
     addLightSource, removeLightSource, clearLightSources,
     addStamp, moveStamp, removeStamp, clearStamps, updateStamp, bringStampToFront, sendStampToBack,
+    addWallSegment, removeWallSegment, clearWallSegments,
+    addPathSegment, removePathSegment, clearPathSegments,
     saveCustomStamp, deleteCustomStamp,
     saveSceneTemplate, deleteSceneTemplate, renameSceneTemplate, applySceneTemplate,
     switchLevel, addLevel, renameLevel, deleteLevel,

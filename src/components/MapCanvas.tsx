@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useMemo, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
-import type { CustomThemeDefinition, DungeonMap, StampDef, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource, PlacedStamp, StampPlacementOptions } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, StampDef, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment } from '../types/map';
 import { TOKEN_KIND_COLORS, isBuiltInTileType } from '../types/map';
 import { getSemanticTileType, getThemeWithCustom, preloadCustomThemeImages } from '../utils/customThemes';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
@@ -251,6 +251,23 @@ interface MapCanvasProps {
   onRedo?: () => void;
   /** Announce a message to screen readers via the app-level aria-live region. */
   announce?: (message: string) => void;
+  // ── Wall & Path tool props ────────────────────────────────────────────
+  /** Stroke color for the wall tool. */
+  wallColor?: string;
+  /** Stroke thickness for the wall tool (tile units). */
+  wallThickness?: number;
+  /** Stroke color for the path tool. */
+  pathColor?: string;
+  /** Stroke width for the path tool (tile units). */
+  pathWidth?: number;
+  /** Called when user completes a wall segment. */
+  onAddWallSegment?: (segment: Omit<WallSegment, 'id'>) => void;
+  /** Called when user clicks a wall segment with wall-erase tool. */
+  onRemoveWallSegment?: (id: number) => void;
+  /** Called when user completes a path segment. */
+  onAddPathSegment?: (segment: Omit<PathSegment, 'id'>) => void;
+  /** Called when user clicks a path segment with path-erase tool. */
+  onRemovePathSegment?: (id: number) => void;
 }
 
 export interface MapCanvasHandle {
@@ -426,7 +443,104 @@ function drawAnnotation(
   ctx.restore();
 }
 
-/** Draw a shape marker (circle, square, or diamond) with transparency. */
+/** Draw a wall segment on the canvas. Walls are solid lines along grid edges. */
+function drawWallSegmentOnCanvas(
+  ctx: CanvasRenderingContext2D,
+  segment: WallSegment,
+  tileSize: number,
+) {
+  if (segment.points.length === 0) return;
+  ctx.save();
+  ctx.strokeStyle = segment.color;
+  ctx.lineWidth = Math.max(1, segment.thickness * tileSize);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  for (let i = 0; i < segment.points.length; i++) {
+    const px = segment.points[i].x * tileSize;
+    const py = segment.points[i].y * tileSize;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  if (segment.points.length === 1) {
+    const p = segment.points[0];
+    ctx.fillStyle = segment.color;
+    ctx.beginPath();
+    ctx.arc(p.x * tileSize, p.y * tileSize, Math.max(1, segment.thickness * tileSize / 2), 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** Draw a path/road segment on the canvas. Paths are smooth free-form lines. */
+function drawPathSegmentOnCanvas(
+  ctx: CanvasRenderingContext2D,
+  segment: PathSegment,
+  tileSize: number,
+) {
+  if (segment.points.length === 0) return;
+  ctx.save();
+  ctx.strokeStyle = segment.color;
+  ctx.lineWidth = Math.max(1, segment.width * tileSize);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  // Paths use a slight transparency for a softer, natural look.
+  ctx.globalAlpha = 0.7;
+  ctx.beginPath();
+  for (let i = 0; i < segment.points.length; i++) {
+    const px = segment.points[i].x * tileSize;
+    const py = segment.points[i].y * tileSize;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  if (segment.points.length === 1) {
+    const p = segment.points[0];
+    ctx.fillStyle = segment.color;
+    ctx.beginPath();
+    ctx.arc(p.x * tileSize, p.y * tileSize, Math.max(1, segment.width * tileSize / 2), 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/**
+ * Snap a fractional coordinate to the nearest grid intersection (integer coords).
+ * For wall tools, this ensures walls align to grid edges.
+ */
+function snapToGridIntersection(fx: number, fy: number): { x: number; y: number } {
+  return { x: Math.round(fx), y: Math.round(fy) };
+}
+
+/**
+ * Test whether a point (px, py) is within `threshold` tile units of a polyline
+ * defined by `points`. Used for erase tool hit testing.
+ */
+function pointNearPolyline(
+  px: number, py: number,
+  points: { x: number; y: number }[],
+  threshold: number,
+): boolean {
+  for (let i = 0; i < points.length - 1; i++) {
+    const ax = points[i].x, ay = points[i].y;
+    const bx = points[i + 1].x, by = points[i + 1].y;
+    const dx = bx - ax, dy = by - ay;
+    const lenSq = dx * dx + dy * dy;
+    if (lenSq === 0) {
+      if (Math.hypot(px - ax, py - ay) < threshold) return true;
+      continue;
+    }
+    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+    const cx = ax + t * dx, cy = ay + t * dy;
+    if (Math.hypot(px - cx, py - cy) < threshold) return true;
+  }
+  // Single point
+  if (points.length === 1 && Math.hypot(px - points[0].x, py - points[0].y) < threshold) return true;
+  return false;
+}
 function drawMarker(
   ctx: CanvasRenderingContext2D,
   marker: ShapeMarker,
@@ -751,6 +865,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   onUndo,
   onRedo,
   announce,
+  wallColor = '#1a1a2e',
+  wallThickness = 0.08,
+  pathColor = '#8B7355',
+  pathWidth = 0.3,
+  onAddWallSegment,
+  onRemoveWallSegment,
+  onAddPathSegment,
+  onRemovePathSegment,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -834,6 +956,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const annotations = useMemo(() => map.annotations ?? [], [map.annotations]);
   const markers = useMemo(() => map.markers ?? [], [map.markers]);
   const stamps = useMemo(() => map.stamps ?? [], [map.stamps]);
+  const wallSegments = useMemo(() => map.wallSegments ?? [], [map.wallSegments]);
+  const pathSegments = useMemo(() => map.pathSegments ?? [], [map.pathSegments]);
   const fog = map.fog;
   const fogActive = (map.fogEnabled ?? false);
   const isPlayerView = viewMode === 'player';
@@ -1033,6 +1157,18 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.fillText(String(note.id), px, py + 0.5);
     });
 
+    // Wall segments — structural overlays rendered above tiles/notes but
+    // under annotations and tokens. Visible in both GM and player views.
+    for (const seg of wallSegments) {
+      drawWallSegmentOnCanvas(ctx, seg, tileSize);
+    }
+
+    // Path segments — road/path overlays rendered above tiles but under walls,
+    // annotations, and tokens. Visible in both GM and player views.
+    for (const seg of pathSegments) {
+      drawPathSegmentOnCanvas(ctx, seg, tileSize);
+    }
+
     // Annotations are drawn under tokens but over notes so token glyphs
     // remain readable. GM-only annotations are suppressed in player mode.
     for (const stroke of annotations) {
@@ -1080,6 +1216,18 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         points: activeStroke,
         color: isGmDraw ? gmDrawColor : drawColor,
         width: isGmDraw ? gmDrawWidth : drawWidth,
+      }, tileSize);
+    }
+
+    // Live (in-progress) wall or path stroke.
+    if (activeStroke && activeStroke.length > 0 && activeTool === 'wall') {
+      drawWallSegmentOnCanvas(ctx, {
+        id: -1, points: activeStroke, color: wallColor, thickness: wallThickness,
+      }, tileSize);
+    }
+    if (activeStroke && activeStroke.length > 0 && activeTool === 'path') {
+      drawPathSegmentOnCanvas(ctx, {
+        id: -1, points: activeStroke, color: pathColor, width: pathWidth,
       }, tileSize);
     }
 
@@ -1536,7 +1684,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth]);
 
   // Minimap render
   useEffect(() => {
@@ -1798,6 +1946,28 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         const hit = s.points.some(p => Math.floor(p.x) === x && Math.floor(p.y) === y);
         if (hit) { onRemoveAnnotation(s.id); break; }
       }
+    } else if (activeTool === 'wall-erase') {
+      // Click near a wall segment to remove it.
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        for (let i = wallSegments.length - 1; i >= 0; i--) {
+          if (pointNearPolyline(fc.x, fc.y, wallSegments[i].points, 0.5)) {
+            onRemoveWallSegment?.(wallSegments[i].id);
+            break;
+          }
+        }
+      }
+    } else if (activeTool === 'path-erase') {
+      // Click near a path segment to remove it.
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        for (let i = pathSegments.length - 1; i >= 0; i--) {
+          if (pointNearPolyline(fc.x, fc.y, pathSegments[i].points, 0.5)) {
+            onRemovePathSegment?.(pathSegments[i].id);
+            break;
+          }
+        }
+      }
     }
   }, [
     activeTool, activeTile, getTileCoords, onSetTile, onFillTile, onAddNote, onSelectNote,
@@ -1806,6 +1976,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     onAddMarker, onRemoveMarker, markerShape, markerColor, markerSize, markers,
     getFractionalCoords, onFovClick, lightSources, onAddLightSource, onRemoveLightSource,
     onStairLinkClick, stamps, selectedStampId, selectedPlacedStampId, onAddStamp, onRemoveStamp, onSelectPlacedStamp, announce,
+    wallSegments, pathSegments, onRemoveWallSegment, onRemovePathSegment,
   ]);
 
   /* ── Multi-touch gesture tracking ─────────────────────────── */
@@ -1891,6 +2062,21 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
     // GM-mode freehand drawing tool.
     if (!isPlayerView && activeTool === 'gmdraw') {
+      const fc = getFractionalCoords(e);
+      if (fc) setActiveStroke([fc]);
+      return;
+    }
+    // Wall drawing tool — snap to grid intersections.
+    if (activeTool === 'wall') {
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        const snapped = snapToGridIntersection(fc.x, fc.y);
+        setActiveStroke([snapped]);
+      }
+      return;
+    }
+    // Path drawing tool — free-form, no snapping.
+    if (activeTool === 'path') {
       const fc = getFractionalCoords(e);
       if (fc) setActiveStroke([fc]);
       return;
@@ -2052,6 +2238,37 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       return;
     }
 
+    // Wall drawing — snap to grid intersections, only add distinct points.
+    if (activeTool === 'wall') {
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        const snapped = snapToGridIntersection(fc.x, fc.y);
+        setActiveStroke(prev => {
+          if (!prev) return [snapped];
+          const last = prev[prev.length - 1];
+          if (last.x === snapped.x && last.y === snapped.y) return prev;
+          return [...prev, snapped];
+        });
+      }
+      return;
+    }
+
+    // Path drawing — free-form with subsampling.
+    if (activeTool === 'path') {
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        setActiveStroke(prev => {
+          if (!prev) return [fc];
+          const last = prev[prev.length - 1];
+          const dx = fc.x - last.x;
+          const dy = fc.y - last.y;
+          if (dx * dx + dy * dy < 0.005) return prev;
+          return [...prev, fc];
+        });
+      }
+      return;
+    }
+
     // Player-mode defog brush: extend the in-progress stroke with every
     // new cell the cursor crosses, using bresenham to fill in cells the
     // cursor jumped over between events.
@@ -2172,6 +2389,26 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       setActiveStroke(null);
     }
 
+    // Commit wall segment.
+    if (activeTool === 'wall' && activeStroke && activeStroke.length > 0) {
+      onAddWallSegment?.({
+        points: activeStroke,
+        color: wallColor,
+        thickness: wallThickness,
+      });
+      setActiveStroke(null);
+    }
+
+    // Commit path segment.
+    if (activeTool === 'path' && activeStroke && activeStroke.length > 0) {
+      onAddPathSegment?.({
+        points: activeStroke,
+        color: pathColor,
+        width: pathWidth,
+      });
+      setActiveStroke(null);
+    }
+
     // Commit player-mode defog brush — clear fog for every cell the
     // brush touched as a single fog edit (one undo step).
     if (isPlayerView && activeTool === 'defog' && defogStroke && defogStroke.length > 0) {
@@ -2210,7 +2447,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setIsDragging(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo]);
+  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo, wallColor, wallThickness, pathColor, pathWidth, onAddWallSegment, onAddPathSegment]);
 
   const handlePointerLeave = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     activePointersRef.current.delete(e.pointerId);
@@ -2337,6 +2574,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     : activeTool === 'move-stamp' ? 'grab'
     : activeTool === 'remove-stamp' ? 'not-allowed'
     : activeTool === 'fov' ? 'crosshair'
+    : activeTool === 'wall' ? 'crosshair'
+    : activeTool === 'wall-erase' ? 'not-allowed'
+    : activeTool === 'path' ? 'crosshair'
+    : activeTool === 'path-erase' ? 'not-allowed'
     : 'crosshair';
 
   const handleCanvasKeyDown = useCallback((e: React.KeyboardEvent<HTMLCanvasElement>) => {

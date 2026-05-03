@@ -40,6 +40,16 @@ export interface ToolContextValue {
   setSelectedStampId: (id: string | null) => void;
   selectedPlacedStampId: number | null;
   setSelectedPlacedStampId: (id: number | null) => void;
+  // Wall tool settings
+  wallColor: string;
+  wallThickness: number;
+  setWallColor: (c: string) => void;
+  setWallThickness: (w: number) => void;
+  // Path tool settings
+  pathColor: string;
+  pathWidth: number;
+  setPathColor: (c: string) => void;
+  setPathWidth: (w: number) => void;
 }
 
 export const ToolContext = createContext<ToolContextValue | null>(null);

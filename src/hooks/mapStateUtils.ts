@@ -1,4 +1,4 @@
-import type { DungeonMap, DungeonProject, MapNote, PlacedStamp, Tile } from '../types/map';
+import type { DungeonMap, DungeonProject, MapNote, PathSegment, PlacedStamp, Tile, WallSegment } from '../types/map';
 import { createEmptyGrid, createFogGrid } from '../utils/mapUtils';
 
 export const DEFAULT_WIDTH = 32;
@@ -11,6 +11,8 @@ export interface HistorySnapshot {
   fog: boolean[][];
   notes: MapNote[];
   stamps: PlacedStamp[];
+  wallSegments: WallSegment[];
+  pathSegments: PathSegment[];
   width: number;
   height: number;
 }
@@ -41,6 +43,8 @@ export function createDefaultMap(name = 'Level 1'): DungeonMap {
     initiative: [],
     lightSources: [],
     stamps: [],
+    wallSegments: [],
+    pathSegments: [],
   };
 }
 
@@ -67,6 +71,8 @@ export function withDefaults(map: DungeonMap): DungeonMap {
     initiative: map.initiative ?? [],
     lightSources: map.lightSources ?? [],
     stamps: map.stamps ?? [],
+    wallSegments: map.wallSegments ?? [],
+    pathSegments: map.pathSegments ?? [],
   };
 }
 

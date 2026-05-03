@@ -34,6 +34,17 @@ interface DrawToolsTabProps {
   customStamps?: readonly StampDef[];
   onSaveCustomStamp?: (stamp: StampDef) => void;
   onDeleteCustomStamp?: (stampId: string) => void;
+  // Wall & Path tools
+  wallColor: string;
+  wallThickness: number;
+  onSetWallColor: (c: string) => void;
+  onSetWallThickness: (w: number) => void;
+  pathColor: string;
+  pathWidth: number;
+  onSetPathColor: (c: string) => void;
+  onSetPathWidth: (w: number) => void;
+  onClearWalls: () => void;
+  onClearPaths: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -44,6 +55,8 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] =
   { id: 'line',       label: 'Line',        shortcut: 'L', icon: '📏' },
   { id: 'rect',       label: 'Rectangle',   shortcut: 'R', icon: '⬛' },
   { id: 'select',     label: 'Select',      shortcut: 'S', icon: '⬜' },
+  { id: 'wall',       label: 'Wall',        shortcut: 'W', icon: '🧱' },
+  { id: 'path',       label: 'Path',        shortcut: 'Shift+W', icon: '🛤️' },
 ];
 
 function TilePreview({
@@ -94,6 +107,9 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   stamps, selectedPlacedStampId, onSelectPlacedStamp, onUpdateStamp, onRemoveStamp,
   onBringStampToFront, onSendStampToBack,
   customStamps, onSaveCustomStamp, onDeleteCustomStamp,
+  wallColor, wallThickness, onSetWallColor, onSetWallThickness,
+  pathColor, pathWidth, onSetPathColor, onSetPathWidth,
+  onClearWalls, onClearPaths,
 }) => {
   const theme = getThemeWithCustom(themeId, customThemes);
   const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
@@ -132,6 +148,101 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
           </button>
         ))}
       </div>
+
+      {/* Wall & Path tool settings — shown when wall/path tool is active */}
+      {(activeTool === 'wall' || activeTool === 'wall-erase') && (
+        <div className="toolbar-section">
+          <div className="toolbar-label">WALL SETTINGS</div>
+          <label className="tool-btn" style={{ cursor: 'pointer' }}>
+            <span className="tool-icon" aria-hidden="true">🎨</span>
+            <span className="tool-name">Color</span>
+            <input
+              type="color"
+              value={wallColor}
+              onChange={e => onSetWallColor(e.target.value)}
+              style={{ width: 28, height: 20, border: 'none', cursor: 'pointer', padding: 0 }}
+              title="Wall color"
+            />
+          </label>
+          <label className="tool-btn" style={{ cursor: 'pointer' }}>
+            <span className="tool-icon" aria-hidden="true">📐</span>
+            <span className="tool-name">Thickness</span>
+            <select
+              className="grid-select"
+              value={String(wallThickness)}
+              onChange={e => onSetWallThickness(Number(e.target.value))}
+              title="Wall thickness"
+            >
+              <option value="0.04">Thin</option>
+              <option value="0.08">Medium</option>
+              <option value="0.15">Thick</option>
+              <option value="0.25">Heavy</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            className="tool-btn"
+            onClick={() => onSetTool('wall-erase')}
+            title="Erase wall segments — click a wall to remove it"
+            aria-label="Erase walls"
+            aria-pressed={activeTool === 'wall-erase'}
+          >
+            <span className="tool-icon" aria-hidden="true">🧹</span>
+            <span className="tool-name">Erase Walls</span>
+          </button>
+          <button type="button" className="tool-btn" onClick={onClearWalls} title="Remove all wall segments">
+            <span className="tool-icon" aria-hidden="true">🗑️</span>
+            <span className="tool-name">Clear All</span>
+          </button>
+        </div>
+      )}
+
+      {(activeTool === 'path' || activeTool === 'path-erase') && (
+        <div className="toolbar-section">
+          <div className="toolbar-label">PATH SETTINGS</div>
+          <label className="tool-btn" style={{ cursor: 'pointer' }}>
+            <span className="tool-icon" aria-hidden="true">🎨</span>
+            <span className="tool-name">Color</span>
+            <input
+              type="color"
+              value={pathColor}
+              onChange={e => onSetPathColor(e.target.value)}
+              style={{ width: 28, height: 20, border: 'none', cursor: 'pointer', padding: 0 }}
+              title="Path color"
+            />
+          </label>
+          <label className="tool-btn" style={{ cursor: 'pointer' }}>
+            <span className="tool-icon" aria-hidden="true">📐</span>
+            <span className="tool-name">Width</span>
+            <select
+              className="grid-select"
+              value={String(pathWidth)}
+              onChange={e => onSetPathWidth(Number(e.target.value))}
+              title="Path width"
+            >
+              <option value="0.15">Narrow</option>
+              <option value="0.3">Medium</option>
+              <option value="0.5">Wide</option>
+              <option value="0.8">Road</option>
+            </select>
+          </label>
+          <button
+            type="button"
+            className="tool-btn"
+            onClick={() => onSetTool('path-erase')}
+            title="Erase path segments — click a path to remove it"
+            aria-label="Erase paths"
+            aria-pressed={activeTool === 'path-erase'}
+          >
+            <span className="tool-icon" aria-hidden="true">🧹</span>
+            <span className="tool-name">Erase Paths</span>
+          </button>
+          <button type="button" className="tool-btn" onClick={onClearPaths} title="Remove all path segments">
+            <span className="tool-icon" aria-hidden="true">🗑️</span>
+            <span className="tool-name">Clear All</span>
+          </button>
+        </div>
+      )}
 
       <div className="toolbar-section">
         <div className="toolbar-label">THEME</div>
