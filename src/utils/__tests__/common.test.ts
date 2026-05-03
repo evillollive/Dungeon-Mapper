@@ -183,9 +183,9 @@ describe('reorderNotesReadingOrder', () => {
       Array.from({ length: 5 }, () => ({ type: 'floor' as const }))
     );
     const notes: MapNote[] = [
-      { id: 1, x: 3, y: 2, label: 'B', text: '', kind: 'room' },
-      { id: 2, x: 1, y: 0, label: 'A', text: '', kind: 'room' },
-      { id: 3, x: 0, y: 2, label: 'C', text: '', kind: 'room' },
+      { id: 1, x: 3, y: 2, label: 'B', description: '', kind: 'room' },
+      { id: 2, x: 1, y: 0, label: 'A', description: '', kind: 'room' },
+      { id: 3, x: 0, y: 2, label: 'C', description: '', kind: 'room' },
     ];
     const result = reorderNotesReadingOrder(tiles, notes);
     expect(result[0].label).toBe('A'); // y=0
@@ -198,8 +198,8 @@ describe('reorderNotesReadingOrder', () => {
       Array.from({ length: 3 }, () => ({ type: 'floor' as const }))
     );
     const notes: MapNote[] = [
-      { id: 5, x: 2, y: 2, label: 'Z', text: '', kind: 'room' },
-      { id: 3, x: 0, y: 0, label: 'A', text: '', kind: 'room' },
+      { id: 5, x: 2, y: 2, label: 'Z', description: '', kind: 'room' },
+      { id: 3, x: 0, y: 0, label: 'A', description: '', kind: 'room' },
     ];
     const result = reorderNotesReadingOrder(tiles, notes);
     expect(result[0].id).toBe(1);
@@ -211,8 +211,8 @@ describe('reorderNotesReadingOrder', () => {
       Array.from({ length: 5 }, () => ({ type: 'floor' as const }))
     );
     const notes: MapNote[] = [
-      { id: 1, x: 4, y: 4, label: 'Coffer 1', text: '', kind: 'poi' },
-      { id: 2, x: 0, y: 0, label: 'Coffer 2', text: '', kind: 'poi' },
+      { id: 1, x: 4, y: 4, label: 'Coffer 1', description: '', kind: 'poi' },
+      { id: 2, x: 0, y: 0, label: 'Coffer 2', description: '', kind: 'poi' },
     ];
     const result = reorderNotesReadingOrder(tiles, notes);
     expect(result[0].label).toBe('Coffer 1');
@@ -227,8 +227,8 @@ describe('reorderNotesReadingOrder', () => {
       [{ type: 'floor' }, { type: 'floor', noteId: 3 }],
     ];
     const notes: MapNote[] = [
-      { id: 5, x: 0, y: 1, label: 'B', text: '', kind: 'room' },
-      { id: 3, x: 0, y: 0, label: 'A', text: '', kind: 'room' },
+      { id: 5, x: 0, y: 1, label: 'B', description: '', kind: 'room' },
+      { id: 3, x: 0, y: 0, label: 'A', description: '', kind: 'room' },
     ];
     reorderNotesReadingOrder(tiles, notes);
     expect(tiles[0][0].noteId).toBe(2); // was 5 → 2

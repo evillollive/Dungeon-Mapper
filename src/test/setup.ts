@@ -3,7 +3,6 @@ import '@testing-library/jest-dom/vitest';
 // Mock canvas getContext for jsdom (which doesn't support Canvas)
 HTMLCanvasElement.prototype.getContext = (() => {
   const noop = () => {};
-  const noopReturn = () => ({ value: 0 });
   const ctx = {
     // CanvasRenderingContext2D properties
     canvas: document.createElement('canvas'),

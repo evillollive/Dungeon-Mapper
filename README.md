@@ -466,6 +466,28 @@ npm run preview  # preview the production build
 npm run lint     # ESLint
 ```
 
+## Development & Testing
+
+The project uses [Vitest](https://vitest.dev/) with [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) and jsdom for unit and component testing.
+
+```bash
+npm test            # run the full test suite (one-shot, CI-friendly)
+npm run test:watch  # run tests in watch mode during development
+```
+
+**Test structure:**
+
+| Area | Location | What's tested |
+|------|----------|---------------|
+| Generator utilities | `src/utils/__tests__/common.test.ts` | `makeTypeGrid`, `outlineWalls`, `bfsDistances`, `collectCells`, `reorderNotesReadingOrder` |
+| Seedable RNG | `src/utils/__tests__/random.test.ts` | `makeRng`, `seedFromString`, `parseSeed`, determinism |
+| FOV engine | `src/utils/__tests__/fov.test.ts` | `isOpaque`, `computeFOV` edge cases (walls, radius, doors) |
+| Stamp catalog | `src/utils/__tests__/stampCatalog.test.ts` | `getStampDef`, built-in stamp integrity, category labels |
+| Map state | `src/hooks/__tests__/mapStateUtils.test.ts` | `createDefaultMap`, `createDefaultProject`, `withDefaults`, `nextIdAfter` |
+| Components | `src/components/__tests__/dialogs.test.tsx` | Dialog render/close lifecycle (ShortcutsHelp, ExportDialog) |
+
+Shared mock context providers live in `src/test/testHelpers.tsx` — use `TestProviders` to wrap components that depend on `ToolContext`, `MapContext`, `ViewContext`, or `ActionContext`.
+
 ## License
 
 MIT © Alex Perrault
