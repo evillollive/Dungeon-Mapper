@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-03
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.6, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phases 7–12 roadmap approved and integrated (2026-05-03).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phases 7–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -635,7 +635,7 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - Verify `LICENSE` is present and correct
 - Move ROADMAP under a structured `docs/` tree with clean cross-links
 
-### Phase 6: UI/UX Overhaul, Accessibility, Refactoring & Mobile
+### ~~Phase 6: UI/UX Overhaul, Accessibility, Refactoring & Mobile~~ ✅ COMPLETE
 
 *Comprehensive analysis phase — the app has grown from a simple editor to a feature-rich dungeon mapping platform with 25,000+ lines of code, 14 components, 40+ keyboard shortcuts, and 11 toolbar sections. The interface and architecture need to evolve to match.*
 
@@ -935,11 +935,22 @@ The stamp library is the single most impactful missing feature for visual map qu
 - Canvas image cache with preloader in MapCanvas; SVG export uses `<image>` elements
 - Import/export with JSON project files
 
-**6.5 — Wall & Path Drawing Tools** *(medium impact, medium effort)*
-- Free-form wall drawing (not just tile-based walls) — click to place wall segments along grid edges
-- Path/road drawing tool for connecting areas with natural-looking paths
-- Competitors: Dungeondraft, DungeonFog both have dedicated wall tools
-- Would complement the existing tile-based system rather than replace it
+**~~6.5 — Wall & Path Drawing Tools~~** *(medium impact, medium effort)* **✅ COMPLETE**
+- ✅ `WallSegment` and `PathSegment` data model types — polyline-based, independent of tile grid
+- ✅ Wall tool [W] — click-drag to draw wall segments along grid edges with automatic grid-intersection snapping
+- ✅ Path tool [Shift+W] — click-drag to draw free-form path/road segments with smooth fractional coordinates
+- ✅ Configurable wall color + 4 thickness presets (Thin/Medium/Thick/Heavy)
+- ✅ Configurable path color + 4 width presets (Narrow/Medium/Wide/Road)
+- ✅ Wall-erase and path-erase tools — click near a segment to remove it (polyline hit testing)
+- ✅ Clear All buttons for both wall and path segments
+- ✅ Full undo/redo support — `HistorySnapshot` includes `wallSegments` and `pathSegments`
+- ✅ Canvas rendering — walls as solid polylines, paths as semi-transparent (0.7 alpha) polylines
+- ✅ Live preview — in-progress stroke rendered during drag before commit
+- ✅ SVG export — wall and path segments exported as `<path>` elements
+- ✅ PNG/print export — wall and path segments rendered in `renderMap.ts`
+- ✅ Mobile toolbar support — Wall & Path category in MobileToolbar flyout
+- ✅ JSON round-trip — `wallSegments` and `pathSegments` on `DungeonMap` persist through export/import and IndexedDB autosave
+- Complements the tile-based wall system rather than replacing it
 
 **6.6 — Scene/Room Templates** *(medium impact, low effort)* **✅ COMPLETE**
 - Save and reuse room configurations as reusable templates
@@ -1108,7 +1119,7 @@ Recommended implementation order based on dependency analysis, impact, and effor
    - *Effort:* Low
    - *Dependency:* Standalone, can ship anytime after 6.3
 
-**Sprint 4: New Features**
+**Sprint 4: New Features** ✅ COMPLETE
 8. ~~**Phase 6.4.1 — Stamp Data Model & Placement Engine** — Types, state management, undo/redo~~ ✅
    - *Why:* Foundation for all stamp features — no UI, just data layer
    - *Effort:* Low
@@ -1144,7 +1155,7 @@ Recommended implementation order based on dependency analysis, impact, and effor
     - *Effort:* Low
     - *Dependency:* None
 
-15. **Phase 6.5 — Wall & Path Tools** — Free-form wall drawing along grid edges
+15. ~~**Phase 6.5 — Wall & Path Tools** — Free-form wall drawing along grid edges, path/road drawing~~ ✅
     - *Why:* Fills a competitive gap vs Dungeondraft/DungeonFog
     - *Effort:* Medium
     - *Dependency:* Benefits from refactored MapCanvas

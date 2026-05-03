@@ -204,6 +204,61 @@ export function renderMapToCanvas(
     ctx.fillText(String(note.id), px, py + 0.5);
   }
 
+  // Wall segments
+  for (const seg of map.wallSegments ?? []) {
+    if (seg.points.length === 0) continue;
+    ctx.save();
+    ctx.strokeStyle = seg.color;
+    ctx.lineWidth = Math.max(1, seg.thickness * tileSize);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.beginPath();
+    for (let i = 0; i < seg.points.length; i++) {
+      const px = seg.points[i].x * tileSize;
+      const py = seg.points[i].y * tileSize;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    if (seg.points.length === 1) {
+      const p = seg.points[0];
+      ctx.fillStyle = seg.color;
+      ctx.beginPath();
+      ctx.arc(p.x * tileSize, p.y * tileSize, Math.max(1, seg.thickness * tileSize / 2), 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // Path segments
+  for (const seg of map.pathSegments ?? []) {
+    if (seg.points.length === 0) continue;
+    ctx.save();
+    ctx.strokeStyle = seg.color;
+    ctx.lineWidth = Math.max(1, seg.width * tileSize);
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalAlpha = 0.7;
+    ctx.beginPath();
+    for (let i = 0; i < seg.points.length; i++) {
+      const px = seg.points[i].x * tileSize;
+      const py = seg.points[i].y * tileSize;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    if (seg.points.length === 1) {
+      const p = seg.points[0];
+      ctx.fillStyle = seg.color;
+      ctx.beginPath();
+      ctx.arc(p.x * tileSize, p.y * tileSize, Math.max(1, seg.width * tileSize / 2), 0, Math.PI * 2);
+      ctx.fill();
+    } else {
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
   // Annotations
   for (const stroke of map.annotations ?? []) {
     if (isPlayerView && stroke.kind === 'gm') continue;
