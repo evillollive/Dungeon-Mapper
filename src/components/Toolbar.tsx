@@ -69,6 +69,12 @@ interface ToolbarProps {
   onRemoveStamp: (id: number) => void;
   onBringStampToFront: (id: number) => void;
   onSendStampToBack: (id: number) => void;
+  // Custom stamps
+  customStamps?: readonly import('../types/map').StampDef[];
+  onSaveCustomStamp?: (stamp: import('../types/map').StampDef) => void;
+  onDeleteCustomStamp?: (stampId: string) => void;
+  // Scene templates
+  onOpenSceneTemplates: () => void;
 }
 
 type ToolbarTab = 'draw' | 'tactical' | 'advanced';
@@ -153,6 +159,9 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             onRemoveStamp={props.onRemoveStamp}
             onBringStampToFront={props.onBringStampToFront}
             onSendStampToBack={props.onSendStampToBack}
+            customStamps={props.customStamps}
+            onSaveCustomStamp={props.onSaveCustomStamp}
+            onDeleteCustomStamp={props.onDeleteCustomStamp}
           />
         )}
         {activeTab === 'tactical' && (
@@ -198,6 +207,7 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             onSetGmDrawColor={props.onSetGmDrawColor}
             onSetGmDrawWidth={props.onSetGmDrawWidth}
             onClearGmDrawings={props.onClearGmDrawings}
+            onOpenSceneTemplates={props.onOpenSceneTemplates}
           />
         )}
       </div>

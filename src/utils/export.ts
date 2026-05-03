@@ -1,4 +1,4 @@
-import type { CustomThemeDefinition, DungeonMap, DungeonProject, ViewMode } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, DungeonProject, StampDef, ViewMode } from '../types/map';
 import { TOKEN_KIND_COLORS, isDungeonProject } from '../types/map';
 import type { TileTheme } from '../themes/index';
 import { ICON_BY_ID } from './iconLibrary';
@@ -104,7 +104,7 @@ export function exportMapSVG(
   map: DungeonMap,
   theme: TileTheme,
   resolveTheme?: (id: string) => TileTheme,
-  opts: { viewMode?: ViewMode } = {}
+  opts: { viewMode?: ViewMode; customStamps?: readonly StampDef[] } = {}
 ): void {
   const viewMode: ViewMode = opts.viewMode ?? 'gm';
   const isPlayerView = viewMode === 'player';
@@ -199,7 +199,7 @@ export function exportMapSVG(
 
   // Stamps: rendered as SVG paths with transforms.
   for (const stamp of map.stamps ?? []) {
-    const def = getStampDef(stamp.stampId);
+    const def = getStampDef(stamp.stampId, opts.customStamps ?? []);
     if (!def) continue;
     const cx = (stamp.x + 0.5) * tileSize;
     const cy = (stamp.y + 0.5) * tileSize;
@@ -217,7 +217,9 @@ export function exportMapSVG(
     transforms.push(`translate(${-drawSize / 2},${-drawSize / 2})`);
     transforms.push(`scale(${svgScale})`);
     const opacity = (stamp.opacity ?? 1) < 1 ? ` opacity="${stamp.opacity}"` : '';
-    if (def.paths && def.paths.length > 0) {
+    if (def.imageDataUrl) {
+      svg += `<g transform="${transforms.join(' ')}"${opacity}><image href="${def.imageDataUrl}" width="${vbW}" height="${vbH}"/></g>`;
+    } else if (def.paths && def.paths.length > 0) {
       svg += `<g transform="${transforms.join(' ')}"${opacity}>`;
       for (const p of def.paths) {
         const fill = p.fill ? ` fill="${p.fill}"` : ' fill="none"';
@@ -332,6 +334,7 @@ export interface HighResExportOptions {
   /** Feet per cell for scale bar. 0 = no scale bar. */
   feetPerCell?: number;
   customThemes?: readonly CustomThemeDefinition[];
+  customStamps?: readonly StampDef[];
 }
 
 /**
@@ -353,6 +356,7 @@ export async function exportHighResPNG(
     viewMode: opts.viewMode,
     feetPerCell: opts.feetPerCell,
     customThemes: opts.customThemes,
+    customStamps: opts.customStamps,
   });
 
   const baseName = map.meta.name.replace(/\s+/g, '_') || 'dungeon';

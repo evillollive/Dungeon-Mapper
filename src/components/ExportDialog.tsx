@@ -6,7 +6,7 @@ import {
   exportHighResPNG,
   type HighResExportOptions,
 } from '../utils/export';
-import type { CustomThemeDefinition, DungeonMap, ViewMode } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, StampDef, ViewMode } from '../types/map';
 
 interface ExportDialogProps {
   map: DungeonMap;
@@ -17,13 +17,14 @@ interface ExportDialogProps {
   /** Feet per tile cell for the scale bar (0 = no scale bar). */
   feetPerCell?: number;
   customThemes?: readonly CustomThemeDefinition[];
+  customStamps?: readonly StampDef[];
 }
 
 /** Images above this pixel count trigger a performance warning. */
 const LARGE_IMAGE_THRESHOLD = 200_000_000;
 
 const ExportDialog: React.FC<ExportDialogProps> = ({
-  map, themeId, printMode, viewMode, onClose, feetPerCell = 0, customThemes = [],
+  map, themeId, printMode, viewMode, onClose, feetPerCell = 0, customThemes = [], customStamps = [],
 }) => {
   const focusTrapRef = useFocusTrap();
   const [dpi, setDpi] = useState<number>(300);
@@ -70,12 +71,13 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
         viewMode: exportView,
         feetPerCell: showScaleBar ? feetPerCell : 0,
         customThemes,
+        customStamps,
       };
       await exportHighResPNG(map, opts);
     } finally {
       setExporting(false);
     }
-  }, [dpi, pagePresetId, themeId, usePrintMode, exportView, map, showScaleBar, feetPerCell, customThemes]);
+  }, [dpi, pagePresetId, themeId, usePrintMode, exportView, map, showScaleBar, feetPerCell, customThemes, customStamps]);
 
   return (
     <div

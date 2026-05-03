@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useMemo, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
-import type { CustomThemeDefinition, DungeonMap, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource, PlacedStamp, StampPlacementOptions } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, StampDef, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource, PlacedStamp, StampPlacementOptions } from '../types/map';
 import { TOKEN_KIND_COLORS, isBuiltInTileType } from '../types/map';
 import { getSemanticTileType, getThemeWithCustom, preloadCustomThemeImages } from '../utils/customThemes';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
@@ -115,6 +115,7 @@ interface MapCanvasProps {
   activeTile: TileType;
   themeId: string;
   customThemes?: CustomThemeDefinition[];
+  customStamps?: readonly StampDef[];
   printMode: boolean;
   viewMode: ViewMode;
   /**
@@ -593,8 +594,10 @@ function drawStamp(
   stamp: PlacedStamp,
   tileSize: number,
   isSelected: boolean = false,
+  customStampImages?: Map<string, HTMLImageElement>,
+  customStamps?: readonly StampDef[],
 ) {
-  const def = getStampDef(stamp.stampId);
+  const def = getStampDef(stamp.stampId, customStamps);
   if (!def) return;
 
   const cx = (stamp.x + 0.5) * tileSize;
@@ -621,8 +624,16 @@ function drawStamp(
   ctx.translate(-drawSize / 2, -drawSize / 2);
   ctx.scale(svgScale, svgScale);
 
-  // Render multi-path or single-path.
-  if (def.paths && def.paths.length > 0) {
+  // Render multi-path, single-path, or image.
+  if (def.imageDataUrl) {
+    const img = customStampImages?.get(stamp.stampId);
+    if (img) {
+      const vb = def.viewBox.split(/\s+/).map(Number);
+      const vbW = vb[2] || 512;
+      const vbH = vb[3] || 512;
+      ctx.drawImage(img, 0, 0, vbW, vbH);
+    }
+  } else if (def.paths && def.paths.length > 0) {
     for (const p of def.paths) {
       const path2d = new Path2D(p.path);
       if (p.fill) {
@@ -682,6 +693,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   activeTile,
   themeId,
   customThemes = [],
+  customStamps = [],
   printMode,
   viewMode,
   gmShowFog,
@@ -767,6 +779,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   // effect can drawImage() without re-decoding every frame.
   const bgImageRef = useRef<HTMLImageElement | null>(null);
   const bgImageUrlRef = useRef<string | null>(null);
+  const customStampImagesRef = useRef<Map<string, HTMLImageElement>>(new Map());
   // Token currently being dragged via the move-token tool. `offsetX/Y`
   // captures where inside the (possibly multi-cell) footprint the user
   // grabbed, so the token follows the cursor without snapping its
@@ -852,6 +865,26 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setBgImageReady(false);
     img.src = dataUrl;
   }, [backgroundImage?.dataUrl]);
+
+  // Preload custom stamp images whenever the customStamps list changes.
+  useEffect(() => {
+    const cache = customStampImagesRef.current;
+    // Remove images no longer in the custom stamps list.
+    const currentIds = new Set(customStamps.map(s => s.id));
+    for (const id of cache.keys()) {
+      if (!currentIds.has(id)) cache.delete(id);
+    }
+    // Load any new ones.
+    for (const stamp of customStamps) {
+      if (!stamp.imageDataUrl || cache.has(stamp.id)) continue;
+      const img = new Image();
+      img.onload = () => {
+        cache.set(stamp.id, img);
+        setBgImageReady(v => !v); // trigger re-render
+      };
+      img.src = stamp.imageDataUrl;
+    }
+  }, [customStamps]);
 
   // Notes positioned on a fogged cell are hidden from the player view so a
   // visible note number doesn't leak the existence of a hidden room.
@@ -1026,7 +1059,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // appear as map furniture/dressing beneath the tactical token layer.
     if (stamps.length > 0) {
       for (const stamp of stamps) {
-        drawStamp(ctx, stamp, tileSize, stamp.id === selectedPlacedStampId);
+        drawStamp(ctx, stamp, tileSize, stamp.id === selectedPlacedStampId, customStampImagesRef.current, customStamps);
       }
     }
 
@@ -1503,7 +1536,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId]);
 
   // Minimap render
   useEffect(() => {

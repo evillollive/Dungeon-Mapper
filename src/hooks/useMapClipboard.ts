@@ -1,5 +1,5 @@
 import { useCallback } from 'react';
-import type { DungeonMap, DungeonProject, MapNote, Tile } from '../types/map';
+import type { DungeonMap, DungeonProject, MapNote, PlacedStamp, Tile } from '../types/map';
 import type { ClipboardBuffer } from './mapStateUtils';
 import { nextIdAfter, updateActiveLevel } from './mapStateUtils';
 
@@ -19,6 +19,7 @@ export function useMapClipboard(
 ) {
   const copySelection = useCallback((sel: { x: number; y: number; w: number; h: number }) => {
     const { tiles: mapTiles, notes: mapNotes, meta } = map;
+    const mapStamps = map.stamps;
     const bufTiles: Tile[][] = [];
     for (let dy = 0; dy < sel.h; dy++) {
       const row: Tile[] = [];
@@ -36,7 +37,10 @@ export function useMapClipboard(
     const bufNotes: MapNote[] = mapNotes
       .filter(n => n.x >= sel.x && n.x < sel.x + sel.w && n.y >= sel.y && n.y < sel.y + sel.h)
       .map(n => ({ ...n, x: n.x - sel.x, y: n.y - sel.y }));
-    clipboard = { tiles: bufTiles, notes: bufNotes, width: sel.w, height: sel.h };
+    const bufStamps: PlacedStamp[] = (mapStamps ?? [])
+      .filter(s => s.x >= sel.x && s.x < sel.x + sel.w && s.y >= sel.y && s.y < sel.y + sel.h)
+      .map(s => ({ ...s, x: s.x - sel.x, y: s.y - sel.y }));
+    clipboard = { tiles: bufTiles, notes: bufNotes, stamps: bufStamps, width: sel.w, height: sel.h };
   }, [map]);
 
   const cutSelection = useCallback((sel: { x: number; y: number; w: number; h: number }) => {
@@ -68,7 +72,17 @@ export function useMapClipboard(
             }
           }
         }
-        return { ...m, tiles: newTiles, notes: m.notes.filter(n => !notesToRemove.has(n.id)) };
+        const stampsToRemove = new Set(
+          (m.stamps ?? [])
+            .filter(s => s.x >= sel.x && s.x < sel.x + sel.w && s.y >= sel.y && s.y < sel.y + sel.h)
+            .map(s => s.id)
+        );
+        return {
+          ...m,
+          tiles: newTiles,
+          notes: m.notes.filter(n => !notesToRemove.has(n.id)),
+          stamps: (m.stamps ?? []).filter(s => !stampsToRemove.has(s.id)),
+        };
       });
       debouncedSave(updated);
       return updated;
@@ -108,7 +122,19 @@ export function useMapClipboard(
         const validNotes = remappedNotes.filter(
           n => n.x >= 0 && n.x < m.meta.width && n.y >= 0 && n.y < m.meta.height
         );
-        return { ...m, tiles: newTiles, notes: [...m.notes, ...validNotes] };
+        const stampIdOffset = nextIdAfter(m.stamps) - 1;
+        const remappedStamps: PlacedStamp[] = (buf.stamps ?? []).map(s => ({
+          ...s, id: s.id + stampIdOffset, x: s.x + ox, y: s.y + oy,
+        }));
+        const validStamps = remappedStamps.filter(
+          s => s.x >= 0 && s.x < m.meta.width && s.y >= 0 && s.y < m.meta.height
+        );
+        return {
+          ...m,
+          tiles: newTiles,
+          notes: [...m.notes, ...validNotes],
+          stamps: [...(m.stamps ?? []), ...validStamps],
+        };
       });
       debouncedSave(updated);
       return updated;

@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-03
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.6, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) analysis complete. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6).
 
 ---
 
@@ -734,10 +734,13 @@ The stamp library is the single most impactful missing feature for visual map qu
 - Stamp picker shows "All" + per-theme filter tabs
 - This sub-phase can itself be delivered incrementally (a few themes at a time)
 
-**6.4.6 — Custom Stamp Upload** *(extension, low effort)*
+**6.4.6 — Custom Stamp Upload** *(extension, low effort)* **✅ COMPLETE**
 - Upload user PNG/SVG images as custom stamps (reuses pattern from custom tile upload)
-- Custom stamps stored as data URLs in `DungeonProject.customStamps?: CustomStampDef[]`
-- Appear in a "Custom" category in the stamp picker
+- Custom stamps stored as data URLs in `DungeonProject.customStamps?: StampDef[]`
+- Appear in a "Custom" category in the stamp picker with upload UI (PNG/SVG/JPEG/WebP, 2MB limit)
+- Delete overlay on custom stamp grid items; `saveCustomStamp` / `deleteCustomStamp` in useMapState
+- `getStampDef()` now accepts `customStamps` param, resolving custom before built-in
+- Canvas image cache with preloader in MapCanvas; SVG export uses `<image>` elements
 - Import/export with JSON project files
 
 **6.5 — Wall & Path Drawing Tools** *(medium impact, medium effort)*
@@ -746,11 +749,15 @@ The stamp library is the single most impactful missing feature for visual map qu
 - Competitors: Dungeondraft, DungeonFog both have dedicated wall tools
 - Would complement the existing tile-based system rather than replace it
 
-**6.6 — Scene/Room Templates** *(medium impact, low effort)*
+**6.6 — Scene/Room Templates** *(medium impact, low effort)* **✅ COMPLETE**
 - Save and reuse room configurations as reusable templates
-- Templates include tiles, tokens, notes, and markers for a selected region
-- Build on existing copy/paste infrastructure (clipboardInfo already exists)
-- Competitors: DungeonFog has reusable room templates, Inkarnate has stamp groups
+- Templates include tiles, notes, and stamps for a selected region (via selection tool)
+- `SceneTemplate` type with tiles, notes, stamps, dimensions, createdAt
+- `DungeonProject.sceneTemplates` array; `saveSceneTemplate` / `deleteSceneTemplate` / `renameSceneTemplate` / `applySceneTemplate` in useMapState
+- `SceneTemplateDialog.tsx` modal — save from selection, list/apply/rename/delete
+- 📋 Templates button in Advanced tab
+- `ClipboardBuffer` now includes stamps field — copy/cut/paste captures stamps within selection
+- Builds on existing copy/paste infrastructure
 
 **6.7 — Map Linking & Journal Integration** *(medium impact, medium effort)*
 - Link notes to external content (URLs, text documents)

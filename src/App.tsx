@@ -12,6 +12,7 @@ import PremadeMapsDialog from './components/PremadeMapsDialog';
 import CustomThemeDialog from './components/CustomThemeDialog';
 import ShortcutsHelp from './components/ShortcutsHelp';
 import ExportDialog from './components/ExportDialog';
+import SceneTemplateDialog from './components/SceneTemplateDialog';
 import type { GeneratedMap } from './utils/generators';
 import { useMapState, getClipboard } from './hooks/useMapState';
 import { useDrawingTool } from './hooks/useDrawingTool';
@@ -153,6 +154,12 @@ function App() {
     updateStamp,
     bringStampToFront,
     sendStampToBack,
+    saveCustomStamp,
+    deleteCustomStamp,
+    saveSceneTemplate,
+    deleteSceneTemplate,
+    renameSceneTemplate,
+    applySceneTemplate,
     switchLevel,
     addLevel,
     renameLevel,
@@ -174,6 +181,7 @@ function App() {
   const headerRef = useRef<MapHeaderHandle>(null);
   const themeId = map.meta.theme ?? 'dungeon';
   const customThemes = useMemo(() => project.customThemes ?? [], [project.customThemes]);
+  const customStamps = useMemo(() => project.customStamps ?? [], [project.customStamps]);
   const themeList = useMemo(() => buildThemeList(customThemes), [customThemes]);
   const [printMode, setPrintMode] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(loadInitialViewMode);
@@ -187,6 +195,7 @@ function App() {
   const [showCustomThemeDialog, setShowCustomThemeDialog] = useState<boolean>(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState<boolean>(false);
   const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
+  const [showSceneTemplateDialog, setShowSceneTemplateDialog] = useState<boolean>(false);
   // Polite live-region message announced to screen readers when the user
   // performs an action whose visual feedback is the canvas (e.g. undo,
   // theme switch, view-mode toggle). Cleared automatically a moment
@@ -628,8 +637,8 @@ function App() {
 
   const handleExportSVG = useCallback(() => {
     const theme = getThemeWithCustom(themeId, customThemes);
-    exportMapSVG(map, theme, id => getThemeWithCustom(id, customThemes), { viewMode });
-  }, [map, themeId, customThemes, viewMode]);
+    exportMapSVG(map, theme, id => getThemeWithCustom(id, customThemes), { viewMode, customStamps });
+  }, [map, themeId, customThemes, viewMode, customStamps]);
 
   // Auto-clear the polite live-region message a second after announcing
   // it, so the same string can be announced again on the next action.
@@ -761,8 +770,8 @@ function App() {
   ]);
 
   const mapContextValue = useMemo<MapContextValue>(() => ({
-    map, project, activeLevelIndex, themeId, customThemes,
-  }), [map, project, activeLevelIndex, themeId, customThemes]);
+    map, project, activeLevelIndex, themeId, customThemes, customStamps,
+  }), [map, project, activeLevelIndex, themeId, customThemes, customStamps]);
 
   const viewContextValue = useMemo<ViewContextValue>(() => ({
     viewMode, printMode, uiScale, gmShowFog,
@@ -785,6 +794,8 @@ function App() {
     setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
     addLightSource, removeLightSource, clearLightSources,
     addStamp, moveStamp, removeStamp, clearStamps, updateStamp, bringStampToFront, sendStampToBack,
+    saveCustomStamp, deleteCustomStamp,
+    saveSceneTemplate, deleteSceneTemplate, renameSceneTemplate, applySceneTemplate,
     switchLevel, addLevel, renameLevel, deleteLevel,
     duplicateLevel, reorderLevels,
     addStairLink, removeStairLink,
@@ -805,6 +816,8 @@ function App() {
     setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
     addLightSource, removeLightSource, clearLightSources,
     addStamp, moveStamp, removeStamp, clearStamps, updateStamp, bringStampToFront, sendStampToBack,
+    saveCustomStamp, deleteCustomStamp,
+    saveSceneTemplate, deleteSceneTemplate, renameSceneTemplate, applySceneTemplate,
     switchLevel, addLevel, renameLevel, deleteLevel,
     duplicateLevel, reorderLevels,
     addStairLink, removeStairLink,
@@ -971,6 +984,10 @@ function App() {
               onRemoveStamp={removeStamp}
               onBringStampToFront={bringStampToFront}
               onSendStampToBack={sendStampToBack}
+              customStamps={customStamps}
+              onSaveCustomStamp={saveCustomStamp}
+              onDeleteCustomStamp={deleteCustomStamp}
+              onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             )}
           </nav>
@@ -1014,6 +1031,7 @@ function App() {
             activeTile={activeTile}
             themeId={themeId}
             customThemes={customThemes}
+            customStamps={customStamps}
             printMode={printMode}
             viewMode={viewMode}
             gmShowFog={gmShowFog}
@@ -1206,10 +1224,22 @@ function App() {
           map={map}
           themeId={themeId}
           customThemes={customThemes}
+          customStamps={customStamps}
           printMode={printMode}
           viewMode={viewMode}
           onClose={() => setShowExportDialog(false)}
           feetPerCell={measureFeetPerCell}
+        />
+      )}
+      {showSceneTemplateDialog && (
+        <SceneTemplateDialog
+          templates={project.sceneTemplates ?? []}
+          selection={selection}
+          onSave={saveSceneTemplate}
+          onDelete={deleteSceneTemplate}
+          onRename={renameSceneTemplate}
+          onApply={applySceneTemplate}
+          onClose={() => setShowSceneTemplateDialog(false)}
         />
       )}
       <IconPicker
