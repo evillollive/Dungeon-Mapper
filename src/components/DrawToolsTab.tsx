@@ -1,5 +1,5 @@
 import React from 'react';
-import type { CustomThemeDefinition, ToolType, TileType } from '../types/map';
+import type { CustomThemeDefinition, ToolType, TileType, PlacedStamp } from '../types/map';
 import { ALL_TILE_TYPES, TILE_LABELS, isBuiltInTileType } from '../types/map';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { buildThemeList, getCustomTileLabel, getThemeWithCustom } from '../utils/customThemes';
@@ -22,6 +22,14 @@ interface DrawToolsTabProps {
   selectedStampId: string | null;
   onSelectStamp: (stampId: string) => void;
   onClearStamps: () => void;
+  // Stamp transform controls
+  stamps: PlacedStamp[];
+  selectedPlacedStampId: number | null;
+  onSelectPlacedStamp: (id: number | null) => void;
+  onUpdateStamp: (id: number, patch: Partial<Omit<PlacedStamp, 'id' | 'stampId'>>) => void;
+  onRemoveStamp: (id: number) => void;
+  onBringStampToFront: (id: number) => void;
+  onSendStampToBack: (id: number) => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -79,6 +87,8 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
   onOpenCustomThemeBuilder, onOpenGenerateMap, onOpenPremadeMaps,
   selectedStampId, onSelectStamp, onClearStamps,
+  stamps, selectedPlacedStampId, onSelectPlacedStamp, onUpdateStamp, onRemoveStamp,
+  onBringStampToFront, onSendStampToBack,
 }) => {
   const theme = getThemeWithCustom(themeId, customThemes);
   const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
@@ -212,6 +222,13 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
         onSetTool={onSetTool}
         onSelectStamp={onSelectStamp}
         onClearStamps={onClearStamps}
+        stamps={stamps}
+        selectedPlacedStampId={selectedPlacedStampId}
+        onSelectPlacedStamp={onSelectPlacedStamp}
+        onUpdateStamp={onUpdateStamp}
+        onRemoveStamp={onRemoveStamp}
+        onBringToFront={onBringStampToFront}
+        onSendToBack={onSendStampToBack}
       />
     </>
   );

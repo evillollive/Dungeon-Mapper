@@ -91,6 +91,14 @@ export interface ShortcutActions {
   nextLevel: () => void;
   /** Cycle to the previous dungeon level (PageUp). */
   prevLevel: () => void;
+  /** Rotate selected stamp 90° clockwise (R). */
+  rotateStampCW: () => void;
+  /** Flip selected stamp horizontally (H). */
+  flipStampH: () => void;
+  /** Flip selected stamp vertically (shift+H alias V removed — use UI). */
+  flipStampV: () => void;
+  /** Delete selected placed stamp (Delete/Backspace). */
+  deleteStamp: () => void;
 }
 
 const isPlainKey = (e: KeyboardEvent) =>
@@ -394,6 +402,40 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       description: 'Switch to the previous dungeon level',
       match: e => isPlainKey(e) && !e.shiftKey && e.key === 'PageUp',
       action: actions.prevLevel,
+    },
+
+    // ── Stamp Transforms ──
+    {
+      id: 'tools.rotateStampCW',
+      category: 'Tools',
+      keys: 'Shift+R',
+      description: 'Rotate selected stamp 90° clockwise',
+      match: e => isPlainKey(e) && e.shiftKey && e.key === 'R',
+      action: actions.rotateStampCW,
+    },
+    {
+      id: 'tools.flipStampH',
+      category: 'Tools',
+      keys: 'Shift+H',
+      description: 'Flip selected stamp horizontally',
+      match: e => isPlainKey(e) && e.shiftKey && e.key === 'H',
+      action: actions.flipStampH,
+    },
+    {
+      id: 'tools.flipStampV',
+      category: 'Tools',
+      keys: 'Shift+V',
+      description: 'Flip selected stamp vertically',
+      match: e => isPlainKey(e) && e.shiftKey && e.key === 'V',
+      action: actions.flipStampV,
+    },
+    {
+      id: 'tools.deleteStamp',
+      category: 'Tools',
+      keys: 'Delete',
+      description: 'Delete selected placed stamp',
+      match: e => isPlainKey(e) && !e.shiftKey && (e.key === 'Delete' || e.key === 'Backspace'),
+      action: actions.deleteStamp,
     },
   ];
 }

@@ -38,6 +38,8 @@ export interface ToolContextValue {
   // Stamp tool settings
   selectedStampId: string | null;
   setSelectedStampId: (id: string | null) => void;
+  selectedPlacedStampId: number | null;
+  setSelectedPlacedStampId: (id: number | null) => void;
 }
 
 export const ToolContext = createContext<ToolContextValue | null>(null);

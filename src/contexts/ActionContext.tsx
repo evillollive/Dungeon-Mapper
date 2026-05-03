@@ -67,6 +67,9 @@ export interface ActionContextValue {
   moveStamp: (id: number, x: number, y: number) => void;
   removeStamp: (id: number) => void;
   clearStamps: () => void;
+  updateStamp: (id: number, patch: Partial<Omit<import('../types/map').PlacedStamp, 'id' | 'stampId'>>) => void;
+  bringStampToFront: (id: number) => void;
+  sendStampToBack: (id: number) => void;
   // Level management
   switchLevel: (idx: number) => void;
   addLevel: (name?: string) => void;

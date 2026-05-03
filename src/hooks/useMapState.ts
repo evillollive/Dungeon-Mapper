@@ -750,6 +750,55 @@ export function useMapState() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSave, activeLevelIndex]);
 
+  /** Update arbitrary properties on a placed stamp. */
+  const updateStamp = useCallback((id: number, patch: Partial<Omit<PlacedStamp, 'id' | 'stampId'>>) => {
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      const existing = (prevMap.stamps ?? []).find(s => s.id === id);
+      if (!existing) return prev;
+      pushHistory(prevMap, activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m,
+        stamps: (m.stamps ?? []).map(s => s.id === id ? { ...s, ...patch } : s),
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
+
+  /** Move stamp to front (end of array = rendered last = visually on top). */
+  const bringStampToFront = useCallback((id: number) => {
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      const stamps = prevMap.stamps ?? [];
+      const idx = stamps.findIndex(s => s.id === id);
+      if (idx < 0 || idx === stamps.length - 1) return prev;
+      pushHistory(prevMap, activeLevelIndex);
+      const reordered = [...stamps.filter(s => s.id !== id), stamps[idx]];
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, stamps: reordered }));
+      debouncedSave(updated);
+      return updated;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
+
+  /** Move stamp to back (start of array = rendered first = visually behind). */
+  const sendStampToBack = useCallback((id: number) => {
+    setProject(prev => {
+      const prevMap = prev.levels[activeLevelIndex];
+      const stamps = prevMap.stamps ?? [];
+      const idx = stamps.findIndex(s => s.id === id);
+      if (idx <= 0) return prev;
+      pushHistory(prevMap, activeLevelIndex);
+      const reordered = [stamps[idx], ...stamps.filter(s => s.id !== id)];
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, stamps: reordered }));
+      debouncedSave(updated);
+      return updated;
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
+
   // ── Background image ──────────────────────────────────────────────────
 
   const setBackgroundImage = useCallback((bg: BackgroundImage) => {
@@ -799,7 +848,7 @@ export function useMapState() {
     addMarker, removeMarker, clearMarkers,
     setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
     addLightSource, removeLightSource, clearLightSources,
-    addStamp, moveStamp, removeStamp, clearStamps,
+    addStamp, moveStamp, removeStamp, clearStamps, updateStamp, bringStampToFront, sendStampToBack,
     switchLevel, addLevel, renameLevel, deleteLevel,
     duplicateLevel, reorderLevels, setProjectName,
     addStairLink, removeStairLink,
