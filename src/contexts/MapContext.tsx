@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { DungeonMap, DungeonProject, CustomThemeDefinition } from '../types/map';
+import type { DungeonMap, DungeonProject, CustomThemeDefinition, StampDef } from '../types/map';
 
 export interface MapContextValue {
   map: DungeonMap;
@@ -7,6 +7,7 @@ export interface MapContextValue {
   activeLevelIndex: number;
   themeId: string;
   customThemes: readonly CustomThemeDefinition[];
+  customStamps: readonly StampDef[];
 }
 
 export const MapContext = createContext<MapContextValue | null>(null);

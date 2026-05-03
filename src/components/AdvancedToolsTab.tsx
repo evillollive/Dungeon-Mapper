@@ -19,6 +19,8 @@ interface AdvancedToolsTabProps {
   onSetGmDrawColor: (c: string) => void;
   onSetGmDrawWidth: (w: number) => void;
   onClearGmDrawings: () => void;
+  // Scene templates
+  onOpenSceneTemplates: () => void;
 }
 
 const GM_DRAW_COLORS = ['#ff6b6b', '#ffa94d', '#ffd43b', '#69db7c', '#74c0fc', '#b197fc', '#f783ac', '#ffffff'];
@@ -33,6 +35,7 @@ const AdvancedToolsTab: React.FC<AdvancedToolsTabProps> = ({
   backgroundImage, onImportBackgroundImage, onUpdateBackgroundImage, onClearBackgroundImage,
   stairLinkSource, stairLinkCount, onClearStairLinks,
   gmDrawColor, gmDrawWidth, onSetGmDrawColor, onSetGmDrawWidth, onClearGmDrawings,
+  onOpenSceneTemplates,
 }) => {
   const bgFileRef = React.useRef<HTMLInputElement>(null);
 
@@ -306,6 +309,21 @@ const AdvancedToolsTab: React.FC<AdvancedToolsTabProps> = ({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* ── SCENE TEMPLATES ── */}
+      <div className="toolbar-section">
+        <div className="toolbar-label">TEMPLATES</div>
+        <button
+          type="button"
+          className="tool-btn"
+          onClick={onOpenSceneTemplates}
+          title="Open Scene Templates — save and reuse rectangular regions as room/scene templates"
+          aria-label="Open scene templates"
+        >
+          <span className="tool-icon" aria-hidden="true">📋</span>
+          <span className="tool-name">Templates</span>
+        </button>
       </div>
     </>
   );

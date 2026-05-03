@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource, PlacedStamp, StampPlacementOptions } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, SceneTemplate, StampDef, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource, PlacedStamp, StampPlacementOptions } from '../types/map';
 import { createEmptyGrid, createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
 import { saveProject } from '../utils/storage';
 import { reThemeNotes } from '../utils/reThemeNotes';
@@ -829,6 +829,165 @@ export function useMapState() {
     });
   }, [debouncedSave, activeLevelIndex]);
 
+  // ── Custom stamps ─────────────────────────────────────────────────────
+
+  const saveCustomStamp = useCallback((stamp: StampDef) => {
+    setProject(prev => {
+      const existing = prev.customStamps ?? [];
+      const idx = existing.findIndex(s => s.id === stamp.id);
+      const updated: DungeonProject = {
+        ...prev,
+        customStamps: idx >= 0
+          ? existing.map(s => s.id === stamp.id ? stamp : s)
+          : [...existing, stamp],
+      };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const deleteCustomStamp = useCallback((stampId: string) => {
+    setProject(prev => {
+      const existing = prev.customStamps ?? [];
+      if (!existing.some(s => s.id === stampId)) return prev;
+      const updated: DungeonProject = {
+        ...prev,
+        customStamps: existing.filter(s => s.id !== stampId),
+      };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  // ── Scene templates ───────────────────────────────────────────────────
+
+  const saveSceneTemplate = useCallback((name: string, sel: { x: number; y: number; w: number; h: number }) => {
+    const { tiles: mapTiles, notes: mapNotes, stamps: mapStamps, meta } = map;
+    const bufTiles: Tile[][] = [];
+    for (let dy = 0; dy < sel.h; dy++) {
+      const row: Tile[] = [];
+      for (let dx = 0; dx < sel.w; dx++) {
+        const ty = sel.y + dy;
+        const tx = sel.x + dx;
+        if (ty >= 0 && ty < meta.height && tx >= 0 && tx < meta.width) {
+          row.push({ ...mapTiles[ty][tx] });
+        } else {
+          row.push({ type: 'empty' });
+        }
+      }
+      bufTiles.push(row);
+    }
+    const bufNotes = mapNotes
+      .filter(n => n.x >= sel.x && n.x < sel.x + sel.w && n.y >= sel.y && n.y < sel.y + sel.h)
+      .map(n => ({ ...n, x: n.x - sel.x, y: n.y - sel.y }));
+    const bufStamps = (mapStamps ?? [])
+      .filter(s => s.x >= sel.x && s.x < sel.x + sel.w && s.y >= sel.y && s.y < sel.y + sel.h)
+      .map(s => ({ ...s, x: s.x - sel.x, y: s.y - sel.y }));
+
+    const template: SceneTemplate = {
+      id: `template-${Date.now()}`,
+      name,
+      tiles: bufTiles,
+      notes: bufNotes,
+      stamps: bufStamps,
+      width: sel.w,
+      height: sel.h,
+      createdAt: new Date().toISOString(),
+    };
+
+    setProject(prev => {
+      const existing = prev.sceneTemplates ?? [];
+      const updated: DungeonProject = {
+        ...prev,
+        sceneTemplates: [...existing, template],
+      };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [map, debouncedSave]);
+
+  const deleteSceneTemplate = useCallback((templateId: string) => {
+    setProject(prev => {
+      const existing = prev.sceneTemplates ?? [];
+      if (!existing.some(t => t.id === templateId)) return prev;
+      const updated: DungeonProject = {
+        ...prev,
+        sceneTemplates: existing.filter(t => t.id !== templateId),
+      };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const renameSceneTemplate = useCallback((templateId: string, newName: string) => {
+    setProject(prev => {
+      const existing = prev.sceneTemplates ?? [];
+      const updated: DungeonProject = {
+        ...prev,
+        sceneTemplates: existing.map(t => t.id === templateId ? { ...t, name: newName } : t),
+      };
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave]);
+
+  const applySceneTemplate = useCallback((templateId: string, ox: number, oy: number) => {
+    setProject(prev => {
+      const templates = prev.sceneTemplates ?? [];
+      const template = templates.find(t => t.id === templateId);
+      if (!template) return prev;
+
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
+        const newTiles = m.tiles.map(row => row.map(t => ({ ...t })));
+        const noteIdOffset = nextIdAfter(m.notes) - 1;
+        const noteIdMap = new Map<number, number>();
+        for (const n of template.notes) noteIdMap.set(n.id, n.id + noteIdOffset);
+
+        for (let dy = 0; dy < template.height; dy++) {
+          const ty = oy + dy;
+          if (ty < 0 || ty >= m.meta.height) continue;
+          for (let dx = 0; dx < template.width; dx++) {
+            const tx = ox + dx;
+            if (tx < 0 || tx >= m.meta.width) continue;
+            const src = template.tiles[dy][dx];
+            const next: Tile = { type: src.type };
+            if (src.theme) next.theme = src.theme;
+            if (src.noteId !== undefined) {
+              const remapped = noteIdMap.get(src.noteId);
+              if (remapped !== undefined) next.noteId = remapped;
+            }
+            newTiles[ty][tx] = next;
+          }
+        }
+
+        const remappedNotes = template.notes.map(n => ({
+          ...n, id: n.id + noteIdOffset, x: n.x + ox, y: n.y + oy,
+        }));
+        const validNotes = remappedNotes.filter(
+          n => n.x >= 0 && n.x < m.meta.width && n.y >= 0 && n.y < m.meta.height
+        );
+
+        const stampIdOffset = nextIdAfter(m.stamps) - 1;
+        const remappedStamps = template.stamps.map(s => ({
+          ...s, id: s.id + stampIdOffset, x: s.x + ox, y: s.y + oy,
+        }));
+        const validStamps = remappedStamps.filter(
+          s => s.x >= 0 && s.x < m.meta.width && s.y >= 0 && s.y < m.meta.height
+        );
+
+        return {
+          ...m,
+          tiles: newTiles,
+          notes: [...m.notes, ...validNotes],
+          stamps: [...(m.stamps ?? []), ...validStamps],
+        };
+      });
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex, pushHistory]);
+
   return {
     map, project, activeLevelIndex,
     selectedNoteId, setSelectedNoteId,
@@ -849,6 +1008,8 @@ export function useMapState() {
     setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
     addLightSource, removeLightSource, clearLightSources,
     addStamp, moveStamp, removeStamp, clearStamps, updateStamp, bringStampToFront, sendStampToBack,
+    saveCustomStamp, deleteCustomStamp,
+    saveSceneTemplate, deleteSceneTemplate, renameSceneTemplate, applySceneTemplate,
     switchLevel, addLevel, renameLevel, deleteLevel,
     duplicateLevel, reorderLevels, setProjectName,
     addStairLink, removeStairLink,

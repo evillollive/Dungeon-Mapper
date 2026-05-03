@@ -183,6 +183,8 @@ export interface StampDef {
   svgPath?: string;
   /** Multi-path definition for stamps that need layered fills/strokes. */
   paths?: StampSvgPath[];
+  /** Base64 data URL for custom uploaded PNG/SVG stamps. */
+  imageDataUrl?: string;
 }
 
 export interface PlacedStamp {
@@ -334,6 +336,25 @@ export interface StairLink {
 }
 
 /**
+ * A saved scene/room template. Captures tile data, notes, and stamps from
+ * a rectangular selection so the region can be stamped onto any level.
+ */
+export interface SceneTemplate {
+  id: string;
+  name: string;
+  /** Tile data from the copied region. */
+  tiles: Tile[][];
+  /** Notes within the region (coordinates relative to region origin). */
+  notes: MapNote[];
+  /** Stamps within the region (coordinates relative to region origin). */
+  stamps: PlacedStamp[];
+  width: number;
+  height: number;
+  /** ISO timestamp when the template was saved. */
+  createdAt: string;
+}
+
+/**
  * Top-level container for a multi-level dungeon project. Wraps an ordered
  * array of `DungeonMap` levels plus project-level metadata. A single-map
  * file is simply a 1-level project. The `activeLevelIndex` tracks which
@@ -350,6 +371,10 @@ export interface DungeonProject {
   stairLinks: StairLink[];
   /** Project-scoped user-created tile/theme definitions. */
   customThemes?: CustomThemeDefinition[];
+  /** Project-scoped user-uploaded stamp definitions. */
+  customStamps?: StampDef[];
+  /** Saved scene/room templates for reuse across levels. */
+  sceneTemplates?: SceneTemplate[];
 }
 
 /**

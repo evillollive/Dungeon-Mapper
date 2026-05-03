@@ -312,9 +312,10 @@ export const STAMP_CATEGORY_LABELS: Record<string, string> = {
   'nature': 'Nature',
   'structures': 'Structures',
   'markers': 'Markers',
+  'custom': 'Custom',
 };
 
 /** Lookup a stamp definition by id. Returns undefined if not found. */
-export function getStampDef(stampId: string): StampDef | undefined {
-  return BUILT_IN_STAMPS.find(s => s.id === stampId);
+export function getStampDef(stampId: string, customStamps: readonly StampDef[] = []): StampDef | undefined {
+  return customStamps.find(s => s.id === stampId) ?? BUILT_IN_STAMPS.find(s => s.id === stampId);
 }

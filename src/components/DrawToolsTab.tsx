@@ -1,5 +1,5 @@
 import React from 'react';
-import type { CustomThemeDefinition, ToolType, TileType, PlacedStamp } from '../types/map';
+import type { CustomThemeDefinition, StampDef, ToolType, TileType, PlacedStamp } from '../types/map';
 import { ALL_TILE_TYPES, TILE_LABELS, isBuiltInTileType } from '../types/map';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { buildThemeList, getCustomTileLabel, getThemeWithCustom } from '../utils/customThemes';
@@ -30,6 +30,10 @@ interface DrawToolsTabProps {
   onRemoveStamp: (id: number) => void;
   onBringStampToFront: (id: number) => void;
   onSendStampToBack: (id: number) => void;
+  // Custom stamps
+  customStamps?: readonly StampDef[];
+  onSaveCustomStamp?: (stamp: StampDef) => void;
+  onDeleteCustomStamp?: (stampId: string) => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -89,6 +93,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   selectedStampId, onSelectStamp, onClearStamps,
   stamps, selectedPlacedStampId, onSelectPlacedStamp, onUpdateStamp, onRemoveStamp,
   onBringStampToFront, onSendStampToBack,
+  customStamps, onSaveCustomStamp, onDeleteCustomStamp,
 }) => {
   const theme = getThemeWithCustom(themeId, customThemes);
   const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
@@ -229,6 +234,9 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
         onRemoveStamp={onRemoveStamp}
         onBringToFront={onBringStampToFront}
         onSendToBack={onSendStampToBack}
+        customStamps={customStamps}
+        onSaveCustomStamp={onSaveCustomStamp}
+        onDeleteCustomStamp={onDeleteCustomStamp}
       />
     </>
   );

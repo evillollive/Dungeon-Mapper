@@ -23,6 +23,7 @@ export interface LevelHistory {
 export interface ClipboardBuffer {
   tiles: Tile[][];
   notes: MapNote[];
+  stamps: PlacedStamp[];
   width: number;
   height: number;
 }
@@ -50,6 +51,8 @@ export function createDefaultProject(): DungeonProject {
     activeLevelIndex: 0,
     stairLinks: [],
     customThemes: [],
+    customStamps: [],
+    sceneTemplates: [],
   };
 }
 
@@ -73,6 +76,8 @@ export function withProjectDefaults(project: DungeonProject): DungeonProject {
     levels: project.levels.map(withDefaults),
     stairLinks: project.stairLinks ?? [],
     customThemes: project.customThemes ?? [],
+    customStamps: project.customStamps ?? [],
+    sceneTemplates: project.sceneTemplates ?? [],
   };
 }
 

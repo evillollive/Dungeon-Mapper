@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { BackgroundImage, CustomThemeDefinition, StairLink, TileType, TokenKind, MarkerShape, AnnotationStroke, StampPlacementOptions } from '../types/map';
+import type { BackgroundImage, CustomThemeDefinition, StampDef, StairLink, TileType, TokenKind, MarkerShape, AnnotationStroke, StampPlacementOptions } from '../types/map';
 
 export interface ActionContextValue {
   // Tile operations
@@ -70,6 +70,14 @@ export interface ActionContextValue {
   updateStamp: (id: number, patch: Partial<Omit<import('../types/map').PlacedStamp, 'id' | 'stampId'>>) => void;
   bringStampToFront: (id: number) => void;
   sendStampToBack: (id: number) => void;
+  // Custom stamps
+  saveCustomStamp: (stamp: StampDef) => void;
+  deleteCustomStamp: (stampId: string) => void;
+  // Scene templates
+  saveSceneTemplate: (name: string, sel: { x: number; y: number; w: number; h: number }) => void;
+  deleteSceneTemplate: (templateId: string) => void;
+  renameSceneTemplate: (templateId: string, newName: string) => void;
+  applySceneTemplate: (templateId: string, ox: number, oy: number) => void;
   // Level management
   switchLevel: (idx: number) => void;
   addLevel: (name?: string) => void;

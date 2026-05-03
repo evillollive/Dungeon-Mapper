@@ -7,7 +7,7 @@
  * visible canvas or its device-pixel-ratio scaling.
  */
 
-import type { CustomThemeDefinition, DungeonMap, ViewMode, Token, ShapeMarker, AnnotationStroke, PlacedStamp } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, ViewMode, Token, ShapeMarker, AnnotationStroke, PlacedStamp, StampDef } from '../types/map';
 import { TOKEN_KIND_COLORS, isBuiltInTileType } from '../types/map';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 import { drawTileOverlay } from '../themes/tileOverlays';
@@ -93,6 +93,8 @@ export interface RenderMapOptions {
   feetPerCell?: number;
   /** Project-scoped custom themes available for rendering custom tiles. */
   customThemes?: readonly CustomThemeDefinition[];
+  /** Project-scoped custom stamp definitions. */
+  customStamps?: readonly StampDef[];
 }
 
 /**
@@ -215,7 +217,7 @@ export function renderMapToCanvas(
 
   // Stamps
   for (const stamp of map.stamps ?? []) {
-    renderStamp(ctx, stamp, tileSize);
+    renderStamp(ctx, stamp, tileSize, opts.customStamps);
   }
 
   // Tokens
@@ -427,8 +429,9 @@ function renderStamp(
   ctx: CanvasRenderingContext2D,
   stamp: PlacedStamp,
   tileSize: number,
+  customStamps?: readonly StampDef[],
 ) {
-  const def = getStampDef(stamp.stampId);
+  const def = getStampDef(stamp.stampId, customStamps);
   if (!def) return;
 
   const cx = (stamp.x + 0.5) * tileSize;

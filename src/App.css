@@ -1039,6 +1039,70 @@
   color: #2a2620;
 }
 
+/* ── Generic modal overlay / panel (Scene Templates, etc.) ──────── */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+.modal-panel {
+  background: #1a1f3d;
+  color: #e0e0ff;
+  border: 1px solid #3a4570;
+  border-radius: 6px;
+  padding: 16px 18px;
+  width: min(480px, 94vw);
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
+  font-size: 14px;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  margin-bottom: 12px;
+}
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  color: #e0e0ff;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9rem;
+  opacity: 0.7;
+}
+.modal-close-btn:hover { opacity: 1; background: rgba(255,255,255,0.1); }
+.modal-section {
+  margin-bottom: 12px;
+}
+.modal-section-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  opacity: 0.6;
+  margin-bottom: 6px;
+}
+.modal-input {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  border-radius: 3px;
+  color: #e0e0ff;
+  padding: 3px 6px;
+  font-size: 0.8rem;
+  outline: none;
+}
+.modal-input:focus { border-color: #6c8cff; }
+
 /* ── Generate Map dialog ─────────────────────────────────── */
 .generate-dialog-backdrop {
   position: fixed;
