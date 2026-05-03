@@ -868,7 +868,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   wallColor = '#1a1a2e',
   wallThickness = 0.08,
   pathColor = '#8B7355',
-  pathWidth: pathWidthProp = 0.3,
+  pathWidth = 0.3,
   onAddWallSegment,
   onRemoveWallSegment,
   onAddPathSegment,
@@ -1227,7 +1227,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
     if (activeStroke && activeStroke.length > 0 && activeTool === 'path') {
       drawPathSegmentOnCanvas(ctx, {
-        id: -1, points: activeStroke, color: pathColor, width: pathWidthProp,
+        id: -1, points: activeStroke, color: pathColor, width: pathWidth,
       }, tileSize);
     }
 
@@ -1684,7 +1684,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidthProp]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth]);
 
   // Minimap render
   useEffect(() => {
@@ -2404,7 +2404,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       onAddPathSegment?.({
         points: activeStroke,
         color: pathColor,
-        width: pathWidthProp,
+        width: pathWidth,
       });
       setActiveStroke(null);
     }
@@ -2447,7 +2447,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setIsDragging(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo, wallColor, wallThickness, pathColor, pathWidthProp, onAddWallSegment, onAddPathSegment]);
+  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo, wallColor, wallThickness, pathColor, pathWidth, onAddWallSegment, onAddPathSegment]);
 
   const handlePointerLeave = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     activePointersRef.current.delete(e.pointerId);

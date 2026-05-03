@@ -56,7 +56,7 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] =
   { id: 'rect',       label: 'Rectangle',   shortcut: 'R', icon: '⬛' },
   { id: 'select',     label: 'Select',      shortcut: 'S', icon: '⬜' },
   { id: 'wall',       label: 'Wall',        shortcut: 'W', icon: '🧱' },
-  { id: 'path',       label: 'Path',        shortcut: '⇧W', icon: '🛤️' },
+  { id: 'path',       label: 'Path',        shortcut: 'Shift+W', icon: '🛤️' },
 ];
 
 function TilePreview({
