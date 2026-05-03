@@ -307,6 +307,7 @@ export const BUILT_IN_STAMPS: StampDef[] = [
 /** All stamp categories with display labels. */
 export const STAMP_CATEGORY_LABELS: Record<string, string> = {
   'all': 'All',
+  'theme': '🎨 Theme',
   'furniture': 'Furniture',
   'dungeon-dressing': 'Dungeon',
   'nature': 'Nature',

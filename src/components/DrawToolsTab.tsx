@@ -224,6 +224,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
       <StampPicker
         activeTool={activeTool}
         selectedStampId={selectedStampId}
+        themeId={themeId}
         onSetTool={onSetTool}
         onSelectStamp={onSelectStamp}
         onClearStamps={onClearStamps}
