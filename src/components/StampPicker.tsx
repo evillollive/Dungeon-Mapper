@@ -5,6 +5,8 @@ import { BUILT_IN_STAMPS, STAMP_CATEGORY_LABELS } from '../utils/stampCatalog';
 interface StampPickerProps {
   activeTool: ToolType;
   selectedStampId: string | null;
+  /** Current map theme id — used to filter theme-specific stamps. */
+  themeId: string;
   onSetTool: (tool: ToolType) => void;
   onSelectStamp: (stampId: string) => void;
   onClearStamps: () => void;
@@ -28,11 +30,11 @@ const STAMP_TOOLS: { id: ToolType; label: string; icon: string; title: string }[
   { id: 'remove-stamp', label: 'Remove', icon: '🗑', title: 'Remove stamp — click a placed stamp to delete it' },
 ];
 
-type FilterCategory = 'all' | StampCategory;
-const FILTER_CATEGORIES: FilterCategory[] = ['all', 'furniture', 'dungeon-dressing', 'nature', 'structures', 'markers', 'custom'];
+type FilterCategory = 'all' | 'theme' | StampCategory;
+const FILTER_CATEGORIES: FilterCategory[] = ['all', 'theme', 'furniture', 'dungeon-dressing', 'nature', 'structures', 'markers', 'custom'];
 
 const StampPicker: React.FC<StampPickerProps> = ({
-  activeTool, selectedStampId, onSetTool, onSelectStamp, onClearStamps,
+  activeTool, selectedStampId, themeId, onSetTool, onSelectStamp, onClearStamps,
   stamps, selectedPlacedStampId, onSelectPlacedStamp, onUpdateStamp, onRemoveStamp,
   onBringToFront, onSendToBack,
   customStamps = [], onSaveCustomStamp, onDeleteCustomStamp,
@@ -43,9 +45,10 @@ const StampPicker: React.FC<StampPickerProps> = ({
 
   const filteredStamps = useMemo(() => {
     if (filterCategory === 'custom') return customStamps as StampDef[];
-    if (filterCategory === 'all') return BUILT_IN_STAMPS;
-    return BUILT_IN_STAMPS.filter(s => s.category === filterCategory);
-  }, [filterCategory, customStamps]);
+    if (filterCategory === 'theme') return BUILT_IN_STAMPS.filter(s => s.themeId === themeId);
+    if (filterCategory === 'all') return BUILT_IN_STAMPS.filter(s => !s.themeId || s.themeId === themeId);
+    return BUILT_IN_STAMPS.filter(s => s.category === filterCategory && (!s.themeId || s.themeId === themeId));
+  }, [filterCategory, customStamps, themeId]);
 
   const selectedPlaced = useMemo(
     () => selectedPlacedStampId != null ? stamps.find(s => s.id === selectedPlacedStampId) ?? null : null,
