@@ -240,7 +240,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
               <button role="menuitem" onClick={() => { onOpenExportDialog(); setOverflowOpen(false); }} title="Print-Optimized Export [Ctrl+Shift+P]">🖨 Print Export</button>
               <hr className="header-overflow-sep" />
               <button role="menuitem" onClick={() => { fileInputRef.current?.click(); setOverflowOpen(false); }} title="Import JSON [Ctrl+O]">↑ Import</button>
-              <button role="menuitem" className="danger" onClick={() => { handleClear(); setOverflowOpen(false); }} title="Clear Map">🗑 Clear</button>
+              <button role="menuitem" className="danger" onClick={() => { handleClear(); setOverflowOpen(false); }} title="Clear Map" aria-label="Clear entire map">🗑 Clear</button>
               <hr className="header-overflow-sep" />
               <button role="menuitem" onClick={() => { onShowShortcuts(); setOverflowOpen(false); }} title="Show keyboard shortcuts [?]">❓ Shortcuts</button>
             </div>

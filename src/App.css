@@ -1243,10 +1243,6 @@
 .hud-coords {
   opacity: 0.75;
 }
-/* Legacy coord-display kept for any external overrides */
-.coord-display {
-  display: none;
-}
 
 /* ── Minimap ─────────────────────────────────────────────── */
 .minimap-canvas {
