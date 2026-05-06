@@ -15,11 +15,18 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **Sample maps** — 26 bundled sample projects (including 2 multi-level maps totaling 28 levels) across all 13 themes for onboarding and inspiration (see [Sample Maps](#sample-maps) below)
 - **Themed canvas** — per-theme grid colors, deterministic tile color jitter, and wall depth/shadow effects for a rich, organic look; warm parchment background with pixel-sharp rendering
 - **Print mode** — toggle a high-contrast black-and-white renderer for printer-friendly output, with cross-hatched walls and stipple-shaded water
+- **Navigation rail** — vertical icon strip with contextual side panel (default layout); switch between rail and classic tabbed toolbar via the LAYOUT dropdown in the header
+- **Command palette** — fuzzy-search overlay (`Ctrl/Cmd+K`) for quick access to tools, themes, file actions, view toggles, and canvas commands
+- **Selection inspector** — docked right panel showing properties of the selected stamp/token/note, or a map summary (dimensions, tile counts, theme) when nothing is selected
+- **Generate Hub** — unified generation window (`G` shortcut) with tabbed Generate and Samples panels, archetype filtering, and all generation controls in one place
+- **Stamps** — 196 built-in stamps (40 universal + 156 per-theme across 13 themes) plus custom stamp upload (PNG/SVG/JPEG/WebP, 2 MB limit); place, move, rotate, flip, scale, adjust opacity, lock, and z-order stamps on the canvas (see [Stamps](#stamps) below)
+- **Wall & path drawing** — free-form wall segments snapped to grid edges (`W`) and smooth path/road lines (`Shift+W`) with erase modes; independent of tile grid (see [Wall & Path Tools](#wall--path-tools) below)
+- **Scene/room templates** — save a selection of tiles, notes, and stamps as a reusable template; apply templates to stamp pre-built rooms onto any map (see [Scene Templates](#scene-templates) below)
 - **Tabbed toolbar** — GM tools organized into three tabs (Draw, Tactical, Advanced) for progressive disclosure and reduced clutter
-- **Drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`, Line-of-Sight / FOV `O`, Measure `M`, Light Source `I`, GM Draw `D`
+- **Drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`, Line-of-Sight / FOV `O`, Measure `M`, Light Source `I`, GM Draw `D`, Wall `W`, Path `Shift+W`
 - **GM drawing tools** — freehand GM-only annotations with dashed line rendering, hidden from Present view in canvas, PNG, and SVG exports (`D` shortcut)
 - **Copy / Paste / Cut** — select a region with the Select tool, then `Ctrl+C` to copy, `Ctrl+X` to cut, `Ctrl+V` to paste tiles and notes at the selection origin with a live preview overlay
-- **Procedural map generation** — toolbar **🎲 Generate** opens a dialog with four algorithms (Rooms & Corridors, Open Terrain, Cavern, Village), a deterministic seed, a density slider, per-generator tile-mix sliders, corridor strategy and shape controls, optional theme room labels with procedural names, and an opt-in **Generate into selection** mode that stamps a generated map into an active selection rectangle without disturbing the rest of the map (see [Map Generation](#map-generation) below)
+- **Procedural map generation** — the **Generate Hub** (`G`) opens a unified window with four algorithms (Rooms & Corridors, Open Terrain, Cavern, Village), a deterministic seed, a density slider, per-generator tile-mix sliders, corridor strategy and shape controls, optional theme room labels with procedural names, and an opt-in **Generate into selection** mode that stamps a generated map into an active selection rectangle without disturbing the rest of the map (see [Map Generation](#map-generation) below)
 - **Edit / Present views** — header **👁 Present** toggle swaps to a player-safe toolbar with a freehand drawing pen, an eraser, fog-of-war controls, and token tools (see [Present View](#present-view) below)
 - **Fog of war** — per-cell hidden / revealed flags with a Defog brush, Reveal `V` / Hide `H` drag-rectangles, Reset Fog (re-cover the map), Clear Fog (reveal everything), an optional GM **🌫 Show Fog** preview overlay, fog edge feathering, and **Dynamic Fog** mode that auto-reveals cells visible from player tokens with 3-state rendering (hidden / explored / visible)
 - **Tokens with icon library** — drop Player, NPC, and Monster tokens (small 1×1, medium 2×2, large 3×3) onto the map with a searchable icon picker (30+ icons in 6 categories); Move Token to drag, Remove Token to delete
@@ -29,7 +36,7 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **Light sources** — place light sources on the map from preset profiles (torch, lantern, magical, custom) with adjustable radius and color; integrates with dynamic fog to illuminate cells within range (see [Light Sources](#light-sources) below)
 - **Background image import** — import a PNG/JPG as a background layer behind the tile grid for tracing existing battlemaps; adjustable opacity, scale, and position (see [Background Image](#background-image) below)
 - **Player annotations** — freehand pen with eight color swatches and Thin / Medium / Thick brush widths; per-stroke eraser and a Clear All button
-- **Zoom & pan** — `+` / `-` / `Reset` / `Fit` controls along the bottom of the map; right-click drag (or long-press on touch) to pan; mouse-wheel zoom while holding `Shift` (or with Caps Lock on); pinch-to-zoom and two-finger pan on touch devices
+- **Zoom & pan** — `+` / `-` / `Reset` / `Fit` controls along the bottom of the map; right-click drag (or long-press on touch) to pan; mouse-wheel zoom while holding `Shift` (or with Caps Lock on); pinch-to-zoom and two-finger pan on touch devices; on-canvas HUD displays current zoom level and cursor coordinates
 - **Undo / Redo** — up to 50 steps per level (`Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z`)
 - **Room notes** — numbered annotations placed on the map with labels and descriptions; in Present view, notes that sit under fog are hidden from the side panel
 - **Auto-save** — map state persisted to IndexedDB on every change (migrates legacy localStorage data automatically)
@@ -95,7 +102,7 @@ Dungeon Mapper supports multi-floor projects with level management and inter-lev
 
 ## Sample Maps
 
-The header's **Samples** button opens a gallery of 26 bundled sample projects (28 playable levels) across all 13 themes. Sample maps showcase each theme's art, tile variety, and generator capabilities — including rooms-and-corridors dungeons, villages, caverns, and open-terrain maps. Two multi-level samples (ISS Constellation and Temple of the Forgotten Sun) demonstrate stair links between levels. Loaded samples are fully editable and treated as new projects.
+The Generate Hub's **Samples** tab (open with `G`) provides a gallery of 26 bundled sample projects (28 playable levels) across all 13 themes, with archetype filtering (dungeon, village, cavern, terrain, multi-level). Sample maps showcase each theme's art, tile variety, and generator capabilities — including rooms-and-corridors dungeons, villages, caverns, and open-terrain maps. Two multi-level samples (ISS Constellation and Temple of the Forgotten Sun) demonstrate stair links between levels. Loaded samples are fully editable and treated as new projects.
 
 ## Present View
 
@@ -214,9 +221,65 @@ The toolbar's **BACKGROUND** section (Advanced tab) lets you import an image to 
 
 The background image is hidden in Print mode. It is included in PNG exports (captured with the canvas) and SVG exports (embedded as a data URL). The image data is persisted with auto-save and JSON export/import.
 
+## Stamps
+
+Dungeon Mapper includes a library of **196 built-in stamps** (40 universal + 12 per theme × 13 themes) organized across categories (furniture, hazards, terrain, creatures, etc.). Stamps are SVG-based decorative objects placed on top of the tile grid — they do not affect tile data or line-of-sight.
+
+### Placing & managing stamps
+
+- **Place** — select a stamp from the stamp picker, then click on the canvas to place it. Stamps are tile-aligned.
+- **Move** — drag a placed stamp to reposition it.
+- **Select** — click a placed stamp on the canvas to select it; a yellow dashed highlight appears.
+- **Transform controls** — the Selection Inspector (right panel) exposes rotation, flip (horizontal/vertical), scale (0.25×–4×), opacity (10–100%), lock, z-order (bring to front / send to back), and delete.
+- **Keyboard shortcuts** — `Shift+R` rotate 90° clockwise, `Shift+H` flip horizontal, `Shift+V` flip vertical, `Delete` remove.
+
+### Per-theme filtering
+
+The stamp picker provides category tabs and a **🎨 Theme** filter that shows only stamps tagged for the current map theme plus universal stamps. Switch the "All" tab to browse the full library regardless of theme.
+
+### Custom stamp upload
+
+Upload your own stamps (PNG, SVG, JPEG, or WebP; max 2 MB) via the **Custom** tab in the stamp picker. Custom stamps are stored in the project and round-trip through JSON export/import. They appear alongside built-in stamps in the picker and on the canvas.
+
+## Wall & Path Tools
+
+Free-form wall and path drawing tools produce geometric overlays independent of the tile grid:
+
+- **Wall tool** (`W`) — draw wall segments that snap to grid-edge intersections. Click to add vertices; the segment completes when you press Escape or start a new segment. Walls render as solid lines on top of the tile layer.
+- **Wall Erase** — click near a wall segment to remove it.
+- **Path tool** (`Shift+W`) — draw smooth freeform path/road lines using fractional coordinates for organic curves. Paths render with rounded caps and joins.
+- **Path Erase** — click near a path segment to remove it.
+- **Contextual settings** — when a wall or path tool is active, the Draw tab shows color and thickness/width controls.
+- **Clear all** — buttons to clear all wall segments or all path segments from the current level.
+
+Walls and paths are persisted with the map and included in all exports. They coexist with floor/wall tiles and are rendered above the tile layer but below stamps and tokens.
+
+## Scene Templates
+
+Save and reuse pre-built room layouts with the Scene/Room Template system:
+
+- **Save template** — select a region with the Select tool, then open the Templates dialog (📋 button in Advanced tab) and save the selection as a named template. Templates capture tiles, notes, and stamps within the selection.
+- **Apply template** — choose a saved template from the dialog and stamp it onto the map at the current selection position.
+- **Manage** — rename or delete templates from the dialog.
+- **Persistence** — templates are project-scoped and round-trip through JSON export/import and IndexedDB auto-save.
+
+## Navigation Rail & Layout
+
+Dungeon Mapper offers two layout modes, toggled via the **LAYOUT** dropdown in the header:
+
+- **Rail** (default) — a vertical icon strip on the left with a contextual side panel that shows tool options for the active rail button. Compact and efficient for desktop use.
+- **Tabs** — the classic tabbed toolbar (Draw / Tactical / Advanced) in a wider left sidebar.
+
+The layout preference is saved to localStorage and restored on next visit. On mobile (≤768px), the bottom toolbar is always used regardless of this setting.
+
 ## Map Generation
 
-The toolbar **🎲 Generate** button (in the **THEME** section of the Draw tab) opens a procedural map-generation dialog. Generated maps use the standard tile types (Floor, Wall, Door, Secret Door, Locked Door, Trapped Door, Portcullis, Archway, Barricade, Stairs, Water, Pillar, Trap, Treasure, Start) so the result is rendered in whatever theme the map currently uses — switching the theme afterwards restyles the generated map without losing any tile data.
+The **Generate Hub** (`G` shortcut, or the rail icon / header menu) is a unified window with two tabs:
+
+- **Generate** — procedural map generation with four algorithms and full parameter controls.
+- **Samples** — a gallery of 26 bundled sample projects with archetype filtering (dungeon, village, cavern, terrain, multi-level).
+
+Generated maps use the standard tile types (Floor, Wall, Door, Secret Door, Locked Door, Trapped Door, Portcullis, Archway, Barricade, Stairs, Water, Pillar, Trap, Treasure, Start) so the result is rendered in whatever theme the map currently uses — switching the theme afterwards restyles the generated map without losing any tile data.
 
 ### Algorithms
 
@@ -277,7 +340,12 @@ the same registry these shortcuts are defined in.
 | `M` | Measure / Distance tool — click and drag to measure distances |
 | `I` | Light Source tool — click a cell to place a light source (Illuminate) |
 | `D` | GM Draw tool — freehand annotations visible only in Edit mode (dashed lines, hidden from Present view) |
+| `W` | Wall drawing tool — draw walls along grid edges |
+| `Shift+W` | Path/road drawing tool — draw free-form paths |
 | `K` | Stair Link tool — click stairs to link between levels |
+| `Shift+R` | Rotate selected stamp 90° clockwise |
+| `Shift+H` | Flip selected stamp horizontally |
+| `Delete` | Delete selected placed stamp |
 
 ### View
 
@@ -318,7 +386,7 @@ the same registry these shortcuts are defined in.
 
 | Shortcut | Action |
 | --- | --- |
-| `G` | Open the Generate Map dialog (Edit mode) |
+| `G` | Open the Generate Hub (Edit mode) |
 | `Ctrl+Alt+N` *or* `Ctrl+N` | New map (with confirmation) |
 | `Ctrl+O` | Import map from JSON |
 | `Ctrl+S` | Export map as JSON |
@@ -331,6 +399,7 @@ the same registry these shortcuts are defined in.
 | Shortcut | Action |
 | --- | --- |
 | `?` | Show the keyboard-shortcuts overlay |
+| `Ctrl+K` *or* `Cmd+K` | Open command palette (fuzzy-search actions) |
 
 > Some browsers reserve `Ctrl+N`, `Ctrl+O`, and `Ctrl+S` for their own
 > "new window", "open file", and "save page" actions and will not deliver
@@ -380,8 +449,8 @@ editor confidently:
   clear screen-reader identification. Form inputs in note editing have
   explicit `aria-label` values. All range sliders and color pickers in
   the toolbar include descriptive `aria-label` text.
-- **Modal dialogs.** All dialogs (Export, Generate Map, Icon Picker,
-  Shortcuts Help) use `role="dialog"` and `aria-modal="true"` with
+- **Modal dialogs.** All dialogs (Export, Generate Hub, Icon Picker,
+  Shortcuts Help, Scene Templates, Command Palette) use `role="dialog"` and `aria-modal="true"` with
   `aria-label` or `aria-labelledby`. Global shortcuts are automatically
   suppressed while a modal is open, and `Escape` dismisses any dialog.
 - **Print mode.** A high-contrast monochrome rendering of the map is
@@ -456,7 +525,7 @@ Dungeon Mapper can be installed as a standalone app on desktop and mobile device
 - **Offline support** — all assets are cached by a service worker (Workbox) for full offline use.
 - **Standalone mode** — runs without browser chrome when installed, with proper safe-area handling for notched devices.
 
-## Development
+## Development & Testing
 
 ```bash
 npm install
@@ -464,16 +533,11 @@ npm run dev      # development server
 npm run build    # production build (tsc + vite)
 npm run preview  # preview the production build
 npm run lint     # ESLint
-```
-
-## Development & Testing
-
-The project uses [Vitest](https://vitest.dev/) with [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) and jsdom for unit and component testing.
-
-```bash
-npm test            # run the full test suite (one-shot, CI-friendly)
+npm test         # run the full test suite (one-shot, CI-friendly)
 npm run test:watch  # run tests in watch mode during development
 ```
+
+The project uses [Vitest](https://vitest.dev/) with [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) and jsdom for unit and component testing.
 
 **Test structure:**
 
