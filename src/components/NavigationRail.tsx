@@ -47,7 +47,6 @@ interface NavigationRailProps {
   gmShowFog: boolean;
   onToggleGmShowFog: () => void;
   onOpenGenerateMap: () => void;
-  onOpenPremadeMaps: () => void;
   // Shape marker tool settings
   markerShape: MarkerShape;
   markerColor: string;
@@ -141,6 +140,18 @@ const NavigationRail: React.FC<NavigationRailProps> = (props) => {
             <span className="nav-rail-label">{item.label}</span>
           </button>
         ))}
+        <hr className="nav-rail-sep" aria-hidden="true" />
+        <button
+          type="button"
+          className="nav-rail-btn"
+          onClick={props.onOpenGenerateMap}
+          title="Generate Hub — procedural generation and sample maps [G]"
+          aria-label="Open Generate Hub"
+          aria-keyshortcuts="G"
+        >
+          <span className="nav-rail-icon" aria-hidden="true">🗺️</span>
+          <span className="nav-rail-label">Generate</span>
+        </button>
       </div>
 
       {/* Contextual sub-panel — swaps based on selected rail mode */}
@@ -162,8 +173,6 @@ const NavigationRail: React.FC<NavigationRailProps> = (props) => {
             preserveOnThemeSwitch={props.preserveOnThemeSwitch}
             onTogglePreserveOnThemeSwitch={props.onTogglePreserveOnThemeSwitch}
             onOpenCustomThemeBuilder={props.onOpenCustomThemeBuilder}
-            onOpenGenerateMap={props.onOpenGenerateMap}
-            onOpenPremadeMaps={props.onOpenPremadeMaps}
             selectedStampId={props.selectedStampId}
             onSelectStamp={props.onSelectStamp}
             onClearStamps={props.onClearStamps}

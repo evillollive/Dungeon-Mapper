@@ -19,8 +19,6 @@ interface ToolbarProps {
   fogEnabled: boolean;
   gmShowFog: boolean;
   onToggleGmShowFog: () => void;
-  onOpenGenerateMap: () => void;
-  onOpenPremadeMaps: () => void;
   // Shape marker tool settings
   markerShape: MarkerShape;
   markerColor: string;
@@ -150,8 +148,6 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             preserveOnThemeSwitch={props.preserveOnThemeSwitch}
             onTogglePreserveOnThemeSwitch={props.onTogglePreserveOnThemeSwitch}
             onOpenCustomThemeBuilder={props.onOpenCustomThemeBuilder}
-            onOpenGenerateMap={props.onOpenGenerateMap}
-            onOpenPremadeMaps={props.onOpenPremadeMaps}
             selectedStampId={props.selectedStampId}
             onSelectStamp={props.onSelectStamp}
             onClearStamps={props.onClearStamps}

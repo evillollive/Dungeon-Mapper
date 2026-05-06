@@ -16,8 +16,6 @@ interface DrawToolsTabProps {
   preserveOnThemeSwitch: boolean;
   onTogglePreserveOnThemeSwitch: () => void;
   onOpenCustomThemeBuilder: () => void;
-  onOpenGenerateMap: () => void;
-  onOpenPremadeMaps: () => void;
   // Stamp tool integration
   selectedStampId: string | null;
   onSelectStamp: (stampId: string) => void;
@@ -94,7 +92,7 @@ function TilePreview({
 const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   activeTool, activeTile, themeId, customThemes, onSetTool, onSetTile,
   onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
-  onOpenCustomThemeBuilder, onOpenGenerateMap, onOpenPremadeMaps,
+  onOpenCustomThemeBuilder,
   selectedStampId, onSelectStamp, onClearStamps,
   customStamps, onSaveCustomStamp, onDeleteCustomStamp,
   wallColor, wallThickness, onSetWallColor, onSetWallThickness,
@@ -278,28 +276,6 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
             style={{ margin: 0 }}
           />
         </label>
-        <button
-          type="button"
-          className="tool-btn"
-          onClick={onOpenGenerateMap}
-          title="Procedurally generate a random map (dungeon, terrain, cavern, …) in the current theme. Replaces the current map; tile / fog changes can be undone. [G]"
-          aria-label="Generate map"
-          aria-keyshortcuts="G"
-        >
-          <span className="tool-icon" aria-hidden="true">🎲</span>
-          <span className="tool-name">Generate</span>
-          <span className="tool-shortcut" aria-hidden="true">[G]</span>
-        </button>
-        <button
-          type="button"
-          className="tool-btn"
-          onClick={onOpenPremadeMaps}
-          title="Browse and load a ready-to-use sample map with themed names, tokens, light sources, and fog-of-war"
-          aria-label="Load sample map"
-        >
-          <span className="tool-icon" aria-hidden="true">📦</span>
-          <span className="tool-name">Samples</span>
-        </button>
       </div>
 
       <div className="toolbar-section">

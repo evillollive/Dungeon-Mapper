@@ -8,8 +8,7 @@ import NotesPanel from './components/NotesPanel';
 import InitiativePanel from './components/InitiativePanel';
 import IconPicker from './components/IconPicker';
 import MapHeader, { type MapHeaderHandle } from './components/MapHeader';
-import GenerateMapDialog from './components/GenerateMapDialog';
-import PremadeMapsDialog from './components/PremadeMapsDialog';
+import GenerateHub from './components/GenerateHub';
 import CustomThemeDialog from './components/CustomThemeDialog';
 import ShortcutsHelp from './components/ShortcutsHelp';
 import ExportDialog from './components/ExportDialog';
@@ -212,8 +211,7 @@ function App() {
     loadInitialPreserveOnThemeSwitch
   );
   const [gmShowFog, setGmShowFog] = useState<boolean>(loadInitialGmShowFog);
-  const [showGenerateDialog, setShowGenerateDialog] = useState<boolean>(false);
-  const [showPremadeMapsDialog, setShowPremadeMapsDialog] = useState<boolean>(false);
+  const [showGenerateHub, setShowGenerateHub] = useState<boolean>(false);
   const [showCustomThemeDialog, setShowCustomThemeDialog] = useState<boolean>(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState<boolean>(false);
   const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
@@ -550,8 +548,8 @@ function App() {
     [map.tiles, map.notes, map.tokens]
   );
 
-  const handleOpenGenerateMap = useCallback(() => setShowGenerateDialog(true), []);
-  const handleCancelGenerateMap = useCallback(() => setShowGenerateDialog(false), []);
+  const handleOpenGenerateMap = useCallback(() => setShowGenerateHub(true), []);
+  const handleCancelGenerateMap = useCallback(() => setShowGenerateHub(false), []);
   const handleGenerateMap = useCallback(
     (
       result: GeneratedMap,
@@ -565,7 +563,7 @@ function App() {
       } else {
         generateMap(result.tiles, result.width, result.height, result.notes, suggestedName);
       }
-      setShowGenerateDialog(false);
+      setShowGenerateHub(false);
       announce('Map generated');
     },
     [generateMap, applyGeneratedRegion, announce]
@@ -910,8 +908,8 @@ function App() {
 
     // Dialogs / actions
     cmds.push(
-      { id: 'dialog.generate', label: 'Generate Map…', category: 'File', shortcut: 'G', action: () => setShowGenerateDialog(true) },
-      { id: 'dialog.premade', label: 'Sample Maps…', category: 'File', action: () => setShowPremadeMapsDialog(true) },
+      { id: 'dialog.generate', label: 'Generate Hub…', category: 'File', shortcut: 'G', action: () => setShowGenerateHub(true) },
+      { id: 'dialog.premade', label: 'Sample Maps…', category: 'File', action: () => setShowGenerateHub(true) },
       { id: 'dialog.templates', label: 'Scene Templates…', category: 'File', action: () => setShowSceneTemplateDialog(true) },
       { id: 'dialog.customTheme', label: 'Custom Theme Builder…', category: 'Theme', action: () => setShowCustomThemeDialog(true) },
       { id: 'dialog.shortcuts', label: 'Keyboard Shortcuts', category: 'Help', shortcut: '?', action: () => setShowShortcutsHelp(true) },
@@ -978,6 +976,7 @@ function App() {
         onToggleViewMode={switchViewMode}
         onShowShortcuts={() => setShowShortcutsHelp(true)}
         onOpenExportDialog={() => setShowExportDialog(true)}
+        onOpenGenerateHub={handleOpenGenerateMap}
       />
       <LevelTabs
         levels={project.levels}
@@ -1051,7 +1050,6 @@ function App() {
               gmShowFog={gmShowFog}
               onToggleGmShowFog={handleToggleGmShowFogAnnounced}
               onOpenGenerateMap={handleOpenGenerateMap}
-              onOpenPremadeMaps={() => setShowPremadeMapsDialog(true)}
               markerShape={markerShape}
               markerColor={markerColor}
               markerSize={markerSize}
@@ -1129,8 +1127,6 @@ function App() {
               fogEnabled={fogEnabled}
               gmShowFog={gmShowFog}
               onToggleGmShowFog={handleToggleGmShowFogAnnounced}
-              onOpenGenerateMap={handleOpenGenerateMap}
-              onOpenPremadeMaps={() => setShowPremadeMapsDialog(true)}
               markerShape={markerShape}
               markerColor={markerColor}
               markerSize={markerSize}
@@ -1419,8 +1415,8 @@ function App() {
       >
         {statusMessage}
       </div>
-      {showGenerateDialog && viewMode === 'gm' && (
-        <GenerateMapDialog
+      {showGenerateHub && viewMode === 'gm' && (
+        <GenerateHub
           themeId={themeId}
           initialWidth={map.meta.width}
           initialHeight={map.meta.height}
@@ -1428,15 +1424,9 @@ function App() {
           selection={selection}
           onCancel={handleCancelGenerateMap}
           onGenerate={handleGenerateMap}
-        />
-      )}
-      {showPremadeMapsDialog && (
-        <PremadeMapsDialog
-          currentHasContent={hasExistingContent}
-          onCancel={() => setShowPremadeMapsDialog(false)}
           onLoadProject={loaded => {
             loadProjectData(loaded);
-            setShowPremadeMapsDialog(false);
+            setShowGenerateHub(false);
             announce('Sample map loaded');
           }}
         />
