@@ -185,6 +185,54 @@
   flex-wrap: wrap;
 }
 
+/* ── Header overflow menu ─────────────────────────────── */
+.header-overflow-wrap {
+  position: relative;
+}
+.header-overflow-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: #f4f1ea;
+  border: 1px solid #c2bbab;
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  z-index: 50;
+  min-width: 160px;
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+}
+.header-overflow-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #2a2620;
+  font-size: var(--fs-13);
+  padding: 6px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.header-overflow-menu button:hover {
+  background: #ece6d6;
+  color: #8a3a3a;
+}
+.header-overflow-menu button.danger {
+  color: #8a3a3a;
+}
+.header-overflow-menu button.danger:hover {
+  background: #f5e6e6;
+}
+.header-overflow-sep {
+  border: none;
+  border-top: 1px solid #d4cfc0;
+  margin: 4px 0;
+}
+
 .app-title {
   color: #8a3a3a;
   font-weight: bold;
@@ -2032,14 +2080,13 @@
     flex: 1 1 auto;
     justify-content: flex-end;
   }
-  /* Hide less-used header buttons on tablet portrait */
+  /* Hide less-used header buttons on tablet portrait — overflow menu handles the rest */
   .header-right .header-btn:nth-child(n+6) {
     display: none;
   }
-
-  /* Keep the last button (Shortcuts) visible */
-  .header-right .header-btn:last-of-type {
-    display: inline-flex;
+  /* Always keep the overflow menu visible */
+  .header-overflow-wrap {
+    display: flex;
   }
 }
 
@@ -2067,12 +2114,12 @@
     display: none;
   }
 
-  /* Only show essential header buttons */
+  /* Only show essential header buttons on phone */
   .header-right .header-btn:nth-child(n+3) {
     display: none;
   }
-  .header-right .header-btn:last-of-type {
-    display: inline-flex;
+  .header-overflow-wrap {
+    display: flex;
   }
 
   /* Level tabs: smaller padding */

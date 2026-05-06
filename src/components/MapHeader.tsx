@@ -1,4 +1,4 @@
-import React, { useRef, forwardRef, useImperativeHandle, useCallback } from 'react';
+import React, { useRef, forwardRef, useImperativeHandle, useCallback, useState, useEffect } from 'react';
 import type { DungeonMap, DungeonProject } from '../types/map';
 import { exportProjectJSON, importProjectJSON, exportMapPNG } from '../utils/export';
 
@@ -55,6 +55,20 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
   layoutDensity, onSetLayoutDensity,
 }, ref) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [overflowOpen, setOverflowOpen] = useState(false);
+  const overflowRef = useRef<HTMLDivElement>(null);
+
+  // Close overflow menu when clicking outside.
+  useEffect(() => {
+    if (!overflowOpen) return;
+    const handler = (e: MouseEvent) => {
+      if (overflowRef.current && !overflowRef.current.contains(e.target as Node)) {
+        setOverflowOpen(false);
+      }
+    };
+    document.addEventListener('pointerdown', handler, true);
+    return () => document.removeEventListener('pointerdown', handler, true);
+  }, [overflowOpen]);
 
   const handleClear = useCallback(() => {
     if (window.confirm('Clear the entire map? This cannot be undone.')) {
@@ -205,22 +219,33 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
         <button type="button" className="header-btn" onClick={onUndo} disabled={!canUndo} title="Undo [Ctrl+Z]" aria-label="Undo" aria-keyshortcuts="Control+Z">↩ Undo</button>
         <button type="button" className="header-btn" onClick={onRedo} disabled={!canRedo} title="Redo [Ctrl+Y]" aria-label="Redo" aria-keyshortcuts="Control+Y Control+Shift+Z">↪ Redo</button>
         <button type="button" className="header-btn" onClick={handleNew} title="New Map [Ctrl+Alt+N]" aria-label="New map" aria-keyshortcuts="Control+Alt+N">New</button>
-        <button type="button" className="header-btn danger" onClick={handleClear} title="Clear Map" aria-label="Clear map">Clear</button>
-        <button type="button" className="header-btn" onClick={handleExportJSON} title="Export JSON [Ctrl+S]" aria-label="Export map as JSON" aria-keyshortcuts="Control+S">↓ JSON</button>
-        <button type="button" className="header-btn" onClick={handleExportPNG} title="Export PNG [Ctrl+Shift+S]" aria-label="Export map as PNG image" aria-keyshortcuts="Control+Shift+S">↓ PNG</button>
-        <button type="button" className="header-btn" onClick={onExportSVG} title="Export SVG [Ctrl+Alt+S]" aria-label="Export map as SVG" aria-keyshortcuts="Control+Alt+S">↓ SVG</button>
-        <button type="button" className="header-btn" onClick={onOpenExportDialog} title="Print-Optimized Export — high-DPI PNG with page tiling [Ctrl+Shift+P]" aria-label="Print-optimized export" aria-keyshortcuts="Control+Shift+P">🖨 Print Export</button>
-        <button type="button" className="header-btn" onClick={() => fileInputRef.current?.click()} title="Import JSON [Ctrl+O]" aria-label="Import map from JSON file" aria-keyshortcuts="Control+O">↑ Import</button>
-        <button
-          type="button"
-          className="header-btn"
-          onClick={onShowShortcuts}
-          title="Show keyboard shortcuts [?]"
-          aria-label="Show keyboard shortcuts"
-          aria-keyshortcuts="?"
-        >
-          ❓ Shortcuts
-        </button>
+        {/* ── Overflow menu: Export / Import / Print Export / Clear / Shortcuts ── */}
+        <div className="header-overflow-wrap" ref={overflowRef}>
+          <button
+            type="button"
+            className="header-btn"
+            onClick={() => setOverflowOpen(o => !o)}
+            aria-label="More actions"
+            aria-expanded={overflowOpen}
+            aria-haspopup="true"
+            title="More actions — Export, Import, Clear, Shortcuts"
+          >
+            ⋮ More
+          </button>
+          {overflowOpen && (
+            <div className="header-overflow-menu" role="menu" aria-label="More actions">
+              <button role="menuitem" onClick={() => { handleExportJSON(); setOverflowOpen(false); }} title="Export JSON [Ctrl+S]">↓ JSON</button>
+              <button role="menuitem" onClick={() => { handleExportPNG(); setOverflowOpen(false); }} title="Export PNG [Ctrl+Shift+S]">↓ PNG</button>
+              <button role="menuitem" onClick={() => { onExportSVG(); setOverflowOpen(false); }} title="Export SVG [Ctrl+Alt+S]">↓ SVG</button>
+              <button role="menuitem" onClick={() => { onOpenExportDialog(); setOverflowOpen(false); }} title="Print-Optimized Export [Ctrl+Shift+P]">🖨 Print Export</button>
+              <hr className="header-overflow-sep" />
+              <button role="menuitem" onClick={() => { fileInputRef.current?.click(); setOverflowOpen(false); }} title="Import JSON [Ctrl+O]">↑ Import</button>
+              <button role="menuitem" className="danger" onClick={() => { handleClear(); setOverflowOpen(false); }} title="Clear Map">🗑 Clear</button>
+              <hr className="header-overflow-sep" />
+              <button role="menuitem" onClick={() => { onShowShortcuts(); setOverflowOpen(false); }} title="Show keyboard shortcuts [?]">❓ Shortcuts</button>
+            </div>
+          )}
+        </div>
         <input
           ref={fileInputRef}
           type="file"
