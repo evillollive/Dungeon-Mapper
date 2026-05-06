@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-06
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -505,15 +505,15 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - ~~8.3.2 — Persistent zoom + cursor-coordinate HUD overlaid bottom-left of canvas~~ ✅
 - ~~8.3.3 — Header simplification: collapse Export / Print / Samples / Help into one overflow menu~~ ✅
 
-**8.4 — Generate Hub (dedicated window)**
+~~**8.4 — Generate Hub (dedicated window)**~~ ✅ COMPLETE
 
 *Today the Generate and Samples buttons live inside the Draw tab (`DrawToolsTab.tsx`), which buries map-creation flows inside an unrelated tool category and gives users no preview of what they're getting. Competitors (Dungeondraft, DungeonFog, Worldographer) expose generation and template browsing as a dedicated surface. This sub-phase pulls those flows out into their own window/tab.*
 
-- 8.4.1 — New **Generate Hub** surface (full-size dialog or dockable window) that combines procedural generation and the premade map gallery in one place — left side picks generator type or premade archetype, right side previews the result with all parameters
-- 8.4.2 — All `GenerateMapDialog` controls move into the hub, including the **"Fill empty space with background tile"** toggle — which remains **on by default** so generated maps never read as floating geometry; user must explicitly opt out
-- 8.4.3 — All `PremadeMapsDialog` browsing moves into the hub, with archetype filtering surfaced from Phase 5.4's tagging
-- 8.4.4 — Reachable from the navigation rail (8.1) as its own icon, from the header File menu, and via the existing [G] shortcut
-- 8.4.5 — Remove the `🎲 Generate` and `📦 Samples` buttons from `DrawToolsTab` once the hub ships; Draw tab returns to drawing tools only
+- ~~8.4.1 — New **Generate Hub** surface (full-size dialog or dockable window) that combines procedural generation and the premade map gallery in one place — left side picks generator type or premade archetype, right side previews the result with all parameters~~ ✅
+- ~~8.4.2 — All `GenerateMapDialog` controls move into the hub, including the **"Fill empty space with background tile"** toggle — which remains **on by default** so generated maps never read as floating geometry; user must explicitly opt out~~ ✅
+- ~~8.4.3 — All `PremadeMapsDialog` browsing moves into the hub, with archetype filtering surfaced from Phase 5.4's tagging~~ ✅
+- ~~8.4.4 — Reachable from the navigation rail (8.1) as its own icon, from the header File menu, and via the existing [G] shortcut~~ ✅
+- ~~8.4.5 — Remove the `🎲 Generate` and `📦 Samples` buttons from `DrawToolsTab` once the hub ships; Draw tab returns to drawing tools only~~ ✅
 
 📘 **README checkpoint #2:** Screenshots/GIFs of new UI layout *(includes the Generate Hub)*.
 

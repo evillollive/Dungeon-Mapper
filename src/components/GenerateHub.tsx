@@ -82,7 +82,7 @@ const loadInitialDialogScale = (): number => {
 };
 
 const MIN_SELECTION_DIM = 6;
-const ALL_THEMES = 'all';
+const ALL_FILTER = 'all';
 
 const HUB_TAB_STORAGE_KEY = 'dungeon-mapper:generate-hub-tab';
 
@@ -554,14 +554,14 @@ const SamplesPanel: React.FC<SamplesPanelProps> = ({
     return Array.from(set).sort();
   }, []);
 
-  const [themeFilter, setThemeFilter] = useState<string>(ALL_THEMES);
-  const [categoryFilter, setCategoryFilter] = useState<string>(ALL_THEMES);
+  const [themeFilter, setThemeFilter] = useState<string>(ALL_FILTER);
+  const [categoryFilter, setCategoryFilter] = useState<string>(ALL_FILTER);
   const [confirmLoadId, setConfirmLoadId] = useState<string | null>(null);
 
   const filtered = useMemo(
     () => PREMADE_MAP_SUMMARIES.filter(s =>
-      (themeFilter === ALL_THEMES || s.themeId === themeFilter) &&
-      (categoryFilter === ALL_THEMES || s.category === categoryFilter)
+      (themeFilter === ALL_FILTER || s.themeId === themeFilter) &&
+      (categoryFilter === ALL_FILTER || s.category === categoryFilter)
     ),
     [themeFilter, categoryFilter]
   );
@@ -605,7 +605,7 @@ const SamplesPanel: React.FC<SamplesPanelProps> = ({
               setConfirmLoadId(null);
             }}
           >
-            <option value={ALL_THEMES}>All themes</option>
+            <option value={ALL_FILTER}>All themes</option>
             {themes.map(t => (
               <option key={t.id} value={t.id}>{t.label}</option>
             ))}
@@ -620,7 +620,7 @@ const SamplesPanel: React.FC<SamplesPanelProps> = ({
               setConfirmLoadId(null);
             }}
           >
-            <option value={ALL_THEMES}>All archetypes</option>
+            <option value={ALL_FILTER}>All archetypes</option>
             {categories.map(c => (
               <option key={c} value={c}>{c}</option>
             ))}
