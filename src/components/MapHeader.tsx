@@ -28,6 +28,8 @@ interface MapHeaderProps {
   onShowShortcuts: () => void;
   /** Open the print-optimized export dialog. */
   onOpenExportDialog: () => void;
+  /** Open the Generate Hub (procedural generation + sample maps). */
+  onOpenGenerateHub: () => void;
   /** Layout density: 'rail' (icon rail + panel) or 'tabs' (classic tab toolbar). */
   layoutDensity: 'rail' | 'tabs';
   onSetLayoutDensity: (density: 'rail' | 'tabs') => void;
@@ -51,7 +53,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
   map, project, onSetName, onResize, onSetTileSize, onClear, onNew, onLoadProject,
   onExportSVG, onUndo, onRedo, canUndo, canRedo, printMode, onTogglePrintMode,
   uiScale, uiScaleOptions, onSetUIScale, getCanvas,
-  viewMode, onToggleViewMode, onShowShortcuts, onOpenExportDialog,
+  viewMode, onToggleViewMode, onShowShortcuts, onOpenExportDialog, onOpenGenerateHub,
   layoutDensity, onSetLayoutDensity,
 }, ref) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -239,6 +241,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
               <button role="menuitem" onClick={() => { onExportSVG(); setOverflowOpen(false); }} title="Export SVG [Ctrl+Alt+S]">↓ SVG</button>
               <button role="menuitem" onClick={() => { onOpenExportDialog(); setOverflowOpen(false); }} title="Print-Optimized Export [Ctrl+Shift+P]">🖨 Print Export</button>
               <hr className="header-overflow-sep" />
+              <button role="menuitem" onClick={() => { onOpenGenerateHub(); setOverflowOpen(false); }} title="Generate Hub — procedural generation and sample maps [G]">🗺️ Generate Hub</button>
               <button role="menuitem" onClick={() => { fileInputRef.current?.click(); setOverflowOpen(false); }} title="Import JSON [Ctrl+O]">↑ Import</button>
               <button role="menuitem" className="danger" onClick={() => { handleClear(); setOverflowOpen(false); }} title="Clear Map" aria-label="Clear entire map">🗑 Clear</button>
               <hr className="header-overflow-sep" />
