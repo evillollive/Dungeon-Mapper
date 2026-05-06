@@ -14,6 +14,7 @@
      that the entire chrome can be made larger/easier to read without
      touching per-component CSS. The numeric suffix refers to the
      historical logical px size, not the rendered size. */
+  --fs-9: calc(9px * var(--ui-base-scale) * var(--ui-scale));
   --fs-10: calc(10px * var(--ui-base-scale) * var(--ui-scale));
   --fs-11: calc(11px * var(--ui-base-scale) * var(--ui-scale));
   --fs-12: calc(12px * var(--ui-base-scale) * var(--ui-scale));
