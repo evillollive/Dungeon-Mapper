@@ -28,6 +28,9 @@ interface MapHeaderProps {
   onShowShortcuts: () => void;
   /** Open the print-optimized export dialog. */
   onOpenExportDialog: () => void;
+  /** Layout density: 'rail' (icon rail + panel) or 'tabs' (classic tab toolbar). */
+  layoutDensity: 'rail' | 'tabs';
+  onSetLayoutDensity: (density: 'rail' | 'tabs') => void;
 }
 
 /**
@@ -49,6 +52,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
   onExportSVG, onUndo, onRedo, canUndo, canRedo, printMode, onTogglePrintMode,
   uiScale, uiScaleOptions, onSetUIScale, getCanvas,
   viewMode, onToggleViewMode, onShowShortcuts, onOpenExportDialog,
+  layoutDensity, onSetLayoutDensity,
 }, ref) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -160,6 +164,18 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
           {uiScaleOptions.map(s => (
             <option key={s} value={s}>{Math.round(s * 100)}%</option>
           ))}
+        </select>
+
+        <label className="header-label" style={{ marginLeft: 8 }}>LAYOUT:</label>
+        <select
+          className="grid-select"
+          value={layoutDensity}
+          onChange={e => onSetLayoutDensity(e.target.value as 'rail' | 'tabs')}
+          title="Layout density — switch between icon rail and classic tab toolbar"
+          aria-label="Layout density"
+        >
+          <option value="rail">Rail</option>
+          <option value="tabs">Tabs</option>
         </select>
       </div>
 

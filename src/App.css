@@ -254,7 +254,86 @@
   color: #8a3a3a;
 }
 
-/* ── Toolbar ─────────────────────────────────────────────── */
+/* ── Navigation Rail (Phase 8.1) ─────────────────────────── */
+/* Rail layout: narrow icon strip + wider contextual panel, side by side */
+.app-body > nav > .nav-rail-container {
+  flex: 1;
+  min-height: 0;
+}
+
+.nav-rail-container {
+  display: flex;
+  flex-direction: row;
+  height: 100%;
+  background: #ffffff;
+  border-right: 2px solid #8a7f66;
+  overflow: hidden;
+}
+
+/* Icon rail — narrow vertical strip */
+.nav-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  background: #ece6d6;
+  border-right: 1px solid #c2bbab;
+  flex-shrink: 0;
+  width: 52px;
+  padding-top: 2px;
+}
+
+.nav-rail-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  padding: 10px 4px 8px;
+  font-size: var(--fs-10);
+  font-weight: 500;
+  color: #6a6258;
+  background: transparent;
+  border: none;
+  border-left: 3px solid transparent;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.nav-rail-btn:hover {
+  background: #f4f1ea;
+  color: #2a2620;
+}
+
+.nav-rail-btn.active {
+  color: #8a3a3a;
+  border-left-color: #8a3a3a;
+  background: #ffffff;
+  font-weight: 600;
+}
+
+.nav-rail-icon {
+  font-size: 1.25em;
+  line-height: 1;
+}
+
+.nav-rail-label {
+  font-size: var(--fs-9, 9px);
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+/* Contextual sub-panel beside the rail */
+.nav-rail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 6px;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ── Toolbar (classic tabs) ──────────────────────────────── */
 /* The left-side toolbar is wrapped in a <nav> for accessibility. As a
    grid item the <nav> stretches to the row height, but without these
    constraints its child .toolbar would grow to its content height and
@@ -1718,6 +1797,9 @@
 .nav-collapsed > .toolbar {
   display: none;
 }
+.nav-collapsed > .nav-rail-container {
+  display: none;
+}
 
 /* ── Responsive layout: right panel drawer ───────────────── */
 .right-panel-drawer {
@@ -1756,6 +1838,11 @@
   /* Show panel toggle buttons */
   .toolbar-toggle { display: flex; }
   .right-panel-toggle { display: flex; }
+
+  /* Navigation rail: hide text labels at tablet size */
+  .nav-rail-label { display: none; }
+  .nav-rail { width: 40px; }
+  .nav-rail-btn { padding: 10px 2px 8px; }
 
   /* Header: hide verbose labels, keep icons */
   .header-center .header-label {

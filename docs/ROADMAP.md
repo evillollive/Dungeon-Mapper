@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
-> **Last updated:** 2026-05-03
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Last updated:** 2026-05-06
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -489,11 +489,11 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 
 *Modernise the interface to match proven competitor patterns (Dungeondraft-style: left icon rail → contextual panel → docked right inspector). Existing 4-tab toolbar preserved as a fallback density mode.*
 
-**8.1 — Navigation Rail**
-- 8.1.1 — Left icon-rail component (vertical strip of mode icons: Draw, Tactical, Generate, Advanced — same groupings as today)
-- 8.1.2 — Contextual sub-panel that swaps based on selected rail mode (replaces center area of current toolbar)
-- 8.1.3 — Layout density toggle in Settings: **"Rail (new)" / "Tabs (classic)"** — old 4-tab toolbar preserved as fallback
-- 8.1.4 — Mobile: rail collapses to existing bottom toolbar (no change to MobileToolbar)
+**~~8.1 — Navigation Rail~~** ✅ COMPLETE
+- ~~8.1.1 — Left icon-rail component (vertical strip of mode icons: Draw, Tactical, Generate, Advanced — same groupings as today)~~ ✅
+- ~~8.1.2 — Contextual sub-panel that swaps based on selected rail mode (replaces center area of current toolbar)~~ ✅
+- ~~8.1.3 — Layout density toggle in Settings: **"Rail (new)" / "Tabs (classic)"** — old 4-tab toolbar preserved as fallback~~ ✅
+- ~~8.1.4 — Mobile: rail collapses to existing bottom toolbar (no change to MobileToolbar)~~ ✅
 
 **8.2 — Docked Inspector**
 - 8.2.1 — New `<SelectionInspector>` component, docked to right panel, shows properties of currently selected stamp / token / note / light

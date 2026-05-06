@@ -1,6 +1,7 @@
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import MapCanvas, { type MapCanvasHandle } from './components/MapCanvas';
 import Toolbar from './components/Toolbar';
+import NavigationRail from './components/NavigationRail';
 import PlayerToolbar from './components/PlayerToolbar';
 import MobileToolbar from './components/MobileToolbar';
 import NotesPanel from './components/NotesPanel';
@@ -40,6 +41,18 @@ const MAX_UI_SCALE = UI_SCALE_OPTIONS[UI_SCALE_OPTIONS.length - 1];
 const PRESERVE_THEME_STORAGE_KEY = 'dungeon-mapper:preserve-on-theme-switch';
 const VIEW_MODE_STORAGE_KEY = 'dungeon-mapper:view-mode';
 const GM_SHOW_FOG_STORAGE_KEY = 'dungeon-mapper:gm-show-fog';
+const LAYOUT_DENSITY_STORAGE_KEY = 'dungeon-mapper:layout-density';
+
+export type LayoutDensity = 'rail' | 'tabs';
+
+function loadInitialLayoutDensity(): LayoutDensity {
+  if (typeof window === 'undefined') return 'rail';
+  try {
+    const stored = window.localStorage.getItem(LAYOUT_DENSITY_STORAGE_KEY);
+    if (stored === 'rail' || stored === 'tabs') return stored;
+  } catch { /* ignore */ }
+  return 'rail';
+}
 
 // Stable no-op handlers for the player-view notes panel — defined at module
 // scope so we don't allocate fresh callbacks on every render.
@@ -192,6 +205,7 @@ function App() {
   const [printMode, setPrintMode] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(loadInitialViewMode);
   const [uiScale, setUIScale] = useState<number>(loadInitialUIScale);
+  const [layoutDensity, setLayoutDensity] = useState<LayoutDensity>(loadInitialLayoutDensity);
   const [preserveOnThemeSwitch, setPreserveOnThemeSwitch] = useState<boolean>(
     loadInitialPreserveOnThemeSwitch
   );
@@ -632,6 +646,13 @@ function App() {
     }
   }, [uiScale]);
 
+  // Persist the layout density preference.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(LAYOUT_DENSITY_STORAGE_KEY, layoutDensity);
+    } catch { /* ignore */ }
+  }, [layoutDensity]);
+
   // When a note is selected from the panel, center the map viewport on it.
   const handleSelectNote = useCallback((id: number | null) => {
     setSelectedNoteId(id);
@@ -866,6 +887,8 @@ function App() {
         uiScale={uiScale}
         uiScaleOptions={UI_SCALE_OPTIONS}
         onSetUIScale={setUIScale}
+        layoutDensity={layoutDensity}
+        onSetLayoutDensity={setLayoutDensity}
         getCanvas={() => canvasRef.current?.getCanvas() ?? null}
         viewMode={viewMode}
         onToggleViewMode={switchViewMode}
@@ -928,7 +951,93 @@ function App() {
             >
               {toolbarCollapsed ? '▶' : '◀'}
             </button>
-            {!toolbarCollapsed && (
+            {!toolbarCollapsed && (layoutDensity === 'rail' ? (
+            <NavigationRail
+              activeTool={activeTool}
+              activeTile={activeTile}
+              themeId={themeId}
+              customThemes={customThemes}
+              onSetTool={handleSetActiveTool}
+              onSetTile={setActiveTile}
+              onSetTheme={handleSetTheme}
+              preserveOnThemeSwitch={preserveOnThemeSwitch}
+              onTogglePreserveOnThemeSwitch={() => setPreserveOnThemeSwitch(p => !p)}
+              onOpenCustomThemeBuilder={() => setShowCustomThemeDialog(true)}
+              fogEnabled={fogEnabled}
+              gmShowFog={gmShowFog}
+              onToggleGmShowFog={handleToggleGmShowFogAnnounced}
+              onOpenGenerateMap={handleOpenGenerateMap}
+              onOpenPremadeMaps={() => setShowPremadeMapsDialog(true)}
+              markerShape={markerShape}
+              markerColor={markerColor}
+              markerSize={markerSize}
+              onSetMarkerShape={setMarkerShape}
+              onSetMarkerColor={setMarkerColor}
+              onSetMarkerSize={setMarkerSize}
+              onClearMarkers={clearMarkers}
+              backgroundImage={map.backgroundImage}
+              onImportBackgroundImage={setBackgroundImage}
+              onUpdateBackgroundImage={updateBackgroundImage}
+              onClearBackgroundImage={clearBackgroundImage}
+              measureShape={measureShape}
+              measureFeetPerCell={measureFeetPerCell}
+              onSetMeasureShape={setMeasureShape}
+              onSetMeasureFeetPerCell={setMeasureFeetPerCell}
+              lightPreset={lightPreset}
+              lightRadius={lightRadius}
+              lightColor={lightColor}
+              onSetLightPreset={(preset) => {
+                setLightPreset(preset);
+                const p = LIGHT_SOURCE_PRESETS.find(p => p.id === preset);
+                if (p) { setLightRadius(p.radius); setLightColor(p.color); }
+              }}
+              onSetLightRadius={setLightRadius}
+              onSetLightColor={setLightColor}
+              onClearLightSources={clearLightSources}
+              stairLinkSource={stairLinkSource}
+              stairLinkCount={project.stairLinks.length}
+              onClearStairLinks={() => {
+                for (const link of [...project.stairLinks]) {
+                  if (link.fromLevel === activeLevelIndex || link.toLevel === activeLevelIndex) {
+                    removeStairLink(
+                      link.fromLevel === activeLevelIndex ? link.fromLevel : link.toLevel,
+                      link.fromLevel === activeLevelIndex ? link.fromCell.x : link.toCell.x,
+                      link.fromLevel === activeLevelIndex ? link.fromCell.y : link.toCell.y,
+                    );
+                  }
+                }
+              }}
+              gmDrawColor={gmDrawColor}
+              gmDrawWidth={gmDrawWidth}
+              onSetGmDrawColor={setGmDrawColor}
+              onSetGmDrawWidth={setGmDrawWidth}
+              onClearGmDrawings={handleClearGmDrawings}
+              selectedStampId={selectedStampId}
+              onSelectStamp={(id: string) => { setSelectedStampId(id); }}
+              onClearStamps={clearStamps}
+              stamps={map.stamps ?? []}
+              selectedPlacedStampId={selectedPlacedStampId}
+              onSelectPlacedStamp={setSelectedPlacedStampId}
+              onUpdateStamp={updateStamp}
+              onRemoveStamp={removeStamp}
+              onBringStampToFront={bringStampToFront}
+              onSendStampToBack={sendStampToBack}
+              customStamps={customStamps}
+              onSaveCustomStamp={saveCustomStamp}
+              onDeleteCustomStamp={deleteCustomStamp}
+              wallColor={wallColor}
+              wallThickness={wallThickness}
+              onSetWallColor={setWallColor}
+              onSetWallThickness={setWallThickness}
+              pathColor={pathColor}
+              pathWidth={pathWidth}
+              onSetPathColor={setPathColor}
+              onSetPathWidth={setPathWidth}
+              onClearWalls={clearWallSegments}
+              onClearPaths={clearPathSegments}
+              onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
+            />
+            ) : (
             <Toolbar
               activeTool={activeTool}
               activeTile={activeTile}
@@ -1015,7 +1124,7 @@ function App() {
               onClearPaths={clearPathSegments}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
-            )}
+            ))}
           </nav>
         ) : (
           <nav aria-label="Present tools" className={toolbarCollapsed ? 'nav-collapsed' : ''}>
