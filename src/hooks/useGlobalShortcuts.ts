@@ -61,6 +61,7 @@ export function useGlobalShortcuts(actions: ShortcutActions): KeyBinding[] {
       toggleViewMode:   () => actionsRef.current.toggleViewMode(),
       openGenerateMap:  () => actionsRef.current.openGenerateMap(),
       showShortcuts:    () => actionsRef.current.showShortcuts(),
+      openCommandPalette: () => actionsRef.current.openCommandPalette(),
       triggerNewMap:    () => actionsRef.current.triggerNewMap(),
       triggerImport:    () => actionsRef.current.triggerImport(),
       triggerExportJSON:() => actionsRef.current.triggerExportJSON(),
