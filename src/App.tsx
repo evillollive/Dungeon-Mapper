@@ -1016,13 +1016,6 @@ function App() {
               selectedStampId={selectedStampId}
               onSelectStamp={(id: string) => { setSelectedStampId(id); }}
               onClearStamps={clearStamps}
-              stamps={map.stamps ?? []}
-              selectedPlacedStampId={selectedPlacedStampId}
-              onSelectPlacedStamp={setSelectedPlacedStampId}
-              onUpdateStamp={updateStamp}
-              onRemoveStamp={removeStamp}
-              onBringStampToFront={bringStampToFront}
-              onSendStampToBack={sendStampToBack}
               customStamps={customStamps}
               onSaveCustomStamp={saveCustomStamp}
               onDeleteCustomStamp={deleteCustomStamp}
@@ -1103,13 +1096,6 @@ function App() {
               selectedStampId={selectedStampId}
               onSelectStamp={(id: string) => { setSelectedStampId(id); }}
               onClearStamps={clearStamps}
-              stamps={map.stamps ?? []}
-              selectedPlacedStampId={selectedPlacedStampId}
-              onSelectPlacedStamp={setSelectedPlacedStampId}
-              onUpdateStamp={updateStamp}
-              onRemoveStamp={removeStamp}
-              onBringStampToFront={bringStampToFront}
-              onSendStampToBack={sendStampToBack}
               customStamps={customStamps}
               onSaveCustomStamp={saveCustomStamp}
               onDeleteCustomStamp={deleteCustomStamp}
