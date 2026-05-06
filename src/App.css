@@ -1171,11 +1171,14 @@
   color: #2a2620;
 }
 
-/* ── Coord Display ─────────────────────────────────────── */
-.coord-display {
+/* ── Canvas HUD (zoom + coords overlay, bottom-right) ── */
+.canvas-hud {
   position: absolute;
   bottom: 44px;
   left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: rgba(255, 255, 255, 0.92);
   color: #2a2620;
   font-family: 'Courier New', monospace;
@@ -1184,7 +1187,17 @@
   border: 1px solid #8a7f66;
   border-radius: 3px;
   pointer-events: none;
-  z-index: 10;
+  z-index: 11;
+}
+.hud-zoom {
+  font-weight: 600;
+}
+.hud-coords {
+  opacity: 0.75;
+}
+/* Legacy coord-display kept for any external overrides */
+.coord-display {
+  display: none;
 }
 
 /* ── Minimap ─────────────────────────────────────────────── */
