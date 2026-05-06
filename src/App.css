@@ -185,6 +185,54 @@
   flex-wrap: wrap;
 }
 
+/* ── Header overflow menu ─────────────────────────────── */
+.header-overflow-wrap {
+  position: relative;
+}
+.header-overflow-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  background: #f4f1ea;
+  border: 1px solid #c2bbab;
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+  z-index: 50;
+  min-width: 160px;
+  padding: 4px 0;
+  display: flex;
+  flex-direction: column;
+}
+.header-overflow-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #2a2620;
+  font-size: var(--fs-13);
+  padding: 6px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+}
+.header-overflow-menu button:hover {
+  background: #ece6d6;
+  color: #8a3a3a;
+}
+.header-overflow-menu button.danger {
+  color: #8a3a3a;
+}
+.header-overflow-menu button.danger:hover {
+  background: #f5e6e6;
+}
+.header-overflow-sep {
+  border: none;
+  border-top: 1px solid #d4cfc0;
+  margin: 4px 0;
+}
+
 .app-title {
   color: #8a3a3a;
   font-weight: bold;
@@ -1171,11 +1219,14 @@
   color: #2a2620;
 }
 
-/* ── Coord Display ─────────────────────────────────────── */
-.coord-display {
+/* ── Canvas HUD (zoom + coords overlay, bottom-right) ── */
+.canvas-hud {
   position: absolute;
   bottom: 44px;
   left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   background: rgba(255, 255, 255, 0.92);
   color: #2a2620;
   font-family: 'Courier New', monospace;
@@ -1184,7 +1235,13 @@
   border: 1px solid #8a7f66;
   border-radius: 3px;
   pointer-events: none;
-  z-index: 10;
+  z-index: 11;
+}
+.hud-zoom {
+  font-weight: 600;
+}
+.hud-coords {
+  opacity: 0.75;
 }
 
 /* ── Minimap ─────────────────────────────────────────────── */
@@ -2019,14 +2076,13 @@
     flex: 1 1 auto;
     justify-content: flex-end;
   }
-  /* Hide less-used header buttons on tablet portrait */
+  /* Hide less-used header buttons on tablet portrait — overflow menu handles the rest */
   .header-right .header-btn:nth-child(n+6) {
     display: none;
   }
-
-  /* Keep the last button (Shortcuts) visible */
-  .header-right .header-btn:last-of-type {
-    display: inline-flex;
+  /* Always keep the overflow menu visible */
+  .header-overflow-wrap {
+    display: flex;
   }
 }
 
@@ -2054,12 +2110,12 @@
     display: none;
   }
 
-  /* Only show essential header buttons */
+  /* Only show essential header buttons on phone */
   .header-right .header-btn:nth-child(n+3) {
     display: none;
   }
-  .header-right .header-btn:last-of-type {
-    display: inline-flex;
+  .header-overflow-wrap {
+    display: flex;
   }
 
   /* Level tabs: smaller padding */
@@ -2524,4 +2580,98 @@
 .tool-btn.compact {
   min-height: 36px;
   min-width: 36px;
+}
+
+/* ── Command Palette ───────────────────────────────────── */
+.command-palette-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding-top: min(20vh, 140px);
+  z-index: 200;
+}
+.command-palette {
+  background: #1a1f3d;
+  color: #e0e0ff;
+  border: 1px solid #3a4570;
+  border-radius: 8px;
+  width: min(520px, 94vw);
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+  overflow: hidden;
+}
+.command-palette-input {
+  width: 100%;
+  border: none;
+  border-bottom: 1px solid #3a4570;
+  background: #141830;
+  color: #e0e0ff;
+  font-size: 1rem;
+  padding: 12px 16px;
+  outline: none;
+  font-family: inherit;
+}
+.command-palette-input::placeholder {
+  color: #7a7f9a;
+}
+.command-palette-list {
+  overflow-y: auto;
+  flex: 1;
+  padding: 4px 0;
+}
+.command-palette-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 14px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.08s;
+}
+.command-palette-item.selected {
+  background: rgba(100, 120, 240, 0.25);
+}
+.command-palette-item:hover {
+  background: rgba(100, 120, 240, 0.15);
+}
+.command-palette-category {
+  background: rgba(100, 120, 240, 0.2);
+  color: #8a9dff;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.command-palette-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.command-palette-shortcut {
+  color: #7a7f9a;
+  font-size: 0.7rem;
+  font-family: 'Courier New', monospace;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  padding: 1px 5px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.command-palette-empty {
+  padding: 14px 16px;
+  color: #7a7f9a;
+  font-size: 0.85rem;
+  text-align: center;
 }

@@ -2650,11 +2650,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         <button type="button" onClick={handleFitToScreen} title="Fit map to screen" aria-label="Fit map to screen" aria-keyshortcuts="1">Fit</button>
         <span className="zoom-hint" aria-hidden="true">⇧+wheel: pan</span>
       </div>
-      {mousePos && (
-        <div className="coord-display" aria-hidden="true">
-          X: {mousePos.x} &nbsp; Y: {mousePos.y}
-        </div>
-      )}
+      <div className="canvas-hud" aria-hidden="true">
+        <span className="hud-zoom">{Math.round(zoom * 100)}%</span>
+        {mousePos && (
+          <span className="hud-coords">
+            X:{mousePos.x} Y:{mousePos.y}
+          </span>
+        )}
+      </div>
       <canvas
         ref={minimapRef}
         className="minimap-canvas"

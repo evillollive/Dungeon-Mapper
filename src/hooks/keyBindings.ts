@@ -99,6 +99,8 @@ export interface ShortcutActions {
   flipStampV: () => void;
   /** Delete selected placed stamp (Delete/Backspace). */
   deleteStamp: () => void;
+  /** Open the command palette (Ctrl/Cmd+K). */
+  openCommandPalette: () => void;
 }
 
 const isPlainKey = (e: KeyboardEvent) =>
@@ -393,6 +395,15 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       description: 'Show keyboard shortcuts',
       match: e => isPlainKey(e) && e.shiftKey && (e.key === '?' || e.key === '/'),
       action: actions.showShortcuts,
+    },
+    {
+      id: 'help.commandPalette',
+      category: 'Help',
+      keys: 'Ctrl+K',
+      description: 'Open command palette',
+      fireInEditable: true,
+      match: e => isCtrlOrMeta(e) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k',
+      action: actions.openCommandPalette,
     },
 
     // ── Levels ──

@@ -15,6 +15,7 @@ import ShortcutsHelp from './components/ShortcutsHelp';
 import ExportDialog from './components/ExportDialog';
 import SceneTemplateDialog from './components/SceneTemplateDialog';
 import SelectionInspector from './components/SelectionInspector';
+import CommandPalette, { type CommandItem } from './components/CommandPalette';
 import type { GeneratedMap } from './utils/generators';
 import { useMapState, getClipboard } from './hooks/useMapState';
 import { useDrawingTool } from './hooks/useDrawingTool';
@@ -217,6 +218,7 @@ function App() {
   const [showShortcutsHelp, setShowShortcutsHelp] = useState<boolean>(false);
   const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
   const [showSceneTemplateDialog, setShowSceneTemplateDialog] = useState<boolean>(false);
+  const [showCommandPalette, setShowCommandPalette] = useState<boolean>(false);
   // Polite live-region message announced to screen readers when the user
   // performs an action whose visual feedback is the canvas (e.g. undo,
   // theme switch, view-mode toggle). Cleared automatically a moment
@@ -776,6 +778,7 @@ function App() {
       removeStamp(selectedPlacedStampId);
       setSelectedPlacedStampId(null);
     },
+    openCommandPalette: () => setShowCommandPalette(true),
   });
 
   // ── Context values ──────────────────────────────────────────────────
@@ -860,6 +863,86 @@ function App() {
     duplicateLevel, reorderLevels,
     addStairLink, removeStairLink,
   ]);
+
+  // ── Command palette entries ───────────────────────────────────────
+  const commandPaletteItems = useMemo<CommandItem[]>(() => {
+    const cmds: CommandItem[] = [];
+
+    // Tools
+    const toolEntries: Array<{ id: ToolType; label: string; shortcut?: string }> = [
+      { id: 'paint', label: 'Paint tool', shortcut: 'P' },
+      { id: 'erase', label: 'Erase tool', shortcut: 'E' },
+      { id: 'fill', label: 'Flood Fill tool', shortcut: 'F' },
+      { id: 'note', label: 'Add Note tool', shortcut: 'N' },
+      { id: 'line', label: 'Line tool', shortcut: 'L' },
+      { id: 'rect', label: 'Rectangle tool', shortcut: 'R' },
+      { id: 'select', label: 'Select tool', shortcut: 'S' },
+      { id: 'reveal', label: 'Reveal Fog', shortcut: 'V' },
+      { id: 'hide', label: 'Hide Fog', shortcut: 'H' },
+      { id: 'fov', label: 'Line-of-Sight / FOV', shortcut: 'O' },
+      { id: 'measure', label: 'Measure / Distance', shortcut: 'M' },
+      { id: 'light', label: 'Light Source', shortcut: 'I' },
+      { id: 'wall', label: 'Wall drawing', shortcut: 'W' },
+      { id: 'path', label: 'Path / road drawing', shortcut: 'Shift+W' },
+      { id: 'stamp', label: 'Place Stamp' },
+      { id: 'gmdraw', label: 'GM Draw (annotations)', shortcut: 'D' },
+      { id: 'link-stair', label: 'Link Stairs', shortcut: 'K' },
+    ];
+    for (const t of toolEntries) {
+      cmds.push({
+        id: `tool.${t.id}`,
+        label: t.label,
+        category: 'Tool',
+        shortcut: t.shortcut,
+        action: () => handleSetActiveTool(t.id),
+      });
+    }
+
+    // Themes
+    for (const theme of themeList) {
+      cmds.push({
+        id: `theme.${theme.id}`,
+        label: `Theme: ${theme.name}`,
+        category: 'Theme',
+        action: () => handleSetTheme(theme.id, preserveOnThemeSwitch),
+      });
+    }
+
+    // Dialogs / actions
+    cmds.push(
+      { id: 'dialog.generate', label: 'Generate Map…', category: 'File', shortcut: 'G', action: () => setShowGenerateDialog(true) },
+      { id: 'dialog.premade', label: 'Sample Maps…', category: 'File', action: () => setShowPremadeMapsDialog(true) },
+      { id: 'dialog.templates', label: 'Scene Templates…', category: 'File', action: () => setShowSceneTemplateDialog(true) },
+      { id: 'dialog.customTheme', label: 'Custom Theme Builder…', category: 'Theme', action: () => setShowCustomThemeDialog(true) },
+      { id: 'dialog.shortcuts', label: 'Keyboard Shortcuts', category: 'Help', shortcut: '?', action: () => setShowShortcutsHelp(true) },
+      { id: 'dialog.exportDialog', label: 'Print-Optimized Export…', category: 'File', shortcut: 'Ctrl+Shift+P', action: () => setShowExportDialog(true) },
+      { id: 'file.exportJson', label: 'Export JSON', category: 'File', shortcut: 'Ctrl+S', action: () => headerRef.current?.triggerExportJSON() },
+      { id: 'file.exportPng', label: 'Export PNG', category: 'File', shortcut: 'Ctrl+Shift+S', action: () => headerRef.current?.triggerExportPNG() },
+      { id: 'file.exportSvg', label: 'Export SVG', category: 'File', shortcut: 'Ctrl+Alt+S', action: handleExportSVG },
+      { id: 'file.import', label: 'Import JSON…', category: 'File', shortcut: 'Ctrl+O', action: () => headerRef.current?.triggerImport() },
+      { id: 'file.new', label: 'New Map', category: 'File', shortcut: 'Ctrl+Alt+N', action: () => headerRef.current?.triggerNew() },
+    );
+
+    // View toggles
+    cmds.push(
+      { id: 'view.printMode', label: 'Toggle Print / B&W Mode', category: 'View', shortcut: 'Shift+P', action: handleTogglePrintMode },
+      { id: 'view.presentMode', label: 'Toggle Edit ↔ Present Mode', category: 'View', shortcut: 'Shift+V', action: switchViewMode },
+      { id: 'view.zoomIn', label: 'Zoom In', category: 'Canvas', shortcut: '+', action: () => canvasRef.current?.zoomIn() },
+      { id: 'view.zoomOut', label: 'Zoom Out', category: 'Canvas', shortcut: '-', action: () => canvasRef.current?.zoomOut() },
+      { id: 'view.zoomReset', label: 'Reset Zoom', category: 'Canvas', shortcut: '0', action: () => canvasRef.current?.zoomReset() },
+      { id: 'view.fitScreen', label: 'Fit Map to Screen', category: 'Canvas', shortcut: '1', action: () => canvasRef.current?.fitToScreen() },
+    );
+
+    // Edit
+    cmds.push(
+      { id: 'edit.undo', label: 'Undo', category: 'Edit', shortcut: 'Ctrl+Z', action: handleUndo },
+      { id: 'edit.redo', label: 'Redo', category: 'Edit', shortcut: 'Ctrl+Y', action: handleRedo },
+    );
+
+    return cmds;
+  }, [themeList, handleSetActiveTool, handleSetTheme, preserveOnThemeSwitch,
+      handleTogglePrintMode, switchViewMode, handleExportSVG,
+      handleUndo, handleRedo]);
 
   return (
     <ToolContext.Provider value={toolContextValue}>
@@ -1401,6 +1484,11 @@ function App() {
         open={showIconPicker}
         onSelect={handleIconSelected}
         onCancel={handleIconPickerCancel}
+      />
+      <CommandPalette
+        open={showCommandPalette}
+        onClose={() => setShowCommandPalette(false)}
+        commands={commandPaletteItems}
       />
     </div>
     </ActionContext.Provider>
