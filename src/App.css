@@ -642,6 +642,98 @@
   cursor: pointer;
 }
 
+/* ── Selection Inspector (docked right panel) ────────────── */
+.selection-inspector {
+  display: flex;
+  flex-direction: column;
+  padding: 8px;
+  font-size: 0.75rem;
+  overflow-y: auto;
+  min-height: 0;
+}
+.selection-inspector.empty-state {
+  opacity: 0.85;
+}
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+.inspector-type-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #4a4a4a;
+  background: #eae5d8;
+  padding: 2px 8px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+.inspector-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #1a1a2e;
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid #c4b99a;
+}
+.inspector-section {
+  margin-bottom: 6px;
+}
+.inspector-section-label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #8a7f66;
+  letter-spacing: 0.05em;
+  margin-bottom: 2px;
+}
+.inspector-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 24px;
+  margin: 1px 0;
+}
+.inspector-field-label {
+  font-size: 0.7rem;
+  color: #4a4a4a;
+  min-width: 48px;
+  flex-shrink: 0;
+}
+.inspector-field-value {
+  font-size: 0.7rem;
+  color: #1a1a2e;
+  font-weight: 500;
+}
+.inspector-slider {
+  flex: 1;
+  min-width: 50px;
+  height: 16px;
+  cursor: pointer;
+}
+.inspector-text-input {
+  width: 100%;
+  padding: 3px 6px;
+  font-size: 0.72rem;
+  border: 1px solid #c4b99a;
+  border-radius: 3px;
+  background: #fff;
+  color: #1a1a2e;
+  box-sizing: border-box;
+}
+.inspector-textarea {
+  width: 100%;
+  padding: 3px 6px;
+  font-size: 0.72rem;
+  border: 1px solid #c4b99a;
+  border-radius: 3px;
+  background: #fff;
+  color: #1a1a2e;
+  resize: vertical;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
 /* ── Canvas Area ─────────────────────────────────────────── */
 .canvas-area {
   background: #e5e0d3;

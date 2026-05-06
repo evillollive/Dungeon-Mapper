@@ -14,6 +14,7 @@ import CustomThemeDialog from './components/CustomThemeDialog';
 import ShortcutsHelp from './components/ShortcutsHelp';
 import ExportDialog from './components/ExportDialog';
 import SceneTemplateDialog from './components/SceneTemplateDialog';
+import SelectionInspector from './components/SelectionInspector';
 import type { GeneratedMap } from './utils/generators';
 import { useMapState, getClipboard } from './hooks/useMapState';
 import { useDrawingTool } from './hooks/useDrawingTool';
@@ -1245,7 +1246,32 @@ function App() {
           {rightPanelOpen ? '▶' : '◀'}
         </button>
         {viewMode === 'gm' && (
-          <aside className={`right-panel right-panel-drawer${rightPanelOpen ? ' open' : ''}`} aria-label="Initiative and notes">
+          <aside className={`right-panel right-panel-drawer${rightPanelOpen ? ' open' : ''}`} aria-label="Inspector, initiative, and notes">
+            <SelectionInspector
+              map={map}
+              themeId={themeId}
+              themeName={themeList.find(t => t.id === themeId)?.name ?? themeId}
+              selectedPlacedStampId={selectedPlacedStampId}
+              selectedTokenId={selectedTokenId}
+              selectedNoteId={selectedNoteId}
+              stamps={map.stamps ?? []}
+              tokens={map.tokens ?? []}
+              notes={map.notes}
+              lightSources={map.lightSources ?? []}
+              customStamps={customStamps}
+              onUpdateStamp={updateStamp}
+              onRemoveStamp={removeStamp}
+              onBringStampToFront={bringStampToFront}
+              onSendStampToBack={sendStampToBack}
+              onSelectPlacedStamp={setSelectedPlacedStampId}
+              onUpdateToken={updateToken}
+              onRemoveToken={removeToken}
+              onSelectToken={setSelectedTokenId}
+              onUpdateNote={updateNote}
+              onDeleteNote={deleteNote}
+              onSelectNote={handleSelectNote}
+              onRemoveLightSource={removeLightSource}
+            />
             <InitiativePanel
               tokens={map.tokens ?? []}
               initiative={map.initiative ?? []}
