@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-06
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -495,10 +495,10 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - ~~8.1.3 — Layout density toggle in Settings: **"Rail (new)" / "Tabs (classic)"** — old 4-tab toolbar preserved as fallback~~ ✅
 - ~~8.1.4 — Mobile: rail collapses to existing bottom toolbar (no change to MobileToolbar)~~ ✅
 
-**8.2 — Docked Inspector**
-- 8.2.1 — New `<SelectionInspector>` component, docked to right panel, shows properties of currently selected stamp / token / note / light
-- 8.2.2 — Migrate stamp transform controls out of StampPicker into the inspector
-- 8.2.3 — Inspector empty-state shows quick map info (dimensions, tile counts, theme)
+**~~8.2 — Docked Inspector~~** ✅ COMPLETE
+- ~~8.2.1 — New `<SelectionInspector>` component, docked to right panel, shows properties of currently selected stamp / token / note / light~~ ✅
+- ~~8.2.2 — Migrate stamp transform controls out of StampPicker into the inspector~~ ✅
+- ~~8.2.3 — Inspector empty-state shows quick map info (dimensions, tile counts, theme)~~ ✅
 
 **8.3 — UI Polish**
 - 8.3.1 — Command palette (Ctrl/Cmd+K) — fuzzy search for tools, themes, dialogs, recent maps
