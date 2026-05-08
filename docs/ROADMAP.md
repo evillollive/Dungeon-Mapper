@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-08
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -533,9 +533,16 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - Optional grain noise + vignette
 - **Export toggle** on PNG/SVG export so users can include or exclude the paper texture
 
-**9.2 — Edge Blending**
+**9.2 — Edge Blending** ✅ COMPLETE
 - Stochastic edge dithering between adjacent floor/wall/water tiles to soften grid stepping
 - Per-theme blend masks; falls back cleanly in print mode
+- 9.2.1: `EdgeBlendSettings` type + `DungeonMap.edgeBlend` field + defaults
+- 9.2.2: State management (`setEdgeBlend`, `clearEdgeBlend`, `updateEdgeBlend`)
+- 9.2.3: Edge blend renderer with 3 styles (dither, smooth, stipple)
+- 9.2.4: Integrated into MapCanvas.tsx + renderMap.ts (disabled in print mode)
+- 9.2.5: UI controls in DrawToolsTab/NavigationRail/Toolbar
+- 9.2.6: `includeEdgeBlend` export toggle for PNG/SVG
+- 9.2.7: 12 unit tests
 
 **9.3 — Hand-Drawn Mode**
 - Wobbly walls (Perlin-jittered stroke offsets)
@@ -1286,6 +1293,17 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-08 — Phase 9.2 (Edge Blending) COMPLETE**
+- Implemented `EdgeBlendSettings` type with 3 styles (dither, smooth, stipple), intensity, and opacity controls
+- Added `edgeBlend` field to `DungeonMap` for per-level persistence
+- Edge blend renderer in `edgeBlend.ts`: stochastic dithering between adjacent tiles of different types using seeded PRNG and per-theme colour sampling
+- 3 blend styles: dither (noise scatter), smooth (gradient), stipple (dot pattern) — each with fade-out from tile boundary
+- UI controls: enable toggle, style dropdown, intensity/opacity sliders — wired through DrawToolsTab, NavigationRail, Toolbar
+- Export support: `includeEdgeBlend` option on `RenderMapOptions`, `HighResExportOptions`, and SVG export (embedded as PNG data-URL image)
+- 12 unit tests covering all styles, determinism, empty tile handling, intensity scaling, and edge cases
+- Canvas rendering: edge blend layer inserted after tiles, before grid lines; disabled in print mode
+- State management: `setEdgeBlend`, `clearEdgeBlend`, `updateEdgeBlend` in `useMapState`
 
 **2026-05-08 — Phase 9.1 (Texture & Paper Layer) COMPLETE**
 - Implemented `PaperTextureSettings` type with 5 patterns (parchment, linen, canvas, watercolor, marble), grain noise, and vignette
