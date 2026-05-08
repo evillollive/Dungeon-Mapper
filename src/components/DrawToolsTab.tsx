@@ -1,8 +1,9 @@
 import React from 'react';
-import type { CustomThemeDefinition, StampDef, ToolType, TileType } from '../types/map';
-import { ALL_TILE_TYPES, TILE_LABELS, isBuiltInTileType } from '../types/map';
+import type { CustomThemeDefinition, PaperTexturePattern, PaperTextureSettings, StampDef, ToolType, TileType } from '../types/map';
+import { ALL_TILE_TYPES, TILE_LABELS, DEFAULT_PAPER_TEXTURE, isBuiltInTileType } from '../types/map';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { buildThemeList, getCustomTileLabel, getThemeWithCustom } from '../utils/customThemes';
+import { getPaperTint } from '../themes';
 import StampPicker from './StampPicker';
 
 interface DrawToolsTabProps {
@@ -35,6 +36,11 @@ interface DrawToolsTabProps {
   onSetPathWidth: (w: number) => void;
   onClearWalls: () => void;
   onClearPaths: () => void;
+  // Paper texture
+  paperTexture?: PaperTextureSettings;
+  onSetPaperTexture?: (settings: PaperTextureSettings) => void;
+  onUpdatePaperTexture?: (patch: Partial<PaperTextureSettings>) => void;
+  onClearPaperTexture?: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -98,6 +104,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   wallColor, wallThickness, onSetWallColor, onSetWallThickness,
   pathColor, pathWidth, onSetPathColor, onSetPathWidth,
   onClearWalls, onClearPaths,
+  paperTexture, onSetPaperTexture, onUpdatePaperTexture, onClearPaperTexture,
 }) => {
   const theme = getThemeWithCustom(themeId, customThemes);
   const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
@@ -296,6 +303,116 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Paper Texture layer controls */}
+      <div className="toolbar-section">
+        <div className="toolbar-label">PAPER TEXTURE</div>
+        <label
+          className={`tool-btn ${paperTexture?.enabled ? 'active' : ''}`}
+          style={{ cursor: 'pointer' }}
+          title="Enable a parchment / paper background texture behind the tile grid"
+        >
+          <span className="tool-icon" aria-hidden="true">📜</span>
+          <span className="tool-name">Enable</span>
+          <input
+            type="checkbox"
+            checked={paperTexture?.enabled ?? false}
+            onChange={() => {
+              if (paperTexture?.enabled) {
+                onClearPaperTexture?.();
+              } else {
+                onSetPaperTexture?.(DEFAULT_PAPER_TEXTURE);
+              }
+            }}
+            aria-label="Enable paper texture"
+            style={{ margin: 0 }}
+          />
+        </label>
+        {paperTexture?.enabled && (
+          <>
+            <label className="tool-btn" style={{ cursor: 'pointer' }} title="Paper texture pattern">
+              <span className="tool-icon" aria-hidden="true">🎨</span>
+              <span className="tool-name">Pattern</span>
+              <select
+                className="grid-select"
+                value={paperTexture.pattern}
+                onChange={e => onUpdatePaperTexture?.({ pattern: e.target.value as PaperTexturePattern })}
+                title="Texture pattern"
+              >
+                <option value="parchment">Parchment</option>
+                <option value="linen">Linen</option>
+                <option value="canvas">Canvas</option>
+                <option value="watercolor">Watercolor</option>
+                <option value="marble">Marble</option>
+              </select>
+            </label>
+            <label className="tool-btn" style={{ cursor: 'pointer', flexWrap: 'wrap' }} title={`Opacity: ${Math.round(paperTexture.opacity * 100)}%`}>
+              <span className="tool-icon" aria-hidden="true">👁</span>
+              <span className="tool-name">Opacity</span>
+              <input
+                type="range"
+                min="0.1"
+                max="1"
+                step="0.05"
+                value={paperTexture.opacity}
+                onChange={e => onUpdatePaperTexture?.({ opacity: Number(e.target.value) })}
+                style={{ width: 60 }}
+                title={`Opacity: ${Math.round(paperTexture.opacity * 100)}%`}
+              />
+            </label>
+            <label className="tool-btn" style={{ cursor: 'pointer', flexWrap: 'wrap' }} title={`Grain: ${Math.round(paperTexture.grain * 100)}%`}>
+              <span className="tool-icon" aria-hidden="true">🌾</span>
+              <span className="tool-name">Grain</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={paperTexture.grain}
+                onChange={e => onUpdatePaperTexture?.({ grain: Number(e.target.value) })}
+                style={{ width: 60 }}
+                title={`Grain: ${Math.round(paperTexture.grain * 100)}%`}
+              />
+            </label>
+            <label className="tool-btn" style={{ cursor: 'pointer', flexWrap: 'wrap' }} title={`Vignette: ${Math.round(paperTexture.vignette * 100)}%`}>
+              <span className="tool-icon" aria-hidden="true">🔲</span>
+              <span className="tool-name">Vignette</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={paperTexture.vignette}
+                onChange={e => onUpdatePaperTexture?.({ vignette: Number(e.target.value) })}
+                style={{ width: 60 }}
+                title={`Vignette: ${Math.round(paperTexture.vignette * 100)}%`}
+              />
+            </label>
+            <label className="tool-btn" style={{ cursor: 'pointer' }} title="Custom tint colour (overrides theme default)">
+              <span className="tool-icon" aria-hidden="true">💧</span>
+              <span className="tool-name">Tint</span>
+              <input
+                type="color"
+                value={paperTexture.tintOverride ?? getPaperTint(themeId)}
+                onChange={e => onUpdatePaperTexture?.({ tintOverride: e.target.value })}
+                style={{ width: 28, height: 20, border: 'none', cursor: 'pointer', padding: 0 }}
+                title="Tint colour"
+              />
+              {paperTexture.tintOverride && (
+                <button
+                  type="button"
+                  className="tool-btn"
+                  onClick={() => onUpdatePaperTexture?.({ tintOverride: undefined })}
+                  title="Reset to theme default tint"
+                  style={{ fontSize: '0.7em', padding: '2px 4px', minWidth: 'auto' }}
+                >
+                  ↺
+                </button>
+              )}
+            </label>
+          </>
+        )}
       </div>
 
       <StampPicker

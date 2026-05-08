@@ -158,6 +158,9 @@ function App() {
     setBackgroundImage,
     clearBackgroundImage,
     updateBackgroundImage,
+    setPaperTexture,
+    clearPaperTexture,
+    updatePaperTexture,
     addLightSource,
     removeLightSource,
     clearLightSources,
@@ -1110,6 +1113,10 @@ function App() {
               onSetPathWidth={setPathWidth}
               onClearWalls={clearWallSegments}
               onClearPaths={clearPathSegments}
+              paperTexture={map.paperTexture}
+              onSetPaperTexture={setPaperTexture}
+              onUpdatePaperTexture={updatePaperTexture}
+              onClearPaperTexture={clearPaperTexture}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             ) : (
@@ -1188,6 +1195,10 @@ function App() {
               onSetPathWidth={setPathWidth}
               onClearWalls={clearWallSegments}
               onClearPaths={clearPathSegments}
+              paperTexture={map.paperTexture}
+              onSetPaperTexture={setPaperTexture}
+              onUpdatePaperTexture={updatePaperTexture}
+              onClearPaperTexture={clearPaperTexture}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             ))}
