@@ -13,6 +13,8 @@ export interface TileTheme {
   tileColors: Record<BuiltInTileType, string> & Record<string, string>;
   /** Per-theme grid line colour. Replaces the old hardcoded #2d3561. */
   gridColor: string;
+  /** Optional per-theme tint for the paper texture layer. */
+  paperTint?: string;
   drawTile(ctx: CanvasRenderingContext2D, id: TileType, x: number, y: number, size: number, context?: TileDrawContext): void;
 }
 
@@ -65,4 +67,33 @@ const THEME_ALIASES: Record<string, string> = {
 export function getTheme(id: string): TileTheme {
   const resolved = THEME_ALIASES[id] ?? id;
   return THEME_REGISTRY[resolved] ?? dungeonTheme;
+}
+
+// ── Per-theme paper tint colours ──────────────────────────────────────────
+// Each theme gets a default warm/cool tint for the parchment texture layer.
+// Themes may also set `paperTint` on their definition to override these.
+const DEFAULT_PAPER_TINTS: Record<string, string> = {
+  dungeon:          '#d4b896', // warm parchment
+  castle:           '#c8b898', // aged stone cream
+  starship:         '#a0b0c0', // cool steel blue
+  alien:            '#8bbc8b', // eerie green
+  oldwest:          '#d2b48c', // dusty tan
+  steampunk:        '#c9a87c', // brass-stained sepia
+  wilderness:       '#a8c090', // mossy green
+  cyberpunk:        '#7080a0', // neon-dimmed slate
+  postapocalypse:   '#b0a090', // ash grey-brown
+  moderncity:       '#b0b8c0', // concrete grey
+  pirate:           '#c8a870', // salt-stained gold
+  desert:           '#dcc09c', // sand dune
+  ancient:          '#c8b490', // weathered papyrus
+};
+
+/**
+ * Resolve the paper tint colour for a given theme id. Checks the theme
+ * definition's `paperTint` first, falls back to the built-in tint table,
+ * and finally to a neutral warm parchment if nothing matches.
+ */
+export function getPaperTint(themeId: string): string {
+  const theme = getTheme(themeId);
+  return theme.paperTint ?? DEFAULT_PAPER_TINTS[themeId] ?? '#d4b896';
 }

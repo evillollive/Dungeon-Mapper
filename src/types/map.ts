@@ -295,6 +295,44 @@ export interface BackgroundImage {
   opacity: number;
 }
 
+// ── Paper Texture ──────────────────────────────────────────────────────────
+
+/** Built-in paper texture pattern names. */
+export type PaperTexturePattern = 'parchment' | 'linen' | 'canvas' | 'watercolor' | 'marble';
+
+/**
+ * Settings for the optional parchment / paper background layer. When
+ * enabled, a procedural texture is rendered behind the tile grid to give
+ * the map a hand-crafted, tabletop feel. The texture respects the
+ * current theme via per-theme tint colours and is disabled in print mode.
+ */
+export interface PaperTextureSettings {
+  /** Whether the paper texture layer is active. */
+  enabled: boolean;
+  /** Paper texture pattern. Defaults to `'parchment'`. */
+  pattern: PaperTexturePattern;
+  /** Overall opacity of the paper layer (0–1). Defaults to 0.6. */
+  opacity: number;
+  /** Grain noise intensity (0–1). Defaults to 0.3. */
+  grain: number;
+  /** Vignette intensity — darkened edges (0–1). Defaults to 0.25. */
+  vignette: number;
+  /**
+   * Optional custom tint colour override. When unset, the theme's
+   * default `paperTint` colour is used.
+   */
+  tintOverride?: string;
+}
+
+/** Sensible defaults for a freshly-enabled paper texture. */
+export const DEFAULT_PAPER_TEXTURE: PaperTextureSettings = {
+  enabled: true,
+  pattern: 'parchment',
+  opacity: 0.6,
+  grain: 0.3,
+  vignette: 0.25,
+};
+
 export interface DungeonMap {
   meta: MapMeta;
   tiles: Tile[][];
@@ -357,6 +395,12 @@ export interface DungeonMap {
   wallSegments?: WallSegment[];
   /** Free-form path/road segments connecting areas. */
   pathSegments?: PathSegment[];
+  /**
+   * Optional parchment / paper background texture layer. When present and
+   * `enabled`, a procedural texture with per-theme tinting is rendered
+   * behind the tile grid. Disabled in print mode by default.
+   */
+  paperTexture?: PaperTextureSettings;
 }
 
 // ── Multi-Level Project ────────────────────────────────────────────────────
