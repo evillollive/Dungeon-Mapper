@@ -835,6 +835,37 @@ export function useMapState() {
     });
   }, [debouncedSave, activeLevelIndex]);
 
+  // ── Paper texture ─────────────────────────────────────────────────────
+
+  const setPaperTexture = useCallback((settings: import('../types/map').PaperTextureSettings) => {
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, paperTexture: settings }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex]);
+
+  const clearPaperTexture = useCallback(() => {
+    setProject(prev => {
+      if (!prev.levels[activeLevelIndex].paperTexture) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, paperTexture: undefined }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex]);
+
+  const updatePaperTexture = useCallback((patch: Partial<import('../types/map').PaperTextureSettings>) => {
+    setProject(prev => {
+      const current = prev.levels[activeLevelIndex].paperTexture;
+      if (!current) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, paperTexture: { ...m.paperTexture!, ...patch },
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex]);
+
   // ── Custom stamps ─────────────────────────────────────────────────────
 
   const saveCustomStamp = useCallback((stamp: StampDef) => {
@@ -1086,6 +1117,7 @@ export function useMapState() {
     copySelection, cutSelection, pasteClipboard,
     addMarker, removeMarker, clearMarkers,
     setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
+    setPaperTexture, clearPaperTexture, updatePaperTexture,
     addLightSource, removeLightSource, clearLightSources,
     addStamp, moveStamp, removeStamp, clearStamps, updateStamp, bringStampToFront, sendStampToBack,
     addWallSegment, removeWallSegment, clearWallSegments,

@@ -1,9 +1,11 @@
 import type { CustomThemeDefinition, DungeonMap, DungeonProject, StampDef, ViewMode } from '../types/map';
 import { TOKEN_KIND_COLORS, isDungeonProject } from '../types/map';
 import type { TileTheme } from '../themes/index';
+import { getPaperTint } from '../themes/index';
 import { ICON_BY_ID } from './iconLibrary';
 import { getStampDef } from './stampCatalog';
 import { renderMapToCanvas } from './renderMap';
+import { generatePaperTexture } from './paperTexture';
 import { wrapMapAsProject } from './storage';
 
 const SVG_CUSTOM_TILE_FALLBACK_COLOR = '#777777';
@@ -104,9 +106,10 @@ export function exportMapSVG(
   map: DungeonMap,
   theme: TileTheme,
   resolveTheme?: (id: string) => TileTheme,
-  opts: { viewMode?: ViewMode; customStamps?: readonly StampDef[] } = {}
+  opts: { viewMode?: ViewMode; customStamps?: readonly StampDef[]; includeTexture?: boolean } = {}
 ): void {
   const viewMode: ViewMode = opts.viewMode ?? 'gm';
+  const includeTexture = opts.includeTexture ?? true;
   const isPlayerView = viewMode === 'player';
   const fogActive = (map.fogEnabled ?? false);
   const fog = map.fog;
@@ -130,6 +133,14 @@ export function exportMapSVG(
     // Use a group transform so scale applies relative to the image's
     // own origin rather than (0,0), which would shift the position.
     svg += `<g transform="translate(${imgX},${imgY}) scale(${bg.scale})" opacity="${bg.opacity}"><image xlink:href="${safeHref}" x="0" y="0" style="image-rendering:auto"/></g>`;
+  }
+
+  // Paper texture layer (behind tiles, after background image).
+  if (includeTexture && map.paperTexture?.enabled) {
+    const tint = map.paperTexture.tintOverride ?? getPaperTint(theme.id);
+    const texCanvas = generatePaperTexture(svgW, svgH, map.paperTexture, tint);
+    const texDataUrl = texCanvas.toDataURL('image/png');
+    svg += `<image xlink:href="${escapeXML(texDataUrl)}" x="0" y="0" width="${svgW}" height="${svgH}" opacity="${map.paperTexture.opacity}"/>`;
   }
 
   for (let y = 0; y < height; y++) {
@@ -365,6 +376,8 @@ export interface HighResExportOptions {
   feetPerCell?: number;
   customThemes?: readonly CustomThemeDefinition[];
   customStamps?: readonly StampDef[];
+  /** Whether to include paper texture in export. Defaults to true. */
+  includeTexture?: boolean;
 }
 
 /**
@@ -387,6 +400,7 @@ export async function exportHighResPNG(
     feetPerCell: opts.feetPerCell,
     customThemes: opts.customThemes,
     customStamps: opts.customStamps,
+    includeTexture: opts.includeTexture,
   });
 
   const baseName = map.meta.name.replace(/\s+/g, '_') || 'dungeon';

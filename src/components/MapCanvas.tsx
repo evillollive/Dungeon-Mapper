@@ -7,6 +7,8 @@ import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from '../utils/tokenVisibility';
 import { ICON_BY_ID } from '../utils/iconLibrary';
 import { getStampDef } from '../utils/stampCatalog';
+import { getCachedPaperTexture } from '../utils/paperTexture';
+import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
@@ -1068,6 +1070,19 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         imgH
       );
       ctx.restore();
+    }
+
+    // Paper texture layer — procedural parchment/linen/etc rendered behind
+    // the tile grid. Disabled in print mode.
+    if (!printMode && map.paperTexture?.enabled) {
+      const tint = map.paperTexture.tintOverride ?? getPaperTint(themeId);
+      const texCanvas = getCachedPaperTexture(w, h, map.paperTexture, tint);
+      if (texCanvas) {
+        ctx.save();
+        ctx.globalAlpha = map.paperTexture.opacity;
+        ctx.drawImage(texCanvas, 0, 0);
+        ctx.restore();
+      }
     }
 
     const tileDrawContext: TileDrawContext = {
