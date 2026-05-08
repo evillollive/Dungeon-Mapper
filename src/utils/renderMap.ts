@@ -15,6 +15,8 @@ import { isTokenFogged } from './tokenVisibility';
 import { ICON_BY_ID } from './iconLibrary';
 import { getStampDef } from './stampCatalog';
 import { getSemanticTileType, getThemeWithCustom } from './customThemes';
+import { getCachedPaperTexture } from './paperTexture';
+import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 
 // Screen-mode canvas styling (mirrored from MapCanvas.tsx).
@@ -95,6 +97,12 @@ export interface RenderMapOptions {
   customThemes?: readonly CustomThemeDefinition[];
   /** Project-scoped custom stamp definitions. */
   customStamps?: readonly StampDef[];
+  /**
+   * Whether to include the paper texture layer in the export.
+   * Defaults to `true` — honours the map's `paperTexture` settings.
+   * Set `false` to export without the texture overlay.
+   */
+  includeTexture?: boolean;
 }
 
 /**
@@ -106,7 +114,7 @@ export function renderMapToCanvas(
   map: DungeonMap,
   opts: RenderMapOptions,
 ): HTMLCanvasElement {
-  const { tileSize, themeId, printMode = false, viewMode = 'gm', feetPerCell = 0, customThemes = [] } = opts;
+  const { tileSize, themeId, printMode = false, viewMode = 'gm', feetPerCell = 0, customThemes = [], includeTexture = true } = opts;
   const theme = getThemeWithCustom(themeId, customThemes);
   const { width, height } = map.meta;
   const isPlayerView = viewMode === 'player';
@@ -124,6 +132,18 @@ export function renderMapToCanvas(
   // Background
   ctx.fillStyle = printMode ? PRINT_BG : SCREEN_BG;
   ctx.fillRect(0, 0, canvasW, canvasH);
+
+  // Paper texture layer — rendered behind tiles, disabled in print mode
+  if (!printMode && includeTexture && map.paperTexture?.enabled) {
+    const tint = map.paperTexture.tintOverride ?? getPaperTint(themeId);
+    const texCanvas = getCachedPaperTexture(canvasW, canvasH, map.paperTexture, tint);
+    if (texCanvas) {
+      ctx.save();
+      ctx.globalAlpha = map.paperTexture.opacity;
+      ctx.drawImage(texCanvas, 0, 0);
+      ctx.restore();
+    }
+  }
 
   const tileDrawContext: TileDrawContext = {
     getTileBaseType: (x, y) => {

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { CustomThemeDefinition, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
+import type { CustomThemeDefinition, PaperTextureSettings, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
 import type { BackgroundImage } from '../types/map';
 import DrawToolsTab from './DrawToolsTab';
 import TacticalToolsTab from './TacticalToolsTab';
@@ -74,6 +74,11 @@ interface ToolbarProps {
   onSetPathWidth: (w: number) => void;
   onClearWalls: () => void;
   onClearPaths: () => void;
+  // Paper texture
+  paperTexture?: PaperTextureSettings;
+  onSetPaperTexture?: (settings: PaperTextureSettings) => void;
+  onUpdatePaperTexture?: (patch: Partial<PaperTextureSettings>) => void;
+  onClearPaperTexture?: () => void;
   // Scene templates
   onOpenSceneTemplates: () => void;
 }
@@ -164,6 +169,10 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             onSetPathWidth={props.onSetPathWidth}
             onClearWalls={props.onClearWalls}
             onClearPaths={props.onClearPaths}
+            paperTexture={props.paperTexture}
+            onSetPaperTexture={props.onSetPaperTexture}
+            onUpdatePaperTexture={props.onUpdatePaperTexture}
+            onClearPaperTexture={props.onClearPaperTexture}
           />
         )}
         {activeTab === 'tactical' && (

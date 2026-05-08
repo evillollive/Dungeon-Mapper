@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
-> **Last updated:** 2026-05-06
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Last updated:** 2026-05-08
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -521,7 +521,14 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 
 *Visual quality leap: parchment textures, edge blending, hand-drawn mode, atmosphere, and per-map art style presets. All upgrades honor print-mode B&W contract.*
 
-**9.1 — Texture & Paper Layer**
+**9.1 — Texture & Paper Layer** ✅ COMPLETE
+- ✅ 9.1.1 `PaperTextureSettings` type + `paperTexture` field on `DungeonMap`; `DEFAULT_PAPER_TEXTURE` constant
+- ✅ 9.1.2 `setPaperTexture` / `clearPaperTexture` / `updatePaperTexture` in `useMapState`
+- ✅ 9.1.3 Procedural texture renderer (`paperTexture.ts`): 5 patterns (parchment, linen, canvas, watercolor, marble) with grain noise + vignette + caching
+- ✅ 9.1.4 Per-theme tint colours (13 built-in themes); `getPaperTint()` helper; optional `paperTint` on `TileTheme`
+- ✅ 9.1.5 UI controls in DrawToolsTab / NavigationRail / Toolbar: enable toggle, pattern picker, opacity/grain/vignette sliders, tint colour with reset
+- ✅ 9.1.6 Export toggle: `includeTexture` option on `RenderMapOptions` + `HighResExportOptions` + SVG export; paper texture embedded as PNG data-URL `<image>` in SVG
+- ✅ 9.1.7 16 unit tests covering defaults, all patterns, determinism, caching, invalidation, and per-theme tint lookup
 - Parchment / paper background layer with per-theme tinting
 - Optional grain noise + vignette
 - **Export toggle** on PNG/SVG export so users can include or exclude the paper texture
@@ -1279,6 +1286,17 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-08 — Phase 9.1 (Texture & Paper Layer) COMPLETE**
+- Implemented `PaperTextureSettings` type with 5 patterns (parchment, linen, canvas, watercolor, marble), grain noise, and vignette
+- Added `paperTexture` field to `DungeonMap` for per-level persistence
+- Procedural texture renderer in `paperTexture.ts` with seeded PRNG for deterministic output and LRU caching
+- Per-theme tint colours for all 13 built-in themes via `getPaperTint()` and optional `TileTheme.paperTint` override
+- UI controls: enable toggle, pattern dropdown, opacity/grain/vignette sliders, custom tint colour picker with reset — wired through DrawToolsTab, NavigationRail, Toolbar
+- Export support: `includeTexture` option on `RenderMapOptions`, `HighResExportOptions`, and SVG export (embedded as PNG data-URL image)
+- 16 unit tests covering all patterns, caching, invalidation, and theme tint lookup
+- Canvas rendering: paper texture layer inserted after background image, before tiles; disabled in print mode
+- State management: `setPaperTexture`, `clearPaperTexture`, `updatePaperTexture` in `useMapState`
 
 **2026-05-03 — Generate Hub, Premade Map Design Review, and default background-fill captured**
 - Added **Phase 5.4 — Premade Map Design Review** as a recurring sweep: Pass 1 audits each of the 26 bundled premades against its intended archetype (castle, boat, dungeon, cavern, etc.) and enforces background-tile fill on every map; Pass 2 re-reviews after Phase 11 (Rivers) to add moats/streams/harbors; Pass 3 re-sweeps after each new content/art tool (6.4.5, 9, 10)
