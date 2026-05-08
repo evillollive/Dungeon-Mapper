@@ -8,6 +8,7 @@ import { isTokenFogged } from '../utils/tokenVisibility';
 import { ICON_BY_ID } from '../utils/iconLibrary';
 import { getStampDef } from '../utils/stampCatalog';
 import { getCachedPaperTexture } from '../utils/paperTexture';
+import { drawEdgeBlending } from '../utils/edgeBlend';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 
@@ -1114,6 +1115,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
           }
         }
       }
+    }
+
+    // Edge blending — render after tiles, before grid lines. Disabled in print mode.
+    if (!printMode && map.edgeBlend?.enabled) {
+      drawEdgeBlending(ctx, tiles, meta.width, meta.height, tileSize, map.edgeBlend, theme, customThemes);
     }
 
     ctx.strokeStyle = printMode ? PRINT_GRID : theme.gridColor;

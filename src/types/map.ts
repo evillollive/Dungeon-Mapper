@@ -333,6 +333,35 @@ export const DEFAULT_PAPER_TEXTURE: PaperTextureSettings = {
   vignette: 0.25,
 };
 
+/** Edge blending style presets. */
+export type EdgeBlendStyle = 'dither' | 'smooth' | 'stipple';
+
+/**
+ * Settings for stochastic edge blending between adjacent tiles of
+ * different types (e.g. floor/wall, floor/water). When enabled, the
+ * renderer draws per-theme blend masks at tile boundaries to soften
+ * the hard grid stepping.  Disabled in print mode by default.
+ */
+export interface EdgeBlendSettings {
+  /** Whether edge blending is active. */
+  enabled: boolean;
+  /** Blend style. `'dither'` is stochastic noise, `'smooth'` is gradient,
+   *  `'stipple'` is dot-pattern. Defaults to `'dither'`. */
+  style: EdgeBlendStyle;
+  /** Blend intensity / width as a fraction of tile size (0–1). Defaults to 0.35. */
+  intensity: number;
+  /** Overall opacity of the blend layer (0–1). Defaults to 0.6. */
+  opacity: number;
+}
+
+/** Sensible defaults for a freshly-enabled edge blend. */
+export const DEFAULT_EDGE_BLEND: EdgeBlendSettings = {
+  enabled: true,
+  style: 'dither',
+  intensity: 0.35,
+  opacity: 0.6,
+};
+
 export interface DungeonMap {
   meta: MapMeta;
   tiles: Tile[][];
@@ -401,6 +430,13 @@ export interface DungeonMap {
    * behind the tile grid. Disabled in print mode by default.
    */
   paperTexture?: PaperTextureSettings;
+  /**
+   * Optional edge blending layer. When present and `enabled`, stochastic
+   * dithering is rendered at boundaries between different tile types to
+   * soften grid stepping. Per-theme blend masks are used. Disabled in
+   * print mode by default.
+   */
+  edgeBlend?: EdgeBlendSettings;
 }
 
 // ── Multi-Level Project ────────────────────────────────────────────────────

@@ -866,6 +866,37 @@ export function useMapState() {
     });
   }, [debouncedSave, activeLevelIndex]);
 
+  // ── Edge blending ────────────────────────────────────────────────────
+
+  const setEdgeBlend = useCallback((settings: import('../types/map').EdgeBlendSettings) => {
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, edgeBlend: settings }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex]);
+
+  const clearEdgeBlend = useCallback(() => {
+    setProject(prev => {
+      if (!prev.levels[activeLevelIndex].edgeBlend) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, edgeBlend: undefined }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex]);
+
+  const updateEdgeBlend = useCallback((patch: Partial<import('../types/map').EdgeBlendSettings>) => {
+    setProject(prev => {
+      const current = prev.levels[activeLevelIndex].edgeBlend;
+      if (!current) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, edgeBlend: { ...m.edgeBlend!, ...patch },
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex]);
+
   // ── Custom stamps ─────────────────────────────────────────────────────
 
   const saveCustomStamp = useCallback((stamp: StampDef) => {
@@ -1118,6 +1149,7 @@ export function useMapState() {
     addMarker, removeMarker, clearMarkers,
     setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
     setPaperTexture, clearPaperTexture, updatePaperTexture,
+    setEdgeBlend, clearEdgeBlend, updateEdgeBlend,
     addLightSource, removeLightSource, clearLightSources,
     addStamp, moveStamp, removeStamp, clearStamps, updateStamp, bringStampToFront, sendStampToBack,
     addWallSegment, removeWallSegment, clearWallSegments,

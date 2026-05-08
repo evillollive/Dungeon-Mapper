@@ -1,6 +1,6 @@
 import React from 'react';
-import type { CustomThemeDefinition, PaperTexturePattern, PaperTextureSettings, StampDef, ToolType, TileType } from '../types/map';
-import { ALL_TILE_TYPES, TILE_LABELS, DEFAULT_PAPER_TEXTURE, isBuiltInTileType } from '../types/map';
+import type { CustomThemeDefinition, EdgeBlendSettings, EdgeBlendStyle, PaperTexturePattern, PaperTextureSettings, StampDef, ToolType, TileType } from '../types/map';
+import { ALL_TILE_TYPES, TILE_LABELS, DEFAULT_PAPER_TEXTURE, DEFAULT_EDGE_BLEND, isBuiltInTileType } from '../types/map';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { buildThemeList, getCustomTileLabel, getThemeWithCustom } from '../utils/customThemes';
 import { getPaperTint } from '../themes';
@@ -41,6 +41,11 @@ interface DrawToolsTabProps {
   onSetPaperTexture?: (settings: PaperTextureSettings) => void;
   onUpdatePaperTexture?: (patch: Partial<PaperTextureSettings>) => void;
   onClearPaperTexture?: () => void;
+  // Edge blending
+  edgeBlend?: EdgeBlendSettings;
+  onSetEdgeBlend?: (settings: EdgeBlendSettings) => void;
+  onUpdateEdgeBlend?: (patch: Partial<EdgeBlendSettings>) => void;
+  onClearEdgeBlend?: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -105,6 +110,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   pathColor, pathWidth, onSetPathColor, onSetPathWidth,
   onClearWalls, onClearPaths,
   paperTexture, onSetPaperTexture, onUpdatePaperTexture, onClearPaperTexture,
+  edgeBlend, onSetEdgeBlend, onUpdateEdgeBlend, onClearEdgeBlend,
 }) => {
   const theme = getThemeWithCustom(themeId, customThemes);
   const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
@@ -410,6 +416,78 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
                   ↺
                 </button>
               )}
+            </label>
+          </>
+        )}
+      </div>
+
+      {/* Edge Blending controls */}
+      <div className="toolbar-section">
+        <div className="toolbar-label">EDGE BLENDING</div>
+        <label
+          className={`tool-btn ${edgeBlend?.enabled ? 'active' : ''}`}
+          style={{ cursor: 'pointer' }}
+          title="Soften boundaries between adjacent tile types with stochastic blending"
+        >
+          <span className="tool-icon" aria-hidden="true">🌊</span>
+          <span className="tool-name">Enable</span>
+          <input
+            type="checkbox"
+            checked={edgeBlend?.enabled ?? false}
+            onChange={() => {
+              if (edgeBlend?.enabled) {
+                onClearEdgeBlend?.();
+              } else {
+                onSetEdgeBlend?.(DEFAULT_EDGE_BLEND);
+              }
+            }}
+            aria-label="Enable edge blending"
+            style={{ margin: 0 }}
+          />
+        </label>
+        {edgeBlend?.enabled && (
+          <>
+            <label className="tool-btn" style={{ cursor: 'pointer' }} title="Blend style">
+              <span className="tool-icon" aria-hidden="true">✨</span>
+              <span className="tool-name">Style</span>
+              <select
+                className="grid-select"
+                value={edgeBlend.style}
+                onChange={e => onUpdateEdgeBlend?.({ style: e.target.value as EdgeBlendStyle })}
+                title="Blend style"
+              >
+                <option value="dither">Dither</option>
+                <option value="smooth">Smooth</option>
+                <option value="stipple">Stipple</option>
+              </select>
+            </label>
+            <label className="tool-btn" style={{ cursor: 'pointer', flexWrap: 'wrap' }} title={`Intensity: ${Math.round(edgeBlend.intensity * 100)}%`}>
+              <span className="tool-icon" aria-hidden="true">📐</span>
+              <span className="tool-name">Intensity</span>
+              <input
+                type="range"
+                min="0.1"
+                max="1"
+                step="0.05"
+                value={edgeBlend.intensity}
+                onChange={e => onUpdateEdgeBlend?.({ intensity: Number(e.target.value) })}
+                style={{ width: 60 }}
+                title={`Intensity: ${Math.round(edgeBlend.intensity * 100)}%`}
+              />
+            </label>
+            <label className="tool-btn" style={{ cursor: 'pointer', flexWrap: 'wrap' }} title={`Opacity: ${Math.round(edgeBlend.opacity * 100)}%`}>
+              <span className="tool-icon" aria-hidden="true">👁</span>
+              <span className="tool-name">Opacity</span>
+              <input
+                type="range"
+                min="0.1"
+                max="1"
+                step="0.05"
+                value={edgeBlend.opacity}
+                onChange={e => onUpdateEdgeBlend?.({ opacity: Number(e.target.value) })}
+                style={{ width: 60 }}
+                title={`Opacity: ${Math.round(edgeBlend.opacity * 100)}%`}
+              />
             </label>
           </>
         )}

@@ -16,6 +16,7 @@ import { ICON_BY_ID } from './iconLibrary';
 import { getStampDef } from './stampCatalog';
 import { getSemanticTileType, getThemeWithCustom } from './customThemes';
 import { getCachedPaperTexture } from './paperTexture';
+import { drawEdgeBlending } from './edgeBlend';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 
@@ -103,6 +104,12 @@ export interface RenderMapOptions {
    * Set `false` to export without the texture overlay.
    */
   includeTexture?: boolean;
+  /**
+   * Whether to include the edge blending layer in the export.
+   * Defaults to `true` — honours the map's `edgeBlend` settings.
+   * Set `false` to export without edge blending.
+   */
+  includeEdgeBlend?: boolean;
 }
 
 /**
@@ -114,7 +121,7 @@ export function renderMapToCanvas(
   map: DungeonMap,
   opts: RenderMapOptions,
 ): HTMLCanvasElement {
-  const { tileSize, themeId, printMode = false, viewMode = 'gm', feetPerCell = 0, customThemes = [], includeTexture = true } = opts;
+  const { tileSize, themeId, printMode = false, viewMode = 'gm', feetPerCell = 0, customThemes = [], includeTexture = true, includeEdgeBlend = true } = opts;
   const theme = getThemeWithCustom(themeId, customThemes);
   const { width, height } = map.meta;
   const isPlayerView = viewMode === 'player';
@@ -167,6 +174,11 @@ export function renderMapToCanvas(
         }
       }
     }
+  }
+
+  // Edge blending — render after tiles, before grid lines. Disabled in print mode.
+  if (!printMode && includeEdgeBlend && map.edgeBlend?.enabled) {
+    drawEdgeBlending(ctx, map.tiles, width, height, tileSize, map.edgeBlend, theme, customThemes);
   }
 
   // Grid lines
