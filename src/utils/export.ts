@@ -6,6 +6,7 @@ import { ICON_BY_ID } from './iconLibrary';
 import { getStampDef } from './stampCatalog';
 import { renderMapToCanvas } from './renderMap';
 import { generatePaperTexture } from './paperTexture';
+import { drawEdgeBlending } from './edgeBlend';
 import { wrapMapAsProject } from './storage';
 
 const SVG_CUSTOM_TILE_FALLBACK_COLOR = '#777777';
@@ -106,10 +107,11 @@ export function exportMapSVG(
   map: DungeonMap,
   theme: TileTheme,
   resolveTheme?: (id: string) => TileTheme,
-  opts: { viewMode?: ViewMode; customStamps?: readonly StampDef[]; includeTexture?: boolean } = {}
+  opts: { viewMode?: ViewMode; customStamps?: readonly StampDef[]; includeTexture?: boolean; includeEdgeBlend?: boolean } = {}
 ): void {
   const viewMode: ViewMode = opts.viewMode ?? 'gm';
   const includeTexture = opts.includeTexture ?? true;
+  const includeEdgeBlend = opts.includeEdgeBlend ?? true;
   const isPlayerView = viewMode === 'player';
   const fogActive = (map.fogEnabled ?? false);
   const fog = map.fog;
@@ -154,6 +156,18 @@ export function exportMapSVG(
       const fill = tileTheme.tileColors[tile.type] ?? SVG_CUSTOM_TILE_FALLBACK_COLOR;
       svg += `<rect x="${x * tileSize}" y="${y * tileSize}" width="${tileSize}" height="${tileSize}" fill="${fill}" stroke="#2d3561" stroke-width="0.5"/>`;
     }
+  }
+
+  // Edge blending layer — rasterized to an offscreen canvas and embedded
+  // as an image, same approach as the paper texture.
+  if (includeEdgeBlend && map.edgeBlend?.enabled) {
+    const ebCanvas = document.createElement('canvas');
+    ebCanvas.width = svgW;
+    ebCanvas.height = svgH;
+    const ebCtx = ebCanvas.getContext('2d')!;
+    drawEdgeBlending(ebCtx, map.tiles, width, height, tileSize, map.edgeBlend, theme, []);
+    const ebDataUrl = ebCanvas.toDataURL('image/png');
+    svg += `<image xlink:href="${escapeXML(ebDataUrl)}" x="0" y="0" width="${svgW}" height="${svgH}"/>`;
   }
 
   svg += `<g stroke="#2d3561" stroke-width="0.5" opacity="0.5">`;
@@ -378,6 +392,8 @@ export interface HighResExportOptions {
   customStamps?: readonly StampDef[];
   /** Whether to include paper texture in export. Defaults to true. */
   includeTexture?: boolean;
+  /** Whether to include edge blending in export. Defaults to true. */
+  includeEdgeBlend?: boolean;
 }
 
 /**
@@ -401,6 +417,7 @@ export async function exportHighResPNG(
     customThemes: opts.customThemes,
     customStamps: opts.customStamps,
     includeTexture: opts.includeTexture,
+    includeEdgeBlend: opts.includeEdgeBlend,
   });
 
   const baseName = map.meta.name.replace(/\s+/g, '_') || 'dungeon';

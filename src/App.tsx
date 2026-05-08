@@ -161,6 +161,9 @@ function App() {
     setPaperTexture,
     clearPaperTexture,
     updatePaperTexture,
+    setEdgeBlend,
+    clearEdgeBlend,
+    updateEdgeBlend,
     addLightSource,
     removeLightSource,
     clearLightSources,
@@ -1117,6 +1120,10 @@ function App() {
               onSetPaperTexture={setPaperTexture}
               onUpdatePaperTexture={updatePaperTexture}
               onClearPaperTexture={clearPaperTexture}
+              edgeBlend={map.edgeBlend}
+              onSetEdgeBlend={setEdgeBlend}
+              onUpdateEdgeBlend={updateEdgeBlend}
+              onClearEdgeBlend={clearEdgeBlend}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             ) : (
@@ -1199,6 +1206,10 @@ function App() {
               onSetPaperTexture={setPaperTexture}
               onUpdatePaperTexture={updatePaperTexture}
               onClearPaperTexture={clearPaperTexture}
+              edgeBlend={map.edgeBlend}
+              onSetEdgeBlend={setEdgeBlend}
+              onUpdateEdgeBlend={updateEdgeBlend}
+              onClearEdgeBlend={clearEdgeBlend}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             ))}

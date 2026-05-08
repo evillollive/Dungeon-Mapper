@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { CustomThemeDefinition, PaperTextureSettings, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
+import type { CustomThemeDefinition, EdgeBlendSettings, PaperTextureSettings, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
 import type { BackgroundImage } from '../types/map';
 import DrawToolsTab from './DrawToolsTab';
 import TacticalToolsTab from './TacticalToolsTab';
@@ -79,6 +79,11 @@ interface ToolbarProps {
   onSetPaperTexture?: (settings: PaperTextureSettings) => void;
   onUpdatePaperTexture?: (patch: Partial<PaperTextureSettings>) => void;
   onClearPaperTexture?: () => void;
+  // Edge blending
+  edgeBlend?: EdgeBlendSettings;
+  onSetEdgeBlend?: (settings: EdgeBlendSettings) => void;
+  onUpdateEdgeBlend?: (patch: Partial<EdgeBlendSettings>) => void;
+  onClearEdgeBlend?: () => void;
   // Scene templates
   onOpenSceneTemplates: () => void;
 }
@@ -173,6 +178,10 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             onSetPaperTexture={props.onSetPaperTexture}
             onUpdatePaperTexture={props.onUpdatePaperTexture}
             onClearPaperTexture={props.onClearPaperTexture}
+            edgeBlend={props.edgeBlend}
+            onSetEdgeBlend={props.onSetEdgeBlend}
+            onUpdateEdgeBlend={props.onUpdateEdgeBlend}
+            onClearEdgeBlend={props.onClearEdgeBlend}
           />
         )}
         {activeTab === 'tactical' && (
