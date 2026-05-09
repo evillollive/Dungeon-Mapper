@@ -401,6 +401,58 @@ export const DEFAULT_HAND_DRAWN: HandDrawnSettings = {
   opacity: 0.8,
 };
 
+// ── Lighting & Atmosphere ───────────────────────────────────────────────
+
+/** Day/night/dusk color grading presets. */
+export type ColorGradingMode = 'day' | 'night' | 'dusk' | 'none';
+
+/**
+ * Settings for the lighting & atmosphere system. Provides three layers:
+ *
+ * 1. **Ambient Occlusion** — darkens inner corners where wall tiles meet,
+ *    simulating realistic shadow gathering in tight spaces.
+ * 2. **Stamp Shadows** — adds a soft drop-shadow beneath placed stamps to
+ *    give them depth and visual lift from the map surface.
+ * 3. **Color Grading** — applies a scene-wide tint overlay (day / night /
+ *    dusk) to shift the overall mood of the map.
+ *
+ * Disabled in print mode by default.
+ */
+export interface LightingAtmosphereSettings {
+  /** Whether the lighting & atmosphere system is active. */
+  enabled: boolean;
+  /** Ambient occlusion intensity (0–1). Higher values produce darker
+   *  corner shadows. Defaults to 0.4. */
+  aoIntensity: number;
+  /** Ambient occlusion radius as a fraction of tile size (0–1). Controls
+   *  how far the shadow spreads from corners. Defaults to 0.35. */
+  aoRadius: number;
+  /** Stamp shadow opacity (0–1). Controls how visible the drop-shadow
+   *  beneath stamps is. Defaults to 0.3. */
+  stampShadowOpacity: number;
+  /** Stamp shadow offset as a fraction of tile size (0–1). Defaults to 0.1. */
+  stampShadowOffset: number;
+  /** Color grading mode. `'none'` disables the tint overlay. Defaults to `'none'`. */
+  colorGrading: ColorGradingMode;
+  /** Color grading intensity (0–1). Controls how strongly the tint
+   *  overlay affects the scene. Defaults to 0.25. */
+  colorGradingIntensity: number;
+  /** Overall opacity of the lighting & atmosphere layer (0–1). Defaults to 0.8. */
+  opacity: number;
+}
+
+/** Sensible defaults for a freshly-enabled lighting & atmosphere layer. */
+export const DEFAULT_LIGHTING_ATMOSPHERE: LightingAtmosphereSettings = {
+  enabled: true,
+  aoIntensity: 0.4,
+  aoRadius: 0.35,
+  stampShadowOpacity: 0.3,
+  stampShadowOffset: 0.1,
+  colorGrading: 'none',
+  colorGradingIntensity: 0.25,
+  opacity: 0.8,
+};
+
 export interface DungeonMap {
   meta: MapMeta;
   tiles: Tile[][];
@@ -483,6 +535,13 @@ export interface DungeonMap {
    * both screen mode and print mode (B&W strokes).
    */
   handDrawn?: HandDrawnSettings;
+  /**
+   * Optional lighting & atmosphere layer. When present and `enabled`,
+   * ambient occlusion shadows in wall corners, soft shadows under stamps,
+   * and day/night/dusk color grading are rendered. Disabled in print mode
+   * by default.
+   */
+  lightingAtmosphere?: LightingAtmosphereSettings;
 }
 
 // ── Multi-Level Project ────────────────────────────────────────────────────
