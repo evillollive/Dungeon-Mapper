@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-09
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -553,10 +553,14 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - 9.3.6: `includeHandDrawn` export toggle for PNG/SVG
 - 9.3.7: 16 unit tests
 
-**9.4 — Lighting & Atmosphere**
-- Ambient occlusion in wall corners
-- Soft shadow falloff under stamps
-- Day/night/dusk color grading per scene
+**9.4 — Lighting & Atmosphere** ✅ COMPLETE
+- 9.4.1: `LightingAtmosphereSettings` type + `DungeonMap.lightingAtmosphere` field with defaults (`ColorGradingMode`, `DEFAULT_LIGHTING_ATMOSPHERE`)
+- 9.4.2: State management — `setLightingAtmosphere`, `clearLightingAtmosphere`, `updateLightingAtmosphere` in `useMapState.ts`
+- 9.4.3: Lighting renderer (`drawLightingAtmosphere`) in `src/utils/lightingAtmosphere.ts` with 3 layers: ambient occlusion (wall corners), stamp shadows (soft drop-shadow), color grading (day/night/dusk tint overlay)
+- 9.4.4: Integrated into MapCanvas.tsx + renderMap.ts (disabled in print mode)
+- 9.4.5: UI controls in DrawToolsTab/NavigationRail/Toolbar (enable toggle, AO intensity/radius sliders, shadow opacity slider, color grading mode selector + intensity slider, opacity slider)
+- 9.4.6: `includeLighting` export toggle for PNG/SVG
+- 9.4.7: 20 unit tests
 
 **9.5 — Art Style Presets**
 - **Per-map** `artStylePreset` field on `DungeonMap`
@@ -1297,6 +1301,19 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-09 — Phase 9.4 (Lighting & Atmosphere) COMPLETE**
+- Implemented `LightingAtmosphereSettings` type with AO intensity/radius, stamp shadow opacity/offset, color grading mode/intensity, and overall opacity
+- Added `lightingAtmosphere` field to `DungeonMap` for per-level persistence
+- Lighting renderer in `lightingAtmosphere.ts`: 3-layer system — ambient occlusion in wall corners (radial gradient shadows), stamp shadows (soft drop-shadow blobs using multiply blending), color grading (day/night/dusk tint overlays)
+- `ColorGradingMode` type: `'day'` (warm golden overlay), `'night'` (deep blue multiply), `'dusk'` (warm orange-red overlay), `'none'` (disabled)
+- AO algorithm: scans non-wall floor tiles for adjacent wall/pillar neighbours forming L-shaped corners; draws radial gradient darkening into the corner of the floor tile
+- Stamp shadows: offset drop-shadow blobs with multiply compositing; respects stamp scale
+- UI controls: enable toggle, AO intensity/radius sliders, shadow opacity slider, color grading mode selector with conditional tint intensity slider, overall opacity slider — wired through DrawToolsTab, NavigationRail, Toolbar
+- Export support: `includeLighting` option on `RenderMapOptions`, `HighResExportOptions`, and SVG export (embedded as PNG data-URL image)
+- 20 unit tests covering defaults, wall-like classification, color grading tints, AO corner detection, stamp shadows, all 3 grading modes, pillar handling, empty tile skipping, and multiple stamps
+- Canvas rendering: lighting layer inserted after hand-drawn overlay, before light source glows; disabled in print mode
+- State management: `setLightingAtmosphere`, `clearLightingAtmosphere`, `updateLightingAtmosphere` in `useMapState`
 
 **2026-05-09 — Phase 9.3 (Hand-Drawn Mode) COMPLETE**
 - Implemented `HandDrawnSettings` type with 3 styles (sketchy, pencil, ink), wobble, cross-hatch density, and opacity controls
