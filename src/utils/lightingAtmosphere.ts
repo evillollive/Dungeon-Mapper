@@ -7,13 +7,13 @@
  * Disabled in print mode by default.
  */
 
-import type { CustomThemeDefinition, LightingAtmosphereSettings, PlacedStamp, Tile } from '../types/map';
+import type { CustomThemeDefinition, LightingAtmosphereSettings, PlacedStamp, Tile, TileType } from '../types/map';
 import { getSemanticTileType } from './customThemes';
 
 // ── Ambient Occlusion ────────────────────────────────────────────────────
 
 /** Wall-type tile check (wall, pillar, or any custom wall-semantic tile). */
-function isWallLike(type: string, customThemes: readonly CustomThemeDefinition[]): boolean {
+function isWallLike(type: TileType, customThemes: readonly CustomThemeDefinition[]): boolean {
   const sem = getSemanticTileType(type, customThemes);
   return sem === 'wall' || sem === 'pillar';
 }

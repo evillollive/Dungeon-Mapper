@@ -38,7 +38,7 @@ function mulberry32(seed: number): () => number {
  * value in [-1, 1] given a floating-point position `t`. Uses the
  * seeded PRNG to generate deterministic lattice values.
  */
-function valueNoise1D(t: number, rng: () => number): number {
+function valueNoise1D(t: number): number {
   const i = Math.floor(t);
   const f = t - i;
   // Smoothstep interpolation
@@ -140,7 +140,6 @@ function drawWobblyLine(
   seed: number,
   segments: number = 12,
 ): void {
-  const rng = mulberry32(seed);
   const dx = x1 - x0;
   const dy = y1 - y0;
   // Normal direction for perpendicular displacement
@@ -152,7 +151,7 @@ function drawWobblyLine(
   ctx.beginPath();
   for (let i = 0; i <= segments; i++) {
     const t = i / segments;
-    const noise = valueNoise1D(t * freq + seed * 0.1, rng) * amplitude;
+    const noise = valueNoise1D(t * freq + seed * 0.1) * amplitude;
     const px = x0 + dx * t + nx * noise;
     const py = y0 + dy * t + ny * noise;
     if (i === 0) {
