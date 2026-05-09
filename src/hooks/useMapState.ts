@@ -928,6 +928,37 @@ export function useMapState() {
     });
   }, [debouncedSave, activeLevelIndex]);
 
+  // ── Lighting & atmosphere ───────────────────────────────────────────
+
+  const setLightingAtmosphere = useCallback((settings: import('../types/map').LightingAtmosphereSettings) => {
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, lightingAtmosphere: settings }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex]);
+
+  const clearLightingAtmosphere = useCallback(() => {
+    setProject(prev => {
+      if (!prev.levels[activeLevelIndex].lightingAtmosphere) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, lightingAtmosphere: undefined }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex]);
+
+  const updateLightingAtmosphere = useCallback((patch: Partial<import('../types/map').LightingAtmosphereSettings>) => {
+    setProject(prev => {
+      const current = prev.levels[activeLevelIndex].lightingAtmosphere;
+      if (!current) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, lightingAtmosphere: { ...m.lightingAtmosphere!, ...patch },
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex]);
+
   // ── Custom stamps ─────────────────────────────────────────────────────
 
   const saveCustomStamp = useCallback((stamp: StampDef) => {
@@ -1182,6 +1213,7 @@ export function useMapState() {
     setPaperTexture, clearPaperTexture, updatePaperTexture,
     setEdgeBlend, clearEdgeBlend, updateEdgeBlend,
     setHandDrawn, clearHandDrawn, updateHandDrawn,
+    setLightingAtmosphere, clearLightingAtmosphere, updateLightingAtmosphere,
     addLightSource, removeLightSource, clearLightSources,
     addStamp, moveStamp, removeStamp, clearStamps, updateStamp, bringStampToFront, sendStampToBack,
     addWallSegment, removeWallSegment, clearWallSegments,

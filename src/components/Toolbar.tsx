@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { CustomThemeDefinition, EdgeBlendSettings, HandDrawnSettings, PaperTextureSettings, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
+import type { CustomThemeDefinition, EdgeBlendSettings, HandDrawnSettings, LightingAtmosphereSettings, PaperTextureSettings, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
 import type { BackgroundImage } from '../types/map';
 import DrawToolsTab from './DrawToolsTab';
 import TacticalToolsTab from './TacticalToolsTab';
@@ -89,6 +89,11 @@ interface ToolbarProps {
   onSetHandDrawn?: (settings: HandDrawnSettings) => void;
   onUpdateHandDrawn?: (patch: Partial<HandDrawnSettings>) => void;
   onClearHandDrawn?: () => void;
+  // Lighting & atmosphere
+  lightingAtmosphere?: LightingAtmosphereSettings;
+  onSetLightingAtmosphere?: (settings: LightingAtmosphereSettings) => void;
+  onUpdateLightingAtmosphere?: (patch: Partial<LightingAtmosphereSettings>) => void;
+  onClearLightingAtmosphere?: () => void;
   // Scene templates
   onOpenSceneTemplates: () => void;
 }
@@ -191,6 +196,10 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             onSetHandDrawn={props.onSetHandDrawn}
             onUpdateHandDrawn={props.onUpdateHandDrawn}
             onClearHandDrawn={props.onClearHandDrawn}
+            lightingAtmosphere={props.lightingAtmosphere}
+            onSetLightingAtmosphere={props.onSetLightingAtmosphere}
+            onUpdateLightingAtmosphere={props.onUpdateLightingAtmosphere}
+            onClearLightingAtmosphere={props.onClearLightingAtmosphere}
           />
         )}
         {activeTab === 'tactical' && (
