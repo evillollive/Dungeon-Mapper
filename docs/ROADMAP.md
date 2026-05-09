@@ -574,7 +574,7 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - 9.5.6: Export honors preset (works via individual layer settings — no extra export changes needed)
 - 9.5.7: 26 unit tests
 
-📘 **README checkpoint #3:** Showcase gallery of all presets across themes.
+📘 **README checkpoint #3:** Showcase gallery of all presets across themes. ✅ COMPLETE
 
 ### Phase 10: Dynamic Rooms (Shape Layer)
 
@@ -1213,7 +1213,7 @@ Recommended implementation order based on dependency analysis, impact, and effor
     - *Why:* Visual quality leap; parchment + hand-drawn mode are the most requested art features
     - *Effort:* High (5 sub-phases, can deliver incrementally)
     - *Dependency:* None — standalone art work
-    - 📘 **README checkpoint #3** after 9.5: showcase gallery of all presets across themes
+    - 📘 **README checkpoint #3** after 9.5: showcase gallery of all presets across themes ✅ COMPLETE
 
 22. **Phase 10.1 → 10.2 → 10.3 → 10.4 → 10.5 → 10.6 — Dynamic Rooms** — Shape data model, rectangle drawing, visual merging, generator integration, subtractive shapes, additional shapes (circle/polygon)
     - *Why:* Biggest architectural change — transforms map editing from tile-only to shape+tile hybrid
