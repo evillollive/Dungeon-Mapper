@@ -44,6 +44,11 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **Export / Import** — JSON round-trip, PNG canvas export, SVG vector export, and a print-optimized high-DPI PNG export dialog with page tiling and optional scale bar
 - **Adjustable UI scale** — header **UI** dropdown rescales chrome text and controls (50%, 75%, 100%, 125%, 150%) and remembers your choice across sessions
 - **Preserve-tiles toggle** — when enabled (toolbar **🎨 Preserve**), switching themes keeps already-painted tiles in their original style so you can mix terrain styles from multiple themes on a single map
+- **Art style presets** — 5 built-in visual presets (Classic, Hand-Drawn, Painted, Minimal, Print) that configure all four art layers in one click; tweak individual layers to create a Custom style (see [Art System](#art-system) below)
+- **Paper texture** — procedural background texture with 5 patterns (parchment, linen, canvas, watercolor, marble), per-theme tints, adjustable opacity/grain/vignette
+- **Edge blending** — softens tile boundaries with 3 styles (dither, smooth, stipple) for organic terrain transitions
+- **Hand-drawn mode** — 3 rendering styles (sketchy, pencil, ink) that add wobbly grid lines, cross-hatch shading, and bold boundary strokes for a hand-crafted look
+- **Lighting & atmosphere** — ambient occlusion in wall corners, drop-shadows under stamps, and day/night/dusk color grading for mood and depth
 - **Mobile & tablet support** — responsive layout with 4 breakpoints, dedicated mobile bottom toolbar, touch gestures (pinch-to-zoom, two-finger pan, long-press pan), and gesture shortcuts (two-finger tap = undo, three-finger tap = redo)
 - **Progressive Web App** — installable on desktop and mobile with full offline support via service worker caching
 
@@ -271,6 +276,64 @@ Dungeon Mapper offers two layout modes, toggled via the **LAYOUT** dropdown in t
 - **Tabs** — the classic tabbed toolbar (Draw / Tactical / Advanced) in a wider left sidebar.
 
 The layout preference is saved to localStorage and restored on next visit. On mobile (≤768px), the bottom toolbar is always used regardless of this setting.
+
+## Art System
+
+Dungeon Mapper's art system adds four composable visual layers on top of the base tile renderer. Each layer can be enabled, disabled, and fine-tuned independently, or you can apply one of the **5 built-in art style presets** to configure all four layers at once. Choose a preset from the **ART STYLE** dropdown in the Draw tools panel (or via the Navigation Rail / Command Palette).
+
+### Art style presets
+
+| Preset | Paper | Edges | Hand-Drawn | Lighting | Description |
+| --- | --- | --- | --- | --- | --- |
+| **Classic** | Parchment | Dither | — | AO | Subtle parchment texture, dithered edges, ambient occlusion — the default look |
+| **Hand-Drawn** | Canvas | — | Sketchy | AO | Canvas texture, wobbly sketchy lines, cross-hatch shading |
+| **Painted** | Watercolor | Smooth | Ink | Dusk grading | Watercolor washes, smooth blending, bold ink outlines, warm dusk tint |
+| **Minimal** | — | — | — | — | Clean digital look — all art layers disabled |
+| **Print** | Linen | Stipple | Pencil | AO | Linen texture, stipple edges, pencil lines — optimised for B&W print output |
+
+Selecting a preset instantly applies its settings. If you manually adjust any individual layer afterward, the preset changes to **Custom** so you know it's been tweaked. All presets work with every theme — the art layers composite on top of the theme's base tile art.
+
+### Paper texture
+
+A procedural background texture drawn behind the tile grid. Controls:
+
+- **Pattern** — choose from 5 textures: parchment, linen, canvas, watercolor, marble.
+- **Opacity** — blend strength of the texture layer (0–1).
+- **Grain** — amount of fine noise added to the texture.
+- **Vignette** — darkening at the edges of the map for a framed look.
+- **Theme tint** — each theme applies its own color tint to the paper (e.g., warm amber for Castle, cool grey for Starship, olive for Wilderness).
+
+### Edge blending
+
+Softens the hard pixel boundaries between adjacent tile types for more natural-looking terrain transitions.
+
+- **Style** — `dither` (scattered pixels), `smooth` (gradient fade), or `stipple` (dot pattern).
+- **Intensity** — how far the blend extends from the tile edge.
+- **Opacity** — overall strength of the blend layer.
+
+### Hand-drawn mode
+
+Re-renders the grid, walls, and tile boundaries with a hand-crafted aesthetic.
+
+- **Style** — `sketchy` (wobbly offset lines), `pencil` (fine textured strokes), or `ink` (bold confident outlines).
+- **Wobble** — amplitude of line waviness.
+- **Line width** — stroke thickness.
+- **Opacity** — overall strength of the hand-drawn overlay.
+- Honors print mode — renders in black & white when print mode is active.
+
+### Lighting & atmosphere
+
+Adds depth and mood with three composable lighting layers:
+
+- **Ambient occlusion** — darkens inner corners where wall tiles meet, simulating realistic shadow gathering. Adjustable intensity and radius.
+- **Stamp shadows** — soft drop-shadows beneath placed stamps for visual lift. Adjustable opacity and offset.
+- **Color grading** — a scene-wide tint overlay in four modes: `day` (warm daylight), `night` (cool blue), `dusk` (golden amber), or `none`. Adjustable intensity.
+- **Overall opacity** — master control for the entire lighting layer.
+- Disabled in print mode by default.
+
+### Export integration
+
+Each art layer has a corresponding export toggle in the PNG/SVG export dialogs so you can include or exclude paper texture, edge blending, hand-drawn effects, and lighting from your exports independently.
 
 ## Map Generation
 
@@ -549,6 +612,11 @@ The project uses [Vitest](https://vitest.dev/) with [React Testing Library](http
 | Stamp catalog | `src/utils/__tests__/stampCatalog.test.ts` | `getStampDef`, built-in stamp integrity, category labels |
 | Map state | `src/hooks/__tests__/mapStateUtils.test.ts` | `createDefaultMap`, `createDefaultProject`, `withDefaults`, `nextIdAfter` |
 | Components | `src/components/__tests__/dialogs.test.tsx` | Dialog render/close lifecycle (ShortcutsHelp, ExportDialog) |
+| Paper texture | `src/utils/__tests__/paperTexture.test.ts` | `generatePaperTexture`, pattern rendering, caching, vignette |
+| Edge blending | `src/utils/__tests__/edgeBlend.test.ts` | `drawEdgeBlending`, dither/smooth/stipple styles, intensity |
+| Hand-drawn mode | `src/utils/__tests__/handDrawn.test.ts` | `drawHandDrawn`, sketchy/pencil/ink styles, wobble, print mode |
+| Lighting & atmosphere | `src/utils/__tests__/lightingAtmosphere.test.ts` | `drawLightingAtmosphere`, AO, stamp shadows, color grading |
+| Art style presets | `src/utils/__tests__/artStylePresets.test.ts` | `getPresetSettings`, preset descriptions, layer configurations |
 
 Shared mock context providers live in `src/test/testHelpers.tsx` — use `TestProviders` to wrap components that depend on `ToolContext`, `MapContext`, `ViewContext`, or `ActionContext`.
 

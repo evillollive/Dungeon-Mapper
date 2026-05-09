@@ -170,6 +170,7 @@ function App() {
     setLightingAtmosphere,
     clearLightingAtmosphere,
     updateLightingAtmosphere,
+    applyArtStylePreset,
     addLightSource,
     removeLightSource,
     clearLightSources,
@@ -1138,6 +1139,8 @@ function App() {
               onSetLightingAtmosphere={setLightingAtmosphere}
               onUpdateLightingAtmosphere={updateLightingAtmosphere}
               onClearLightingAtmosphere={clearLightingAtmosphere}
+              artStylePreset={map.artStylePreset}
+              onApplyArtStylePreset={applyArtStylePreset}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             ) : (
@@ -1232,6 +1235,8 @@ function App() {
               onSetLightingAtmosphere={setLightingAtmosphere}
               onUpdateLightingAtmosphere={updateLightingAtmosphere}
               onClearLightingAtmosphere={clearLightingAtmosphere}
+              artStylePreset={map.artStylePreset}
+              onApplyArtStylePreset={applyArtStylePreset}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             ))}

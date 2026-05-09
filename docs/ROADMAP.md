@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-09
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -562,12 +562,19 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - 9.4.6: `includeLighting` export toggle for PNG/SVG
 - 9.4.7: 20 unit tests
 
-**9.5 — Art Style Presets**
+**9.5 — Art Style Presets** ✅ COMPLETE
 - **Per-map** `artStylePreset` field on `DungeonMap`
 - Built-in presets: **Classic** (current), **Hand-Drawn**, **Painted**, **Minimal**, **Print**
 - Preset picker in Map settings; export honors active preset
+- 9.5.1: `ArtStylePresetId` type, `ART_STYLE_PRESET_IDS`, `ART_STYLE_PRESET_LABELS` in map.ts
+- 9.5.2: `artStylePresets.ts` utility — `getPresetSettings()` returns curated layer configs, `ART_STYLE_PRESET_DESCRIPTIONS` for tooltips
+- 9.5.3: State management — `applyArtStylePreset()` in useMapState.ts; individual layer tweaks auto-mark preset as `'custom'`
+- 9.5.4: ART STYLE picker section in DrawToolsTab with dropdown + description
+- 9.5.5: Wired through NavigationRail, Toolbar, App.tsx
+- 9.5.6: Export honors preset (works via individual layer settings — no extra export changes needed)
+- 9.5.7: 26 unit tests
 
-📘 **README checkpoint #3:** Showcase gallery of all presets across themes.
+📘 **README checkpoint #3:** Showcase gallery of all presets across themes. ✅ COMPLETE
 
 ### Phase 10: Dynamic Rooms (Shape Layer)
 
@@ -1206,7 +1213,7 @@ Recommended implementation order based on dependency analysis, impact, and effor
     - *Why:* Visual quality leap; parchment + hand-drawn mode are the most requested art features
     - *Effort:* High (5 sub-phases, can deliver incrementally)
     - *Dependency:* None — standalone art work
-    - 📘 **README checkpoint #3** after 9.5: showcase gallery of all presets across themes
+    - 📘 **README checkpoint #3** after 9.5: showcase gallery of all presets across themes ✅ COMPLETE
 
 22. **Phase 10.1 → 10.2 → 10.3 → 10.4 → 10.5 → 10.6 — Dynamic Rooms** — Shape data model, rectangle drawing, visual merging, generator integration, subtractive shapes, additional shapes (circle/polygon)
     - *Why:* Biggest architectural change — transforms map editing from tile-only to shape+tile hybrid
@@ -1301,6 +1308,21 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-09 — Phase 9.5 (Art Style Presets) COMPLETE**
+- Added `ArtStylePresetId` type (`'classic' | 'hand-drawn' | 'painted' | 'minimal' | 'print' | 'custom'`) and `artStylePreset` field on `DungeonMap`
+- Created `artStylePresets.ts` with curated settings for 5 built-in presets:
+  - **Classic**: parchment texture, dither edge blending, ambient occlusion — the default look
+  - **Hand-Drawn**: canvas texture, sketchy wobbly lines with cross-hatch, subtle AO, no edge blending
+  - **Painted**: watercolor texture, smooth blending, ink outlines, dusk color grading
+  - **Minimal**: all art layers disabled — clean digital look
+  - **Print**: linen texture, stipple blending, pencil lines — optimised for B&W printing
+- `applyArtStylePreset()` in `useMapState.ts` applies all four layer settings at once
+- Individual layer tweaks (set/update/clear paper texture, edge blend, hand-drawn, lighting) auto-mark preset as `'custom'`
+- ART STYLE picker section in DrawToolsTab with dropdown selector and description text
+- Wired through NavigationRail, Toolbar, App.tsx
+- Export honors active preset via existing individual layer settings (no export changes needed)
+- 26 unit tests covering preset lookup, value validation, determinism, and distinctness
 
 **2026-05-09 — Phase 9.4 (Lighting & Atmosphere) COMPLETE**
 - Implemented `LightingAtmosphereSettings` type with AO intensity/radius, stamp shadow opacity/offset, color grading mode/intensity, and overall opacity

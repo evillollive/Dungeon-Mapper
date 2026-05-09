@@ -122,6 +122,9 @@ interface NavigationRailProps {
   onSetLightingAtmosphere?: (settings: LightingAtmosphereSettings) => void;
   onUpdateLightingAtmosphere?: (patch: Partial<LightingAtmosphereSettings>) => void;
   onClearLightingAtmosphere?: () => void;
+  // Art style presets
+  artStylePreset?: import('../types/map').ArtStylePresetId;
+  onApplyArtStylePreset?: (presetId: import('../types/map').ArtStylePresetId) => void;
   // Scene templates
   onOpenSceneTemplates: () => void;
 }
@@ -225,6 +228,8 @@ const NavigationRail: React.FC<NavigationRailProps> = (props) => {
             onSetLightingAtmosphere={props.onSetLightingAtmosphere}
             onUpdateLightingAtmosphere={props.onUpdateLightingAtmosphere}
             onClearLightingAtmosphere={props.onClearLightingAtmosphere}
+            artStylePreset={props.artStylePreset}
+            onApplyArtStylePreset={props.onApplyArtStylePreset}
           />
         )}
         {activeMode === 'tactical' && (

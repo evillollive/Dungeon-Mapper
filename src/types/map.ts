@@ -401,6 +401,31 @@ export const DEFAULT_HAND_DRAWN: HandDrawnSettings = {
   opacity: 0.8,
 };
 
+// ── Art Style Presets ────────────────────────────────────────────────────
+
+/**
+ * Built-in art style preset identifiers. Each preset configures all four
+ * art system layers (paper texture, edge blending, hand-drawn mode,
+ * lighting & atmosphere) with curated settings for a particular visual
+ * style. `'custom'` indicates the user has manually tweaked settings.
+ */
+export type ArtStylePresetId = 'classic' | 'hand-drawn' | 'painted' | 'minimal' | 'print' | 'custom';
+
+/** Human-readable labels for each preset, ordered for UI display. */
+export const ART_STYLE_PRESET_IDS: readonly ArtStylePresetId[] = [
+  'classic', 'hand-drawn', 'painted', 'minimal', 'print',
+] as const;
+
+/** Display labels for presets. */
+export const ART_STYLE_PRESET_LABELS: Record<ArtStylePresetId, string> = {
+  'classic': 'Classic',
+  'hand-drawn': 'Hand-Drawn',
+  'painted': 'Painted',
+  'minimal': 'Minimal',
+  'print': 'Print',
+  'custom': 'Custom',
+};
+
 // ── Lighting & Atmosphere ───────────────────────────────────────────────
 
 /** Day/night/dusk color grading presets. */
@@ -542,6 +567,13 @@ export interface DungeonMap {
    * by default.
    */
   lightingAtmosphere?: LightingAtmosphereSettings;
+  /**
+   * Active art style preset. When set to a built-in preset id, the four
+   * art layers (paper texture, edge blending, hand-drawn, lighting) are
+   * configured with curated settings. `'custom'` means the user has
+   * manually adjusted individual layer settings.
+   */
+  artStylePreset?: ArtStylePresetId;
 }
 
 // ── Multi-Level Project ────────────────────────────────────────────────────
