@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
-> **Last updated:** 2026-05-08
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Last updated:** 2026-05-09
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -544,10 +544,14 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - 9.2.6: `includeEdgeBlend` export toggle for PNG/SVG
 - 9.2.7: 12 unit tests
 
-**9.3 — Hand-Drawn Mode**
-- Wobbly walls (Perlin-jittered stroke offsets)
-- Cross-hatch shading and ink texture (Dyson / Watabou inspired)
-- Honors print-mode B&W contract
+**9.3 — Hand-Drawn Mode** ✅ COMPLETE (2026-05-09)
+- 9.3.1: `HandDrawnSettings` type + `DEFAULT_HAND_DRAWN` constant + `DungeonMap.handDrawn` field
+- 9.3.2: State management (`setHandDrawn`, `clearHandDrawn`, `updateHandDrawn`)
+- 9.3.3: Hand-drawn renderer with 3 styles (sketchy, pencil, ink) — wobbly grid lines (seeded value noise), cross-hatch shading on wall/pillar tiles, bold wall-to-floor boundary outlines
+- 9.3.4: Integrated into MapCanvas.tsx + renderMap.ts (honours print-mode B&W contract)
+- 9.3.5: UI controls in DrawToolsTab/NavigationRail/Toolbar (enable toggle, style selector, wobble/hatch/opacity sliders)
+- 9.3.6: `includeHandDrawn` export toggle for PNG/SVG
+- 9.3.7: 16 unit tests
 
 **9.4 — Lighting & Atmosphere**
 - Ambient occlusion in wall corners
@@ -1293,6 +1297,19 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-09 — Phase 9.3 (Hand-Drawn Mode) COMPLETE**
+- Implemented `HandDrawnSettings` type with 3 styles (sketchy, pencil, ink), wobble, cross-hatch density, and opacity controls
+- Added `handDrawn` field to `DungeonMap` for per-level persistence
+- Hand-drawn renderer in `handDrawn.ts`: wobbly grid lines via seeded value noise, cross-hatch shading on wall/pillar tiles, bold outlines at wall-to-floor boundaries
+- 3 style presets: sketchy (loose, high-wobble), pencil (thin, soft), ink (bold, dense cross-hatch) — each with tuned line widths, frequencies, and hatch parameters
+- Dyson / Watabou inspired: thick outer walls at tile-type boundaries, diagonal cross-hatching fills on wall tiles
+- Honours print-mode B&W contract: uses solid black strokes in print mode
+- UI controls: enable toggle, style dropdown, wobble/hatch/opacity sliders — wired through DrawToolsTab, NavigationRail, Toolbar
+- Export support: `includeHandDrawn` option on `RenderMapOptions` and SVG export (embedded as PNG data-URL image)
+- 16 unit tests covering all styles, determinism, empty tile handling, wobble amplitude, pillar tiles, and print mode
+- Canvas rendering: hand-drawn overlay inserted after grid lines, before light sources
+- State management: `setHandDrawn`, `clearHandDrawn`, `updateHandDrawn` in `useMapState`
 
 **2026-05-08 — Phase 9.2 (Edge Blending) COMPLETE**
 - Implemented `EdgeBlendSettings` type with 3 styles (dither, smooth, stipple), intensity, and opacity controls

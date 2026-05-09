@@ -9,6 +9,7 @@ import { ICON_BY_ID } from '../utils/iconLibrary';
 import { getStampDef } from '../utils/stampCatalog';
 import { getCachedPaperTexture } from '../utils/paperTexture';
 import { drawEdgeBlending } from '../utils/edgeBlend';
+import { drawHandDrawn } from '../utils/handDrawn';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 
@@ -1135,6 +1136,13 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.moveTo(x * tileSize, 0);
       ctx.lineTo(x * tileSize, h);
       ctx.stroke();
+    }
+
+    // Hand-drawn mode — wobbly grid lines + cross-hatch overlay rendered
+    // after the regular grid so the hand-drawn strokes sit on top. Works in
+    // both screen and print mode (B&W strokes in print).
+    if (map.handDrawn?.enabled) {
+      drawHandDrawn(ctx, tiles, meta.width, meta.height, tileSize, map.handDrawn, printMode, customThemes);
     }
 
     // Light source glow halos — rendered right after the grid lines so the

@@ -897,6 +897,37 @@ export function useMapState() {
     });
   }, [debouncedSave, activeLevelIndex]);
 
+  // ── Hand-drawn mode ──────────────────────────────────────────────────
+
+  const setHandDrawn = useCallback((settings: import('../types/map').HandDrawnSettings) => {
+    setProject(prev => {
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, handDrawn: settings }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex]);
+
+  const clearHandDrawn = useCallback(() => {
+    setProject(prev => {
+      if (!prev.levels[activeLevelIndex].handDrawn) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, handDrawn: undefined }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex]);
+
+  const updateHandDrawn = useCallback((patch: Partial<import('../types/map').HandDrawnSettings>) => {
+    setProject(prev => {
+      const current = prev.levels[activeLevelIndex].handDrawn;
+      if (!current) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, handDrawn: { ...m.handDrawn!, ...patch },
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex]);
+
   // ── Custom stamps ─────────────────────────────────────────────────────
 
   const saveCustomStamp = useCallback((stamp: StampDef) => {
@@ -1150,6 +1181,7 @@ export function useMapState() {
     setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
     setPaperTexture, clearPaperTexture, updatePaperTexture,
     setEdgeBlend, clearEdgeBlend, updateEdgeBlend,
+    setHandDrawn, clearHandDrawn, updateHandDrawn,
     addLightSource, removeLightSource, clearLightSources,
     addStamp, moveStamp, removeStamp, clearStamps, updateStamp, bringStampToFront, sendStampToBack,
     addWallSegment, removeWallSegment, clearWallSegments,

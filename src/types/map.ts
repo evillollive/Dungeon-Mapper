@@ -362,6 +362,45 @@ export const DEFAULT_EDGE_BLEND: EdgeBlendSettings = {
   opacity: 0.6,
 };
 
+// ── Hand-Drawn Mode ────────────────────────────────────────────────────────
+
+/** Hand-drawn rendering style presets. */
+export type HandDrawnStyle = 'sketchy' | 'pencil' | 'ink';
+
+/**
+ * Settings for the hand-drawn rendering mode. When enabled, grid lines
+ * and tile-boundary walls are rendered with wobbly, jittered strokes
+ * (Perlin-inspired offsets), and wall tiles receive cross-hatch shading
+ * to evoke a Dyson / Watabou hand-drawn cartography aesthetic.
+ *
+ * The renderer honours the print-mode B&W contract: in print mode, the
+ * hand-drawn effect uses solid black strokes on white.
+ */
+export interface HandDrawnSettings {
+  /** Whether the hand-drawn rendering mode is active. */
+  enabled: boolean;
+  /** Visual style preset. `'sketchy'` has loose lines, `'pencil'` is
+   *  softer/thinner, `'ink'` is bold with higher contrast. Defaults to `'sketchy'`. */
+  style: HandDrawnStyle;
+  /** Wobble amplitude as a fraction of tile size (0–1). Controls how
+   *  far grid lines deviate from straight. Defaults to 0.3. */
+  wobble: number;
+  /** Cross-hatch density for wall tiles (0–1). Higher values draw more
+   *  hatch lines. Defaults to 0.5. */
+  crossHatch: number;
+  /** Overall opacity of the hand-drawn overlay (0–1). Defaults to 0.8. */
+  opacity: number;
+}
+
+/** Sensible defaults for a freshly-enabled hand-drawn mode. */
+export const DEFAULT_HAND_DRAWN: HandDrawnSettings = {
+  enabled: true,
+  style: 'sketchy',
+  wobble: 0.3,
+  crossHatch: 0.5,
+  opacity: 0.8,
+};
+
 export interface DungeonMap {
   meta: MapMeta;
   tiles: Tile[][];
@@ -437,6 +476,13 @@ export interface DungeonMap {
    * print mode by default.
    */
   edgeBlend?: EdgeBlendSettings;
+  /**
+   * Optional hand-drawn rendering mode. When present and `enabled`,
+   * grid lines are drawn with wobbly jitter and wall tiles receive
+   * cross-hatch shading for a hand-crafted cartography look. Works in
+   * both screen mode and print mode (B&W strokes).
+   */
+  handDrawn?: HandDrawnSettings;
 }
 
 // ── Multi-Level Project ────────────────────────────────────────────────────

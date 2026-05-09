@@ -1,6 +1,6 @@
 import React from 'react';
-import type { CustomThemeDefinition, EdgeBlendSettings, EdgeBlendStyle, PaperTexturePattern, PaperTextureSettings, StampDef, ToolType, TileType } from '../types/map';
-import { ALL_TILE_TYPES, TILE_LABELS, DEFAULT_PAPER_TEXTURE, DEFAULT_EDGE_BLEND, isBuiltInTileType } from '../types/map';
+import type { CustomThemeDefinition, EdgeBlendSettings, EdgeBlendStyle, HandDrawnSettings, HandDrawnStyle, PaperTexturePattern, PaperTextureSettings, StampDef, ToolType, TileType } from '../types/map';
+import { ALL_TILE_TYPES, TILE_LABELS, DEFAULT_PAPER_TEXTURE, DEFAULT_EDGE_BLEND, DEFAULT_HAND_DRAWN, isBuiltInTileType } from '../types/map';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { buildThemeList, getCustomTileLabel, getThemeWithCustom } from '../utils/customThemes';
 import { getPaperTint } from '../themes';
@@ -46,6 +46,11 @@ interface DrawToolsTabProps {
   onSetEdgeBlend?: (settings: EdgeBlendSettings) => void;
   onUpdateEdgeBlend?: (patch: Partial<EdgeBlendSettings>) => void;
   onClearEdgeBlend?: () => void;
+  // Hand-drawn mode
+  handDrawn?: HandDrawnSettings;
+  onSetHandDrawn?: (settings: HandDrawnSettings) => void;
+  onUpdateHandDrawn?: (patch: Partial<HandDrawnSettings>) => void;
+  onClearHandDrawn?: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -111,6 +116,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   onClearWalls, onClearPaths,
   paperTexture, onSetPaperTexture, onUpdatePaperTexture, onClearPaperTexture,
   edgeBlend, onSetEdgeBlend, onUpdateEdgeBlend, onClearEdgeBlend,
+  handDrawn, onSetHandDrawn, onUpdateHandDrawn, onClearHandDrawn,
 }) => {
   const theme = getThemeWithCustom(themeId, customThemes);
   const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
@@ -487,6 +493,92 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
                 onChange={e => onUpdateEdgeBlend?.({ opacity: Number(e.target.value) })}
                 style={{ width: 60 }}
                 title={`Opacity: ${Math.round(edgeBlend.opacity * 100)}%`}
+              />
+            </label>
+          </>
+        )}
+      </div>
+
+      {/* Hand-Drawn Mode controls */}
+      <div className="toolbar-section">
+        <div className="toolbar-label">HAND-DRAWN</div>
+        <label
+          className={`tool-btn ${handDrawn?.enabled ? 'active' : ''}`}
+          style={{ cursor: 'pointer' }}
+          title="Render grid with wobbly hand-drawn strokes and cross-hatch shading on walls"
+        >
+          <span className="tool-icon" aria-hidden="true">✍️</span>
+          <span className="tool-name">Enable</span>
+          <input
+            type="checkbox"
+            checked={handDrawn?.enabled ?? false}
+            onChange={() => {
+              if (handDrawn?.enabled) {
+                onClearHandDrawn?.();
+              } else {
+                onSetHandDrawn?.(DEFAULT_HAND_DRAWN);
+              }
+            }}
+            aria-label="Enable hand-drawn mode"
+            style={{ margin: 0 }}
+          />
+        </label>
+        {handDrawn?.enabled && (
+          <>
+            <label className="tool-btn" style={{ cursor: 'pointer' }} title="Hand-drawn style">
+              <span className="tool-icon" aria-hidden="true">🖊️</span>
+              <span className="tool-name">Style</span>
+              <select
+                className="grid-select"
+                value={handDrawn.style}
+                onChange={e => onUpdateHandDrawn?.({ style: e.target.value as HandDrawnStyle })}
+                title="Drawing style"
+              >
+                <option value="sketchy">Sketchy</option>
+                <option value="pencil">Pencil</option>
+                <option value="ink">Ink</option>
+              </select>
+            </label>
+            <label className="tool-btn" style={{ cursor: 'pointer', flexWrap: 'wrap' }} title={`Wobble: ${Math.round(handDrawn.wobble * 100)}%`}>
+              <span className="tool-icon" aria-hidden="true">〰️</span>
+              <span className="tool-name">Wobble</span>
+              <input
+                type="range"
+                min="0.05"
+                max="1"
+                step="0.05"
+                value={handDrawn.wobble}
+                onChange={e => onUpdateHandDrawn?.({ wobble: Number(e.target.value) })}
+                style={{ width: 60 }}
+                title={`Wobble: ${Math.round(handDrawn.wobble * 100)}%`}
+              />
+            </label>
+            <label className="tool-btn" style={{ cursor: 'pointer', flexWrap: 'wrap' }} title={`Cross-hatch: ${Math.round(handDrawn.crossHatch * 100)}%`}>
+              <span className="tool-icon" aria-hidden="true">▧</span>
+              <span className="tool-name">Hatch</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={handDrawn.crossHatch}
+                onChange={e => onUpdateHandDrawn?.({ crossHatch: Number(e.target.value) })}
+                style={{ width: 60 }}
+                title={`Cross-hatch density: ${Math.round(handDrawn.crossHatch * 100)}%`}
+              />
+            </label>
+            <label className="tool-btn" style={{ cursor: 'pointer', flexWrap: 'wrap' }} title={`Opacity: ${Math.round(handDrawn.opacity * 100)}%`}>
+              <span className="tool-icon" aria-hidden="true">👁</span>
+              <span className="tool-name">Opacity</span>
+              <input
+                type="range"
+                min="0.1"
+                max="1"
+                step="0.05"
+                value={handDrawn.opacity}
+                onChange={e => onUpdateHandDrawn?.({ opacity: Number(e.target.value) })}
+                style={{ width: 60 }}
+                title={`Opacity: ${Math.round(handDrawn.opacity * 100)}%`}
               />
             </label>
           </>

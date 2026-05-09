@@ -164,6 +164,9 @@ function App() {
     setEdgeBlend,
     clearEdgeBlend,
     updateEdgeBlend,
+    setHandDrawn,
+    clearHandDrawn,
+    updateHandDrawn,
     addLightSource,
     removeLightSource,
     clearLightSources,
@@ -1124,6 +1127,10 @@ function App() {
               onSetEdgeBlend={setEdgeBlend}
               onUpdateEdgeBlend={updateEdgeBlend}
               onClearEdgeBlend={clearEdgeBlend}
+              handDrawn={map.handDrawn}
+              onSetHandDrawn={setHandDrawn}
+              onUpdateHandDrawn={updateHandDrawn}
+              onClearHandDrawn={clearHandDrawn}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             ) : (
@@ -1210,6 +1217,10 @@ function App() {
               onSetEdgeBlend={setEdgeBlend}
               onUpdateEdgeBlend={updateEdgeBlend}
               onClearEdgeBlend={clearEdgeBlend}
+              handDrawn={map.handDrawn}
+              onSetHandDrawn={setHandDrawn}
+              onUpdateHandDrawn={updateHandDrawn}
+              onClearHandDrawn={clearHandDrawn}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             ))}
