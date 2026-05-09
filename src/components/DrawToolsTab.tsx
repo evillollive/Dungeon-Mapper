@@ -1,9 +1,10 @@
 import React from 'react';
-import type { ColorGradingMode, CustomThemeDefinition, EdgeBlendSettings, EdgeBlendStyle, HandDrawnSettings, HandDrawnStyle, LightingAtmosphereSettings, PaperTexturePattern, PaperTextureSettings, StampDef, ToolType, TileType } from '../types/map';
-import { ALL_TILE_TYPES, TILE_LABELS, DEFAULT_PAPER_TEXTURE, DEFAULT_EDGE_BLEND, DEFAULT_HAND_DRAWN, DEFAULT_LIGHTING_ATMOSPHERE, isBuiltInTileType } from '../types/map';
+import type { ArtStylePresetId, ColorGradingMode, CustomThemeDefinition, EdgeBlendSettings, EdgeBlendStyle, HandDrawnSettings, HandDrawnStyle, LightingAtmosphereSettings, PaperTexturePattern, PaperTextureSettings, StampDef, ToolType, TileType } from '../types/map';
+import { ALL_TILE_TYPES, TILE_LABELS, DEFAULT_PAPER_TEXTURE, DEFAULT_EDGE_BLEND, DEFAULT_HAND_DRAWN, DEFAULT_LIGHTING_ATMOSPHERE, ART_STYLE_PRESET_IDS, ART_STYLE_PRESET_LABELS, isBuiltInTileType } from '../types/map';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { buildThemeList, getCustomTileLabel, getThemeWithCustom } from '../utils/customThemes';
 import { getPaperTint } from '../themes';
+import { ART_STYLE_PRESET_DESCRIPTIONS } from '../utils/artStylePresets';
 import StampPicker from './StampPicker';
 
 interface DrawToolsTabProps {
@@ -56,6 +57,9 @@ interface DrawToolsTabProps {
   onSetLightingAtmosphere?: (settings: LightingAtmosphereSettings) => void;
   onUpdateLightingAtmosphere?: (patch: Partial<LightingAtmosphereSettings>) => void;
   onClearLightingAtmosphere?: () => void;
+  // Art style presets
+  artStylePreset?: ArtStylePresetId;
+  onApplyArtStylePreset?: (presetId: ArtStylePresetId) => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -123,6 +127,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   edgeBlend, onSetEdgeBlend, onUpdateEdgeBlend, onClearEdgeBlend,
   handDrawn, onSetHandDrawn, onUpdateHandDrawn, onClearHandDrawn,
   lightingAtmosphere, onSetLightingAtmosphere, onUpdateLightingAtmosphere, onClearLightingAtmosphere,
+  artStylePreset, onApplyArtStylePreset,
 }) => {
   const theme = getThemeWithCustom(themeId, customThemes);
   const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
@@ -321,6 +326,35 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
             </button>
           ))}
         </div>
+      </div>
+
+      {/* Art Style Preset picker */}
+      <div className="toolbar-section">
+        <div className="toolbar-label">ART STYLE</div>
+        <label className="tool-btn" style={{ cursor: 'pointer' }} title="Choose a curated art style preset that configures all visual layers at once">
+          <span className="tool-icon" aria-hidden="true">🎭</span>
+          <span className="tool-name">Preset</span>
+          <select
+            className="grid-select"
+            value={artStylePreset ?? 'custom'}
+            onChange={e => onApplyArtStylePreset?.(e.target.value as ArtStylePresetId)}
+            title="Art style preset"
+          >
+            {ART_STYLE_PRESET_IDS.map(id => (
+              <option key={id} value={id} title={ART_STYLE_PRESET_DESCRIPTIONS[id]}>
+                {ART_STYLE_PRESET_LABELS[id]}
+              </option>
+            ))}
+            {(artStylePreset === 'custom' || !artStylePreset) && (
+              <option value="custom">{ART_STYLE_PRESET_LABELS['custom']}</option>
+            )}
+          </select>
+        </label>
+        {artStylePreset && artStylePreset !== 'custom' && (
+          <div className="tool-btn" style={{ fontSize: '0.75em', opacity: 0.7, cursor: 'default' }}>
+            <span className="tool-name">{ART_STYLE_PRESET_DESCRIPTIONS[artStylePreset]}</span>
+          </div>
+        )}
       </div>
 
       {/* Paper Texture layer controls */}

@@ -8,6 +8,7 @@ import { useMapHistory } from './useMapHistory';
 import { useMapClipboard } from './useMapClipboard';
 import { useLevelManagement } from './useLevelManagement';
 import { useMapPersistence } from './useMapPersistence';
+import { getPresetSettings as getPresetSettingsFn } from '../utils/artStylePresets';
 
 export { getClipboard } from './useMapClipboard';
 
@@ -839,7 +840,7 @@ export function useMapState() {
 
   const setPaperTexture = useCallback((settings: import('../types/map').PaperTextureSettings) => {
     setProject(prev => {
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, paperTexture: settings }));
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, paperTexture: settings, artStylePreset: 'custom' as const }));
       debouncedSave(updated);
       return updated;
     });
@@ -848,7 +849,7 @@ export function useMapState() {
   const clearPaperTexture = useCallback(() => {
     setProject(prev => {
       if (!prev.levels[activeLevelIndex].paperTexture) return prev;
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, paperTexture: undefined }));
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, paperTexture: undefined, artStylePreset: 'custom' as const }));
       debouncedSave(updated);
       return updated;
     });
@@ -859,7 +860,7 @@ export function useMapState() {
       const current = prev.levels[activeLevelIndex].paperTexture;
       if (!current) return prev;
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m, paperTexture: { ...m.paperTexture!, ...patch },
+        ...m, paperTexture: { ...m.paperTexture!, ...patch }, artStylePreset: 'custom' as const,
       }));
       debouncedSave(updated);
       return updated;
@@ -870,7 +871,7 @@ export function useMapState() {
 
   const setEdgeBlend = useCallback((settings: import('../types/map').EdgeBlendSettings) => {
     setProject(prev => {
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, edgeBlend: settings }));
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, edgeBlend: settings, artStylePreset: 'custom' as const }));
       debouncedSave(updated);
       return updated;
     });
@@ -879,7 +880,7 @@ export function useMapState() {
   const clearEdgeBlend = useCallback(() => {
     setProject(prev => {
       if (!prev.levels[activeLevelIndex].edgeBlend) return prev;
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, edgeBlend: undefined }));
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, edgeBlend: undefined, artStylePreset: 'custom' as const }));
       debouncedSave(updated);
       return updated;
     });
@@ -890,7 +891,7 @@ export function useMapState() {
       const current = prev.levels[activeLevelIndex].edgeBlend;
       if (!current) return prev;
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m, edgeBlend: { ...m.edgeBlend!, ...patch },
+        ...m, edgeBlend: { ...m.edgeBlend!, ...patch }, artStylePreset: 'custom' as const,
       }));
       debouncedSave(updated);
       return updated;
@@ -901,7 +902,7 @@ export function useMapState() {
 
   const setHandDrawn = useCallback((settings: import('../types/map').HandDrawnSettings) => {
     setProject(prev => {
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, handDrawn: settings }));
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, handDrawn: settings, artStylePreset: 'custom' as const }));
       debouncedSave(updated);
       return updated;
     });
@@ -910,7 +911,7 @@ export function useMapState() {
   const clearHandDrawn = useCallback(() => {
     setProject(prev => {
       if (!prev.levels[activeLevelIndex].handDrawn) return prev;
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, handDrawn: undefined }));
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, handDrawn: undefined, artStylePreset: 'custom' as const }));
       debouncedSave(updated);
       return updated;
     });
@@ -921,7 +922,7 @@ export function useMapState() {
       const current = prev.levels[activeLevelIndex].handDrawn;
       if (!current) return prev;
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m, handDrawn: { ...m.handDrawn!, ...patch },
+        ...m, handDrawn: { ...m.handDrawn!, ...patch }, artStylePreset: 'custom' as const,
       }));
       debouncedSave(updated);
       return updated;
@@ -932,7 +933,7 @@ export function useMapState() {
 
   const setLightingAtmosphere = useCallback((settings: import('../types/map').LightingAtmosphereSettings) => {
     setProject(prev => {
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, lightingAtmosphere: settings }));
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, lightingAtmosphere: settings, artStylePreset: 'custom' as const }));
       debouncedSave(updated);
       return updated;
     });
@@ -941,7 +942,7 @@ export function useMapState() {
   const clearLightingAtmosphere = useCallback(() => {
     setProject(prev => {
       if (!prev.levels[activeLevelIndex].lightingAtmosphere) return prev;
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, lightingAtmosphere: undefined }));
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, lightingAtmosphere: undefined, artStylePreset: 'custom' as const }));
       debouncedSave(updated);
       return updated;
     });
@@ -952,7 +953,34 @@ export function useMapState() {
       const current = prev.levels[activeLevelIndex].lightingAtmosphere;
       if (!current) return prev;
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m, lightingAtmosphere: { ...m.lightingAtmosphere!, ...patch },
+        ...m, lightingAtmosphere: { ...m.lightingAtmosphere!, ...patch }, artStylePreset: 'custom' as const,
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex]);
+
+  // ── Art style presets ────────────────────────────────────────────────
+
+  const applyArtStylePreset = useCallback((presetId: import('../types/map').ArtStylePresetId) => {
+    setProject(prev => {
+      if (presetId === 'custom') {
+        const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+          ...m, artStylePreset: 'custom' as const,
+        }));
+        debouncedSave(updated);
+        return updated;
+      }
+      // Inline import avoided — use top-level import instead
+      const settings = getPresetSettingsFn(presetId);
+      if (!settings) return prev;
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m,
+        artStylePreset: presetId,
+        paperTexture: settings.paperTexture,
+        edgeBlend: settings.edgeBlend,
+        handDrawn: settings.handDrawn,
+        lightingAtmosphere: settings.lightingAtmosphere,
       }));
       debouncedSave(updated);
       return updated;
@@ -1214,6 +1242,7 @@ export function useMapState() {
     setEdgeBlend, clearEdgeBlend, updateEdgeBlend,
     setHandDrawn, clearHandDrawn, updateHandDrawn,
     setLightingAtmosphere, clearLightingAtmosphere, updateLightingAtmosphere,
+    applyArtStylePreset,
     addLightSource, removeLightSource, clearLightSources,
     addStamp, moveStamp, removeStamp, clearStamps, updateStamp, bringStampToFront, sendStampToBack,
     addWallSegment, removeWallSegment, clearWallSegments,
