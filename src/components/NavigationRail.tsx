@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { CustomThemeDefinition, EdgeBlendSettings, PaperTextureSettings, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
+import type { CustomThemeDefinition, EdgeBlendSettings, HandDrawnSettings, PaperTextureSettings, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
 import type { BackgroundImage } from '../types/map';
 import DrawToolsTab from './DrawToolsTab';
 import TacticalToolsTab from './TacticalToolsTab';
@@ -112,6 +112,11 @@ interface NavigationRailProps {
   onSetEdgeBlend?: (settings: EdgeBlendSettings) => void;
   onUpdateEdgeBlend?: (patch: Partial<EdgeBlendSettings>) => void;
   onClearEdgeBlend?: () => void;
+  // Hand-drawn mode
+  handDrawn?: HandDrawnSettings;
+  onSetHandDrawn?: (settings: HandDrawnSettings) => void;
+  onUpdateHandDrawn?: (patch: Partial<HandDrawnSettings>) => void;
+  onClearHandDrawn?: () => void;
   // Scene templates
   onOpenSceneTemplates: () => void;
 }
@@ -207,6 +212,10 @@ const NavigationRail: React.FC<NavigationRailProps> = (props) => {
             onSetEdgeBlend={props.onSetEdgeBlend}
             onUpdateEdgeBlend={props.onUpdateEdgeBlend}
             onClearEdgeBlend={props.onClearEdgeBlend}
+            handDrawn={props.handDrawn}
+            onSetHandDrawn={props.onSetHandDrawn}
+            onUpdateHandDrawn={props.onUpdateHandDrawn}
+            onClearHandDrawn={props.onClearHandDrawn}
           />
         )}
         {activeMode === 'tactical' && (

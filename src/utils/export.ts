@@ -7,6 +7,7 @@ import { getStampDef } from './stampCatalog';
 import { renderMapToCanvas } from './renderMap';
 import { generatePaperTexture } from './paperTexture';
 import { drawEdgeBlending } from './edgeBlend';
+import { drawHandDrawn } from './handDrawn';
 import { wrapMapAsProject } from './storage';
 
 const SVG_CUSTOM_TILE_FALLBACK_COLOR = '#777777';
@@ -107,11 +108,12 @@ export function exportMapSVG(
   map: DungeonMap,
   theme: TileTheme,
   resolveTheme?: (id: string) => TileTheme,
-  opts: { viewMode?: ViewMode; customStamps?: readonly StampDef[]; includeTexture?: boolean; includeEdgeBlend?: boolean } = {}
+  opts: { viewMode?: ViewMode; customStamps?: readonly StampDef[]; includeTexture?: boolean; includeEdgeBlend?: boolean; includeHandDrawn?: boolean } = {}
 ): void {
   const viewMode: ViewMode = opts.viewMode ?? 'gm';
   const includeTexture = opts.includeTexture ?? true;
   const includeEdgeBlend = opts.includeEdgeBlend ?? true;
+  const includeHandDrawn = opts.includeHandDrawn ?? true;
   const isPlayerView = viewMode === 'player';
   const fogActive = (map.fogEnabled ?? false);
   const fog = map.fog;
@@ -174,6 +176,18 @@ export function exportMapSVG(
   for (let x = 0; x <= width; x++) svg += `<line x1="${x * tileSize}" y1="0" x2="${x * tileSize}" y2="${svgH}"/>`;
   for (let y = 0; y <= height; y++) svg += `<line x1="0" y1="${y * tileSize}" x2="${svgW}" y2="${y * tileSize}"/>`;
   svg += `</g>`;
+
+  // Hand-drawn mode — rasterized to an offscreen canvas and embedded as
+  // an image, same approach as edge blending.
+  if (includeHandDrawn && map.handDrawn?.enabled) {
+    const hdCanvas = document.createElement('canvas');
+    hdCanvas.width = svgW;
+    hdCanvas.height = svgH;
+    const hdCtx = hdCanvas.getContext('2d')!;
+    drawHandDrawn(hdCtx, map.tiles, width, height, tileSize, map.handDrawn, false, []);
+    const hdDataUrl = hdCanvas.toDataURL('image/png');
+    svg += `<image xlink:href="${escapeXML(hdDataUrl)}" x="0" y="0" width="${svgW}" height="${svgH}"/>`;
+  }
 
   // Notes: hide notes under fog in player exports.
   map.notes.forEach(note => {
