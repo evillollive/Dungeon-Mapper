@@ -8,6 +8,7 @@ import { renderMapToCanvas } from './renderMap';
 import { generatePaperTexture } from './paperTexture';
 import { drawEdgeBlending } from './edgeBlend';
 import { drawHandDrawn } from './handDrawn';
+import { drawLightingAtmosphere } from './lightingAtmosphere';
 import { wrapMapAsProject } from './storage';
 
 const SVG_CUSTOM_TILE_FALLBACK_COLOR = '#777777';
@@ -108,12 +109,13 @@ export function exportMapSVG(
   map: DungeonMap,
   theme: TileTheme,
   resolveTheme?: (id: string) => TileTheme,
-  opts: { viewMode?: ViewMode; customStamps?: readonly StampDef[]; includeTexture?: boolean; includeEdgeBlend?: boolean; includeHandDrawn?: boolean } = {}
+  opts: { viewMode?: ViewMode; customStamps?: readonly StampDef[]; includeTexture?: boolean; includeEdgeBlend?: boolean; includeHandDrawn?: boolean; includeLighting?: boolean } = {}
 ): void {
   const viewMode: ViewMode = opts.viewMode ?? 'gm';
   const includeTexture = opts.includeTexture ?? true;
   const includeEdgeBlend = opts.includeEdgeBlend ?? true;
   const includeHandDrawn = opts.includeHandDrawn ?? true;
+  const includeLighting = opts.includeLighting ?? true;
   const isPlayerView = viewMode === 'player';
   const fogActive = (map.fogEnabled ?? false);
   const fog = map.fog;
@@ -187,6 +189,18 @@ export function exportMapSVG(
     drawHandDrawn(hdCtx, map.tiles, width, height, tileSize, map.handDrawn, false, []);
     const hdDataUrl = hdCanvas.toDataURL('image/png');
     svg += `<image xlink:href="${escapeXML(hdDataUrl)}" x="0" y="0" width="${svgW}" height="${svgH}"/>`;
+  }
+
+  // Lighting & atmosphere — rasterized to an offscreen canvas and embedded
+  // as an image, same approach as hand-drawn.
+  if (includeLighting && map.lightingAtmosphere?.enabled) {
+    const laCanvas = document.createElement('canvas');
+    laCanvas.width = svgW;
+    laCanvas.height = svgH;
+    const laCtx = laCanvas.getContext('2d')!;
+    drawLightingAtmosphere(laCtx, map.tiles, width, height, tileSize, map.lightingAtmosphere, map.stamps ?? [], []);
+    const laDataUrl = laCanvas.toDataURL('image/png');
+    svg += `<image xlink:href="${escapeXML(laDataUrl)}" x="0" y="0" width="${svgW}" height="${svgH}"/>`;
   }
 
   // Notes: hide notes under fog in player exports.
@@ -408,6 +422,8 @@ export interface HighResExportOptions {
   includeTexture?: boolean;
   /** Whether to include edge blending in export. Defaults to true. */
   includeEdgeBlend?: boolean;
+  /** Whether to include lighting & atmosphere in export. Defaults to true. */
+  includeLighting?: boolean;
 }
 
 /**
@@ -432,6 +448,7 @@ export async function exportHighResPNG(
     customStamps: opts.customStamps,
     includeTexture: opts.includeTexture,
     includeEdgeBlend: opts.includeEdgeBlend,
+    includeLighting: opts.includeLighting,
   });
 
   const baseName = map.meta.name.replace(/\s+/g, '_') || 'dungeon';

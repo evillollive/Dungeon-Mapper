@@ -18,6 +18,7 @@ import { getSemanticTileType, getThemeWithCustom } from './customThemes';
 import { getCachedPaperTexture } from './paperTexture';
 import { drawEdgeBlending } from './edgeBlend';
 import { drawHandDrawn } from './handDrawn';
+import { drawLightingAtmosphere } from './lightingAtmosphere';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 
@@ -117,6 +118,12 @@ export interface RenderMapOptions {
    * Set `false` to export without the hand-drawn effect.
    */
   includeHandDrawn?: boolean;
+  /**
+   * Whether to include the lighting & atmosphere layer in the export.
+   * Defaults to `true` — honours the map's `lightingAtmosphere` settings.
+   * Set `false` to export without lighting effects.
+   */
+  includeLighting?: boolean;
 }
 
 /**
@@ -128,7 +135,7 @@ export function renderMapToCanvas(
   map: DungeonMap,
   opts: RenderMapOptions,
 ): HTMLCanvasElement {
-  const { tileSize, themeId, printMode = false, viewMode = 'gm', feetPerCell = 0, customThemes = [], includeTexture = true, includeEdgeBlend = true, includeHandDrawn = true } = opts;
+  const { tileSize, themeId, printMode = false, viewMode = 'gm', feetPerCell = 0, customThemes = [], includeTexture = true, includeEdgeBlend = true, includeHandDrawn = true, includeLighting = true } = opts;
   const theme = getThemeWithCustom(themeId, customThemes);
   const { width, height } = map.meta;
   const isPlayerView = viewMode === 'player';
@@ -208,6 +215,11 @@ export function renderMapToCanvas(
   // screen and print mode (uses B&W strokes in print).
   if (includeHandDrawn && map.handDrawn?.enabled) {
     drawHandDrawn(ctx, map.tiles, width, height, tileSize, map.handDrawn, printMode, customThemes);
+  }
+
+  // Lighting & atmosphere — AO, stamp shadows, color grading. Disabled in print mode.
+  if (!printMode && includeLighting && map.lightingAtmosphere?.enabled) {
+    drawLightingAtmosphere(ctx, map.tiles, width, height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes);
   }
 
   // Notes

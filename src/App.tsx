@@ -167,6 +167,9 @@ function App() {
     setHandDrawn,
     clearHandDrawn,
     updateHandDrawn,
+    setLightingAtmosphere,
+    clearLightingAtmosphere,
+    updateLightingAtmosphere,
     addLightSource,
     removeLightSource,
     clearLightSources,
@@ -1131,6 +1134,10 @@ function App() {
               onSetHandDrawn={setHandDrawn}
               onUpdateHandDrawn={updateHandDrawn}
               onClearHandDrawn={clearHandDrawn}
+              lightingAtmosphere={map.lightingAtmosphere}
+              onSetLightingAtmosphere={setLightingAtmosphere}
+              onUpdateLightingAtmosphere={updateLightingAtmosphere}
+              onClearLightingAtmosphere={clearLightingAtmosphere}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             ) : (
@@ -1221,6 +1228,10 @@ function App() {
               onSetHandDrawn={setHandDrawn}
               onUpdateHandDrawn={updateHandDrawn}
               onClearHandDrawn={clearHandDrawn}
+              lightingAtmosphere={map.lightingAtmosphere}
+              onSetLightingAtmosphere={setLightingAtmosphere}
+              onUpdateLightingAtmosphere={updateLightingAtmosphere}
+              onClearLightingAtmosphere={clearLightingAtmosphere}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             ))}

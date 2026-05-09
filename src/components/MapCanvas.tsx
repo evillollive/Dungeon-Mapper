@@ -10,6 +10,7 @@ import { getStampDef } from '../utils/stampCatalog';
 import { getCachedPaperTexture } from '../utils/paperTexture';
 import { drawEdgeBlending } from '../utils/edgeBlend';
 import { drawHandDrawn } from '../utils/handDrawn';
+import { drawLightingAtmosphere } from '../utils/lightingAtmosphere';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 
@@ -1143,6 +1144,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // both screen and print mode (B&W strokes in print).
     if (map.handDrawn?.enabled) {
       drawHandDrawn(ctx, tiles, meta.width, meta.height, tileSize, map.handDrawn, printMode, customThemes);
+    }
+
+    // Lighting & atmosphere — ambient occlusion, stamp shadows, and color
+    // grading rendered after hand-drawn overlay. Disabled in print mode.
+    if (!printMode && map.lightingAtmosphere?.enabled) {
+      drawLightingAtmosphere(ctx, tiles, meta.width, meta.height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes);
     }
 
     // Light source glow halos — rendered right after the grid lines so the

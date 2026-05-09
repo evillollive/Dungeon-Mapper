@@ -1,6 +1,6 @@
 import React from 'react';
-import type { CustomThemeDefinition, EdgeBlendSettings, EdgeBlendStyle, HandDrawnSettings, HandDrawnStyle, PaperTexturePattern, PaperTextureSettings, StampDef, ToolType, TileType } from '../types/map';
-import { ALL_TILE_TYPES, TILE_LABELS, DEFAULT_PAPER_TEXTURE, DEFAULT_EDGE_BLEND, DEFAULT_HAND_DRAWN, isBuiltInTileType } from '../types/map';
+import type { ColorGradingMode, CustomThemeDefinition, EdgeBlendSettings, EdgeBlendStyle, HandDrawnSettings, HandDrawnStyle, LightingAtmosphereSettings, PaperTexturePattern, PaperTextureSettings, StampDef, ToolType, TileType } from '../types/map';
+import { ALL_TILE_TYPES, TILE_LABELS, DEFAULT_PAPER_TEXTURE, DEFAULT_EDGE_BLEND, DEFAULT_HAND_DRAWN, DEFAULT_LIGHTING_ATMOSPHERE, isBuiltInTileType } from '../types/map';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { buildThemeList, getCustomTileLabel, getThemeWithCustom } from '../utils/customThemes';
 import { getPaperTint } from '../themes';
@@ -51,6 +51,11 @@ interface DrawToolsTabProps {
   onSetHandDrawn?: (settings: HandDrawnSettings) => void;
   onUpdateHandDrawn?: (patch: Partial<HandDrawnSettings>) => void;
   onClearHandDrawn?: () => void;
+  // Lighting & atmosphere
+  lightingAtmosphere?: LightingAtmosphereSettings;
+  onSetLightingAtmosphere?: (settings: LightingAtmosphereSettings) => void;
+  onUpdateLightingAtmosphere?: (patch: Partial<LightingAtmosphereSettings>) => void;
+  onClearLightingAtmosphere?: () => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -117,6 +122,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   paperTexture, onSetPaperTexture, onUpdatePaperTexture, onClearPaperTexture,
   edgeBlend, onSetEdgeBlend, onUpdateEdgeBlend, onClearEdgeBlend,
   handDrawn, onSetHandDrawn, onUpdateHandDrawn, onClearHandDrawn,
+  lightingAtmosphere, onSetLightingAtmosphere, onUpdateLightingAtmosphere, onClearLightingAtmosphere,
 }) => {
   const theme = getThemeWithCustom(themeId, customThemes);
   const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
@@ -579,6 +585,123 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
                 onChange={e => onUpdateHandDrawn?.({ opacity: Number(e.target.value) })}
                 style={{ width: 60 }}
                 title={`Opacity: ${Math.round(handDrawn.opacity * 100)}%`}
+              />
+            </label>
+          </>
+        )}
+      </div>
+
+      {/* Lighting & Atmosphere controls */}
+      <div className="toolbar-section">
+        <div className="toolbar-label">LIGHTING</div>
+        <label
+          className={`tool-btn ${lightingAtmosphere?.enabled ? 'active' : ''}`}
+          style={{ cursor: 'pointer' }}
+          title="Ambient occlusion, stamp shadows, and color grading"
+        >
+          <span className="tool-icon" aria-hidden="true">🔆</span>
+          <span className="tool-name">Enable</span>
+          <input
+            type="checkbox"
+            checked={lightingAtmosphere?.enabled ?? false}
+            onChange={() => {
+              if (lightingAtmosphere?.enabled) {
+                onClearLightingAtmosphere?.();
+              } else {
+                onSetLightingAtmosphere?.(DEFAULT_LIGHTING_ATMOSPHERE);
+              }
+            }}
+            aria-label="Enable lighting & atmosphere"
+            style={{ margin: 0 }}
+          />
+        </label>
+        {lightingAtmosphere?.enabled && (
+          <>
+            <label className="tool-btn" style={{ cursor: 'pointer', flexWrap: 'wrap' }} title={`AO Intensity: ${Math.round(lightingAtmosphere.aoIntensity * 100)}%`}>
+              <span className="tool-icon" aria-hidden="true">🌑</span>
+              <span className="tool-name">AO</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={lightingAtmosphere.aoIntensity}
+                onChange={e => onUpdateLightingAtmosphere?.({ aoIntensity: Number(e.target.value) })}
+                style={{ width: 60 }}
+                title={`Ambient occlusion intensity: ${Math.round(lightingAtmosphere.aoIntensity * 100)}%`}
+              />
+            </label>
+            <label className="tool-btn" style={{ cursor: 'pointer', flexWrap: 'wrap' }} title={`AO Radius: ${Math.round(lightingAtmosphere.aoRadius * 100)}%`}>
+              <span className="tool-icon" aria-hidden="true">⊙</span>
+              <span className="tool-name">Radius</span>
+              <input
+                type="range"
+                min="0.1"
+                max="1"
+                step="0.05"
+                value={lightingAtmosphere.aoRadius}
+                onChange={e => onUpdateLightingAtmosphere?.({ aoRadius: Number(e.target.value) })}
+                style={{ width: 60 }}
+                title={`AO shadow radius: ${Math.round(lightingAtmosphere.aoRadius * 100)}%`}
+              />
+            </label>
+            <label className="tool-btn" style={{ cursor: 'pointer', flexWrap: 'wrap' }} title={`Shadow: ${Math.round(lightingAtmosphere.stampShadowOpacity * 100)}%`}>
+              <span className="tool-icon" aria-hidden="true">🖤</span>
+              <span className="tool-name">Shadows</span>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={lightingAtmosphere.stampShadowOpacity}
+                onChange={e => onUpdateLightingAtmosphere?.({ stampShadowOpacity: Number(e.target.value) })}
+                style={{ width: 60 }}
+                title={`Stamp shadow opacity: ${Math.round(lightingAtmosphere.stampShadowOpacity * 100)}%`}
+              />
+            </label>
+            <label className="tool-btn" style={{ cursor: 'pointer' }} title="Color grading mode">
+              <span className="tool-icon" aria-hidden="true">🌅</span>
+              <span className="tool-name">Grading</span>
+              <select
+                className="grid-select"
+                value={lightingAtmosphere.colorGrading}
+                onChange={e => onUpdateLightingAtmosphere?.({ colorGrading: e.target.value as ColorGradingMode })}
+                title="Color grading mode"
+              >
+                <option value="none">None</option>
+                <option value="day">Day</option>
+                <option value="dusk">Dusk</option>
+                <option value="night">Night</option>
+              </select>
+            </label>
+            {lightingAtmosphere.colorGrading !== 'none' && (
+              <label className="tool-btn" style={{ cursor: 'pointer', flexWrap: 'wrap' }} title={`Grading: ${Math.round(lightingAtmosphere.colorGradingIntensity * 100)}%`}>
+                <span className="tool-icon" aria-hidden="true">🎨</span>
+                <span className="tool-name">Tint</span>
+                <input
+                  type="range"
+                  min="0.05"
+                  max="1"
+                  step="0.05"
+                  value={lightingAtmosphere.colorGradingIntensity}
+                  onChange={e => onUpdateLightingAtmosphere?.({ colorGradingIntensity: Number(e.target.value) })}
+                  style={{ width: 60 }}
+                  title={`Color grading intensity: ${Math.round(lightingAtmosphere.colorGradingIntensity * 100)}%`}
+                />
+              </label>
+            )}
+            <label className="tool-btn" style={{ cursor: 'pointer', flexWrap: 'wrap' }} title={`Opacity: ${Math.round(lightingAtmosphere.opacity * 100)}%`}>
+              <span className="tool-icon" aria-hidden="true">👁</span>
+              <span className="tool-name">Opacity</span>
+              <input
+                type="range"
+                min="0.1"
+                max="1"
+                step="0.05"
+                value={lightingAtmosphere.opacity}
+                onChange={e => onUpdateLightingAtmosphere?.({ opacity: Number(e.target.value) })}
+                style={{ width: 60 }}
+                title={`Opacity: ${Math.round(lightingAtmosphere.opacity * 100)}%`}
               />
             </label>
           </>
