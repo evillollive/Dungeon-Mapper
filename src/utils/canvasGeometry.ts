@@ -65,6 +65,10 @@ export function pointNearPolyline(
   points: GridPoint[],
   threshold: number,
 ): boolean {
+  if (points.length === 1) {
+    return Math.hypot(px - points[0].x, py - points[0].y) < threshold;
+  }
+
   for (let i = 0; i < points.length - 1; i++) {
     const ax = points[i].x, ay = points[i].y;
     const bx = points[i + 1].x, by = points[i + 1].y;
@@ -78,5 +82,5 @@ export function pointNearPolyline(
     const cx = ax + t * dx, cy = ay + t * dy;
     if (Math.hypot(px - cx, py - cy) < threshold) return true;
   }
-  return points.length === 1 && Math.hypot(px - points[0].x, py - points[0].y) < threshold;
+  return false;
 }
