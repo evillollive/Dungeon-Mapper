@@ -10,6 +10,7 @@ import { drawEdgeBlending } from './edgeBlend';
 import { drawHandDrawn } from './handDrawn';
 import { drawLightingAtmosphere } from './lightingAtmosphere';
 import { wrapMapAsProject } from './storage';
+import { isTokenFogged } from './tokenVisibility';
 
 const SVG_CUSTOM_TILE_FALLBACK_COLOR = '#777777';
 
@@ -119,11 +120,13 @@ export function exportMapSVG(
   const isPlayerView = viewMode === 'player';
   const fogActive = (map.fogEnabled ?? false);
   const fog = map.fog;
+  const dynamicFogActive = (map.dynamicFogEnabled ?? false) && fogActive;
   const { width, height, tileSize, name } = map.meta;
   const svgW = width * tileSize;
   const svgH = height * tileSize;
 
   const isFogged = (x: number, y: number) => fogActive && !!fog?.[y]?.[x];
+  const isExplored = (x: number, y: number) => dynamicFogActive && !!map.explored?.[y]?.[x];
 
   let svg = `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}">`;
   svg += `<rect width="${svgW}" height="${svgH}" fill="${theme.tileColors['empty']}"/>`;
@@ -205,7 +208,7 @@ export function exportMapSVG(
 
   // Notes: hide notes under fog in player exports.
   map.notes.forEach(note => {
-    if (isPlayerView && isFogged(note.x, note.y)) return;
+    if (isPlayerView && isFogged(note.x, note.y) && !isExplored(note.x, note.y)) return;
     const ncx = note.x * tileSize + tileSize / 2;
     const ncy = note.y * tileSize + tileSize / 2;
     const r = tileSize * 0.38;
@@ -317,7 +320,7 @@ export function exportMapSVG(
 
   // Tokens: hidden under fog in player exports (mirrors on-screen behavior).
   for (const token of map.tokens ?? []) {
-    if (isPlayerView && isFogged(token.x, token.y)) continue;
+    if (isPlayerView && isTokenFogged(token, fog, undefined, dynamicFogActive ? map.explored : undefined)) continue;
     const sz = Math.max(1, Math.floor(token.size ?? 1));
     const tcx = token.x * tileSize + (tileSize * sz) / 2;
     const tcy = token.y * tileSize + (tileSize * sz) / 2;
@@ -346,16 +349,32 @@ export function exportMapSVG(
   // "Show Fog" preview, but exports always include it for GM reference.)
   if (fogActive && fog) {
     const fogFill = isPlayerView ? '#6b7280' : 'rgba(107,114,128,0.55)';
-    let fogPath = '';
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
-        if (fog[y]?.[x]) {
-          fogPath += `M${x * tileSize} ${y * tileSize}h${tileSize}v${tileSize}h${-tileSize}z`;
+    if (dynamicFogActive && map.explored) {
+      const exploredFill = isPlayerView ? 'rgba(107,114,128,0.55)' : 'rgba(107,114,128,0.35)';
+      let exploredPath = '';
+      let hiddenPath = '';
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          if (!fog[y]?.[x]) continue;
+          const cellPath = `M${x * tileSize} ${y * tileSize}h${tileSize}v${tileSize}h${-tileSize}z`;
+          if (map.explored[y]?.[x]) exploredPath += cellPath;
+          else hiddenPath += cellPath;
         }
       }
-    }
-    if (fogPath) {
-      svg += `<path d="${fogPath}" fill="${fogFill}"/>`;
+      if (exploredPath) svg += `<path d="${exploredPath}" fill="${exploredFill}"/>`;
+      if (hiddenPath) svg += `<path d="${hiddenPath}" fill="${fogFill}"/>`;
+    } else {
+      let fogPath = '';
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          if (fog[y]?.[x]) {
+            fogPath += `M${x * tileSize} ${y * tileSize}h${tileSize}v${tileSize}h${-tileSize}z`;
+          }
+        }
+      }
+      if (fogPath) {
+        svg += `<path d="${fogPath}" fill="${fogFill}"/>`;
+      }
     }
   }
 
