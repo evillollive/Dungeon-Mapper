@@ -22,7 +22,10 @@ function installDownloadMocks() {
 }
 
 function smallMap(): DungeonMap {
-  const map = createDefaultMap('Export Test', 4, 4);
+  const map = createDefaultMap('Export Test');
+  map.meta.width = 4;
+  map.meta.height = 4;
+  map.tiles = Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => ({ type: 'empty' as const })));
   map.tiles[1][1] = { type: 'floor' };
   map.tiles[1][2] = { type: 'floor' };
   map.fogEnabled = true;
@@ -69,7 +72,10 @@ describe('export and render helpers', () => {
   });
 
   it('renderMapToCanvas returns an offscreen canvas at the requested tile size', () => {
-    const map = createDefaultMap('Canvas Export', 3, 2);
+    const map = createDefaultMap('Canvas Export');
+    map.meta.width = 3;
+    map.meta.height = 2;
+    map.tiles = Array.from({ length: 2 }, () => Array.from({ length: 3 }, () => ({ type: 'empty' as const })));
 
     const canvas = renderMapToCanvas(map, {
       tileSize: 12,

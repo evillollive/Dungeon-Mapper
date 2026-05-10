@@ -90,6 +90,10 @@ function railProps(overrides: Partial<NavigationRailPropsForTest> = {}): Navigat
 }
 
 describe('CommandPalette behavior', () => {
+  beforeEach(() => {
+    Element.prototype.scrollIntoView = vi.fn();
+  });
+
   it('filters commands and runs the selected action', async () => {
     const action = vi.fn();
     const onClose = vi.fn();

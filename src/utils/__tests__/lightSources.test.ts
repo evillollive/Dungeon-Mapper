@@ -27,11 +27,17 @@ describe('computeLightVisible', () => {
   });
 
   it('does not illuminate through walls', () => {
-    const visible = computeLightVisible(grid(['..#..']), [
-      { id: 1, x: 0, y: 0, radius: 0, color: '#fff', label: 'Torch' },
+    const visible = computeLightVisible(grid([
+      '.....',
+      '.###.',
+      '.....',
+      '.....',
+      '.....',
+    ]), [
+      { id: 1, x: 2, y: 0, radius: 0, color: '#fff', label: 'Torch' },
     ]);
 
-    expect(visible?.has('2,0')).toBe(true);
-    expect(visible?.has('4,0')).toBe(false);
+    expect(visible?.has('2,1')).toBe(true);
+    expect(visible?.has('2,4')).toBe(false);
   });
 });
