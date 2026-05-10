@@ -34,7 +34,7 @@ describe('computeLightVisible', () => {
       '.....',
       '.....',
     ]), [
-      { id: 1, x: 2, y: 0, radius: 0, color: '#fff', label: 'Torch' },
+      { id: 1, x: 2, y: 0, radius: 8, color: '#fff', label: 'Torch' },
     ]);
 
     expect(visible?.has('2,1')).toBe(true);
