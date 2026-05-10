@@ -76,8 +76,7 @@ const SelectionInspector: React.FC<SelectionInspectorProps> = ({
   onUpdateNote,
   onDeleteNote,
   onSelectNote,
-  // Light source removal reserved for future light inspector
-  onRemoveLightSource: _removeLightSource,
+  onRemoveLightSource,
 }) => {
   // ── Resolve selections ──────────────────────────────────────────────
 
@@ -103,7 +102,7 @@ const SelectionInspector: React.FC<SelectionInspectorProps> = ({
     const tiles = map.tiles;
     for (let y = 0; y < tiles.length; y++) {
       for (let x = 0; x < tiles[y].length; x++) {
-        const t = String(tiles[y][x]);
+        const t = tiles[y][x].type;
         counts[t] = (counts[t] ?? 0) + 1;
       }
     }
@@ -470,6 +469,18 @@ const SelectionInspector: React.FC<SelectionInspectorProps> = ({
           <span className="inspector-field-label">Lights</span>
           <span className="inspector-field-value">{lightCount}</span>
         </div>
+        {lightSources.map(light => (
+          <div className="inspector-row" key={light.id}>
+            <span className="inspector-field-label">{light.label ?? `Light ${light.id}`}</span>
+            <button
+              type="button"
+              className="tool-btn compact"
+              onClick={() => onRemoveLightSource(light.id)}
+              aria-label={`Remove ${light.label ?? `light ${light.id}`}`}
+              title="Remove light source"
+            >Remove</button>
+          </div>
+        ))}
       </div>
     </div>
   );

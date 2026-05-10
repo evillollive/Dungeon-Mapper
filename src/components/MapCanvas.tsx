@@ -13,6 +13,7 @@ import { drawHandDrawn } from '../utils/handDrawn';
 import { drawLightingAtmosphere } from '../utils/lightingAtmosphere';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
+import { bresenhamLine, pointNearPolyline, rectCells, rectOutline, snapToGridIntersection } from '../utils/canvasGeometry';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
 // evoking traditional engineering / quad-ruled graph paper regardless of theme.
@@ -301,58 +302,6 @@ const GESTURE_TAP_TIMEOUT_MS = 300;
 /** Max px any pointer may move during a multi-finger tap before it's treated as a drag. */
 const GESTURE_MOVE_THRESHOLD_PX = 15;
 
-function bresenhamLine(x0: number, y0: number, x1: number, y1: number): { x: number; y: number }[] {
-  const points: { x: number; y: number }[] = [];
-  const dx = Math.abs(x1 - x0);
-  const dy = Math.abs(y1 - y0);
-  const sx = x0 < x1 ? 1 : -1;
-  const sy = y0 < y1 ? 1 : -1;
-  let err = dx - dy;
-  let cx = x0;
-  let cy = y0;
-  while (true) {
-    points.push({ x: cx, y: cy });
-    if (cx === x1 && cy === y1) break;
-    const e2 = 2 * err;
-    if (e2 > -dy) { err -= dy; cx += sx; }
-    if (e2 < dx) { err += dx; cy += sy; }
-  }
-  return points;
-}
-
-function rectOutline(x0: number, y0: number, x1: number, y1: number): { x: number; y: number }[] {
-  const minX = Math.min(x0, x1);
-  const maxX = Math.max(x0, x1);
-  const minY = Math.min(y0, y1);
-  const maxY = Math.max(y0, y1);
-  const points: { x: number; y: number }[] = [];
-  for (let x = minX; x <= maxX; x++) {
-    points.push({ x, y: minY });
-    if (minY !== maxY) points.push({ x, y: maxY });
-  }
-  for (let y = minY + 1; y < maxY; y++) {
-    points.push({ x: minX, y });
-    if (minX !== maxX) points.push({ x: maxX, y });
-  }
-  return points;
-}
-
-/** Fill (not just outline) every cell in the inclusive rectangle. Used by
- * the Reveal/Hide fog tools so a drag selects a solid block of cells. */
-function rectCells(x0: number, y0: number, x1: number, y1: number): { x: number; y: number }[] {
-  const minX = Math.min(x0, x1);
-  const maxX = Math.max(x0, x1);
-  const minY = Math.min(y0, y1);
-  const maxY = Math.max(y0, y1);
-  const points: { x: number; y: number }[] = [];
-  for (let y = minY; y <= maxY; y++) {
-    for (let x = minX; x <= maxX; x++) {
-      points.push({ x, y });
-    }
-  }
-  return points;
-}
-
 function drawToken(
   ctx: CanvasRenderingContext2D,
   token: Token,
@@ -512,40 +461,6 @@ function drawPathSegmentOnCanvas(
   ctx.restore();
 }
 
-/**
- * Snap a fractional coordinate to the nearest grid intersection (integer coords).
- * For wall tools, this ensures walls align to grid edges.
- */
-function snapToGridIntersection(fx: number, fy: number): { x: number; y: number } {
-  return { x: Math.round(fx), y: Math.round(fy) };
-}
-
-/**
- * Test whether a point (px, py) is within `threshold` tile units of a polyline
- * defined by `points`. Used for erase tool hit testing.
- */
-function pointNearPolyline(
-  px: number, py: number,
-  points: { x: number; y: number }[],
-  threshold: number,
-): boolean {
-  for (let i = 0; i < points.length - 1; i++) {
-    const ax = points[i].x, ay = points[i].y;
-    const bx = points[i + 1].x, by = points[i + 1].y;
-    const dx = bx - ax, dy = by - ay;
-    const lenSq = dx * dx + dy * dy;
-    if (lenSq === 0) {
-      if (Math.hypot(px - ax, py - ay) < threshold) return true;
-      continue;
-    }
-    const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
-    const cx = ax + t * dx, cy = ay + t * dy;
-    if (Math.hypot(px - cx, py - cy) < threshold) return true;
-  }
-  // Single point
-  if (points.length === 1 && Math.hypot(px - points[0].x, py - points[0].y) < threshold) return true;
-  return false;
-}
 function drawMarker(
   ctx: CanvasRenderingContext2D,
   marker: ShapeMarker,

@@ -2,8 +2,6 @@
 
 A retro-styled, interactive grid-based dungeon map editor built with Vite + React + TypeScript. Installable as a Progressive Web App with full offline support and touch/tablet-friendly UI.
 
-> _Screenshots: drop captures of the editor into a `docs/screenshots/` folder and reference them here, e.g. `![Editor](docs/screenshots/editor.png)`. Suggested shots: the empty editor at default zoom, a painted map in the Dungeon theme, the same map switched to Wilderness, the Present View with fog-of-war partially revealed, and Print mode active._
-
 ## Features
 
 - **Grid editor** — configurable map from 8×8 up to 128×128 (selectable widths/heights: 8, 16, 24, 32, 48, 64, 96, 128), default 32×32
@@ -617,6 +615,12 @@ The project uses [Vitest](https://vitest.dev/) with [React Testing Library](http
 | Hand-drawn mode | `src/utils/__tests__/handDrawn.test.ts` | `drawHandDrawn`, sketchy/pencil/ink styles, wobble, print mode |
 | Lighting & atmosphere | `src/utils/__tests__/lightingAtmosphere.test.ts` | `drawLightingAtmosphere`, AO, stamp shadows, color grading |
 | Art style presets | `src/utils/__tests__/artStylePresets.test.ts` | `getPresetSettings`, preset descriptions, layer configurations |
+| Dynamic fog | `src/utils/__tests__/dynamicFog.test.ts` | player FOV union, explored-grid merging |
+| Light sources | `src/utils/__tests__/lightSources.test.ts` | light FOV union, wall/radius handling |
+| Token visibility | `src/utils/__tests__/tokenVisibility.test.ts` | classic and dynamic fog visibility for multi-cell tokens |
+| Canvas geometry | `src/utils/__tests__/canvasGeometry.test.ts` | line, rectangle, snapping, polyline hit-test helpers used by `MapCanvas` |
+| Export/rendering | `src/utils/__tests__/exportRender.test.ts` | player-safe SVG exports, dynamic fog, render-map canvas sizing |
+| UI behavior | `src/components/__tests__/uiBehavior.test.tsx` | Generate Hub, Command Palette, Navigation Rail, Selection Inspector, ExportDialog interactions |
 
 Shared mock context providers live in `src/test/testHelpers.tsx` — use `TestProviders` to wrap components that depend on `ToolContext`, `MapContext`, `ViewContext`, or `ActionContext`.
 
