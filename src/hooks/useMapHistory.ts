@@ -30,6 +30,7 @@ export function useMapHistory(
       stamps: prev.stamps ?? [],
       wallSegments: prev.wallSegments ?? [],
       pathSegments: prev.pathSegments ?? [],
+      roomShapes: prev.roomShapes ?? [],
       width: prev.meta.width,
       height: prev.meta.height,
     };
@@ -52,12 +53,14 @@ export function useMapHistory(
         fog: prevMap.fog ?? createFogGrid(prevMap.meta.width, prevMap.meta.height, false),
         notes: prevMap.notes, stamps: prevMap.stamps ?? [],
         wallSegments: prevMap.wallSegments ?? [], pathSegments: prevMap.pathSegments ?? [],
+        roomShapes: prevMap.roomShapes ?? [],
         width: prevMap.meta.width, height: prevMap.meta.height,
       }];
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m, meta: { ...m.meta, width: previous.width, height: previous.height },
         tiles: previous.tiles, fog: previous.fog, notes: previous.notes, stamps: previous.stamps,
         wallSegments: previous.wallSegments, pathSegments: previous.pathSegments,
+        roomShapes: previous.roomShapes,
       }));
       debouncedSave(updated);
       setCanUndo(h.past.length > 0);
@@ -78,12 +81,14 @@ export function useMapHistory(
         fog: prevMap.fog ?? createFogGrid(prevMap.meta.width, prevMap.meta.height, false),
         notes: prevMap.notes, stamps: prevMap.stamps ?? [],
         wallSegments: prevMap.wallSegments ?? [], pathSegments: prevMap.pathSegments ?? [],
+        roomShapes: prevMap.roomShapes ?? [],
         width: prevMap.meta.width, height: prevMap.meta.height,
       }];
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m, meta: { ...m.meta, width: next.width, height: next.height },
         tiles: next.tiles, fog: next.fog, notes: next.notes, stamps: next.stamps,
         wallSegments: next.wallSegments, pathSegments: next.pathSegments,
+        roomShapes: next.roomShapes,
       }));
       debouncedSave(updated);
       setCanUndo(true);

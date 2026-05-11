@@ -38,6 +38,7 @@ describe('createDefaultMap', () => {
     expect(map.stamps).toEqual([]);
     expect(map.wallSegments).toEqual([]);
     expect(map.pathSegments).toEqual([]);
+    expect(map.roomShapes).toEqual([]);
     expect(map.lightSources).toEqual([]);
     expect(map.annotations).toEqual([]);
     expect(map.markers).toEqual([]);
@@ -101,6 +102,7 @@ describe('withDefaults', () => {
     expect(filled.stamps).toEqual([]);
     expect(filled.wallSegments).toEqual([]);
     expect(filled.pathSegments).toEqual([]);
+    expect(filled.roomShapes).toEqual([]);
     expect(filled.lightSources).toEqual([]);
     expect(filled.annotations).toEqual([]);
     expect(filled.markers).toEqual([]);
