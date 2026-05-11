@@ -286,6 +286,14 @@ export interface PathSegment {
 export type RoomShapeMode = 'additive' | 'subtractive';
 
 /**
+ * Geometry type for room shapes.
+ * - `'rect'`    (default) — axis-aligned rectangle.
+ * - `'circle'`  — ellipse inscribed in the bounding box (circle when w===h).
+ * - `'polygon'` — arbitrary polygon defined by `vertices`.
+ */
+export type RoomShapeType = 'rect' | 'circle' | 'polygon';
+
+/**
  * Cardinal edge direction on a rectangular room shape. Used by `DoorHint`
  * to specify where a door should (or should not) appear.
  */
@@ -331,8 +339,11 @@ export interface DoorHint {
 }
 
 /**
- * A logical room shape that rasterizes onto the tile grid. For v1 only
- * rectangular rooms are supported (Phase 10.6 adds circles and polygons).
+ * A logical room shape that rasterizes onto the tile grid. Three geometry
+ * types are supported:
+ * - `'rect'`    (default) — axis-aligned rectangle (Phase 10.1).
+ * - `'circle'`  — ellipse inscribed in the bounding box (Phase 10.6).
+ * - `'polygon'` — arbitrary polygon defined by `vertices` (Phase 10.6).
  *
  * Room shapes are additive by default — they coexist with individually-painted
  * tiles. Subtractive shapes carve overlapping additive geometry back to empty
@@ -345,6 +356,14 @@ export interface DoorHint {
 export interface RoomShape {
   /** Unique identifier within the map. */
   id: number;
+  /**
+   * Geometry type. Defaults to `'rect'` for backward compatibility.
+   * - `'rect'`    — uses x/y/width/height as axis-aligned rectangle.
+   * - `'circle'`  — ellipse inscribed in the x/y/width/height bounding box.
+   * - `'polygon'` — shape defined by `vertices`; x/y/width/height are the
+   *                  computed bounding box.
+   */
+  shapeType?: RoomShapeType;
   /** Top-left X coordinate in tile units (integer). */
   x: number;
   /** Top-left Y coordinate in tile units (integer). */
@@ -353,6 +372,11 @@ export interface RoomShape {
   width: number;
   /** Height in tiles (must be ≥ 1). */
   height: number;
+  /**
+   * Polygon vertices in tile-unit coordinates. Required when `shapeType`
+   * is `'polygon'`; ignored for other shape types.
+   */
+  vertices?: { x: number; y: number }[];
   /**
    * Shape mode. `'additive'` (default) fills with floor/walls;
    * `'subtractive'` carves overlapping additive geometry to empty.
@@ -750,8 +774,12 @@ export function isDungeonProject(obj: unknown): obj is DungeonProject {
 
 export type ToolType =
   | 'paint' | 'erase' | 'fill' | 'note' | 'line' | 'rect' | 'select'
-  // Dynamic room shape tool — drag to draw editable rectangular room shapes.
+  // Dynamic room shape tools — drag to draw editable room shapes.
   | 'room-rect'
+  // Circle/ellipse room shape tool — drag to define bounding box.
+  | 'room-circle'
+  // Polygon room shape tool — click to add vertices, double-click to close.
+  | 'room-poly'
   // Subtractive room shape tool — drag to carve out additive room geometry.
   | 'room-cut'
   // GM fog tools — reveal/hide drag-rectangles of cells.

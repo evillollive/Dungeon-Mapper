@@ -14,6 +14,7 @@ import { drawLightingAtmosphere } from '../utils/lightingAtmosphere';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 import { bresenhamLine, pointNearPolyline, rectCells, rectOutline, snapToGridIntersection } from '../utils/canvasGeometry';
+import { polygonBoundingBox } from '../utils/roomRasterizer';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
 // evoking traditional engineering / quad-ruled graph paper regardless of theme.
@@ -632,8 +633,38 @@ type RoomResizeHandle = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
 type RoomEditMode = 'move' | RoomResizeHandle;
 
 /** Check if a tool is one of the room shape tools (additive or subtractive). */
-function isRoomTool(tool: ToolType): tool is 'room-rect' | 'room-cut' {
-  return tool === 'room-rect' || tool === 'room-cut';
+function isRoomTool(tool: ToolType): tool is 'room-rect' | 'room-circle' | 'room-poly' | 'room-cut' {
+  return tool === 'room-rect' || tool === 'room-circle' || tool === 'room-poly' || tool === 'room-cut';
+}
+
+function pointInRoomShape(fx: number, fy: number, s: RoomShape): boolean {
+  const st = s.shapeType ?? 'rect';
+  if (st === 'circle') {
+    // Ellipse inscribed in bounding box.
+    const cx = s.x + s.width / 2;
+    const cy = s.y + s.height / 2;
+    const rx = s.width / 2;
+    const ry = s.height / 2;
+    if (rx <= 0 || ry <= 0) return false;
+    const dx = fx - cx;
+    const dy = fy - cy;
+    return (dx * dx) / (rx * rx) + (dy * dy) / (ry * ry) <= 1;
+  }
+  if (st === 'polygon' && s.vertices && s.vertices.length >= 3) {
+    // Point-in-polygon (ray casting).
+    let inside = false;
+    const verts = s.vertices;
+    for (let i = 0, j = verts.length - 1; i < verts.length; j = i++) {
+      const xi = verts[i].x, yi = verts[i].y;
+      const xj = verts[j].x, yj = verts[j].y;
+      if ((yi > fy) !== (yj > fy) && fx < (xj - xi) * (fy - yi) / (yj - yi) + xi) {
+        inside = !inside;
+      }
+    }
+    return inside;
+  }
+  // rect
+  return fx >= s.x && fx < s.x + s.width && fy >= s.y && fy < s.y + s.height;
 }
 
 function findRoomShapeAt(roomShapes: RoomShape[] | undefined, fx: number, fy: number, mode?: 'additive' | 'subtractive'): RoomShape | null {
@@ -641,7 +672,7 @@ function findRoomShapeAt(roomShapes: RoomShape[] | undefined, fx: number, fy: nu
   for (let i = roomShapes.length - 1; i >= 0; i--) {
     const s = roomShapes[i];
     if (mode && (s.mode ?? 'additive') !== mode) continue;
-    if (fx >= s.x && fx < s.x + s.width && fy >= s.y && fy < s.y + s.height) return s;
+    if (pointInRoomShape(fx, fy, s)) return s;
   }
   return null;
 }
@@ -759,17 +790,56 @@ function drawRoomShapeOverlay(
   const y = shape.y * tileSize;
   const w = shape.width * tileSize;
   const h = shape.height * tileSize;
+  const st = shape.shapeType ?? 'rect';
 
   ctx.save();
-  if (options?.fill) {
-    ctx.fillStyle = options.fill;
-    ctx.fillRect(x, y, w, h);
+
+  if (st === 'circle') {
+    // Draw ellipse inscribed in bounding box.
+    const cx = x + w / 2;
+    const cy = y + h / 2;
+    const rx = w / 2;
+    const ry = h / 2;
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, Math.max(0, rx), Math.max(0, ry), 0, 0, Math.PI * 2);
+    if (options?.fill) {
+      ctx.fillStyle = options.fill;
+      ctx.fill();
+    }
+    ctx.strokeStyle = options?.stroke ?? '#38bdf8';
+    ctx.lineWidth = 2;
+    if (options?.dashed) ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  } else if (st === 'polygon' && shape.vertices && shape.vertices.length >= 3) {
+    // Draw polygon from vertices.
+    ctx.beginPath();
+    ctx.moveTo(shape.vertices[0].x * tileSize, shape.vertices[0].y * tileSize);
+    for (let i = 1; i < shape.vertices.length; i++) {
+      ctx.lineTo(shape.vertices[i].x * tileSize, shape.vertices[i].y * tileSize);
+    }
+    ctx.closePath();
+    if (options?.fill) {
+      ctx.fillStyle = options.fill;
+      ctx.fill();
+    }
+    ctx.strokeStyle = options?.stroke ?? '#38bdf8';
+    ctx.lineWidth = 2;
+    if (options?.dashed) ctx.setLineDash([6, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+  } else {
+    // Rectangle (default).
+    if (options?.fill) {
+      ctx.fillStyle = options.fill;
+      ctx.fillRect(x, y, w, h);
+    }
+    ctx.strokeStyle = options?.stroke ?? '#38bdf8';
+    ctx.lineWidth = 2;
+    if (options?.dashed) ctx.setLineDash([6, 4]);
+    ctx.strokeRect(x, y, w, h);
+    ctx.setLineDash([]);
   }
-  ctx.strokeStyle = options?.stroke ?? '#38bdf8';
-  ctx.lineWidth = 2;
-  if (options?.dashed) ctx.setLineDash([6, 4]);
-  ctx.strokeRect(x, y, w, h);
-  ctx.setLineDash([]);
 
   if (options?.showHandles) {
     const handleSize = Math.max(6, Math.round(tileSize * 0.3));
@@ -777,11 +847,22 @@ function drawRoomShapeOverlay(
     ctx.fillStyle = '#0f172a';
     ctx.strokeStyle = '#e2e8f0';
     ctx.lineWidth = 1;
-    for (const p of getRoomHandlePoints(shape)) {
-      const px = p.x * tileSize;
-      const py = p.y * tileSize;
-      ctx.fillRect(px - half, py - half, handleSize, handleSize);
-      ctx.strokeRect(px - half, py - half, handleSize, handleSize);
+    if (st === 'polygon' && shape.vertices && shape.vertices.length >= 3) {
+      // Show handles at each vertex.
+      for (const v of shape.vertices) {
+        const px = v.x * tileSize;
+        const py = v.y * tileSize;
+        ctx.fillRect(px - half, py - half, handleSize, handleSize);
+        ctx.strokeRect(px - half, py - half, handleSize, handleSize);
+      }
+    } else {
+      // Bounding box handles for rect and circle.
+      for (const p of getRoomHandlePoints(shape)) {
+        const px = p.x * tileSize;
+        const py = p.y * tileSize;
+        ctx.fillRect(px - half, py - half, handleSize, handleSize);
+        ctx.strokeRect(px - half, py - half, handleSize, handleSize);
+      }
     }
   }
   ctx.restore();
@@ -983,6 +1064,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const [activeStroke, setActiveStroke] = useState<{ x: number; y: number }[] | null>(null);
   const [roomEditPreview, setRoomEditPreview] = useState<RoomShape | null>(null);
   const [roomHoverId, setRoomHoverId] = useState<number | null>(null);
+  // Polygon tool: accumulated vertices for the in-progress polygon.
+  const [polyVertices, setPolyVertices] = useState<{ x: number; y: number }[]>([]);
   const roomEditSessionRef = useRef<{
     id: number;
     mode: RoomEditMode;
@@ -1729,13 +1812,48 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.restore();
     }
 
-    if (isDragging && dragStart && dragEnd && isRoomTool(activeTool)) {
+    if (isDragging && dragStart && dragEnd && isRoomTool(activeTool) && activeTool !== 'room-poly') {
       const preview = normalizeRectRoomShape(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
+      if (activeTool === 'room-circle') {
+        preview.shapeType = 'circle';
+      }
       const isCut = activeTool === 'room-cut';
       drawRoomShapeOverlay(ctx, preview, tileSize, {
         stroke: isCut ? '#f97316' : '#22d3ee',
         fill: isCut ? 'rgba(249, 115, 22, 0.22)' : 'rgba(34, 211, 238, 0.22)',
       });
+    }
+
+    // Polygon in-progress preview — show partial polygon with placed vertices + cursor.
+    if (polyVertices.length > 0 && activeTool === 'room-poly') {
+      ctx.save();
+      ctx.strokeStyle = '#22d3ee';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(polyVertices[0].x * tileSize, polyVertices[0].y * tileSize);
+      for (let i = 1; i < polyVertices.length; i++) {
+        ctx.lineTo(polyVertices[i].x * tileSize, polyVertices[i].y * tileSize);
+      }
+      // Draw line to cursor position if available.
+      if (mousePos) {
+        ctx.lineTo(mousePos.x * tileSize, mousePos.y * tileSize);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      // Draw vertex handles.
+      const handleSize = Math.max(6, Math.round(tileSize * 0.3));
+      const half = handleSize / 2;
+      ctx.fillStyle = '#0f172a';
+      ctx.strokeStyle = '#e2e8f0';
+      ctx.lineWidth = 1;
+      for (const v of polyVertices) {
+        const px = v.x * tileSize;
+        const py = v.y * tileSize;
+        ctx.fillRect(px - half, py - half, handleSize, handleSize);
+        ctx.strokeRect(px - half, py - half, handleSize, handleSize);
+      }
+      ctx.restore();
     }
 
     // Ghost preview for fog reveal/hide drag — show the in-progress
@@ -1851,7 +1969,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, polyVertices, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth]);
 
   // Minimap render
   useEffect(() => {
@@ -2295,6 +2413,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     if (!isPlayerView && isRoomTool(activeTool)) {
       const fc = getFractionalCoords(e);
       const activeMode = activeTool === 'room-cut' ? 'subtractive' : 'additive';
+
+      // Polygon tool: add vertex on click (not drag).
+      if (activeTool === 'room-poly' && fc) {
+        const snapped = { x: Math.round(fc.x), y: Math.round(fc.y) };
+        setPolyVertices(prev => [...prev, snapped]);
+        return;
+      }
+
       if (coords && fc) {
         const handleHit = findRoomHandleAt(roomShapes, fc.x, fc.y, 0.35, activeMode);
         if (handleHit) {
@@ -2344,13 +2470,28 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens, stamps, roomShapes, zoom, onSelectPlacedStamp]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    // Polygon tool: double-click closes the polygon and creates the shape.
+    if (!isPlayerView && activeTool === 'room-poly' && polyVertices.length >= 3) {
+      const bb = polygonBoundingBox(polyVertices);
+      onAddRoomShape?.({
+        shapeType: 'polygon',
+        vertices: [...polyVertices],
+        x: bb.x,
+        y: bb.y,
+        width: Math.max(1, bb.width),
+        height: Math.max(1, bb.height),
+      });
+      setPolyVertices([]);
+      return;
+    }
+
     const coords = getTileCoords(e);
     if (!coords) return;
     const tile = tiles[coords.y]?.[coords.x]?.type;
     if (tile === 'stairs-up' || tile === 'stairs-down') {
       onStairNavigate?.(coords.x, coords.y);
     }
-  }, [getTileCoords, tiles, onStairNavigate]);
+  }, [getTileCoords, tiles, onStairNavigate, activeTool, isPlayerView, polyVertices, onAddRoomShape]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const prev = activePointersRef.current.get(e.pointerId);
@@ -2601,6 +2742,15 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     isPanningRef.current = false;
 
     if (!isPlayerView && isRoomTool(activeTool)) {
+      // Polygon tool: accumulate vertices on click, don't use drag logic.
+      if (activeTool === 'room-poly') {
+        isMouseDownRef.current = false;
+        setIsDragging(false);
+        setDragStart(null);
+        setDragEnd(null);
+        return;
+      }
+
       const edit = roomEditSessionRef.current;
       if (edit && roomEditPreview) {
         onUpdateRoomShape?.(edit.id, {
@@ -2615,6 +2765,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         const shape = normalizeRectRoomShape(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
         if (activeTool === 'room-cut') {
           shape.mode = 'subtractive';
+        } else if (activeTool === 'room-circle') {
+          shape.shapeType = 'circle';
         }
         onAddRoomShape?.(shape);
       }
@@ -2729,6 +2881,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     roomEditSessionRef.current = null;
     setRoomEditPreview(null);
     setRoomHoverId(null);
+    setPolyVertices([]);
     if (isDragging) {
       setIsDragging(false);
       setDragStart(null);
@@ -2754,6 +2907,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     roomEditSessionRef.current = null;
     setRoomEditPreview(null);
     setRoomHoverId(null);
+    setPolyVertices([]);
     if (isDragging) {
       setIsDragging(false);
       setDragStart(null);
@@ -2859,10 +3013,18 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     : activeTool === 'path' ? 'crosshair'
     : activeTool === 'path-erase' ? 'not-allowed'
     : activeTool === 'room-rect' ? (roomEditPreview ? 'move' : 'crosshair')
+    : activeTool === 'room-circle' ? (roomEditPreview ? 'move' : 'crosshair')
+    : activeTool === 'room-poly' ? 'crosshair'
     : activeTool === 'room-cut' ? (roomEditPreview ? 'move' : 'crosshair')
     : 'crosshair';
 
   const handleCanvasKeyDown = useCallback((e: React.KeyboardEvent<HTMLCanvasElement>) => {
+    // Escape cancels in-progress polygon.
+    if (e.key === 'Escape' && polyVertices.length > 0) {
+      e.preventDefault();
+      setPolyVertices([]);
+      return;
+    }
     // Arrow keys pan the viewport while the canvas itself has focus.
     // Holding Shift increases the step. Other keys bubble so the global
     // shortcut handler can pick them up.
@@ -2871,7 +3033,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     else if (e.key === 'ArrowRight'){ e.preventDefault(); setPan(p => ({ x: p.x - step, y: p.y })); }
     else if (e.key === 'ArrowUp')   { e.preventDefault(); setPan(p => ({ x: p.x, y: p.y + step })); }
     else if (e.key === 'ArrowDown') { e.preventDefault(); setPan(p => ({ x: p.x, y: p.y - step })); }
-  }, []);
+  }, [polyVertices.length]);
 
   const canvasAriaLabel = useMemo(
     () => `Map canvas: ${meta.name || 'Untitled'}, ${meta.width}×${meta.height} tiles, ${activeTool} tool active. Use arrow keys to pan; press question mark for keyboard shortcuts.`,

@@ -892,6 +892,8 @@ function App() {
       { id: 'line', label: 'Line tool', shortcut: 'L' },
       { id: 'rect', label: 'Rectangle tool', shortcut: 'R' },
       { id: 'room-rect', label: 'Room Rectangle tool', shortcut: 'Q' },
+      { id: 'room-circle', label: 'Room Circle tool', shortcut: 'Shift+C' },
+      { id: 'room-poly', label: 'Room Polygon tool', shortcut: 'Shift+P' },
       { id: 'room-cut', label: 'Room Cut tool (subtractive)', shortcut: 'Shift+Q' },
       { id: 'select', label: 'Select tool', shortcut: 'S' },
       { id: 'reveal', label: 'Reveal Fog', shortcut: 'V' },
