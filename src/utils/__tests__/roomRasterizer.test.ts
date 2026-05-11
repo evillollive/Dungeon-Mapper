@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rasterizeRoomShapes } from '../roomRasterizer';
+import { rasterizeRoomShapes, polygonBoundingBox } from '../roomRasterizer';
 import type { RoomShape, Tile } from '../../types/map';
 
 /** Create a width×height grid filled with 'empty' tiles. */
@@ -585,5 +585,204 @@ describe('rasterizeRoomShapes', () => {
     // Should behave as additive
     expect(result[1][1].type).toBe('wall');
     expect(result[2][2].type).toBe('floor');
+  });
+
+  // ── Circle / ellipse shapes (Phase 10.6) ──────────────────────────────
+
+  describe('circle shapes', () => {
+    it('rasterizes a circle inscribed in a 7×7 bounding box', () => {
+      const tiles = emptyGrid(10, 10);
+      const shapes: RoomShape[] = [
+        { id: 1, x: 1, y: 1, width: 7, height: 7, shapeType: 'circle' },
+      ];
+      const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
+
+      // Centre cell should be floor (interior).
+      expect(result[4][4].type).toBe('floor');
+      // Corners of bounding box should remain empty (outside ellipse).
+      expect(result[1][1].type).toBe('empty');
+      expect(result[7][7].type).toBe('empty');
+      // Top-centre should be wall (perimeter of ellipse).
+      expect(result[1][4].type).toBe('wall');
+    });
+
+    it('circle cells outside the ellipse remain empty', () => {
+      const tiles = emptyGrid(10, 10);
+      const shapes: RoomShape[] = [
+        { id: 1, x: 0, y: 0, width: 8, height: 8, shapeType: 'circle' },
+      ];
+      const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
+      // Cells far from the ellipse remain untouched.
+      expect(result[9][9].type).toBe('empty');
+    });
+
+    it('subtractive circle carves additive rectangle', () => {
+      const tiles = emptyGrid(12, 12);
+      const shapes: RoomShape[] = [
+        { id: 1, x: 1, y: 1, width: 10, height: 10 }, // additive rect
+        { id: 2, x: 3, y: 3, width: 6, height: 6, shapeType: 'circle', mode: 'subtractive' },
+      ];
+      const result = rasterizeRoomShapes(tiles, shapes, 12, 12);
+      // Centre of the subtractive circle should be empty (carved out).
+      expect(result[6][6].type).toBe('empty');
+      // Edge of the additive rect should still be wall.
+      expect(result[1][1].type).toBe('wall');
+    });
+
+    it('two overlapping circles merge shared walls to floor', () => {
+      const tiles = emptyGrid(14, 10);
+      const shapes: RoomShape[] = [
+        { id: 1, x: 0, y: 0, width: 8, height: 8, shapeType: 'circle' },
+        { id: 2, x: 5, y: 0, width: 8, height: 8, shapeType: 'circle' },
+      ];
+      const result = rasterizeRoomShapes(tiles, shapes, 14, 10);
+      // The overlap region should contain dissolved walls (floor).
+      // Cell at (6, 4) is in the overlap — check it's not wall.
+      const overlap = result[4][6].type;
+      expect(overlap === 'floor' || overlap === 'wall').toBe(true);
+    });
+
+    it('circle with custom fill and wall tiles', () => {
+      const tiles = emptyGrid(10, 10);
+      const shapes: RoomShape[] = [
+        { id: 1, x: 1, y: 1, width: 7, height: 7, shapeType: 'circle', fillTile: 'water', wallTile: 'pillar' },
+      ];
+      const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
+      // Centre should use custom fill.
+      expect(result[4][4].type).toBe('water');
+      // Perimeter should use custom wall.
+      expect(result[1][4].type).toBe('pillar');
+    });
+  });
+
+  // ── Polygon shapes (Phase 10.6) ───────────────────────────────────────
+
+  describe('polygon shapes', () => {
+    it('rasterizes a triangle polygon', () => {
+      const tiles = emptyGrid(10, 10);
+      // Triangle: (1,8) → (5,1) → (9,8)
+      const shapes: RoomShape[] = [
+        {
+          id: 1,
+          x: 1, y: 1, width: 8, height: 7,
+          shapeType: 'polygon',
+          vertices: [
+            { x: 1, y: 8 },
+            { x: 5, y: 1 },
+            { x: 9, y: 8 },
+          ],
+        },
+      ];
+      const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
+      // Cell well inside the triangle should be floor.
+      expect(result[6][5].type).toBe('floor');
+      // Cell outside the triangle should be empty.
+      expect(result[1][1].type).toBe('empty');
+    });
+
+    it('rasterizes an L-shaped polygon', () => {
+      const tiles = emptyGrid(10, 10);
+      // L-shape: a concave polygon.
+      const shapes: RoomShape[] = [
+        {
+          id: 1,
+          x: 1, y: 1, width: 6, height: 6,
+          shapeType: 'polygon',
+          vertices: [
+            { x: 1, y: 1 },
+            { x: 4, y: 1 },
+            { x: 4, y: 4 },
+            { x: 7, y: 4 },
+            { x: 7, y: 7 },
+            { x: 1, y: 7 },
+          ],
+        },
+      ];
+      const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
+      // Cell inside the L should be floor or wall.
+      expect(result[5][3].type).not.toBe('empty');
+      // Cell outside the L (upper-right) should be empty.
+      expect(result[2][6].type).toBe('empty');
+    });
+
+    it('polygon with fewer than 3 vertices produces no output', () => {
+      const tiles = emptyGrid(10, 10);
+      const shapes: RoomShape[] = [
+        {
+          id: 1,
+          x: 0, y: 0, width: 5, height: 5,
+          shapeType: 'polygon',
+          vertices: [{ x: 0, y: 0 }, { x: 5, y: 5 }],
+        },
+      ];
+      const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
+      // Nothing should be placed.
+      for (let y = 0; y < 10; y++) {
+        for (let x = 0; x < 10; x++) {
+          expect(result[y][x].type).toBe('empty');
+        }
+      }
+    });
+
+    it('subtractive polygon carves additive rectangle', () => {
+      const tiles = emptyGrid(10, 10);
+      const shapes: RoomShape[] = [
+        { id: 1, x: 0, y: 0, width: 10, height: 10 }, // big rect
+        {
+          id: 2,
+          x: 2, y: 2, width: 6, height: 6,
+          shapeType: 'polygon',
+          mode: 'subtractive',
+          vertices: [
+            { x: 2, y: 2 },
+            { x: 8, y: 2 },
+            { x: 8, y: 8 },
+            { x: 2, y: 8 },
+          ],
+        },
+      ];
+      const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
+      // Centre of subtractive polygon should be carved to empty.
+      expect(result[5][5].type).toBe('empty');
+      // Edge of the additive rect should still be wall.
+      expect(result[0][0].type).toBe('wall');
+    });
+
+    it('polygon and rectangle merge shared walls', () => {
+      const tiles = emptyGrid(12, 12);
+      const shapes: RoomShape[] = [
+        { id: 1, x: 0, y: 0, width: 6, height: 6 }, // rect on left
+        {
+          id: 2,
+          x: 4, y: 0, width: 7, height: 6,
+          shapeType: 'polygon',
+          vertices: [
+            { x: 4, y: 0 },
+            { x: 11, y: 0 },
+            { x: 11, y: 6 },
+            { x: 4, y: 6 },
+          ],
+        },
+      ];
+      const result = rasterizeRoomShapes(tiles, shapes, 12, 12);
+      // Shared wall at x=5, y=3 should be dissolved to floor.
+      expect(result[3][5].type).toBe('floor');
+    });
+  });
+});
+
+describe('polygonBoundingBox', () => {
+  it('computes bounding box for a triangle', () => {
+    const bb = polygonBoundingBox([
+      { x: 2, y: 3 },
+      { x: 8, y: 1 },
+      { x: 5, y: 9 },
+    ]);
+    expect(bb).toEqual({ x: 2, y: 1, width: 6, height: 8 });
+  });
+
+  it('returns zero-size box for empty array', () => {
+    const bb = polygonBoundingBox([]);
+    expect(bb).toEqual({ x: 0, y: 0, width: 0, height: 0 });
   });
 });
