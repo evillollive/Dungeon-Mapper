@@ -638,7 +638,7 @@ function findRoomShapeAt(roomShapes: RoomShape[] | undefined, fx: number, fy: nu
   return null;
 }
 
-function getRoomHandlePoints(shape: RoomShape): Array<{ handle: RoomResizeHandle; x: number; y: number }> {
+function getRoomHandlePoints(shape: Pick<RoomShape, 'x' | 'y' | 'width' | 'height'>): Array<{ handle: RoomResizeHandle; x: number; y: number }> {
   const left = shape.x;
   const right = shape.x + shape.width;
   const top = shape.y;
@@ -767,16 +767,7 @@ function drawRoomShapeOverlay(
     ctx.fillStyle = '#0f172a';
     ctx.strokeStyle = '#e2e8f0';
     ctx.lineWidth = 1;
-    for (const p of getRoomHandlePoints({
-      id: -1,
-      x: shape.x,
-      y: shape.y,
-      width: shape.width,
-      height: shape.height,
-      fillTile: shape.fillTile,
-      wallTile: shape.wallTile,
-      doorHints: shape.doorHints,
-    })) {
+    for (const p of getRoomHandlePoints(shape)) {
       const px = p.x * tileSize;
       const py = p.y * tileSize;
       ctx.fillRect(px - half, py - half, handleSize, handleSize);
@@ -2397,12 +2388,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       const fc = getFractionalCoords(e);
       if (fc) {
         const hoverShape = findRoomShapeAt(roomShapes, fc.x, fc.y);
-        setRoomHoverId(prev => (prev === (hoverShape?.id ?? null) ? prev : (hoverShape?.id ?? null)));
+        setRoomHoverId(hoverShape?.id ?? null);
       } else {
-        setRoomHoverId(prev => (prev === null ? prev : null));
+        setRoomHoverId(null);
       }
     } else {
-      setRoomHoverId(prev => (prev === null ? prev : null));
+      setRoomHoverId(null);
     }
 
     if (!isMouseDownRef.current) return;
