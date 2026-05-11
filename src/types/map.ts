@@ -709,6 +709,8 @@ export function isDungeonProject(obj: unknown): obj is DungeonProject {
 
 export type ToolType =
   | 'paint' | 'erase' | 'fill' | 'note' | 'line' | 'rect' | 'select'
+  // Dynamic room shape tool — drag to draw editable rectangular room shapes.
+  | 'room-rect'
   // GM fog tools — reveal/hide drag-rectangles of cells.
   | 'reveal' | 'hide'
   // Freehand "wipe away the fog" brush — clears fog cell-by-cell as the

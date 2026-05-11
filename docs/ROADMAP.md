@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-11
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -591,11 +591,12 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - Backward-compat: `withDefaults()` fills `roomShapes ?? []`
 - 18 rasterizer tests + updated `mapStateUtils` tests (built on Phase 7)
 
-**10.2 — Rectangle Drawing & Resize**
-- New `room-rect` tool — drag to draw a rectangular room shape
-- Edit handles for resize / move
-- Live preview while dragging
-- Right-click / context menu to delete a room shape
+**10.2 — Rectangle Drawing & Resize** ✅ COMPLETE
+- New `room-rect` tool in Draw tools (+ command palette + keyboard shortcut `Q`) to drag-create rectangular room shapes
+- Edit handles in-canvas for moving and resizing existing room shapes
+- Live preview while dragging new room rectangles and while resizing/moving existing shapes
+- Right-click / context menu delete for room shapes while `room-rect` is active
+- App wiring: `MapCanvas` now consumes `addRoomShape` / `updateRoomShape` / `removeRoomShape`
 
 **10.3 — Visual Merging**
 - When two rectangles overlap or touch edges, the rasterizer dissolves shared interior walls
@@ -1311,6 +1312,16 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-11 — Phase 10.2 (Rectangle Drawing & Resize) COMPLETE**
+- Added new `room-rect` tool to `ToolType` + DrawToolsTab + MobileToolbar + command palette + keybindings (`Q`)
+- Extended `MapCanvas` with room-shape editing UX:
+  - Drag-create rectangle room shapes with live preview
+  - Hit-tested resize handles (N/S/E/W + corners) and drag-to-move
+  - Right-click/context-menu deletion of room shapes
+  - Visual overlays and handle rendering when the room tool is active
+- Wired room shape callbacks from `App.tsx` into `MapCanvas` (`onAddRoomShape`, `onUpdateRoomShape`, `onRemoveRoomShape`)
+- Synced `nextRoomShapeIdRef` in `useMapState` when switching/resetting levels
 
 **2026-05-11 — Phase 10.1 (Shape Data Model & Rasterizer) COMPLETE**
 - Added `RoomShape` interface: rectangular room with `id`, `x`, `y`, `width`, `height`, optional `fillTile`/`wallTile` overrides

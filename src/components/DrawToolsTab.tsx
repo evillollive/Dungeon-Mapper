@@ -69,6 +69,7 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] =
   { id: 'note',       label: 'Add Note',    shortcut: 'N', icon: '📍' },
   { id: 'line',       label: 'Line',        shortcut: 'L', icon: '📏' },
   { id: 'rect',       label: 'Rectangle',   shortcut: 'R', icon: '⬛' },
+  { id: 'room-rect',  label: 'Room Rect',   shortcut: 'Q', icon: '🏛️' },
   { id: 'select',     label: 'Select',      shortcut: 'S', icon: '⬜' },
   { id: 'wall',       label: 'Wall',        shortcut: 'W', icon: '🧱' },
   { id: 'path',       label: 'Path',        shortcut: 'Shift+W', icon: '🛤️' },

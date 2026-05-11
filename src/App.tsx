@@ -187,6 +187,9 @@ function App() {
     addPathSegment,
     removePathSegment,
     clearPathSegments,
+    addRoomShape,
+    updateRoomShape,
+    removeRoomShape,
     saveCustomStamp,
     deleteCustomStamp,
     saveSceneTemplate,
@@ -887,6 +890,7 @@ function App() {
       { id: 'note', label: 'Add Note tool', shortcut: 'N' },
       { id: 'line', label: 'Line tool', shortcut: 'L' },
       { id: 'rect', label: 'Rectangle tool', shortcut: 'R' },
+      { id: 'room-rect', label: 'Room Rectangle tool', shortcut: 'Q' },
       { id: 'select', label: 'Select tool', shortcut: 'S' },
       { id: 'reveal', label: 'Reveal Fog', shortcut: 'V' },
       { id: 'hide', label: 'Hide Fog', shortcut: 'H' },
@@ -1339,6 +1343,9 @@ function App() {
             onRemoveWallSegment={removeWallSegment}
             onAddPathSegment={addPathSegment}
             onRemovePathSegment={removePathSegment}
+            onAddRoomShape={addRoomShape}
+            onUpdateRoomShape={updateRoomShape}
+            onRemoveRoomShape={removeRoomShape}
             stairLinks={activeStairLinks}
             stairLinkSource={activeTool === 'link-stair' ? stairLinkSource : null}
             onStairLinkClick={handleStairLinkClick}

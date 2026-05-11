@@ -39,6 +39,7 @@ export function useMapState() {
     nextStampIdRef.current = nextIdAfter(level.stamps);
     nextWallIdRef.current = nextIdAfter(level.wallSegments);
     nextPathIdRef.current = nextIdAfter(level.pathSegments);
+    nextRoomShapeIdRef.current = nextIdAfter(level.roomShapes);
   }
 
   function resetIds() {
@@ -50,6 +51,7 @@ export function useMapState() {
     nextStampIdRef.current = 1;
     nextWallIdRef.current = 1;
     nextPathIdRef.current = 1;
+    nextRoomShapeIdRef.current = 1;
     setSelectedNoteId(null);
   }
 
