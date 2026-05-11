@@ -1,4 +1,4 @@
-import type { MapNote, Tile } from '../../types/map';
+import type { MapNote, RoomShape, Tile } from '../../types/map';
 
 /** Inputs every generator receives. Width/height are clamped by the caller. */
 export interface GenerateContext {
@@ -86,6 +86,14 @@ export interface GeneratedMap {
   notes: MapNote[];
   width: number;
   height: number;
+  /**
+   * Optional room shapes emitted by generators that produce discrete
+   * rectangular rooms (rooms-and-corridors, village). When present,
+   * generated rooms become editable as shapes immediately after
+   * generation. Generators that don't produce discrete rooms (cavern,
+   * open terrain) omit this field. Existing maps are unaffected.
+   */
+  roomShapes?: RoomShape[];
 }
 
 export interface MapGenerator {

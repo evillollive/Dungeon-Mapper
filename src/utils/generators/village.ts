@@ -1,4 +1,4 @@
-import type { Tile, TileType } from '../../types/map';
+import type { RoomShape, Tile, TileType } from '../../types/map';
 import {
   clampDensity,
   collectCells,
@@ -692,5 +692,22 @@ export function generateVillage(ctx: GenerateContext): GeneratedMap {
     regions,
   });
 
-  return { tiles, notes, width, height };
+  // Emit RoomShape[] so generated buildings become editable shapes on
+  // the canvas. Each BSP leaf with a carved building maps to a
+  // RoomShape with sequential ids starting at 1.
+  const roomShapes: RoomShape[] = [];
+  let shapeId = 1;
+  for (const leaf of leaves) {
+    if (!leaf.building) continue;
+    const b = leaf.building;
+    roomShapes.push({
+      id: shapeId++,
+      x: b.x,
+      y: b.y,
+      width: b.w,
+      height: b.h,
+    });
+  }
+
+  return { tiles, notes, width, height, roomShapes };
 }

@@ -577,7 +577,7 @@ function App() {
         // of the canvas (notes outside the rect, tokens, fog) is kept.
         applyGeneratedRegion(result.tiles, target.x, target.y, result.notes);
       } else {
-        generateMap(result.tiles, result.width, result.height, result.notes, suggestedName);
+        generateMap(result.tiles, result.width, result.height, result.notes, suggestedName, result.roomShapes);
       }
       setShowGenerateHub(false);
       announce('Map generated');
