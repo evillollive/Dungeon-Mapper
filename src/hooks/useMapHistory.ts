@@ -44,7 +44,8 @@ export function useMapHistory(
       setCanRedo(true);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, setProject]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
 
   const redo = useCallback(() => {
     const h = getHistory(activeLevelIndex);
@@ -60,7 +61,8 @@ export function useMapHistory(
       setCanRedo(h.future.length > 0);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, setProject]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex]);
 
   return { historyRef, canUndo, canRedo, setCanUndo, setCanRedo, getHistory, pushHistory, undo, redo };
 }
