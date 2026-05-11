@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useMemo, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
-import type { CustomThemeDefinition, DungeonMap, StampDef, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, StampDef, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment, RoomShape } from '../types/map';
 import { TOKEN_KIND_COLORS, isBuiltInTileType } from '../types/map';
 import { getSemanticTileType, getThemeWithCustom, preloadCustomThemeImages } from '../utils/customThemes';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
@@ -274,6 +274,12 @@ interface MapCanvasProps {
   onAddPathSegment?: (segment: Omit<PathSegment, 'id'>) => void;
   /** Called when user clicks a path segment with path-erase tool. */
   onRemovePathSegment?: (id: number) => void;
+  /** Called when user completes a rectangular room shape. */
+  onAddRoomShape?: (shape: Omit<RoomShape, 'id'>) => number;
+  /** Called when user edits a room shape (move/resize). */
+  onUpdateRoomShape?: (id: number, changes: Partial<Omit<RoomShape, 'id'>>) => void;
+  /** Called when user removes a room shape. */
+  onRemoveRoomShape?: (id: number) => void;
 }
 
 export interface MapCanvasHandle {
@@ -620,6 +626,166 @@ function findStampAt(stamps: PlacedStamp[] | undefined, fx: number, fy: number):
   return null;
 }
 
+type RoomResizeHandle = 'n' | 's' | 'e' | 'w' | 'nw' | 'ne' | 'sw' | 'se';
+type RoomEditMode = 'move' | RoomResizeHandle;
+
+function findRoomShapeAt(roomShapes: RoomShape[] | undefined, fx: number, fy: number): RoomShape | null {
+  if (!roomShapes) return null;
+  for (let i = roomShapes.length - 1; i >= 0; i--) {
+    const s = roomShapes[i];
+    if (fx >= s.x && fx < s.x + s.width && fy >= s.y && fy < s.y + s.height) return s;
+  }
+  return null;
+}
+
+function getRoomHandlePoints(shape: RoomShape): Array<{ handle: RoomResizeHandle; x: number; y: number }> {
+  const left = shape.x;
+  const right = shape.x + shape.width;
+  const top = shape.y;
+  const bottom = shape.y + shape.height;
+  const midX = left + shape.width / 2;
+  const midY = top + shape.height / 2;
+  return [
+    { handle: 'nw', x: left, y: top },
+    { handle: 'n', x: midX, y: top },
+    { handle: 'ne', x: right, y: top },
+    { handle: 'e', x: right, y: midY },
+    { handle: 'se', x: right, y: bottom },
+    { handle: 's', x: midX, y: bottom },
+    { handle: 'sw', x: left, y: bottom },
+    { handle: 'w', x: left, y: midY },
+  ];
+}
+
+function findRoomHandleAt(
+  roomShapes: RoomShape[] | undefined,
+  fx: number,
+  fy: number,
+  tolerance = 0.35,
+): { shape: RoomShape; handle: RoomResizeHandle } | null {
+  if (!roomShapes) return null;
+  for (let i = roomShapes.length - 1; i >= 0; i--) {
+    const shape = roomShapes[i];
+    for (const p of getRoomHandlePoints(shape)) {
+      if (Math.abs(fx - p.x) <= tolerance && Math.abs(fy - p.y) <= tolerance) {
+        return { shape, handle: p.handle };
+      }
+    }
+  }
+  return null;
+}
+
+function normalizeRectRoomShape(x1: number, y1: number, x2: number, y2: number): Omit<RoomShape, 'id'> {
+  return {
+    x: Math.min(x1, x2),
+    y: Math.min(y1, y2),
+    width: Math.abs(x2 - x1) + 1,
+    height: Math.abs(y2 - y1) + 1,
+  };
+}
+
+function applyRoomEdit(
+  shape: RoomShape,
+  mode: RoomEditMode,
+  dx: number,
+  dy: number,
+  mapWidth: number,
+  mapHeight: number,
+): Omit<RoomShape, 'id'> {
+  let left = shape.x;
+  let right = shape.x + shape.width;
+  let top = shape.y;
+  let bottom = shape.y + shape.height;
+
+  if (mode === 'move') {
+    const width = shape.width;
+    const height = shape.height;
+    left = Math.max(0, Math.min(mapWidth - width, shape.x + dx));
+    top = Math.max(0, Math.min(mapHeight - height, shape.y + dy));
+    right = left + width;
+    bottom = top + height;
+  } else {
+    if (mode.includes('w')) left = shape.x + dx;
+    if (mode.includes('e')) right = shape.x + shape.width + dx;
+    if (mode.includes('n')) top = shape.y + dy;
+    if (mode.includes('s')) bottom = shape.y + shape.height + dy;
+
+    if (right - left < 1) {
+      if (mode.includes('w')) left = right - 1;
+      else right = left + 1;
+    }
+    if (bottom - top < 1) {
+      if (mode.includes('n')) top = bottom - 1;
+      else bottom = top + 1;
+    }
+
+    left = Math.max(0, left);
+    top = Math.max(0, top);
+    right = Math.min(mapWidth, right);
+    bottom = Math.min(mapHeight, bottom);
+
+    if (right - left < 1) right = Math.min(mapWidth, left + 1);
+    if (bottom - top < 1) bottom = Math.min(mapHeight, top + 1);
+  }
+
+  return {
+    x: left,
+    y: top,
+    width: Math.max(1, right - left),
+    height: Math.max(1, bottom - top),
+    fillTile: shape.fillTile,
+    wallTile: shape.wallTile,
+    doorHints: shape.doorHints,
+  };
+}
+
+function drawRoomShapeOverlay(
+  ctx: CanvasRenderingContext2D,
+  shape: Omit<RoomShape, 'id'> | RoomShape,
+  tileSize: number,
+  options?: { stroke?: string; fill?: string; dashed?: boolean; showHandles?: boolean },
+) {
+  const x = shape.x * tileSize;
+  const y = shape.y * tileSize;
+  const w = shape.width * tileSize;
+  const h = shape.height * tileSize;
+
+  ctx.save();
+  if (options?.fill) {
+    ctx.fillStyle = options.fill;
+    ctx.fillRect(x, y, w, h);
+  }
+  ctx.strokeStyle = options?.stroke ?? '#38bdf8';
+  ctx.lineWidth = 2;
+  if (options?.dashed) ctx.setLineDash([6, 4]);
+  ctx.strokeRect(x, y, w, h);
+  ctx.setLineDash([]);
+
+  if (options?.showHandles) {
+    const handleSize = Math.max(6, Math.round(tileSize * 0.3));
+    const half = handleSize / 2;
+    ctx.fillStyle = '#0f172a';
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth = 1;
+    for (const p of getRoomHandlePoints({
+      id: -1,
+      x: shape.x,
+      y: shape.y,
+      width: shape.width,
+      height: shape.height,
+      fillTile: shape.fillTile,
+      wallTile: shape.wallTile,
+      doorHints: shape.doorHints,
+    })) {
+      const px = p.x * tileSize;
+      const py = p.y * tileSize;
+      ctx.fillRect(px - half, py - half, handleSize, handleSize);
+      ctx.strokeRect(px - half, py - half, handleSize, handleSize);
+    }
+  }
+  ctx.restore();
+}
+
 /** Render a placed stamp on the canvas. The stamp is drawn as an SVG path
  * scaled to fit a 1-tile cell (times scale factor), respecting rotation,
  * flip, and opacity. */
@@ -793,6 +959,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   onRemoveWallSegment,
   onAddPathSegment,
   onRemovePathSegment,
+  onAddRoomShape,
+  onUpdateRoomShape,
+  onRemoveRoomShape,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -810,6 +979,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const [selection, setSelection] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   // Live freehand stroke being drawn — committed to the map on mouseup.
   const [activeStroke, setActiveStroke] = useState<{ x: number; y: number }[] | null>(null);
+  const [roomEditPreview, setRoomEditPreview] = useState<RoomShape | null>(null);
+  const [roomHoverId, setRoomHoverId] = useState<number | null>(null);
+  const roomEditSessionRef = useRef<{
+    id: number;
+    mode: RoomEditMode;
+    startPointer: { x: number; y: number };
+    startShape: RoomShape;
+  } | null>(null);
   // Cells visited by the in-progress freehand defog brush. Held locally so
   // the player gets immediate visual feedback (the fog overlay is skipped
   // for these cells) without spamming history; the whole batch is committed
@@ -878,6 +1055,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const stamps = useMemo(() => map.stamps ?? [], [map.stamps]);
   const wallSegments = useMemo(() => map.wallSegments ?? [], [map.wallSegments]);
   const pathSegments = useMemo(() => map.pathSegments ?? [], [map.pathSegments]);
+  const roomShapes = useMemo(() => map.roomShapes ?? [], [map.roomShapes]);
   const fog = map.fog;
   const fogActive = (map.fogEnabled ?? false);
   const isPlayerView = viewMode === 'player';
@@ -1118,6 +1296,26 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // annotations, and tokens. Visible in both GM and player views.
     for (const seg of pathSegments) {
       drawPathSegmentOnCanvas(ctx, seg, tileSize);
+    }
+
+    if (!isPlayerView && roomShapes.length > 0 && activeTool === 'room-rect') {
+      const previewId = roomEditPreview?.id ?? null;
+      for (const shape of roomShapes) {
+        if (shape.id === previewId) continue;
+        drawRoomShapeOverlay(ctx, shape, tileSize, {
+          stroke: shape.id === roomHoverId ? '#22d3ee' : '#38bdf8',
+          fill: 'rgba(56, 189, 248, 0.15)',
+          dashed: true,
+          showHandles: true,
+        });
+      }
+      if (roomEditPreview) {
+        drawRoomShapeOverlay(ctx, roomEditPreview, tileSize, {
+          stroke: '#06b6d4',
+          fill: 'rgba(6, 182, 212, 0.2)',
+          showHandles: true,
+        });
+      }
     }
 
     // Annotations are drawn under tokens but over notes so token glyphs
@@ -1522,6 +1720,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.restore();
     }
 
+    if (isDragging && dragStart && dragEnd && activeTool === 'room-rect') {
+      const preview = normalizeRectRoomShape(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
+      drawRoomShapeOverlay(ctx, preview, tileSize, {
+        stroke: '#22d3ee',
+        fill: 'rgba(34, 211, 238, 0.22)',
+      });
+    }
+
     // Ghost preview for fog reveal/hide drag — show the in-progress
     // rectangle the user is about to commit.
     if (isDragging && dragStart && dragEnd && (activeTool === 'reveal' || activeTool === 'hide')) {
@@ -1635,7 +1841,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth]);
+  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth]);
 
   // Minimap render
   useEffect(() => {
@@ -1985,6 +2191,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
     // Single pointer: right-click or pen barrel button → pan.
     if (e.button === 2) {
+      if (!isPlayerView && activeTool === 'room-rect') {
+        // Right-click is reserved for removing room shapes in room-rect mode.
+        return;
+      }
       isPanningRef.current = true;
       lastPanPos.current = { x: e.clientX, y: e.clientY };
       e.preventDefault();
@@ -2072,7 +2282,35 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       return;
     }
 
-    if (activeTool === 'line' || activeTool === 'rect' || activeTool === 'measure' || isFogDragTool) {
+    if (!isPlayerView && activeTool === 'room-rect') {
+      const fc = getFractionalCoords(e);
+      if (coords && fc) {
+        const handleHit = findRoomHandleAt(roomShapes, fc.x, fc.y);
+        if (handleHit) {
+          roomEditSessionRef.current = {
+            id: handleHit.shape.id,
+            mode: handleHit.handle,
+            startPointer: coords,
+            startShape: { ...handleHit.shape },
+          };
+          setRoomEditPreview({ ...handleHit.shape });
+          return;
+        }
+        const hit = findRoomShapeAt(roomShapes, fc.x, fc.y);
+        if (hit) {
+          roomEditSessionRef.current = {
+            id: hit.id,
+            mode: 'move',
+            startPointer: coords,
+            startShape: { ...hit },
+          };
+          setRoomEditPreview({ ...hit });
+          return;
+        }
+      }
+    }
+
+    if (activeTool === 'line' || activeTool === 'rect' || activeTool === 'room-rect' || activeTool === 'measure' || isFogDragTool) {
       if (coords) {
         setDragStart(coords);
         setDragEnd(coords);
@@ -2088,7 +2326,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     } else {
       handleCanvasAction(e);
     }
-  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens, stamps, zoom, onSelectPlacedStamp]);
+  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens, stamps, roomShapes, zoom, onSelectPlacedStamp]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const coords = getTileCoords(e);
@@ -2155,7 +2393,36 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     const coords = getTileCoords(e);
     if (coords) setMousePos(coords);
 
+    if (!isPlayerView && activeTool === 'room-rect') {
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        const hoverShape = findRoomShapeAt(roomShapes, fc.x, fc.y);
+        setRoomHoverId(prev => (prev === (hoverShape?.id ?? null) ? prev : (hoverShape?.id ?? null)));
+      } else {
+        setRoomHoverId(prev => (prev === null ? prev : null));
+      }
+    } else {
+      setRoomHoverId(prev => (prev === null ? prev : null));
+    }
+
     if (!isMouseDownRef.current) return;
+
+    if (!isPlayerView && activeTool === 'room-rect' && roomEditSessionRef.current && coords) {
+      const edit = roomEditSessionRef.current;
+      const dx = coords.x - edit.startPointer.x;
+      const dy = coords.y - edit.startPointer.y;
+      const next = applyRoomEdit(edit.startShape, edit.mode, dx, dy, meta.width, meta.height);
+      setRoomEditPreview(prev =>
+        prev &&
+        prev.x === next.x &&
+        prev.y === next.y &&
+        prev.width === next.width &&
+        prev.height === next.height
+          ? prev
+          : { ...edit.startShape, ...next }
+      );
+      return;
+    }
 
     // Player-mode drawing: append a point per move event.
     if (isPlayerView && activeTool === 'pdraw') {
@@ -2277,7 +2544,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       return;
     }
 
-    if ((activeTool === 'line' || activeTool === 'rect' || activeTool === 'measure' || isFogDragTool) && isDragging && coords) {
+    if ((activeTool === 'line' || activeTool === 'rect' || activeTool === 'room-rect' || activeTool === 'measure' || isFogDragTool) && isDragging && coords) {
       setDragEnd(coords);
     } else if (activeTool === 'select' && isDragging && coords && dragStart) {
       setDragEnd(coords);
@@ -2290,7 +2557,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     } else if (activeTool === 'paint' || activeTool === 'erase') {
       handleCanvasAction(e);
     }
-  }, [activeTool, isDragging, dragStart, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, onMoveToken, onMoveStamp, zoom]);
+  }, [activeTool, isDragging, dragStart, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, roomShapes, meta.width, meta.height, onMoveToken, onMoveStamp, zoom]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -2317,6 +2584,27 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
 
     isPanningRef.current = false;
+
+    if (!isPlayerView && activeTool === 'room-rect') {
+      const edit = roomEditSessionRef.current;
+      if (edit && roomEditPreview) {
+        onUpdateRoomShape?.(edit.id, {
+          x: roomEditPreview.x,
+          y: roomEditPreview.y,
+          width: roomEditPreview.width,
+          height: roomEditPreview.height,
+        });
+        roomEditSessionRef.current = null;
+        setRoomEditPreview(null);
+      } else if (isMouseDownRef.current && isDragging && dragStart && dragEnd) {
+        onAddRoomShape?.(normalizeRectRoomShape(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y));
+      }
+      isMouseDownRef.current = false;
+      setIsDragging(false);
+      setDragStart(null);
+      setDragEnd(null);
+      return;
+    }
 
     // Commit player-mode freehand stroke.
     if (isPlayerView && activeTool === 'pdraw' && activeStroke && activeStroke.length > 0) {
@@ -2398,7 +2686,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setIsDragging(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo, wallColor, wallThickness, pathColor, pathWidth, onAddWallSegment, onAddPathSegment]);
+  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, roomEditPreview, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo, wallColor, wallThickness, pathColor, pathWidth, onAddWallSegment, onAddPathSegment, onAddRoomShape, onUpdateRoomShape]);
 
   const handlePointerLeave = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     activePointersRef.current.delete(e.pointerId);
@@ -2419,6 +2707,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
     if (draggingTokenRef.current) draggingTokenRef.current = null;
     if (draggingStampRef.current) draggingStampRef.current = null;
+    roomEditSessionRef.current = null;
+    setRoomEditPreview(null);
+    setRoomHoverId(null);
     if (isDragging) {
       setIsDragging(false);
       setDragStart(null);
@@ -2441,12 +2732,30 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
     if (draggingTokenRef.current) draggingTokenRef.current = null;
     if (draggingStampRef.current) draggingStampRef.current = null;
+    roomEditSessionRef.current = null;
+    setRoomEditPreview(null);
+    setRoomHoverId(null);
     if (isDragging) {
       setIsDragging(false);
       setDragStart(null);
       setDragEnd(null);
     }
   }, [isDragging, activeStroke, defogStroke, onSetFogCells]);
+
+  const handleContextMenu = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    if (isPlayerView || activeTool !== 'room-rect') return;
+    const fc = getFractionalCoords(e);
+    if (!fc) return;
+    const hit = findRoomShapeAt(roomShapes, fc.x, fc.y);
+    if (!hit) return;
+    if (roomEditSessionRef.current?.id === hit.id) {
+      roomEditSessionRef.current = null;
+      setRoomEditPreview(null);
+    }
+    onRemoveRoomShape?.(hit.id);
+    announce?.('Room shape removed');
+  }, [activeTool, isPlayerView, getFractionalCoords, roomShapes, onRemoveRoomShape, announce]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     // Shift (or Caps Lock) + wheel pans the map. Unmodified wheel is ignored
@@ -2529,6 +2838,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     : activeTool === 'wall-erase' ? 'not-allowed'
     : activeTool === 'path' ? 'crosshair'
     : activeTool === 'path-erase' ? 'not-allowed'
+    : activeTool === 'room-rect' ? (roomEditPreview ? 'move' : 'crosshair')
     : 'crosshair';
 
   const handleCanvasKeyDown = useCallback((e: React.KeyboardEvent<HTMLCanvasElement>) => {
@@ -2587,7 +2897,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
             onPointerUp={handlePointerUp}
             onPointerLeave={handlePointerLeave}
             onPointerCancel={handlePointerCancel}
-            onContextMenu={e => e.preventDefault()}
+            onContextMenu={handleContextMenu}
             onWheel={handleWheel}
             onKeyDown={handleCanvasKeyDown}
           />

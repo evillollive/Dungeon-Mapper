@@ -67,6 +67,7 @@ const ALL_TOOLS: ToolMeta[] = [
   { id: 'fill',   icon: '🪣', label: 'Fill'   },
   { id: 'line',   icon: '📏', label: 'Line'   },
   { id: 'rect',   icon: '⬛', label: 'Rect'   },
+  { id: 'room-rect', icon: '🏛️', label: 'Room' },
   { id: 'note',   icon: '📍', label: 'Note'   },
   // Player drawing
   { id: 'pdraw',  icon: '🖊️', label: 'Draw'   },
@@ -123,7 +124,7 @@ interface ToolCategory {
 }
 
 const GM_CATEGORIES: ToolCategory[] = [
-  { label: 'Drawing',  tools: ['paint', 'erase', 'fill', 'line', 'rect', 'note'] },
+  { label: 'Drawing',  tools: ['paint', 'erase', 'fill', 'line', 'rect', 'room-rect', 'note'] },
   { label: 'Fog',      tools: ['reveal', 'hide', 'defog'] },
   { label: 'Tactical', tools: ['fov', 'measure', 'marker', 'remove-marker', 'light', 'remove-light'] },
   { label: 'Tokens',   tools: ['token-player', 'token-npc', 'token-monster', 'token-monster-md', 'token-monster-lg', 'move-token', 'remove-token'] },
