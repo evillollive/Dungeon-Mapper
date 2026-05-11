@@ -21,6 +21,7 @@ import { drawHandDrawn } from './handDrawn';
 import { drawLightingAtmosphere } from './lightingAtmosphere';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
+import { deriveRenderableTiles } from './derivedRenderMap';
 
 // Screen-mode canvas styling (mirrored from MapCanvas.tsx).
 const SCREEN_BG = '#f4f1e4';
@@ -141,6 +142,7 @@ export function renderMapToCanvas(
   const isPlayerView = viewMode === 'player';
   const fogActive = map.fogEnabled ?? false;
   const fog = map.fog;
+  const tiles = deriveRenderableTiles(map);
 
   const canvasW = width * tileSize;
   const canvasH = height * tileSize;
@@ -168,7 +170,7 @@ export function renderMapToCanvas(
 
   const tileDrawContext: TileDrawContext = {
     getTileBaseType: (x, y) => {
-      const type = map.tiles[y]?.[x]?.type;
+      const type = tiles[y]?.[x]?.type;
       return type ? getSemanticTileType(type, customThemes) : undefined;
     },
   };
@@ -176,7 +178,7 @@ export function renderMapToCanvas(
   // Tiles
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const tile = map.tiles[y]?.[x];
+      const tile = tiles[y]?.[x];
       if (!tile) continue;
       if (printMode) {
         drawPrintTile(ctx, getSemanticTileType(tile.type, customThemes), x, y, tileSize);
@@ -192,7 +194,7 @@ export function renderMapToCanvas(
 
   // Edge blending — render after tiles, before grid lines. Disabled in print mode.
   if (!printMode && includeEdgeBlend && map.edgeBlend?.enabled) {
-    drawEdgeBlending(ctx, map.tiles, width, height, tileSize, map.edgeBlend, theme, customThemes);
+    drawEdgeBlending(ctx, tiles, width, height, tileSize, map.edgeBlend, theme, customThemes);
   }
 
   // Grid lines
@@ -214,12 +216,12 @@ export function renderMapToCanvas(
   // Hand-drawn mode — wobbly grid + cross-hatch overlay. Works in both
   // screen and print mode (uses B&W strokes in print).
   if (includeHandDrawn && map.handDrawn?.enabled) {
-    drawHandDrawn(ctx, map.tiles, width, height, tileSize, map.handDrawn, printMode, customThemes);
+    drawHandDrawn(ctx, tiles, width, height, tileSize, map.handDrawn, printMode, customThemes);
   }
 
   // Lighting & atmosphere — AO, stamp shadows, color grading. Disabled in print mode.
   if (!printMode && includeLighting && map.lightingAtmosphere?.enabled) {
-    drawLightingAtmosphere(ctx, map.tiles, width, height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes);
+    drawLightingAtmosphere(ctx, tiles, width, height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes);
   }
 
   // Notes

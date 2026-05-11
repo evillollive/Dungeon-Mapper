@@ -3,7 +3,7 @@ import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, SceneT
 import { createEmptyGrid, createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
 import { saveProject } from '../utils/storage';
 import { reThemeNotes } from '../utils/reThemeNotes';
-import { createDefaultProject, nextIdAfter, updateActiveLevel } from './mapStateUtils';
+import { clearVisibleMapContent, createDefaultProject, nextIdAfter, replaceGeneratedMapContent, updateActiveLevel } from './mapStateUtils';
 import { useMapHistory } from './useMapHistory';
 import { useMapClipboard } from './useMapClipboard';
 import { useLevelManagement } from './useLevelManagement';
@@ -201,18 +201,7 @@ export function useMapState() {
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m,
-        tiles: createEmptyGrid(m.meta.width, m.meta.height),
-        notes: [],
-        fog: createFogGrid(m.meta.width, m.meta.height, true),
-        explored: undefined,
-        dynamicFogEnabled: false,
-        tokens: [],
-        annotations: [],
-        initiative: [],
-        lightSources: [],
-        markers: [],
-        stamps: [],
+        ...clearVisibleMapContent(m),
       }));
       debouncedSave(updated);
       return updated;
@@ -225,13 +214,7 @@ export function useMapState() {
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m,
-        meta: { ...m.meta, width, height, ...(name ? { name } : {}) },
-        tiles, notes,
-        roomShapes: roomShapes ?? [],
-        fog: createFogGrid(width, height, true),
-        fogEnabled: m.fogEnabled ?? true,
-        tokens: [], annotations: [], initiative: [], stamps: [],
+        ...replaceGeneratedMapContent(m, tiles, width, height, notes, name, roomShapes ?? []),
       }));
       debouncedSave(updated);
       return updated;
@@ -239,7 +222,11 @@ export function useMapState() {
     setNextNoteId(nextIdAfter(notes));
     nextTokenIdRef.current = 1;
     nextStrokeIdRef.current = 1;
+    nextMarkerIdRef.current = 1;
+    nextLightIdRef.current = 1;
     nextStampIdRef.current = 1;
+    nextWallIdRef.current = 1;
+    nextPathIdRef.current = 1;
     if (roomShapes && roomShapes.length > 0) {
       nextRoomShapeIdRef.current = nextIdAfter(roomShapes);
     } else {

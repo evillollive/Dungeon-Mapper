@@ -1,8 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import type { DungeonMap, DungeonProject } from '../types/map';
-import { createFogGrid } from '../utils/mapUtils';
-import type { HistorySnapshot, LevelHistory } from './mapStateUtils';
-import { MAX_HISTORY_SIZE, updateActiveLevel } from './mapStateUtils';
+import type { LevelHistory } from './mapStateUtils';
+import { createHistorySnapshot, MAX_HISTORY_SIZE, restoreHistorySnapshot, updateActiveLevel } from './mapStateUtils';
 
 export function useMapHistory(
   setProject: React.Dispatch<React.SetStateAction<DungeonProject>>,
@@ -23,17 +22,7 @@ export function useMapHistory(
   }
 
   function pushHistory(prev: DungeonMap, levelIdx: number) {
-    const snap: HistorySnapshot = {
-      tiles: prev.tiles,
-      fog: prev.fog ?? createFogGrid(prev.meta.width, prev.meta.height, false),
-      notes: prev.notes,
-      stamps: prev.stamps ?? [],
-      wallSegments: prev.wallSegments ?? [],
-      pathSegments: prev.pathSegments ?? [],
-      roomShapes: prev.roomShapes ?? [],
-      width: prev.meta.width,
-      height: prev.meta.height,
-    };
+    const snap = createHistorySnapshot(prev);
     const h = getHistory(levelIdx);
     h.past = [...h.past.slice(-(MAX_HISTORY_SIZE - 1)), snap];
     h.future = [];
@@ -48,20 +37,8 @@ export function useMapHistory(
       const prevMap = prev.levels[activeLevelIndex];
       const previous = h.past[h.past.length - 1];
       h.past = h.past.slice(0, -1);
-      h.future = [...h.future, {
-        tiles: prevMap.tiles,
-        fog: prevMap.fog ?? createFogGrid(prevMap.meta.width, prevMap.meta.height, false),
-        notes: prevMap.notes, stamps: prevMap.stamps ?? [],
-        wallSegments: prevMap.wallSegments ?? [], pathSegments: prevMap.pathSegments ?? [],
-        roomShapes: prevMap.roomShapes ?? [],
-        width: prevMap.meta.width, height: prevMap.meta.height,
-      }];
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m, meta: { ...m.meta, width: previous.width, height: previous.height },
-        tiles: previous.tiles, fog: previous.fog, notes: previous.notes, stamps: previous.stamps,
-        wallSegments: previous.wallSegments, pathSegments: previous.pathSegments,
-        roomShapes: previous.roomShapes,
-      }));
+      h.future = [...h.future, createHistorySnapshot(prevMap)];
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => restoreHistorySnapshot(m, previous));
       debouncedSave(updated);
       setCanUndo(h.past.length > 0);
       setCanRedo(true);
@@ -76,20 +53,8 @@ export function useMapHistory(
       const prevMap = prev.levels[activeLevelIndex];
       const next = h.future[h.future.length - 1];
       h.future = h.future.slice(0, -1);
-      h.past = [...h.past, {
-        tiles: prevMap.tiles,
-        fog: prevMap.fog ?? createFogGrid(prevMap.meta.width, prevMap.meta.height, false),
-        notes: prevMap.notes, stamps: prevMap.stamps ?? [],
-        wallSegments: prevMap.wallSegments ?? [], pathSegments: prevMap.pathSegments ?? [],
-        roomShapes: prevMap.roomShapes ?? [],
-        width: prevMap.meta.width, height: prevMap.meta.height,
-      }];
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m, meta: { ...m.meta, width: next.width, height: next.height },
-        tiles: next.tiles, fog: next.fog, notes: next.notes, stamps: next.stamps,
-        wallSegments: next.wallSegments, pathSegments: next.pathSegments,
-        roomShapes: next.roomShapes,
-      }));
+      h.past = [...h.past, createHistorySnapshot(prevMap)];
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => restoreHistorySnapshot(m, next));
       debouncedSave(updated);
       setCanUndo(true);
       setCanRedo(h.future.length > 0);

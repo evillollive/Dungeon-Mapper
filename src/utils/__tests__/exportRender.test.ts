@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { exportMapSVG } from '../export';
 import { renderMapToCanvas } from '../renderMap';
+import { deriveRenderableTiles } from '../derivedRenderMap';
 import { createDefaultMap } from '../../hooks/mapStateUtils';
 import { getTheme } from '../../themes';
 import type { DungeonMap } from '../../types/map';
@@ -85,5 +86,43 @@ describe('export and render helpers', () => {
 
     expect(canvas.width).toBe(36);
     expect(canvas.height).toBe(24);
+  });
+
+  it('derives room shapes into renderable tiles for all render paths', async () => {
+    const map = createDefaultMap('Room Shape Export');
+    map.meta.width = 5;
+    map.meta.height = 5;
+    map.meta.tileSize = 10;
+    map.tiles = Array.from({ length: 5 }, () => Array.from({ length: 5 }, () => ({ type: 'empty' as const })));
+    map.roomShapes = [{ id: 1, x: 1, y: 1, width: 3, height: 3 }];
+
+    const derived = deriveRenderableTiles(map);
+    expect(derived[1][1].type).toBe('wall');
+    expect(derived[2][2].type).toBe('floor');
+
+    exportMapSVG(map, getTheme('dungeon'), undefined, { includeTexture: false, includeEdgeBlend: false, includeHandDrawn: false, includeLighting: false });
+    const svg = await blobs[0].text();
+    expect(svg).toContain('x="10" y="10" width="10" height="10"');
+    expect(svg).toContain('x="20" y="20" width="10" height="10"');
+  });
+
+  it('escapes or drops unsafe SVG export attributes', async () => {
+    const map = smallMap();
+    map.markers = [{ id: 1, x: 1, y: 1, shape: 'circle', color: '#f00" onload="alert(1)', size: 1 }];
+    map.stamps = [{ id: 1, stampId: 'evil', x: 1, y: 1, rotation: 0, scale: 1, flipX: false, flipY: false, opacity: 1, locked: false }];
+
+    exportMapSVG(map, getTheme('dungeon'), undefined, {
+      customStamps: [{
+        id: 'evil',
+        name: 'Evil',
+        category: 'custom',
+        viewBox: '0 0 512 512',
+        imageDataUrl: 'javascript:alert(1)',
+      }],
+    });
+    const svg = await blobs[0].text();
+
+    expect(svg).not.toContain('javascript:alert');
+    expect(svg).not.toContain('onload=');
   });
 });
