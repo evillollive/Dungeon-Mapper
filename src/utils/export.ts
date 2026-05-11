@@ -417,10 +417,17 @@ function sanitizeColor(value: string | undefined, fallback: string): string {
 function sanitizeImageDataUrl(value: string): string | null {
   const trimmed = value.trim();
   if (trimmed.length > 2 * 1024 * 1024) return null;
-  if (/^data:image\/(?:png|jpe?g|webp|svg\+xml);base64,(?:[a-z0-9+/]{4})*(?:[a-z0-9+/]{2}==|[a-z0-9+/]{3}=)?$/i.test(trimmed)) {
-    return escapeXML(trimmed);
+  const match = /^data:image\/(?:png|jpe?g|webp|svg\+xml);base64,([a-z0-9+/]+={0,2})$/i.exec(trimmed);
+  if (!match) return null;
+  const base64 = match[1];
+  if (base64.length % 4 !== 0) return null;
+  if (!/^[A-Za-z0-9+/]*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(base64)) return null;
+  try {
+    atob(base64);
+  } catch {
+    return null;
   }
-  return null;
+  return escapeXML(trimmed);
 }
 
 // ── Print-Optimized / High-DPI Export ──────────────────────────────

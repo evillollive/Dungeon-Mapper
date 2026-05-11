@@ -44,6 +44,7 @@ export function useMapHistory(
       setCanRedo(true);
       return updated;
     });
+  // React state setters are stable; omitting setProject matches the local hook pattern.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSave, activeLevelIndex]);
 
@@ -61,6 +62,7 @@ export function useMapHistory(
       setCanRedo(h.future.length > 0);
       return updated;
     });
+  // React state setters are stable; omitting setProject matches the local hook pattern.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSave, activeLevelIndex]);
 
