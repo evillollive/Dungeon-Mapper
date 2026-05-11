@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-11
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phase 10.4 (Generator Integration) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phase 10.4 (Generator Integration) **COMPLETE**. Phase 10.5 (Subtractive Shapes) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -621,9 +621,14 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - App.tsx wiring forwards `result.roomShapes` through to state
 - 13 new generator integration tests (245 total)
 
-**10.5 — Subtractive Shapes**
-- "Cut" rectangles for alcoves, pillars, courtyards
-- Per-edge wall override controls
+**10.5 — Subtractive Shapes** ✅ COMPLETE
+- `RoomShapeMode` type (`'additive'` | `'subtractive'`), optional `mode` field on `RoomShape` (defaults to `'additive'`)
+- Rasterizer subtractive pass (Pass 4): subtractive shapes carve overlapping additive geometry — interior→empty, perimeter→wall
+- New `room-cut` tool (`Shift+Q`) with red/orange overlay, command palette entry, and keyboard shortcut
+- Per-tool shape filtering: `room-rect` interacts with additive shapes, `room-cut` with subtractive
+- Per-edge wall override UI: contextual EDGE OVERRIDES panel in DrawToolsTab when room tool active and a shape is selected — dropdowns for N/E/S/W (auto/wall/door/arch)
+- Props wired through NavigationRail, Toolbar, and App.tsx (`selectedRoomShapeId` + `onSelectRoomShape`)
+- 7 new subtractive tests (252 total across 19 files)
 
 **10.6 — Additional Shapes**
 - Circle / ellipse room shape
@@ -1324,6 +1329,16 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-11 — Phase 10.5 (Subtractive Shapes) COMPLETE**
+- New `RoomShapeMode` type (`'additive'` | `'subtractive'`) and optional `mode` field on `RoomShape`
+- Rasterizer subtractive pass (Pass 4): after additive shapes are rasterized and merged, subtractive shapes carve overlapping additive geometry — interior cells→empty, perimeter cells→wall (sealing the cut)
+- New `room-cut` tool (`Shift+Q`, ✂️ icon) creates subtractive shapes; red/orange overlay distinguishes them from additive shapes (blue)
+- Per-tool shape filtering: `room-rect` only interacts with additive shapes, `room-cut` only with subtractive — each tool shows handles only for its own mode
+- Per-edge wall override UI: contextual EDGE OVERRIDES panel appears in DrawToolsTab/NavigationRail/Toolbar when a room tool is active and a shape is selected — N/E/S/W dropdowns (auto/wall/door/arch)
+- `selectedRoomShapeId` state + `onSelectRoomShape` callback wired through MapCanvas→App→NavigationRail/Toolbar→DrawToolsTab
+- Command palette entry for Room Cut tool
+- 7 new subtractive rasterizer tests (252 total across 19 test files)
 
 **2026-05-11 — Phase 10.4 (Generator Integration) COMPLETE**
 - `GeneratedMap` type extended with optional `roomShapes?: RoomShape[]` field
