@@ -233,6 +233,7 @@ function App() {
   const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
   const [showSceneTemplateDialog, setShowSceneTemplateDialog] = useState<boolean>(false);
   const [showCommandPalette, setShowCommandPalette] = useState<boolean>(false);
+  const [selectedRoomShapeId, setSelectedRoomShapeId] = useState<number | null>(null);
   // Polite live-region message announced to screen readers when the user
   // performs an action whose visual feedback is the canvas (e.g. undo,
   // theme switch, view-mode toggle). Cleared automatically a moment
@@ -891,6 +892,7 @@ function App() {
       { id: 'line', label: 'Line tool', shortcut: 'L' },
       { id: 'rect', label: 'Rectangle tool', shortcut: 'R' },
       { id: 'room-rect', label: 'Room Rectangle tool', shortcut: 'Q' },
+      { id: 'room-cut', label: 'Room Cut tool (subtractive)', shortcut: 'Shift+Q' },
       { id: 'select', label: 'Select tool', shortcut: 'S' },
       { id: 'reveal', label: 'Reveal Fog', shortcut: 'V' },
       { id: 'hide', label: 'Hide Fog', shortcut: 'H' },
@@ -1145,6 +1147,9 @@ function App() {
               onClearLightingAtmosphere={clearLightingAtmosphere}
               artStylePreset={map.artStylePreset}
               onApplyArtStylePreset={applyArtStylePreset}
+              roomShapes={map.roomShapes}
+              selectedRoomShapeId={selectedRoomShapeId}
+              onUpdateRoomShape={updateRoomShape}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             ) : (
@@ -1241,6 +1246,9 @@ function App() {
               onClearLightingAtmosphere={clearLightingAtmosphere}
               artStylePreset={map.artStylePreset}
               onApplyArtStylePreset={applyArtStylePreset}
+              roomShapes={map.roomShapes}
+              selectedRoomShapeId={selectedRoomShapeId}
+              onUpdateRoomShape={updateRoomShape}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
             ))}
@@ -1346,6 +1354,7 @@ function App() {
             onAddRoomShape={addRoomShape}
             onUpdateRoomShape={updateRoomShape}
             onRemoveRoomShape={removeRoomShape}
+            onSelectRoomShape={setSelectedRoomShapeId}
             stairLinks={activeStairLinks}
             stairLinkSource={activeTool === 'link-stair' ? stairLinkSource : null}
             onStairLinkClick={handleStairLinkClick}

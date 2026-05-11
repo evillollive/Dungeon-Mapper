@@ -1,5 +1,5 @@
 import React from 'react';
-import type { ArtStylePresetId, ColorGradingMode, CustomThemeDefinition, EdgeBlendSettings, EdgeBlendStyle, HandDrawnSettings, HandDrawnStyle, LightingAtmosphereSettings, PaperTexturePattern, PaperTextureSettings, StampDef, ToolType, TileType } from '../types/map';
+import type { ArtStylePresetId, ColorGradingMode, CustomThemeDefinition, EdgeBlendSettings, EdgeBlendStyle, EdgeMergeMode, HandDrawnSettings, HandDrawnStyle, LightingAtmosphereSettings, PaperTexturePattern, PaperTextureSettings, RoomEdge, StampDef, ToolType, TileType } from '../types/map';
 import { ALL_TILE_TYPES, TILE_LABELS, DEFAULT_PAPER_TEXTURE, DEFAULT_EDGE_BLEND, DEFAULT_HAND_DRAWN, DEFAULT_LIGHTING_ATMOSPHERE, ART_STYLE_PRESET_IDS, ART_STYLE_PRESET_LABELS, isBuiltInTileType } from '../types/map';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { buildThemeList, getCustomTileLabel, getThemeWithCustom } from '../utils/customThemes';
@@ -60,6 +60,10 @@ interface DrawToolsTabProps {
   // Art style presets
   artStylePreset?: ArtStylePresetId;
   onApplyArtStylePreset?: (presetId: ArtStylePresetId) => void;
+  // Room shape edge override controls (Phase 10.5)
+  roomShapes?: import('../types/map').RoomShape[];
+  selectedRoomShapeId?: number | null;
+  onUpdateRoomShape?: (id: number, changes: Partial<Omit<import('../types/map').RoomShape, 'id'>>) => void;
 }
 
 const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] = [
@@ -70,6 +74,7 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] =
   { id: 'line',       label: 'Line',        shortcut: 'L', icon: '📏' },
   { id: 'rect',       label: 'Rectangle',   shortcut: 'R', icon: '⬛' },
   { id: 'room-rect',  label: 'Room Rect',   shortcut: 'Q', icon: '🏛️' },
+  { id: 'room-cut',   label: 'Room Cut',    shortcut: 'Shift+Q', icon: '✂️' },
   { id: 'select',     label: 'Select',      shortcut: 'S', icon: '⬜' },
   { id: 'wall',       label: 'Wall',        shortcut: 'W', icon: '🧱' },
   { id: 'path',       label: 'Path',        shortcut: 'Shift+W', icon: '🛤️' },
@@ -129,6 +134,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   handDrawn, onSetHandDrawn, onUpdateHandDrawn, onClearHandDrawn,
   lightingAtmosphere, onSetLightingAtmosphere, onUpdateLightingAtmosphere, onClearLightingAtmosphere,
   artStylePreset, onApplyArtStylePreset,
+  roomShapes, selectedRoomShapeId, onUpdateRoomShape,
 }) => {
   const theme = getThemeWithCustom(themeId, customThemes);
   const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
@@ -262,6 +268,49 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
           </button>
         </div>
       )}
+
+      {/* Room shape edge override controls — shown when room tool active and a shape is selected */}
+      {(activeTool === 'room-rect' || activeTool === 'room-cut') && selectedRoomShapeId != null && (() => {
+        const selectedShape = roomShapes?.find(s => s.id === selectedRoomShapeId);
+        if (!selectedShape) return null;
+        const getMode = (edge: RoomEdge): EdgeMergeMode => {
+          const ov = selectedShape.edgeMergeOverrides?.find(o => o.edge === edge);
+          return ov?.mode ?? 'auto';
+        };
+        const setEdgeMode = (edge: RoomEdge, mode: EdgeMergeMode) => {
+          const existing = (selectedShape.edgeMergeOverrides ?? []).filter(o => o.edge !== edge);
+          const next = mode === 'auto' ? existing : [...existing, { edge, mode }];
+          onUpdateRoomShape?.(selectedRoomShapeId, { edgeMergeOverrides: next.length ? next : undefined });
+        };
+        const edges: { edge: RoomEdge; label: string }[] = [
+          { edge: 'n', label: 'North' },
+          { edge: 'e', label: 'East' },
+          { edge: 's', label: 'South' },
+          { edge: 'w', label: 'West' },
+        ];
+        return (
+          <div className="toolbar-section">
+            <div className="toolbar-label">EDGE OVERRIDES — Room #{selectedRoomShapeId}</div>
+            {edges.map(({ edge, label }) => (
+              <label key={edge} className="tool-btn" style={{ cursor: 'pointer' }}>
+                <span className="tool-icon" aria-hidden="true">🧭</span>
+                <span className="tool-name">{label}</span>
+                <select
+                  className="grid-select"
+                  value={getMode(edge)}
+                  onChange={e => setEdgeMode(edge, e.target.value as EdgeMergeMode)}
+                  title={`${label} edge merge mode`}
+                >
+                  <option value="auto">Auto (dissolve)</option>
+                  <option value="wall">Wall (keep)</option>
+                  <option value="door">Door</option>
+                  <option value="arch">Archway</option>
+                </select>
+              </label>
+            ))}
+          </div>
+        );
+      })()}
 
       <div className="toolbar-section">
         <div className="toolbar-label">THEME</div>

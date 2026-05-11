@@ -97,6 +97,10 @@ interface ToolbarProps {
   // Art style presets
   artStylePreset?: import('../types/map').ArtStylePresetId;
   onApplyArtStylePreset?: (presetId: import('../types/map').ArtStylePresetId) => void;
+  // Room shape edge overrides (Phase 10.5)
+  roomShapes?: import('../types/map').RoomShape[];
+  selectedRoomShapeId?: number | null;
+  onUpdateRoomShape?: (id: number, changes: Partial<Omit<import('../types/map').RoomShape, 'id'>>) => void;
   // Scene templates
   onOpenSceneTemplates: () => void;
 }
@@ -205,6 +209,9 @@ const Toolbar: React.FC<ToolbarProps> = (props) => {
             onClearLightingAtmosphere={props.onClearLightingAtmosphere}
             artStylePreset={props.artStylePreset}
             onApplyArtStylePreset={props.onApplyArtStylePreset}
+            roomShapes={props.roomShapes}
+            selectedRoomShapeId={props.selectedRoomShapeId}
+            onUpdateRoomShape={props.onUpdateRoomShape}
           />
         )}
         {activeTab === 'tactical' && (
