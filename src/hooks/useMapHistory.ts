@@ -44,7 +44,7 @@ export function useMapHistory(
       setCanRedo(true);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [debouncedSave, activeLevelIndex, setProject]);
 
   const redo = useCallback(() => {
     const h = getHistory(activeLevelIndex);
@@ -60,7 +60,7 @@ export function useMapHistory(
       setCanRedo(h.future.length > 0);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [debouncedSave, activeLevelIndex, setProject]);
 
   return { historyRef, canUndo, canRedo, setCanUndo, setCanRedo, getHistory, pushHistory, undo, redo };
 }

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, SceneTemplate, StampDef, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment, RoomShape } from '../types/map';
-import { createEmptyGrid, createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
+import { createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
 import { saveProject } from '../utils/storage';
 import { reThemeNotes } from '../utils/reThemeNotes';
 import { clearVisibleMapContent, createDefaultProject, nextIdAfter, replaceGeneratedMapContent, updateActiveLevel } from './mapStateUtils';

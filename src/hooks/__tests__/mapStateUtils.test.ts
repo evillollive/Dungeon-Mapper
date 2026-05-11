@@ -7,7 +7,6 @@ import {
   replaceGeneratedMapContent,
   restoreHistorySnapshot,
   withDefaults,
-  withProjectDefaults,
   nextIdAfter,
   updateActiveLevel,
   DEFAULT_WIDTH,
@@ -15,7 +14,7 @@ import {
   DEFAULT_TILE_SIZE,
   MAX_HISTORY_SIZE,
 } from '../mapStateUtils';
-import type { DungeonMap, DungeonProject } from '../../types/map';
+import type { DungeonMap } from '../../types/map';
 
 describe('createDefaultMap', () => {
   it('creates a map with default dimensions', () => {
