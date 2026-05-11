@@ -221,13 +221,14 @@ export function useMapState() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSave, activeLevelIndex]);
 
-  const generateMap = useCallback((tiles: Tile[][], width: number, height: number, notes: MapNote[] = [], name?: string) => {
+  const generateMap = useCallback((tiles: Tile[][], width: number, height: number, notes: MapNote[] = [], name?: string, roomShapes?: RoomShape[]) => {
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m,
         meta: { ...m.meta, width, height, ...(name ? { name } : {}) },
         tiles, notes,
+        roomShapes: roomShapes ?? [],
         fog: createFogGrid(width, height, true),
         fogEnabled: m.fogEnabled ?? true,
         tokens: [], annotations: [], initiative: [], stamps: [],
@@ -239,6 +240,11 @@ export function useMapState() {
     nextTokenIdRef.current = 1;
     nextStrokeIdRef.current = 1;
     nextStampIdRef.current = 1;
+    if (roomShapes && roomShapes.length > 0) {
+      nextRoomShapeIdRef.current = nextIdAfter(roomShapes);
+    } else {
+      nextRoomShapeIdRef.current = 1;
+    }
     setSelectedNoteId(null);
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSave, activeLevelIndex]);

@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-11
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phase 10.4 (Generator Integration) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -610,9 +610,16 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 
 📘 **README checkpoint #4:** GIF of room overlap/merge.
 
-**10.4 — Generator Integration**
+**10.4 — Generator Integration** ✅ COMPLETE
 - BSP / Rooms & Corridors generators emit `RoomShape[]` going forward (existing maps unaffected)
 - Generated rooms become editable as shapes immediately after generation
+- `GeneratedMap` type extended with optional `roomShapes` field
+- `generateRoomsCorridors` converts internal `Room[]` → `RoomShape[]` (sequential ids from 1)
+- `generateVillage` converts BSP leaf buildings → `RoomShape[]`
+- Cavern / Open Terrain generators unchanged (no discrete rooms)
+- `generateMap` (useMapState) accepts and stores `roomShapes`, resets `nextRoomShapeIdRef`
+- App.tsx wiring forwards `result.roomShapes` through to state
+- 13 new generator integration tests (245 total)
 
 **10.5 — Subtractive Shapes**
 - "Cut" rectangles for alcoves, pillars, courtyards
@@ -1317,6 +1324,16 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-11 — Phase 10.4 (Generator Integration) COMPLETE**
+- `GeneratedMap` type extended with optional `roomShapes?: RoomShape[]` field
+- Rooms & Corridors generator (`roomsCorridors.ts`) now emits `RoomShape[]` from its internal `Room[]` array — each generated room becomes an editable shape
+- Village generator (`village.ts`) now emits `RoomShape[]` from BSP leaf buildings — each building becomes an editable shape
+- Cavern and Open Terrain generators unchanged (no discrete rooms, no shapes emitted)
+- `generateMap` in `useMapState.ts` accepts optional `roomShapes` parameter, stores them on the map, and resets `nextRoomShapeIdRef`
+- App.tsx `handleGenerateMap` forwards `result.roomShapes` to state management
+- 13 new generator integration tests (245 total across 19 test files)
+- Existing maps unaffected — `roomShapes` field is optional with backward-compat
 
 **2026-05-11 — Phase 10.3 (Visual Merging) COMPLETE**
 - Rasterizer now performs a merge pass after individual shape rasterization:

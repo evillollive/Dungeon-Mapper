@@ -1,4 +1,4 @@
-import type { Tile } from '../../types/map';
+import type { RoomShape, Tile } from '../../types/map';
 import {
   clampDensity,
   collectCells,
@@ -515,5 +515,17 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
     : [];
   const notes = applyPoiNotes(tiles, { pois, themeId, regions });
 
-  return { tiles, notes, width, height };
+  // Emit RoomShape[] so generated rooms become editable shapes on the
+  // canvas. Each internal `Room` maps 1:1 to a `RoomShape` with
+  // sequential ids starting at 1. Corridors, doors, and POIs are
+  // tile-only and don't produce shapes.
+  const roomShapes: RoomShape[] = rooms.map((r, i) => ({
+    id: i + 1,
+    x: r.x,
+    y: r.y,
+    width: r.w,
+    height: r.h,
+  }));
+
+  return { tiles, notes, width, height, roomShapes };
 }
