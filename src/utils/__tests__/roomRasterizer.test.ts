@@ -455,4 +455,135 @@ describe('rasterizeRoomShapes', () => {
     expect(result[2][2].type).toBe('floor');
     expect(result[6][6].type).toBe('floor');
   });
+
+  // ── Subtractive shapes (Phase 10.5) ───────────────────────────────────
+
+  it('subtractive shape carves interior of additive room to empty', () => {
+    // 5×5 additive room, 3×3 subtractive cut in the center
+    const tiles = emptyGrid(7, 7);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 5, height: 5 },
+      { id: 2, x: 2, y: 2, width: 3, height: 3, mode: 'subtractive' },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 7, 7);
+
+    // Outer additive perimeter still walls
+    expect(result[1][1].type).toBe('wall');
+    expect(result[1][5].type).toBe('wall');
+
+    // Subtractive perimeter becomes wall (sealing the cut)
+    expect(result[2][2].type).toBe('wall');
+    expect(result[2][4].type).toBe('wall');
+    expect(result[4][2].type).toBe('wall');
+    expect(result[4][4].type).toBe('wall');
+
+    // Subtractive interior becomes empty
+    expect(result[3][3].type).toBe('empty');
+  });
+
+  it('subtractive shape does not carve outside additive bounds', () => {
+    const tiles = emptyGrid(10, 10);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 2, y: 2, width: 3, height: 3 }, // additive at (2,2)-(4,4)
+      { id: 2, x: 6, y: 6, width: 3, height: 3, mode: 'subtractive' }, // no overlap
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
+
+    // The subtractive shape shouldn't modify tiles outside additive bounds
+    expect(result[6][6].type).toBe('empty');
+    expect(result[7][7].type).toBe('empty');
+    expect(result[8][8].type).toBe('empty');
+
+    // Additive room is untouched
+    expect(result[2][2].type).toBe('wall');
+    expect(result[3][3].type).toBe('floor');
+  });
+
+  it('subtractive shape partially overlapping additive room carves only overlap', () => {
+    const tiles = emptyGrid(10, 10);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 5, height: 5 }, // (1,1)-(5,5)
+      { id: 2, x: 4, y: 4, width: 4, height: 4, mode: 'subtractive' }, // (4,4)-(7,7)
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
+
+    // Overlap cell (4,4) — perimeter of subtractive, overlaps additive perimeter → wall
+    expect(result[4][4].type).toBe('wall');
+    // (5,5) — perimeter of additive, interior of subtractive but it's perimeter of sub? No:
+    // sub is (4,4)-(7,7), so (5,5) is interior of sub. It's also perimeter of additive.
+    // Since it overlaps additive and is interior of subtractive → empty
+    expect(result[5][5].type).toBe('empty');
+
+    // Outside overlap — additive floor preserved
+    expect(result[2][2].type).toBe('floor');
+
+    // Outside overlap — subtractive doesn't touch non-additive cells
+    expect(result[6][6].type).toBe('empty');
+  });
+
+  it('multiple subtractive shapes on one additive room', () => {
+    const tiles = emptyGrid(10, 10);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 0, y: 0, width: 8, height: 8 }, // big additive
+      { id: 2, x: 1, y: 1, width: 3, height: 3, mode: 'subtractive' }, // cut top-left
+      { id: 3, x: 5, y: 5, width: 3, height: 3, mode: 'subtractive' }, // cut bottom-right
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
+
+    // First cut interior → empty
+    expect(result[2][2].type).toBe('empty');
+    // First cut perimeter → wall
+    expect(result[1][1].type).toBe('wall');
+
+    // Second cut interior → empty
+    expect(result[6][6].type).toBe('empty');
+    // Second cut perimeter → wall
+    expect(result[5][5].type).toBe('wall');
+
+    // Remaining additive floor between cuts
+    expect(result[4][4].type).toBe('floor');
+  });
+
+  it('subtractive shape with custom wallTile uses that tile for perimeter', () => {
+    const tiles = emptyGrid(7, 7);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 5, height: 5 },
+      { id: 2, x: 2, y: 2, width: 3, height: 3, mode: 'subtractive', wallTile: 'stone-wall' },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 7, 7);
+
+    expect(result[2][2].type).toBe('stone-wall');
+    expect(result[3][3].type).toBe('empty');
+  });
+
+  it('subtractive shape does not affect additive merge behavior', () => {
+    // Two touching additive rooms + a subtractive cut on one of them
+    const tiles = emptyGrid(10, 10);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 5, height: 5 }, // (1,1)-(5,5)
+      { id: 2, x: 5, y: 1, width: 4, height: 5 }, // (5,1)-(8,5) — touching room 1
+      { id: 3, x: 2, y: 2, width: 3, height: 3, mode: 'subtractive' }, // cut in room 1
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
+
+    // Merge boundary between rooms 1 and 2 at x=5 should dissolve
+    expect(result[2][5].type).toBe('floor');
+
+    // Subtractive cut interior → empty
+    expect(result[3][3].type).toBe('empty');
+    // Subtractive cut perimeter → wall
+    expect(result[2][2].type).toBe('wall');
+  });
+
+  it('additive shape without explicit mode defaults to additive', () => {
+    const tiles = emptyGrid(5, 5);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 3, height: 3 }, // no mode field
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 5, 5);
+
+    // Should behave as additive
+    expect(result[1][1].type).toBe('wall');
+    expect(result[2][2].type).toBe('floor');
+  });
 });

@@ -20,6 +20,11 @@ import type { RoomShape, Tile, TileType, RoomEdge, EdgeMergeMode } from '../type
  * keep walls (`'wall'`), place doors (`'door'`), or place archways
  * (`'arch'`) instead of the default `'auto'` dissolve.
  *
+ * **Subtractive shapes (Phase 10.5):**
+ * Shapes with `mode === 'subtractive'` carve out overlapping additive
+ * geometry — interior cells become `'empty'` and perimeter cells become
+ * `'wall'` only where they border additive geometry.
+ *
  * Shapes are applied in array order — later shapes can overwrite earlier
  * ones. Cells outside the grid bounds are silently ignored.
  *
@@ -35,19 +40,28 @@ export function rasterizeRoomShapes(
   // Deep-copy the base grid so callers keep the original intact.
   const tiles: Tile[][] = baseTiles.map(row => row.map(t => ({ ...t })));
 
-  // Pass 1: rasterize each shape individually.
-  for (const shape of roomShapes) {
+  // Separate additive and subtractive shapes.
+  const additive = roomShapes.filter(s => (s.mode ?? 'additive') === 'additive');
+  const subtractive = roomShapes.filter(s => s.mode === 'subtractive');
+
+  // Pass 1: rasterize each additive shape individually.
+  for (const shape of additive) {
     rasterizeOneShape(tiles, shape, width, height);
   }
 
-  // Pass 2: visual merge — dissolve shared walls between overlapping/touching rooms.
-  if (roomShapes.length > 1) {
-    mergeSharedWalls(tiles, roomShapes, width, height);
+  // Pass 2: visual merge — dissolve shared walls between overlapping/touching additive rooms.
+  if (additive.length > 1) {
+    mergeSharedWalls(tiles, additive, width, height);
   }
 
   // Pass 3: re-apply door hints after merge (so explicit doors survive merge).
-  for (const shape of roomShapes) {
+  for (const shape of additive) {
     applyDoorHints(tiles, shape, width, height);
+  }
+
+  // Pass 4: apply subtractive shapes — carve overlapping additive geometry.
+  for (const shape of subtractive) {
+    applySubtractiveShape(tiles, shape, additive, width, height);
   }
 
   return tiles;
@@ -291,4 +305,48 @@ function doorHintToCell(
  */
 function defaultDoorType(edge: 'n' | 's' | 'e' | 'w'): TileType {
   return edge === 'n' || edge === 's' ? 'door-h' : 'door-v';
+}
+
+/**
+ * Apply a subtractive shape — carve out overlapping additive geometry.
+ *
+ * Interior cells of the subtractive shape that overlap any additive shape
+ * are set to `'empty'`. Perimeter cells of the subtractive shape that
+ * border additive geometry become walls (to seal the cut). Perimeter cells
+ * that don't border any additive shape are left untouched.
+ */
+function applySubtractiveShape(
+  tiles: Tile[][],
+  shape: RoomShape,
+  additiveShapes: RoomShape[],
+  gridWidth: number,
+  gridHeight: number,
+): void {
+  const { x, y, width: sw, height: sh } = shape;
+  const wallTile: TileType = shape.wallTile ?? 'wall';
+
+  const x0 = Math.max(0, x);
+  const y0 = Math.max(0, y);
+  const x1 = Math.min(gridWidth, x + sw);
+  const y1 = Math.min(gridHeight, y + sh);
+
+  for (let cy = y0; cy < y1; cy++) {
+    for (let cx = x0; cx < x1; cx++) {
+      const isPerimeter =
+        cx === x || cx === x + sw - 1 || cy === y || cy === y + sh - 1;
+
+      // Check if this cell overlaps any additive shape.
+      const overlapsAdditive = additiveShapes.some(a => cellInsideShape(cx, cy, a));
+
+      if (!overlapsAdditive) continue; // Only carve where additive geometry exists.
+
+      if (isPerimeter) {
+        // Seal the cut with a wall at the boundary.
+        tiles[cy][cx] = { type: wallTile };
+      } else {
+        // Carve interior to empty.
+        tiles[cy][cx] = { type: 'empty' };
+      }
+    }
+  }
 }

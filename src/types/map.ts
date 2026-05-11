@@ -279,6 +279,13 @@ export interface PathSegment {
 // ── Room Shapes (Phase 10: Dynamic Rooms) ─────────────────────────────────
 
 /**
+ * Shape mode controls whether a room shape adds geometry or carves it away.
+ * - `'additive'` (default) — fills interior with floor and outlines with walls.
+ * - `'subtractive'`        — carves overlapping additive geometry back to empty.
+ */
+export type RoomShapeMode = 'additive' | 'subtractive';
+
+/**
  * Cardinal edge direction on a rectangular room shape. Used by `DoorHint`
  * to specify where a door should (or should not) appear.
  */
@@ -327,7 +334,10 @@ export interface DoorHint {
  * A logical room shape that rasterizes onto the tile grid. For v1 only
  * rectangular rooms are supported (Phase 10.6 adds circles and polygons).
  *
- * Room shapes are additive — they coexist with individually-painted tiles.
+ * Room shapes are additive by default — they coexist with individually-painted
+ * tiles. Subtractive shapes carve overlapping additive geometry back to empty
+ * (useful for alcoves, pillars, and courtyards).
+ *
  * The rasterizer fills interior cells with `fillTile` (default `'floor'`)
  * and outlines the perimeter with `wallTile` (default `'wall'`), then
  * applies any `doorHints`.
@@ -343,6 +353,11 @@ export interface RoomShape {
   width: number;
   /** Height in tiles (must be ≥ 1). */
   height: number;
+  /**
+   * Shape mode. `'additive'` (default) fills with floor/walls;
+   * `'subtractive'` carves overlapping additive geometry to empty.
+   */
+  mode?: RoomShapeMode;
   /** Tile type used for interior cells. Defaults to `'floor'`. */
   fillTile?: TileType;
   /** Tile type used for perimeter cells. Defaults to `'wall'`. */
@@ -737,6 +752,8 @@ export type ToolType =
   | 'paint' | 'erase' | 'fill' | 'note' | 'line' | 'rect' | 'select'
   // Dynamic room shape tool — drag to draw editable rectangular room shapes.
   | 'room-rect'
+  // Subtractive room shape tool — drag to carve out additive room geometry.
+  | 'room-cut'
   // GM fog tools — reveal/hide drag-rectangles of cells.
   | 'reveal' | 'hide'
   // Freehand "wipe away the fog" brush — clears fog cell-by-cell as the
