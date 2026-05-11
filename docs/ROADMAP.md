@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-11
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phase 10.4 (Generator Integration) **COMPLETE**. Phase 10.5 (Subtractive Shapes) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phase 10.4 (Generator Integration) **COMPLETE**. Phase 10.5 (Subtractive Shapes) **COMPLETE**. Phase 10.6 (Additional Shapes) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -630,7 +630,7 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - Props wired through NavigationRail, Toolbar, and App.tsx (`selectedRoomShapeId` + `onSelectRoomShape`)
 - 7 new subtractive tests (252 total across 19 files)
 
-**10.6 — Additional Shapes**
+**10.6 — Additional Shapes** ✅ COMPLETE
 - Circle / ellipse room shape
 - Polygon room shape (click-to-add-vertex)
 - Same merge / subtract semantics as rectangles
@@ -1329,6 +1329,21 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-11 — Phase 10.6 (Additional Shapes) COMPLETE**
+- New `RoomShapeType` type (`'rect'` | `'circle'` | `'polygon'`) and optional `shapeType` field on `RoomShape` (defaults to `'rect'` for backward compat)
+- New `vertices?: {x, y}[]` field on `RoomShape` for polygon geometry
+- Rasterizer updated: `rasterizeOneShape`, `cellInsideShape`, `cellInteriorShape`, `getPerimeterCells`, `getOpposingEdge`, and `applySubtractiveShape` all dispatch on shape type
+- Circle/ellipse rasterization: ellipse inscribed in bounding box, 1-tile perimeter ring via shrunk-ellipse interior test
+- Polygon rasterization: ray-casting point-in-polygon, distance-to-edge perimeter classification, nearest-edge-normal for cardinal direction
+- Visual merging and subtractive carving work identically for all shape types
+- New `room-circle` tool (`Shift+C`, ⭕ icon): drag to define bounding box for circle/ellipse
+- New `room-poly` tool (`Shift+P`, 🔷 icon): click to add vertices, double-click to close polygon, Escape to cancel
+- Canvas overlay rendering: ellipse path for circles, polygon path for polygons, vertex handles for polygon editing
+- Hit-testing updated for circle (ellipse equation) and polygon (ray-casting) shapes
+- Command palette entries and keyboard shortcuts for both new tools
+- Exported `polygonBoundingBox` utility for computing bounding box from vertices
+- 12 new tests (264 total across 19 test files): circle rasterization, circle subtraction, circle merging, custom fill/wall, triangle polygon, L-shape polygon, degenerate polygon, polygon subtraction, polygon-rect merging, bounding box utility
 
 **2026-05-11 — Phase 10.5 (Subtractive Shapes) COMPLETE**
 - New `RoomShapeMode` type (`'additive'` | `'subtractive'`) and optional `mode` field on `RoomShape`

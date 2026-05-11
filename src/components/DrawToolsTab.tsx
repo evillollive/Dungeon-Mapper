@@ -74,6 +74,8 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] =
   { id: 'line',       label: 'Line',        shortcut: 'L', icon: '📏' },
   { id: 'rect',       label: 'Rectangle',   shortcut: 'R', icon: '⬛' },
   { id: 'room-rect',  label: 'Room Rect',   shortcut: 'Q', icon: '🏛️' },
+  { id: 'room-circle', label: 'Room Circle', shortcut: 'Shift+C', icon: '⭕' },
+  { id: 'room-poly', label: 'Room Poly',  shortcut: 'Shift+P', icon: '🔷' },
   { id: 'room-cut',   label: 'Room Cut',    shortcut: 'Shift+Q', icon: '✂️' },
   { id: 'select',     label: 'Select',      shortcut: 'S', icon: '⬜' },
   { id: 'wall',       label: 'Wall',        shortcut: 'W', icon: '🧱' },
@@ -270,7 +272,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
       )}
 
       {/* Room shape edge override controls — shown when room tool active and a shape is selected */}
-      {(activeTool === 'room-rect' || activeTool === 'room-cut') && selectedRoomShapeId != null && (() => {
+      {(activeTool === 'room-rect' || activeTool === 'room-circle' || activeTool === 'room-poly' || activeTool === 'room-cut') && selectedRoomShapeId != null && (() => {
         const selectedShape = roomShapes?.find(s => s.id === selectedRoomShapeId);
         if (!selectedShape) return null;
         const getMode = (edge: RoomEdge): EdgeMergeMode => {
