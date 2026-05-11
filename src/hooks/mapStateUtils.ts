@@ -27,6 +27,7 @@ export const DEFAULT_TILE_SIZE = 20;
 export const MAX_HISTORY_SIZE = 50;
 
 export interface HistorySnapshot {
+  /** Full meta snapshot so undo/redo restores dimensions plus name/theme. */
   meta: MapMeta;
   tiles: Tile[][];
   fog: boolean[][];

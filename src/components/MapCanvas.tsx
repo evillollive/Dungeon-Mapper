@@ -11,7 +11,7 @@ import { getCachedPaperTexture } from '../utils/paperTexture';
 import { drawEdgeBlending } from '../utils/edgeBlend';
 import { drawHandDrawn } from '../utils/handDrawn';
 import { drawLightingAtmosphere } from '../utils/lightingAtmosphere';
-import { deriveRenderableTiles } from '../utils/derivedRenderMap';
+import { deriveRenderableTilesFromBase } from '../utils/derivedRenderMap';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 import { bresenhamLine, pointNearPolyline, rectCells, rectOutline, snapToGridIntersection } from '../utils/canvasGeometry';
@@ -1130,7 +1130,6 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   }, [selection, onSelectionChange]);
 
   const { meta, tiles } = map;
-  const renderTiles = useMemo(() => deriveRenderableTiles(map), [map]);
   const { tileSize } = meta;
   const notes = map.notes;
   // Memoize so the array identity is stable when the underlying field is
@@ -1143,6 +1142,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const wallSegments = useMemo(() => map.wallSegments ?? [], [map.wallSegments]);
   const pathSegments = useMemo(() => map.pathSegments ?? [], [map.pathSegments]);
   const roomShapes = useMemo(() => map.roomShapes ?? [], [map.roomShapes]);
+  const renderTiles = useMemo(
+    () => deriveRenderableTilesFromBase(tiles, roomShapes, meta.width, meta.height),
+    [tiles, roomShapes, meta.width, meta.height],
+  );
   const fog = map.fog;
   const fogActive = (map.fogEnabled ?? false);
   const isPlayerView = viewMode === 'player';

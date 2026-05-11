@@ -416,6 +416,8 @@ function sanitizeColor(value: string | undefined, fallback: string): string {
 
 function sanitizeImageDataUrl(value: string): string | null {
   const trimmed = value.trim();
+  // Match the custom stamp upload limit so imported/exported SVGs cannot
+  // embed unexpectedly large image payloads.
   if (trimmed.length > 2 * 1024 * 1024) return null;
   const match = /^data:image\/(?:png|jpe?g|webp|svg\+xml);base64,([a-z0-9+/]+={0,2})$/i.exec(trimmed);
   if (!match) return null;
