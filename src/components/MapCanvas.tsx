@@ -11,6 +11,7 @@ import { getCachedPaperTexture } from '../utils/paperTexture';
 import { drawEdgeBlending } from '../utils/edgeBlend';
 import { drawHandDrawn } from '../utils/handDrawn';
 import { drawLightingAtmosphere } from '../utils/lightingAtmosphere';
+import { deriveRenderableTilesFromBase } from '../utils/derivedRenderMap';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 import { bresenhamLine, pointNearPolyline, rectCells, rectOutline, snapToGridIntersection } from '../utils/canvasGeometry';
@@ -1141,6 +1142,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const wallSegments = useMemo(() => map.wallSegments ?? [], [map.wallSegments]);
   const pathSegments = useMemo(() => map.pathSegments ?? [], [map.pathSegments]);
   const roomShapes = useMemo(() => map.roomShapes ?? [], [map.roomShapes]);
+  const renderTiles = useMemo(
+    () => deriveRenderableTilesFromBase(tiles, roomShapes, meta.width, meta.height),
+    [tiles, roomShapes, meta.width, meta.height],
+  );
   const fog = map.fog;
   const fogActive = (map.fogEnabled ?? false);
   const isPlayerView = viewMode === 'player';
@@ -1268,14 +1273,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
     const tileDrawContext: TileDrawContext = {
       getTileBaseType: (x, y) => {
-        const type = tiles[y]?.[x]?.type;
+        const type = renderTiles[y]?.[x]?.type;
         return type ? getSemanticTileType(type, customThemes) : undefined;
       },
     };
 
     for (let y = 0; y < meta.height; y++) {
       for (let x = 0; x < meta.width; x++) {
-        const tile = tiles[y]?.[x];
+        const tile = renderTiles[y]?.[x];
         if (tile) {
           if (printMode) {
             drawPrintTile(ctx, getSemanticTileType(tile.type, customThemes), x, y, tileSize);
@@ -1299,7 +1304,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
     // Edge blending — render after tiles, before grid lines. Disabled in print mode.
     if (!printMode && map.edgeBlend?.enabled) {
-      drawEdgeBlending(ctx, tiles, meta.width, meta.height, tileSize, map.edgeBlend, theme, customThemes);
+      drawEdgeBlending(ctx, renderTiles, meta.width, meta.height, tileSize, map.edgeBlend, theme, customThemes);
     }
 
     ctx.strokeStyle = printMode ? PRINT_GRID : theme.gridColor;
@@ -1321,13 +1326,13 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // after the regular grid so the hand-drawn strokes sit on top. Works in
     // both screen and print mode (B&W strokes in print).
     if (map.handDrawn?.enabled) {
-      drawHandDrawn(ctx, tiles, meta.width, meta.height, tileSize, map.handDrawn, printMode, customThemes);
+      drawHandDrawn(ctx, renderTiles, meta.width, meta.height, tileSize, map.handDrawn, printMode, customThemes);
     }
 
     // Lighting & atmosphere — ambient occlusion, stamp shadows, and color
     // grading rendered after hand-drawn overlay. Disabled in print mode.
     if (!printMode && map.lightingAtmosphere?.enabled) {
-      drawLightingAtmosphere(ctx, tiles, meta.width, meta.height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes);
+      drawLightingAtmosphere(ctx, renderTiles, meta.width, meta.height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes);
     }
 
     // Light source glow halos — rendered right after the grid lines so the
@@ -1969,7 +1974,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, polyVertices, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth]);
+  }, [map, tiles, renderTiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, polyVertices, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth]);
 
   // Minimap render
   useEffect(() => {

@@ -1,4 +1,24 @@
-import type { DungeonMap, DungeonProject, MapNote, PathSegment, PlacedStamp, RoomShape, Tile, WallSegment } from '../types/map';
+import type {
+  AnnotationStroke,
+  BackgroundImage,
+  DungeonMap,
+  DungeonProject,
+  EdgeBlendSettings,
+  HandDrawnSettings,
+  LightSource,
+  LightingAtmosphereSettings,
+  MapMeta,
+  MapNote,
+  PaperTextureSettings,
+  PathSegment,
+  PlacedStamp,
+  RoomShape,
+  ShapeMarker,
+  Tile,
+  Token,
+  WallSegment,
+  ArtStylePresetId,
+} from '../types/map';
 import { createEmptyGrid, createFogGrid } from '../utils/mapUtils';
 
 export const DEFAULT_WIDTH = 32;
@@ -7,15 +27,29 @@ export const DEFAULT_TILE_SIZE = 20;
 export const MAX_HISTORY_SIZE = 50;
 
 export interface HistorySnapshot {
+  /** Full meta snapshot so undo/redo restores dimensions plus name/theme. */
+  meta: MapMeta;
   tiles: Tile[][];
   fog: boolean[][];
+  fogEnabled: boolean;
+  dynamicFogEnabled?: boolean;
+  explored?: boolean[][];
   notes: MapNote[];
+  tokens: Token[];
+  annotations: AnnotationStroke[];
+  markers: ShapeMarker[];
+  initiative: number[];
+  lightSources: LightSource[];
   stamps: PlacedStamp[];
   wallSegments: WallSegment[];
   pathSegments: PathSegment[];
   roomShapes: RoomShape[];
-  width: number;
-  height: number;
+  backgroundImage?: BackgroundImage;
+  paperTexture?: PaperTextureSettings;
+  edgeBlend?: EdgeBlendSettings;
+  handDrawn?: HandDrawnSettings;
+  lightingAtmosphere?: LightingAtmosphereSettings;
+  artStylePreset?: ArtStylePresetId;
 }
 
 export interface LevelHistory {
@@ -76,6 +110,114 @@ export function withDefaults(map: DungeonMap): DungeonMap {
     wallSegments: map.wallSegments ?? [],
     pathSegments: map.pathSegments ?? [],
     roomShapes: map.roomShapes ?? [],
+  };
+}
+
+export function createHistorySnapshot(map: DungeonMap): HistorySnapshot {
+  return {
+    meta: { ...map.meta },
+    tiles: map.tiles,
+    fog: map.fog ?? createFogGrid(map.meta.width, map.meta.height, false),
+    fogEnabled: map.fogEnabled ?? true,
+    dynamicFogEnabled: map.dynamicFogEnabled,
+    explored: map.explored,
+    notes: map.notes,
+    tokens: map.tokens ?? [],
+    annotations: map.annotations ?? [],
+    markers: map.markers ?? [],
+    initiative: map.initiative ?? [],
+    lightSources: map.lightSources ?? [],
+    stamps: map.stamps ?? [],
+    wallSegments: map.wallSegments ?? [],
+    pathSegments: map.pathSegments ?? [],
+    roomShapes: map.roomShapes ?? [],
+    backgroundImage: map.backgroundImage,
+    paperTexture: map.paperTexture,
+    edgeBlend: map.edgeBlend,
+    handDrawn: map.handDrawn,
+    lightingAtmosphere: map.lightingAtmosphere,
+    artStylePreset: map.artStylePreset,
+  };
+}
+
+export function restoreHistorySnapshot(map: DungeonMap, snap: HistorySnapshot): DungeonMap {
+  return {
+    ...map,
+    meta: snap.meta,
+    tiles: snap.tiles,
+    fog: snap.fog,
+    fogEnabled: snap.fogEnabled,
+    dynamicFogEnabled: snap.dynamicFogEnabled,
+    explored: snap.explored,
+    notes: snap.notes,
+    tokens: snap.tokens,
+    annotations: snap.annotations,
+    markers: snap.markers,
+    initiative: snap.initiative,
+    lightSources: snap.lightSources,
+    stamps: snap.stamps,
+    wallSegments: snap.wallSegments,
+    pathSegments: snap.pathSegments,
+    roomShapes: snap.roomShapes,
+    backgroundImage: snap.backgroundImage,
+    paperTexture: snap.paperTexture,
+    edgeBlend: snap.edgeBlend,
+    handDrawn: snap.handDrawn,
+    lightingAtmosphere: snap.lightingAtmosphere,
+    artStylePreset: snap.artStylePreset,
+  };
+}
+
+export function clearVisibleMapContent(map: DungeonMap): DungeonMap {
+  const { width, height } = map.meta;
+  return {
+    ...map,
+    tiles: createEmptyGrid(width, height),
+    notes: [],
+    fog: createFogGrid(width, height, true),
+    explored: undefined,
+    dynamicFogEnabled: false,
+    tokens: [],
+    annotations: [],
+    initiative: [],
+    lightSources: [],
+    markers: [],
+    stamps: [],
+    wallSegments: [],
+    pathSegments: [],
+    roomShapes: [],
+    backgroundImage: undefined,
+  };
+}
+
+export function replaceGeneratedMapContent(
+  map: DungeonMap,
+  tiles: Tile[][],
+  width: number,
+  height: number,
+  notes: MapNote[] = [],
+  name?: string,
+  roomShapes: RoomShape[] = [],
+): DungeonMap {
+  return {
+    ...map,
+    meta: { ...map.meta, width, height, ...(name ? { name } : {}) },
+    tiles,
+    notes,
+    roomShapes,
+    fog: createFogGrid(width, height, true),
+    fogEnabled: map.fogEnabled ?? true,
+    explored: undefined,
+    dynamicFogEnabled: false,
+    tokens: [],
+    annotations: [],
+    initiative: [],
+    stamps: [],
+    markers: [],
+    lightSources: [],
+    wallSegments: [],
+    pathSegments: [],
+    backgroundImage: undefined,
   };
 }
 

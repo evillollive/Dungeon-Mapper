@@ -11,6 +11,7 @@ import { drawHandDrawn } from './handDrawn';
 import { drawLightingAtmosphere } from './lightingAtmosphere';
 import { wrapMapAsProject } from './storage';
 import { isTokenFogged } from './tokenVisibility';
+import { deriveRenderableTiles } from './derivedRenderMap';
 
 const SVG_CUSTOM_TILE_FALLBACK_COLOR = '#777777';
 
@@ -122,6 +123,7 @@ export function exportMapSVG(
   const fog = map.fog;
   const dynamicFogActive = (map.dynamicFogEnabled ?? false) && fogActive;
   const { width, height, tileSize, name } = map.meta;
+  const tiles = deriveRenderableTiles(map);
   const svgW = width * tileSize;
   const svgH = height * tileSize;
 
@@ -154,13 +156,13 @@ export function exportMapSVG(
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const tile = map.tiles[y]?.[x];
+      const tile = tiles[y]?.[x];
       if (!tile || tile.type === 'empty') continue;
       // Honor per-tile theme overrides (from "preserve tiles when switching
       // themes") so mixed-style maps export with each tile in its original
       // theme color. Falls back to the map theme when no override / resolver.
       const tileTheme = tile.theme && resolveTheme ? resolveTheme(tile.theme) : theme;
-      const fill = tileTheme.tileColors[tile.type] ?? SVG_CUSTOM_TILE_FALLBACK_COLOR;
+      const fill = sanitizeColor(tileTheme.tileColors[tile.type], SVG_CUSTOM_TILE_FALLBACK_COLOR);
       svg += `<rect x="${x * tileSize}" y="${y * tileSize}" width="${tileSize}" height="${tileSize}" fill="${fill}" stroke="#2d3561" stroke-width="0.5"/>`;
     }
   }
@@ -172,7 +174,7 @@ export function exportMapSVG(
     ebCanvas.width = svgW;
     ebCanvas.height = svgH;
     const ebCtx = ebCanvas.getContext('2d')!;
-    drawEdgeBlending(ebCtx, map.tiles, width, height, tileSize, map.edgeBlend, theme, []);
+    drawEdgeBlending(ebCtx, tiles, width, height, tileSize, map.edgeBlend, theme, []);
     const ebDataUrl = ebCanvas.toDataURL('image/png');
     svg += `<image xlink:href="${escapeXML(ebDataUrl)}" x="0" y="0" width="${svgW}" height="${svgH}"/>`;
   }
@@ -189,7 +191,7 @@ export function exportMapSVG(
     hdCanvas.width = svgW;
     hdCanvas.height = svgH;
     const hdCtx = hdCanvas.getContext('2d')!;
-    drawHandDrawn(hdCtx, map.tiles, width, height, tileSize, map.handDrawn, false, []);
+    drawHandDrawn(hdCtx, tiles, width, height, tileSize, map.handDrawn, false, []);
     const hdDataUrl = hdCanvas.toDataURL('image/png');
     svg += `<image xlink:href="${escapeXML(hdDataUrl)}" x="0" y="0" width="${svgW}" height="${svgH}"/>`;
   }
@@ -201,7 +203,7 @@ export function exportMapSVG(
     laCanvas.width = svgW;
     laCanvas.height = svgH;
     const laCtx = laCanvas.getContext('2d')!;
-    drawLightingAtmosphere(laCtx, map.tiles, width, height, tileSize, map.lightingAtmosphere, map.stamps ?? [], []);
+    drawLightingAtmosphere(laCtx, tiles, width, height, tileSize, map.lightingAtmosphere, map.stamps ?? [], []);
     const laDataUrl = laCanvas.toDataURL('image/png');
     svg += `<image xlink:href="${escapeXML(laDataUrl)}" x="0" y="0" width="${svgW}" height="${svgH}"/>`;
   }
@@ -222,12 +224,12 @@ export function exportMapSVG(
     const w = Math.max(1, seg.thickness * tileSize);
     if (seg.points.length === 1) {
       const p = seg.points[0];
-      svg += `<circle cx="${p.x * tileSize}" cy="${p.y * tileSize}" r="${w / 2}" fill="${seg.color}"/>`;
+      svg += `<circle cx="${p.x * tileSize}" cy="${p.y * tileSize}" r="${w / 2}" fill="${sanitizeColor(seg.color, '#000000')}"/>`;
     } else {
       const d = seg.points
         .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x * tileSize} ${p.y * tileSize}`)
         .join(' ');
-      svg += `<path d="${d}" stroke="${seg.color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
+      svg += `<path d="${escapeXML(d)}" stroke="${sanitizeColor(seg.color, '#000000')}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`;
     }
   }
 
@@ -237,12 +239,12 @@ export function exportMapSVG(
     const w = Math.max(1, seg.width * tileSize);
     if (seg.points.length === 1) {
       const p = seg.points[0];
-      svg += `<circle cx="${p.x * tileSize}" cy="${p.y * tileSize}" r="${w / 2}" fill="${seg.color}" fill-opacity="0.7"/>`;
+      svg += `<circle cx="${p.x * tileSize}" cy="${p.y * tileSize}" r="${w / 2}" fill="${sanitizeColor(seg.color, '#000000')}" fill-opacity="0.7"/>`;
     } else {
       const d = seg.points
         .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x * tileSize} ${p.y * tileSize}`)
         .join(' ');
-      svg += `<path d="${d}" stroke="${seg.color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-opacity="0.7"/>`;
+      svg += `<path d="${escapeXML(d)}" stroke="${sanitizeColor(seg.color, '#000000')}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-opacity="0.7"/>`;
     }
   }
 
@@ -253,7 +255,7 @@ export function exportMapSVG(
     const w = Math.max(1, stroke.width * tileSize);
     if (stroke.points.length === 1) {
       const p = stroke.points[0];
-      svg += `<circle cx="${p.x * tileSize}" cy="${p.y * tileSize}" r="${w / 2}" fill="${stroke.color}"/>`;
+      svg += `<circle cx="${p.x * tileSize}" cy="${p.y * tileSize}" r="${w / 2}" fill="${sanitizeColor(stroke.color, '#000000')}"/>`;
     } else {
       const d = stroke.points
         .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x * tileSize} ${p.y * tileSize}`)
@@ -262,7 +264,7 @@ export function exportMapSVG(
       const dashAttr = stroke.kind === 'gm'
         ? ` stroke-dasharray="${Math.max(4, w * 2.5)} ${Math.max(4, w * 2.5) * 0.6}"`
         : '';
-      svg += `<path d="${d}" stroke="${stroke.color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none"${dashAttr}/>`;
+      svg += `<path d="${escapeXML(d)}" stroke="${sanitizeColor(stroke.color, '#000000')}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none"${dashAttr}/>`;
     }
   }
 
@@ -273,13 +275,13 @@ export function exportMapSVG(
     const mr = marker.size * tileSize;
     const sw = Math.max(1, tileSize * 0.08);
     if (marker.shape === 'circle') {
-      svg += `<circle cx="${mcx}" cy="${mcy}" r="${mr}" fill="${marker.color}" fill-opacity="0.25" stroke="${marker.color}" stroke-opacity="0.6" stroke-width="${sw}"/>`;
+      svg += `<circle cx="${mcx}" cy="${mcy}" r="${mr}" fill="${sanitizeColor(marker.color, '#000000')}" fill-opacity="0.25" stroke="${sanitizeColor(marker.color, '#000000')}" stroke-opacity="0.6" stroke-width="${sw}"/>`;
     } else if (marker.shape === 'square') {
-      svg += `<rect x="${mcx - mr}" y="${mcy - mr}" width="${mr * 2}" height="${mr * 2}" fill="${marker.color}" fill-opacity="0.25" stroke="${marker.color}" stroke-opacity="0.6" stroke-width="${sw}"/>`;
+      svg += `<rect x="${mcx - mr}" y="${mcy - mr}" width="${mr * 2}" height="${mr * 2}" fill="${sanitizeColor(marker.color, '#000000')}" fill-opacity="0.25" stroke="${sanitizeColor(marker.color, '#000000')}" stroke-opacity="0.6" stroke-width="${sw}"/>`;
     } else {
       // diamond
       const dp = `M${mcx} ${mcy - mr} L${mcx + mr} ${mcy} L${mcx} ${mcy + mr} L${mcx - mr} ${mcy} Z`;
-      svg += `<path d="${dp}" fill="${marker.color}" fill-opacity="0.25" stroke="${marker.color}" stroke-opacity="0.6" stroke-width="${sw}"/>`;
+      svg += `<path d="${escapeXML(dp)}" fill="${sanitizeColor(marker.color, '#000000')}" fill-opacity="0.25" stroke="${sanitizeColor(marker.color, '#000000')}" stroke-opacity="0.6" stroke-width="${sw}"/>`;
     }
   }
 
@@ -303,18 +305,21 @@ export function exportMapSVG(
     transforms.push(`translate(${-drawSize / 2},${-drawSize / 2})`);
     transforms.push(`scale(${svgScale})`);
     const opacity = (stamp.opacity ?? 1) < 1 ? ` opacity="${stamp.opacity}"` : '';
+    const transformAttr = escapeXML(transforms.join(' '));
     if (def.imageDataUrl) {
-      svg += `<g transform="${transforms.join(' ')}"${opacity}><image href="${def.imageDataUrl}" width="${vbW}" height="${vbH}"/></g>`;
+      const href = sanitizeImageDataUrl(def.imageDataUrl);
+      if (!href) continue;
+      svg += `<g transform="${transformAttr}"${opacity}><image href="${href}" width="${vbW}" height="${vbH}"/></g>`;
     } else if (def.paths && def.paths.length > 0) {
-      svg += `<g transform="${transforms.join(' ')}"${opacity}>`;
+      svg += `<g transform="${transformAttr}"${opacity}>`;
       for (const p of def.paths) {
-        const fill = p.fill ? ` fill="${p.fill}"` : ' fill="none"';
-        const stroke = p.stroke ? ` stroke="${p.stroke}" stroke-width="${p.strokeWidth ?? 1}"` : '';
-        svg += `<path d="${p.path}"${fill}${stroke}/>`;
+        const fill = p.fill ? ` fill="${sanitizeColor(p.fill, '#4a4a4a')}"` : ' fill="none"';
+        const stroke = p.stroke ? ` stroke="${sanitizeColor(p.stroke, '#1a1a1a')}" stroke-width="${p.strokeWidth ?? 1}"` : '';
+        svg += `<path d="${escapeXML(p.path)}"${fill}${stroke}/>`;
       }
       svg += `</g>`;
     } else if (def.svgPath) {
-      svg += `<g transform="${transforms.join(' ')}"${opacity}><path d="${def.svgPath}" fill="#4a4a4a" stroke="#1a1a1a" stroke-width="${Math.max(1, 2 / svgScale)}"/></g>`;
+      svg += `<g transform="${transformAttr}"${opacity}><path d="${escapeXML(def.svgPath)}" fill="#4a4a4a" stroke="#1a1a1a" stroke-width="${Math.max(1, 2 / svgScale)}"/></g>`;
     }
   }
 
@@ -325,7 +330,7 @@ export function exportMapSVG(
     const tcx = token.x * tileSize + (tileSize * sz) / 2;
     const tcy = token.y * tileSize + (tileSize * sz) / 2;
     const r = tileSize * sz * 0.42;
-    const fill = token.color ?? TOKEN_KIND_COLORS[token.kind];
+    const fill = sanitizeColor(token.color, TOKEN_KIND_COLORS[token.kind]);
     svg += `<circle cx="${tcx}" cy="${tcy}" r="${r}" fill="${fill}" stroke="#1a1a2e" stroke-width="${Math.max(1, tileSize * sz * 0.08)}"/>`;
     // If the token has a library icon, render the SVG path; otherwise fall
     // back to a text glyph.
@@ -397,6 +402,34 @@ function escapeXML(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
+}
+
+function sanitizeColor(value: string | undefined, fallback: string): string {
+  if (!value) return fallback;
+  const trimmed = value.trim();
+  if (/^#[0-9a-f]{3,8}$/i.test(trimmed)) return trimmed;
+  if (/^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/i.test(trimmed)) {
+    return escapeXML(trimmed);
+  }
+  return fallback;
+}
+
+function sanitizeImageDataUrl(value: string): string | null {
+  const trimmed = value.trim();
+  // Match the custom stamp upload limit so imported/exported SVGs cannot
+  // embed unexpectedly large image payloads.
+  if (trimmed.length > 2 * 1024 * 1024) return null;
+  const match = /^data:image\/(?:png|jpe?g|webp|svg\+xml);base64,([a-z0-9+/]+={0,2})$/i.exec(trimmed);
+  if (!match) return null;
+  const base64 = match[1];
+  if (base64.length % 4 !== 0) return null;
+  if (!/^[A-Za-z0-9+/]*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/.test(base64)) return null;
+  try {
+    atob(base64);
+  } catch {
+    return null;
+  }
+  return escapeXML(trimmed);
 }
 
 // ── Print-Optimized / High-DPI Export ──────────────────────────────
