@@ -285,6 +285,26 @@ export interface PathSegment {
 export type RoomEdge = 'n' | 's' | 'e' | 'w';
 
 /**
+ * Merge behaviour for a room edge when it touches or overlaps another room.
+ * - `'auto'`  — dissolve shared walls to floor (default visual merge)
+ * - `'wall'`  — keep the wall even where rooms touch
+ * - `'door'`  — place a door tile at the merge boundary
+ * - `'arch'`  — place an archway tile at the merge boundary
+ */
+export type EdgeMergeMode = 'auto' | 'wall' | 'door' | 'arch';
+
+/**
+ * Per-edge merge override. Controls how a specific edge of a room shape
+ * behaves when it touches or overlaps another room during visual merging.
+ */
+export interface EdgeMergeOverride {
+  /** Which edge of the room this override applies to. */
+  edge: RoomEdge;
+  /** Merge mode for this edge. Defaults to `'auto'`. */
+  mode: EdgeMergeMode;
+}
+
+/**
  * A hint that tells the rasterizer what to place at a specific cell along
  * a room's boundary edge. If `type` is a door tile, the rasterizer inserts
  * the door tile instead of a wall at that position. `'wall'` forces a
@@ -329,6 +349,12 @@ export interface RoomShape {
   wallTile?: TileType;
   /** Optional door hints along the room boundary. */
   doorHints?: DoorHint[];
+  /**
+   * Per-edge merge overrides. Controls how each edge behaves during
+   * visual merging when it touches or overlaps another room shape.
+   * Edges without an override default to `'auto'` (dissolve shared walls).
+   */
+  edgeMergeOverrides?: EdgeMergeOverride[];
 }
 
 /**

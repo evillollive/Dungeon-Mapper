@@ -1,8 +1,8 @@
-import type { RoomShape, Tile, TileType } from '../types/map';
+import type { RoomShape, Tile, TileType, RoomEdge, EdgeMergeMode } from '../types/map';
 
 /**
  * Rasterize an array of `RoomShape` objects onto a **copy** of the given
- * tile grid. For each shape:
+ * tile grid with **visual merging**. For each shape:
  *
  * 1. Interior cells are filled with `fillTile` (default `'floor'`).
  * 2. Perimeter cells (the one-tile-thick boundary) are set to `wallTile`
@@ -10,6 +10,15 @@ import type { RoomShape, Tile, TileType } from '../types/map';
  * 3. Any `doorHints` override the perimeter cell at the specified offset
  *    with the hint's tile type (defaulting to `'door-h'` for north/south
  *    edges and `'door-v'` for east/west edges).
+ *
+ * **Visual merging (Phase 10.3):**
+ * After all shapes are individually rasterized, a merge pass dissolves
+ * shared interior walls. A perimeter cell of shape A is dissolved to
+ * floor if it falls inside another shape B (interior or shared boundary).
+ *
+ * Per-edge merge overrides (`edgeMergeOverrides`) let individual edges
+ * keep walls (`'wall'`), place doors (`'door'`), or place archways
+ * (`'arch'`) instead of the default `'auto'` dissolve.
  *
  * Shapes are applied in array order — later shapes can overwrite earlier
  * ones. Cells outside the grid bounds are silently ignored.
@@ -26,8 +35,19 @@ export function rasterizeRoomShapes(
   // Deep-copy the base grid so callers keep the original intact.
   const tiles: Tile[][] = baseTiles.map(row => row.map(t => ({ ...t })));
 
+  // Pass 1: rasterize each shape individually.
   for (const shape of roomShapes) {
     rasterizeOneShape(tiles, shape, width, height);
+  }
+
+  // Pass 2: visual merge — dissolve shared walls between overlapping/touching rooms.
+  if (roomShapes.length > 1) {
+    mergeSharedWalls(tiles, roomShapes, width, height);
+  }
+
+  // Pass 3: re-apply door hints after merge (so explicit doors survive merge).
+  for (const shape of roomShapes) {
+    applyDoorHints(tiles, shape, width, height);
   }
 
   return tiles;
@@ -52,7 +72,7 @@ function rasterizeOneShape(
   const x1 = Math.min(gridWidth, x + sw);
   const y1 = Math.min(gridHeight, y + sh);
 
-  // Pass 1: fill interior + perimeter.
+  // Fill interior + perimeter.
   for (let cy = y0; cy < y1; cy++) {
     for (let cx = x0; cx < x1; cx++) {
       const isPerimeter =
@@ -60,18 +80,180 @@ function rasterizeOneShape(
       tiles[cy][cx] = { type: isPerimeter ? wallTile : fillTile };
     }
   }
+}
 
-  // Pass 2: apply door hints on perimeter cells.
-  if (shape.doorHints) {
-    for (const hint of shape.doorHints) {
-      const pos = doorHintToCell(shape, hint);
-      if (!pos) continue;
-      const [dx, dy] = pos;
-      if (dx < 0 || dy < 0 || dx >= gridWidth || dy >= gridHeight) continue;
-      const doorType = hint.type ?? defaultDoorType(hint.edge);
-      tiles[dy][dx] = { type: doorType };
+/**
+ * Apply door hints for a single shape. Called after the merge pass so
+ * explicit door placements are not overwritten by merge logic.
+ */
+function applyDoorHints(
+  tiles: Tile[][],
+  shape: RoomShape,
+  gridWidth: number,
+  gridHeight: number,
+): void {
+  if (!shape.doorHints) return;
+  for (const hint of shape.doorHints) {
+    const pos = doorHintToCell(shape, hint);
+    if (!pos) continue;
+    const [dx, dy] = pos;
+    if (dx < 0 || dy < 0 || dx >= gridWidth || dy >= gridHeight) continue;
+    const doorType = hint.type ?? defaultDoorType(hint.edge);
+    tiles[dy][dx] = { type: doorType };
+  }
+}
+
+/**
+ * Dissolve shared walls between overlapping or touching room shapes.
+ *
+ * For each perimeter cell of each shape, we check whether it also falls
+ * inside (or on the perimeter of) another shape. If so, the merge mode
+ * on the relevant edge determines what happens:
+ * - `'auto'` (default): dissolve to fill tile
+ * - `'wall'`: keep the wall
+ * - `'door'`: place a door tile (horizontal or vertical based on edge)
+ * - `'arch'`: place an archway tile
+ */
+function mergeSharedWalls(
+  tiles: Tile[][],
+  roomShapes: RoomShape[],
+  gridWidth: number,
+  gridHeight: number,
+): void {
+  for (let i = 0; i < roomShapes.length; i++) {
+    const shapeA = roomShapes[i];
+    const fillA: TileType = shapeA.fillTile ?? 'floor';
+
+    // Iterate over perimeter cells of shapeA.
+    const perimeterCells = getPerimeterCells(shapeA, gridWidth, gridHeight);
+
+    for (const { cx, cy, edge } of perimeterCells) {
+      // Check if this perimeter cell falls inside any other shape.
+      for (let j = 0; j < roomShapes.length; j++) {
+        if (i === j) continue;
+        const shapeB = roomShapes[j];
+
+        if (!cellInsideShape(cx, cy, shapeB)) continue;
+
+        // This cell is shared — determine merge mode.
+        const mode = getEdgeMergeMode(shapeA, edge);
+        // Also check the other shape's merge mode for its relevant edge.
+        const edgeB = getOpposingEdge(cx, cy, shapeB);
+        const modeB = edgeB ? getEdgeMergeMode(shapeB, edgeB) : 'auto';
+
+        // If either side forces 'wall', keep wall.
+        if (mode === 'wall' || modeB === 'wall') break;
+
+        if (mode === 'door' || modeB === 'door') {
+          // Place a door tile based on edge direction.
+          const doorTile = defaultDoorType(edge);
+          tiles[cy][cx] = { type: doorTile };
+        } else if (mode === 'arch' || modeB === 'arch') {
+          tiles[cy][cx] = { type: 'archway' };
+        } else {
+          // 'auto' — dissolve to fill tile.
+          // Use fillA if the cell is perimeter of A and interior of B,
+          // otherwise use the fill of whichever shape claims interior.
+          const isInteriorB = cellInteriorShape(cx, cy, shapeB);
+          const fillB: TileType = shapeB.fillTile ?? 'floor';
+          tiles[cy][cx] = { type: isInteriorB ? fillB : fillA };
+        }
+        break; // Only need one other shape to trigger merge.
+      }
     }
   }
+}
+
+/**
+ * Get all perimeter cells of a shape, clamped to grid bounds, with their
+ * edge direction.
+ */
+function getPerimeterCells(
+  shape: RoomShape,
+  gridWidth: number,
+  gridHeight: number,
+): { cx: number; cy: number; edge: RoomEdge }[] {
+  const { x, y, width: sw, height: sh } = shape;
+  const cells: { cx: number; cy: number; edge: RoomEdge }[] = [];
+
+  const x0 = Math.max(0, x);
+  const y0 = Math.max(0, y);
+  const x1 = Math.min(gridWidth, x + sw);
+  const y1 = Math.min(gridHeight, y + sh);
+
+  for (let cy = y0; cy < y1; cy++) {
+    for (let cx = x0; cx < x1; cx++) {
+      const onN = cy === y;
+      const onS = cy === y + sh - 1;
+      const onW = cx === x;
+      const onE = cx === x + sw - 1;
+
+      if (!onN && !onS && !onW && !onE) continue; // interior
+
+      // Determine the primary edge for this cell. Corners get the
+      // north/south edge (arbitrary but consistent).
+      let edge: RoomEdge;
+      if (onN) edge = 'n';
+      else if (onS) edge = 's';
+      else if (onW) edge = 'w';
+      else edge = 'e';
+
+      cells.push({ cx, cy, edge });
+    }
+  }
+
+  return cells;
+}
+
+/**
+ * Check if a cell (cx, cy) is inside a shape (including perimeter).
+ */
+function cellInsideShape(cx: number, cy: number, shape: RoomShape): boolean {
+  return (
+    cx >= shape.x &&
+    cx < shape.x + shape.width &&
+    cy >= shape.y &&
+    cy < shape.y + shape.height
+  );
+}
+
+/**
+ * Check if a cell (cx, cy) is strictly interior to a shape (not perimeter).
+ */
+function cellInteriorShape(cx: number, cy: number, shape: RoomShape): boolean {
+  return (
+    cx > shape.x &&
+    cx < shape.x + shape.width - 1 &&
+    cy > shape.y &&
+    cy < shape.y + shape.height - 1
+  );
+}
+
+/**
+ * Get the edge of a shape that a cell touches. Returns the primary edge
+ * if the cell is on the perimeter of the shape, or `null` if interior.
+ */
+function getOpposingEdge(cx: number, cy: number, shape: RoomShape): RoomEdge | null {
+  const onN = cy === shape.y;
+  const onS = cy === shape.y + shape.height - 1;
+  const onW = cx === shape.x;
+  const onE = cx === shape.x + shape.width - 1;
+
+  if (!onN && !onS && !onW && !onE) return null; // interior
+
+  if (onN) return 'n';
+  if (onS) return 's';
+  if (onW) return 'w';
+  return 'e';
+}
+
+/**
+ * Get the merge mode for a specific edge of a shape.
+ */
+function getEdgeMergeMode(shape: RoomShape, edge: RoomEdge): EdgeMergeMode {
+  if (!shape.edgeMergeOverrides) return 'auto';
+  const override = shape.edgeMergeOverrides.find(o => o.edge === edge);
+  return override?.mode ?? 'auto';
 }
 
 /**
