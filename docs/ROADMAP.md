@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
-> **Last updated:** 2026-05-09
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Last updated:** 2026-05-11
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -580,13 +580,16 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 
 *Transforms map editing from tile-only to shape+tile hybrid. Shapes rasterize to the existing tile grid; individual tile painting coexists with shapes (no lock). Merging is visual only — rooms remain separate logical objects.*
 
-**10.1 — Shape Data Model & Rasterizer**
+**10.1 — Shape Data Model & Rasterizer** ✅ COMPLETE
 - New `RoomShape` type (rect for v1: position, dimensions, optional door hints, fill/wall tile overrides)
+- `DoorHint` type with edge + offset + optional tile override
 - `DungeonMap.roomShapes: RoomShape[]` (additive — old maps unaffected)
-- Rasterizer (shapes → floor + wall tiles) runs on every shape edit; tile grid remains the source of truth for rendering
+- Rasterizer (`rasterizeRoomShapes`) — shapes → floor + wall tiles with door hint application, grid clipping, immutable copy
 - **Coexistence:** individual tile painting still works on top of rasterized output (no lock)
-- Undo/redo support for shape ops
-- Tests for rasterizer correctness (built on Phase 7)
+- Undo/redo support for shape ops (`HistorySnapshot` captures `roomShapes`)
+- State management: `addRoomShape`, `updateRoomShape`, `removeRoomShape`, `clearRoomShapes`
+- Backward-compat: `withDefaults()` fills `roomShapes ?? []`
+- 18 rasterizer tests + updated `mapStateUtils` tests (built on Phase 7)
 
 **10.2 — Rectangle Drawing & Resize**
 - New `room-rect` tool — drag to draw a rectangular room shape
@@ -1308,6 +1311,22 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-11 — Phase 10.1 (Shape Data Model & Rasterizer) COMPLETE**
+- Added `RoomShape` interface: rectangular room with `id`, `x`, `y`, `width`, `height`, optional `fillTile`/`wallTile` overrides
+- Added `DoorHint` interface: per-edge door placement with `edge` (n/s/e/w), `offset`, optional `type` override
+- Added `RoomEdge` type alias for cardinal directions
+- New `roomShapes?: RoomShape[]` field on `DungeonMap` (backward-compatible — old maps unaffected)
+- `withDefaults()` fills `roomShapes ?? []`; `createDefaultMap()` initializes with empty array
+- Created `src/utils/roomRasterizer.ts` with `rasterizeRoomShapes()`:
+  - Fills interior cells with `fillTile` (default `'floor'`), perimeter with `wallTile` (default `'wall'`)
+  - Applies `doorHints` with correct door orientation (`door-h` for n/s, `door-v` for e/w)
+  - Clips to grid bounds; ignores out-of-range hints; returns immutable copy
+  - Shapes applied in array order (later overwrites earlier)
+- State management in `useMapState.ts`: `addRoomShape`, `updateRoomShape`, `removeRoomShape`, `clearRoomShapes` — all with undo/redo support
+- `HistorySnapshot` captures `roomShapes` array; undo/redo restores shapes correctly
+- 18 rasterizer unit tests: basic rect, custom tiles, door hints (all 4 edges + custom type), multiple shapes, edge cases (1×1, 2×2, 3×3, clipping, negative origin, no shapes, preservation of existing tiles)
+- Updated `mapStateUtils` tests: `createDefaultMap` and `withDefaults` assertions for `roomShapes`
 
 **2026-05-09 — Phase 9.5 (Art Style Presets) COMPLETE**
 - Added `ArtStylePresetId` type (`'classic' | 'hand-drawn' | 'painted' | 'minimal' | 'print' | 'custom'`) and `artStylePreset` field on `DungeonMap`

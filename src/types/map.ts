@@ -276,6 +276,61 @@ export interface PathSegment {
   width: number;
 }
 
+// ── Room Shapes (Phase 10: Dynamic Rooms) ─────────────────────────────────
+
+/**
+ * Cardinal edge direction on a rectangular room shape. Used by `DoorHint`
+ * to specify where a door should (or should not) appear.
+ */
+export type RoomEdge = 'n' | 's' | 'e' | 'w';
+
+/**
+ * A hint that tells the rasterizer what to place at a specific cell along
+ * a room's boundary edge. If `type` is a door tile, the rasterizer inserts
+ * the door tile instead of a wall at that position. `'wall'` forces a
+ * wall even if visual merging (Phase 10.3) would dissolve it.
+ */
+export interface DoorHint {
+  /** Which edge of the room this hint applies to. */
+  edge: RoomEdge;
+  /**
+   * Offset along the edge in tiles from the edge's start (left-to-right
+   * for n/s edges, top-to-bottom for e/w edges). Must be ≥ 0 and less
+   * than the edge length.
+   */
+  offset: number;
+  /** The tile type to place at this position. Defaults to 'door-h' or 'door-v' based on edge. */
+  type?: TileType;
+}
+
+/**
+ * A logical room shape that rasterizes onto the tile grid. For v1 only
+ * rectangular rooms are supported (Phase 10.6 adds circles and polygons).
+ *
+ * Room shapes are additive — they coexist with individually-painted tiles.
+ * The rasterizer fills interior cells with `fillTile` (default `'floor'`)
+ * and outlines the perimeter with `wallTile` (default `'wall'`), then
+ * applies any `doorHints`.
+ */
+export interface RoomShape {
+  /** Unique identifier within the map. */
+  id: number;
+  /** Top-left X coordinate in tile units (integer). */
+  x: number;
+  /** Top-left Y coordinate in tile units (integer). */
+  y: number;
+  /** Width in tiles (must be ≥ 1). */
+  width: number;
+  /** Height in tiles (must be ≥ 1). */
+  height: number;
+  /** Tile type used for interior cells. Defaults to `'floor'`. */
+  fillTile?: TileType;
+  /** Tile type used for perimeter cells. Defaults to `'wall'`. */
+  wallTile?: TileType;
+  /** Optional door hints along the room boundary. */
+  doorHints?: DoorHint[];
+}
+
 /**
  * An imported background image rendered behind the tile grid. Useful for
  * tracing existing battlemaps or using pre-made art as a backdrop. The
@@ -574,6 +629,13 @@ export interface DungeonMap {
    * manually adjusted individual layer settings.
    */
   artStylePreset?: ArtStylePresetId;
+  /**
+   * Logical room shapes that rasterize onto the tile grid. When shapes are
+   * present the rasterizer produces floor + wall tiles from them on every
+   * edit; individual tile painting still works on top of rasterized output
+   * (no lock). Optional for backward-compat; treat absent as no shapes.
+   */
+  roomShapes?: RoomShape[];
 }
 
 // ── Multi-Level Project ────────────────────────────────────────────────────
