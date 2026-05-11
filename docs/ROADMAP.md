@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-11
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -598,10 +598,15 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - Right-click / context menu delete for room shapes while `room-rect` is active
 - App wiring: `MapCanvas` now consumes `addRoomShape` / `updateRoomShape` / `removeRoomShape`
 
-**10.3 — Visual Merging**
+**10.3 — Visual Merging** ✅ COMPLETE
 - When two rectangles overlap or touch edges, the rasterizer dissolves shared interior walls
 - Room shapes remain **separate logical objects** (visual merge only — no auto-combined notes/IDs)
 - Door inference at touch boundaries (auto / open arch / wall — per-edge override)
+- New types: `EdgeMergeMode` (`'auto'` | `'wall'` | `'door'` | `'arch'`), `EdgeMergeOverride` (edge + mode)
+- `RoomShape.edgeMergeOverrides` field for per-edge merge control
+- Rasterizer merge pass: after individual rasterization, dissolves shared walls between overlapping/touching rooms
+- Door hints re-applied after merge pass (explicit door placements always survive)
+- 11 new tests (29 total rasterizer tests covering merge, edge overrides, multi-room, non-touching)
 
 📘 **README checkpoint #4:** GIF of room overlap/merge.
 
@@ -1312,6 +1317,17 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-11 — Phase 10.3 (Visual Merging) COMPLETE**
+- Rasterizer now performs a merge pass after individual shape rasterization:
+  - Perimeter cells shared between overlapping/touching rooms are dissolved to floor
+  - Door hints are re-applied after merge (explicit doors always survive)
+- New types in `map.ts`:
+  - `EdgeMergeMode`: `'auto'` | `'wall'` | `'door'` | `'arch'`
+  - `EdgeMergeOverride`: per-edge merge behaviour override (edge + mode)
+- `RoomShape.edgeMergeOverrides` field for per-edge merge control
+- Merge modes: `'auto'` dissolves walls, `'wall'` preserves walls, `'door'` places door tiles, `'arch'` places archway tiles
+- 11 new rasterizer tests (29 total): shared boundaries, full overlap, partial overlap, edge overrides (wall/door/arch), door hint survival, multi-room L-shape, non-touching rooms
 
 **2026-05-11 — Phase 10.2 (Rectangle Drawing & Resize) COMPLETE**
 - Added new `room-rect` tool to `ToolType` + DrawToolsTab + MobileToolbar + command palette + keybindings (`Q`)

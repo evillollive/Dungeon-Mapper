@@ -156,7 +156,7 @@ describe('rasterizeRoomShapes', () => {
 
   // ── Multiple shapes ───────────────────────────────────────────────────
 
-  it('later shapes overwrite earlier shapes', () => {
+  it('visual merge dissolves shared walls between overlapping shapes', () => {
     const tiles = emptyGrid(10, 10);
     const shapes: RoomShape[] = [
       { id: 1, x: 1, y: 1, width: 4, height: 4 },
@@ -164,8 +164,8 @@ describe('rasterizeRoomShapes', () => {
     ];
     const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
 
-    // Overlap at (3,3) — shape 2's perimeter overwrites shape 1's interior
-    expect(result[3][3].type).toBe('wall');
+    // Overlap at (3,3) — perimeter of shape 2, interior of shape 1 → dissolved to floor
+    expect(result[3][3].type).toBe('floor');
     // Shape 2 interior
     expect(result[4][4].type).toBe('water');
     // Shape 1 unaffected area
@@ -282,5 +282,177 @@ describe('rasterizeRoomShapes', () => {
       ['empty', 'empty', 'empty', 'empty', 'empty'],
     ];
     expect(typeGrid(result)).toEqual(expected);
+  });
+
+  // ── Visual merging (Phase 10.3) ─────────────────────────────────────
+
+  it('dissolves shared wall when two rooms share a boundary edge', () => {
+    // Room A at (1,1) 3×3, Room B at (4,1) 3×3 — touching east/west edges.
+    const tiles = emptyGrid(8, 5);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 3, height: 3 },
+      { id: 2, x: 3, y: 1, width: 3, height: 3 },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 8, 5);
+
+    // The shared boundary column at x=3 should be dissolved to floor
+    // (where both rooms claim the cell).
+    // y=1: top perimeter of both → both are 'n' edge; (3,1) is perimeter of A (east) and perimeter of B (west+north corner)
+    // Since (3,1) is inside both shapes, the shared wall is dissolved.
+    expect(result[2][3].type).toBe('floor'); // middle of shared edge → dissolved
+  });
+
+  it('dissolves interior walls for fully overlapping rooms', () => {
+    // Room A at (1,1) 5×5, Room B at (2,2) 3×3 — B is entirely inside A.
+    const tiles = emptyGrid(8, 8);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 5, height: 5 },
+      { id: 2, x: 2, y: 2, width: 3, height: 3 },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 8, 8);
+
+    // B's perimeter is entirely inside A → all B perimeter cells dissolved to floor
+    expect(result[2][2].type).toBe('floor');
+    expect(result[2][3].type).toBe('floor');
+    expect(result[2][4].type).toBe('floor');
+    expect(result[3][2].type).toBe('floor');
+    expect(result[3][4].type).toBe('floor');
+    expect(result[4][2].type).toBe('floor');
+    expect(result[4][3].type).toBe('floor');
+    expect(result[4][4].type).toBe('floor');
+    // A's perimeter is still wall (not inside B)
+    expect(result[1][1].type).toBe('wall');
+    expect(result[5][5].type).toBe('wall');
+  });
+
+  it('keeps outer perimeter walls when rooms partially overlap', () => {
+    // Room A at (1,1) 4×4, Room B at (3,1) 4×4 — overlap 2 columns wide.
+    const tiles = emptyGrid(10, 8);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 4, height: 4 },
+      { id: 2, x: 3, y: 1, width: 4, height: 4 },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 10, 8);
+
+    // A's west wall should remain
+    expect(result[2][1].type).toBe('wall');
+    // B's east wall should remain
+    expect(result[2][6].type).toBe('wall');
+    // The overlap area (columns 3-4, rows 1-4) should be mostly dissolved
+    // x=3 is A's interior (col 3 from A: x=1..4, so col 3 is interior) and B's west perimeter
+    // → dissolved because B's perimeter is inside A
+    expect(result[2][3].type).toBe('floor');
+    // x=4 is A's east perimeter and B's interior
+    // → dissolved because A's perimeter is inside B
+    expect(result[2][4].type).toBe('floor');
+  });
+
+  it('edgeMergeOverride wall keeps the wall even at shared boundary', () => {
+    const tiles = emptyGrid(8, 5);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 3, height: 3, edgeMergeOverrides: [{ edge: 'e', mode: 'wall' }] },
+      { id: 2, x: 3, y: 1, width: 3, height: 3 },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 8, 5);
+
+    // Shared boundary at x=3 — shape 1 says 'wall' on its east edge
+    expect(result[2][3].type).toBe('wall');
+  });
+
+  it('edgeMergeOverride door places door tiles at shared boundary', () => {
+    const tiles = emptyGrid(8, 5);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 3, height: 3, edgeMergeOverrides: [{ edge: 'e', mode: 'door' }] },
+      { id: 2, x: 3, y: 1, width: 3, height: 3 },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 8, 5);
+
+    // Middle of shared boundary should get door-v (east/west edge → vertical door)
+    expect(result[2][3].type).toBe('door-v');
+  });
+
+  it('edgeMergeOverride arch places archway tiles at shared boundary', () => {
+    const tiles = emptyGrid(8, 5);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 3, height: 3 },
+      { id: 2, x: 3, y: 1, width: 3, height: 3, edgeMergeOverrides: [{ edge: 'w', mode: 'arch' }] },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 8, 5);
+
+    // Shared boundary at x=3 — shape 2 says 'arch' on its west edge
+    expect(result[2][3].type).toBe('archway');
+  });
+
+  it('door hints survive the merge pass', () => {
+    const tiles = emptyGrid(8, 5);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 3, height: 3, doorHints: [{ edge: 'e', offset: 1, type: 'locked-door-v' }] },
+      { id: 2, x: 3, y: 1, width: 3, height: 3 },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 8, 5);
+
+    // Door hint should be applied at x=3, y=2 — even after merge
+    expect(result[2][3].type).toBe('locked-door-v');
+  });
+
+  it('single shape is unaffected by merge logic', () => {
+    const tiles = emptyGrid(6, 6);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 4, height: 4 },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 6, 6);
+
+    // No merge — standard rasterization
+    expect(result[1][1].type).toBe('wall');
+    expect(result[2][2].type).toBe('floor');
+    expect(result[4][4].type).toBe('wall');
+  });
+
+  it('rooms touching at north/south boundary dissolve shared wall', () => {
+    // Room A at (1,1) 3×3, Room B at (1,3) 3×3 — touching at y=3.
+    const tiles = emptyGrid(5, 8);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 3, height: 3 },
+      { id: 2, x: 1, y: 3, width: 3, height: 3 },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 5, 8);
+
+    // Shared row at y=3: middle cell (2,3) should be dissolved
+    expect(result[3][2].type).toBe('floor');
+  });
+
+  it('three rooms in an L-shape merge correctly', () => {
+    const tiles = emptyGrid(10, 10);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 3, height: 3 },
+      { id: 2, x: 3, y: 1, width: 3, height: 3 }, // right of room 1
+      { id: 3, x: 1, y: 3, width: 3, height: 3 }, // below room 1
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
+
+    // Room 1 east wall at (3,2) shared with room 2 → dissolved
+    expect(result[2][3].type).toBe('floor');
+    // Room 1 south wall at (2,3) shared with room 3 → dissolved
+    expect(result[3][2].type).toBe('floor');
+    // Room 2's south wall at (4,3) — not touching room 3 → stays wall
+    expect(result[3][4].type).toBe('wall');
+  });
+
+  it('non-touching rooms do not merge', () => {
+    const tiles = emptyGrid(10, 10);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 3, height: 3 },
+      { id: 2, x: 5, y: 5, width: 3, height: 3 }, // completely separate
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
+
+    // All perimeters remain walls
+    expect(result[1][1].type).toBe('wall');
+    expect(result[1][3].type).toBe('wall');
+    expect(result[5][5].type).toBe('wall');
+    expect(result[7][7].type).toBe('wall');
+    // Interiors are floor
+    expect(result[2][2].type).toBe('floor');
+    expect(result[6][6].type).toBe('floor');
   });
 });
