@@ -416,7 +416,8 @@ function sanitizeColor(value: string | undefined, fallback: string): string {
 
 function sanitizeImageDataUrl(value: string): string | null {
   const trimmed = value.trim();
-  if (/^data:image\/(?:png|jpe?g|webp|svg\+xml);base64,[a-z0-9+/=]+$/i.test(trimmed)) {
+  if (trimmed.length > 2 * 1024 * 1024) return null;
+  if (/^data:image\/(?:png|jpe?g|webp|svg\+xml);base64,(?:[a-z0-9+/]{4})*(?:[a-z0-9+/]{2}==|[a-z0-9+/]{3}=)?$/i.test(trimmed)) {
     return escapeXML(trimmed);
   }
   return null;
