@@ -531,4 +531,6 @@ export const TOOL_SHORTCUTS: Record<ToolType, string | undefined> = {
   'wall-erase': undefined,
   path: 'Shift+W',
   'path-erase': undefined,
+  river: 'U',
+  'river-erase': undefined,
 };

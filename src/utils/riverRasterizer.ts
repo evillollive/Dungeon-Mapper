@@ -33,7 +33,19 @@ function catmullRom(
 
 export function sampleRiverCurve(river: Pick<River, 'controlPoints'>): { x: number; y: number }[] {
   const points = river.controlPoints;
-  if (points.length <= 2) return [...points];
+  if (points.length <= 1) return [...points];
+  if (points.length === 2) {
+    const [a, b] = points;
+    const dist = Math.hypot(b.x - a.x, b.y - a.y);
+    const steps = Math.max(1, Math.ceil(dist / SAMPLE_STEP));
+    return Array.from({ length: steps + 1 }, (_, i) => {
+      const t = i / steps;
+      return {
+        x: a.x + (b.x - a.x) * t,
+        y: a.y + (b.y - a.y) * t,
+      };
+    });
+  }
 
   const samples: { x: number; y: number }[] = [];
   for (let i = 0; i < points.length - 1; i++) {
