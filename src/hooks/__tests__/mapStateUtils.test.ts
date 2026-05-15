@@ -41,6 +41,7 @@ describe('createDefaultMap', () => {
     expect(map.stamps).toEqual([]);
     expect(map.wallSegments).toEqual([]);
     expect(map.pathSegments).toEqual([]);
+    expect(map.rivers).toEqual([]);
     expect(map.roomShapes).toEqual([]);
     expect(map.lightSources).toEqual([]);
     expect(map.annotations).toEqual([]);
@@ -105,6 +106,7 @@ describe('withDefaults', () => {
     expect(filled.stamps).toEqual([]);
     expect(filled.wallSegments).toEqual([]);
     expect(filled.pathSegments).toEqual([]);
+    expect(filled.rivers).toEqual([]);
     expect(filled.roomShapes).toEqual([]);
     expect(filled.lightSources).toEqual([]);
     expect(filled.annotations).toEqual([]);
@@ -125,6 +127,7 @@ describe('map content reset helpers', () => {
     map.stamps = [{ id: 1, stampId: 'table', x: 0, y: 0, rotation: 0, scale: 1, flipX: false, flipY: false, opacity: 1, locked: false }];
     map.wallSegments = [{ id: 1, points: [{ x: 0, y: 0 }], color: '#000000', thickness: 0.1 }];
     map.pathSegments = [{ id: 1, points: [{ x: 0, y: 0 }], color: '#000000', width: 0.3 }];
+    map.rivers = [{ id: 1, controlPoints: [{ x: 0, y: 0 }, { x: 1, y: 1 }], color: '#2563eb', width: 1, type: 'water', flowDirection: 45 }];
     map.roomShapes = [{ id: 1, x: 0, y: 0, width: 3, height: 3 }];
     map.backgroundImage = { dataUrl: 'data:image/png;base64,AAAA', offsetX: 0, offsetY: 0, scale: 1, opacity: 1 };
     map.paperTexture = { enabled: true, pattern: 'linen', opacity: 0.5, grain: 0.2, vignette: 0.2 };
@@ -141,6 +144,7 @@ describe('map content reset helpers', () => {
     expect(cleared.stamps).toEqual([]);
     expect(cleared.wallSegments).toEqual([]);
     expect(cleared.pathSegments).toEqual([]);
+    expect(cleared.rivers).toEqual([]);
     expect(cleared.roomShapes).toEqual([]);
     expect(cleared.backgroundImage).toBeUndefined();
     expect(cleared.paperTexture).toEqual(map.paperTexture);
@@ -152,6 +156,7 @@ describe('map content reset helpers', () => {
     map.lightSources = [{ id: 1, x: 0, y: 0, radius: 3, color: '#ffffff', label: 'Light' }];
     map.wallSegments = [{ id: 1, points: [{ x: 0, y: 0 }], color: '#000000', thickness: 0.1 }];
     map.pathSegments = [{ id: 1, points: [{ x: 0, y: 0 }], color: '#000000', width: 0.3 }];
+    map.rivers = [{ id: 1, controlPoints: [{ x: 0, y: 0 }], color: '#2563eb', width: 1, type: 'water', flowDirection: 0 }];
     map.backgroundImage = { dataUrl: 'data:image/png;base64,AAAA', offsetX: 0, offsetY: 0, scale: 1, opacity: 1 };
     const tiles = Array.from({ length: 2 }, () =>
       Array.from({ length: 2 }, () => ({ type: 'floor' as const }))
@@ -174,6 +179,7 @@ describe('map content reset helpers', () => {
     expect(generated.lightSources).toEqual([]);
     expect(generated.wallSegments).toEqual([]);
     expect(generated.pathSegments).toEqual([]);
+    expect(generated.rivers).toEqual([]);
     expect(generated.backgroundImage).toBeUndefined();
   });
 

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef } from 'react';
-import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, SceneTemplate, StampDef, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment, RoomShape } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, SceneTemplate, StampDef, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment, River, RoomShape } from '../types/map';
 import { createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
 import { saveProject } from '../utils/storage';
 import { reThemeNotes } from '../utils/reThemeNotes';
@@ -23,6 +23,7 @@ export function useMapState() {
   const nextStampIdRef = useRef(1);
   const nextWallIdRef = useRef(1);
   const nextPathIdRef = useRef(1);
+  const nextRiverIdRef = useRef(1);
   const nextRoomShapeIdRef = useRef(1);
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
 
@@ -39,6 +40,7 @@ export function useMapState() {
     nextStampIdRef.current = nextIdAfter(level.stamps);
     nextWallIdRef.current = nextIdAfter(level.wallSegments);
     nextPathIdRef.current = nextIdAfter(level.pathSegments);
+    nextRiverIdRef.current = nextIdAfter(level.rivers);
     nextRoomShapeIdRef.current = nextIdAfter(level.roomShapes);
   }
 
@@ -51,6 +53,7 @@ export function useMapState() {
     nextStampIdRef.current = 1;
     nextWallIdRef.current = 1;
     nextPathIdRef.current = 1;
+    nextRiverIdRef.current = 1;
     nextRoomShapeIdRef.current = 1;
     setSelectedNoteId(null);
   }
@@ -227,6 +230,7 @@ export function useMapState() {
     nextStampIdRef.current = 1;
     nextWallIdRef.current = 1;
     nextPathIdRef.current = 1;
+    nextRiverIdRef.current = 1;
     if (roomShapes && roomShapes.length > 0) {
       nextRoomShapeIdRef.current = nextIdAfter(roomShapes);
     } else {
@@ -1087,6 +1091,56 @@ export function useMapState() {
     });
   }, [debouncedSave, activeLevelIndex, pushHistory]);
 
+  // ── Rivers ─────────────────────────────────────────────────────────────
+
+  const addRiver = useCallback((river: Omit<River, 'id'>) => {
+    const newId = nextRiverIdRef.current;
+    nextRiverIdRef.current = newId + 1;
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, rivers: [...(m.rivers ?? []), { ...river, id: newId }],
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+    return newId;
+  }, [debouncedSave, activeLevelIndex, pushHistory]);
+
+  const updateRiver = useCallback((id: number, changes: Partial<Omit<River, 'id'>>) => {
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m,
+        rivers: (m.rivers ?? []).map(r => r.id === id ? { ...r, ...changes } : r),
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex, pushHistory]);
+
+  const removeRiver = useCallback((id: number) => {
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, rivers: (m.rivers ?? []).filter(r => r.id !== id),
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex, pushHistory]);
+
+  const clearRivers = useCallback(() => {
+    setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
+        ...m, rivers: [],
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [debouncedSave, activeLevelIndex, pushHistory]);
+
   // ── Room shapes (Phase 10: Dynamic Rooms) ──────────────────────────────
 
   const addRoomShape = useCallback((shape: Omit<RoomShape, 'id'>) => {
@@ -1294,6 +1348,7 @@ export function useMapState() {
     addStamp, moveStamp, removeStamp, clearStamps, updateStamp, bringStampToFront, sendStampToBack,
     addWallSegment, removeWallSegment, clearWallSegments,
     addPathSegment, removePathSegment, clearPathSegments,
+    addRiver, updateRiver, removeRiver, clearRivers,
     addRoomShape, updateRoomShape, removeRoomShape, clearRoomShapes,
     saveCustomStamp, deleteCustomStamp,
     saveSceneTemplate, deleteSceneTemplate, renameSceneTemplate, applySceneTemplate,

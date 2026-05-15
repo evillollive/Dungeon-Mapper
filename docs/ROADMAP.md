@@ -639,13 +639,16 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 
 *Rivers as a vector layer (like room shapes) that rasterizes to water tiles with directional flow metadata. Generator integration via opt-in checkbox + sliders.*
 
-**11.1 — Vector Layer & Manual Tool**
+**11.1 — Vector Layer & Manual Tool** ✅ COMPLETE
 - New `River` type (vector layer: control points, width, flow direction, type)
 - `DungeonMap.rivers: River[]`
-- Smooth curve rasterizer (Catmull-Rom or Bézier) → water tiles with directional flow attribute
-- New `river` tool — click control points; drag to set width
-- Edit handles for moving control points; right-click to delete a control point
-- Renders flow direction in screen mode (subtle ripple) and print mode (current arrows)
+- Smooth Catmull-Rom rasterizer → water tiles with `flowDirection`, `riverId`, and `riverType` metadata
+- New `river` tool (`U`) — drag to draw flowing river vectors
+- Edit handles for moving control points; right-click deletes a control point (or removes a single-point river)
+- River erase tool removes whole river vectors
+- Renders flow direction in screen mode and print/export mode
+- State actions: `addRiver`, `updateRiver`, `removeRiver`, `clearRivers`
+- 5 new tests covering rasterization, derived render tiles, and state actions
 
 📘 **README checkpoint #5:** GIF of drawing a river.
 

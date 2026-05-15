@@ -25,7 +25,7 @@ import { computeFOV } from './utils/fov';
 import { computePlayerFOV, mergeExplored } from './utils/dynamicFog';
 import { computeLightVisible } from './utils/lightSources';
 import { buildThemeList, getThemeWithCustom } from './utils/customThemes';
-import { ALL_TILE_TYPES, isBuiltInTileType, type ToolType, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape, type LightSourcePreset, LIGHT_SOURCE_PRESETS } from './types/map';
+import { ALL_TILE_TYPES, isBuiltInTileType, type ToolType, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape, type LightSourcePreset, type RiverType, LIGHT_SOURCE_PRESETS } from './types/map';
 import LevelTabs from './components/LevelTabs';
 import { ToolContext, type ToolContextValue } from './contexts/ToolContext';
 import { MapContext, type MapContextValue } from './contexts/MapContext';
@@ -187,6 +187,10 @@ function App() {
     addPathSegment,
     removePathSegment,
     clearPathSegments,
+    addRiver,
+    updateRiver,
+    removeRiver,
+    clearRivers,
     addRoomShape,
     updateRoomShape,
     removeRoomShape,
@@ -267,6 +271,9 @@ function App() {
   // Path tool settings — color and width for free-form paths/roads.
   const [pathColor, setPathColor] = useState<string>('#8B7355');
   const [pathWidth, setPathWidth] = useState<number>(0.3);
+  const [riverColor, setRiverColor] = useState<string>('#2563eb');
+  const [riverWidth, setRiverWidth] = useState<number>(1);
+  const [riverType, setRiverType] = useState<RiverType>('water');
   // Marker tool settings — shape, color, radius (in tiles).
   const [markerShape, setMarkerShape] = useState<MarkerShape>('circle');
   const [markerColor, setMarkerColor] = useState<string>('#dc2626');
@@ -903,6 +910,7 @@ function App() {
       { id: 'light', label: 'Light Source', shortcut: 'I' },
       { id: 'wall', label: 'Wall drawing', shortcut: 'W' },
       { id: 'path', label: 'Path / road drawing', shortcut: 'Shift+W' },
+      { id: 'river', label: 'River drawing', shortcut: 'U' },
       { id: 'stamp', label: 'Place Stamp' },
       { id: 'gmdraw', label: 'GM Draw (annotations)', shortcut: 'D' },
       { id: 'link-stair', label: 'Link Stairs', shortcut: 'K' },
@@ -1129,8 +1137,15 @@ function App() {
               pathWidth={pathWidth}
               onSetPathColor={setPathColor}
               onSetPathWidth={setPathWidth}
+              riverColor={riverColor}
+              riverWidth={riverWidth}
+              riverType={riverType}
+              onSetRiverColor={setRiverColor}
+              onSetRiverWidth={setRiverWidth}
+              onSetRiverType={setRiverType}
               onClearWalls={clearWallSegments}
               onClearPaths={clearPathSegments}
+              onClearRivers={clearRivers}
               paperTexture={map.paperTexture}
               onSetPaperTexture={setPaperTexture}
               onUpdatePaperTexture={updatePaperTexture}
@@ -1228,8 +1243,15 @@ function App() {
               pathWidth={pathWidth}
               onSetPathColor={setPathColor}
               onSetPathWidth={setPathWidth}
+              riverColor={riverColor}
+              riverWidth={riverWidth}
+              riverType={riverType}
+              onSetRiverColor={setRiverColor}
+              onSetRiverWidth={setRiverWidth}
+              onSetRiverType={setRiverType}
               onClearWalls={clearWallSegments}
               onClearPaths={clearPathSegments}
+              onClearRivers={clearRivers}
               paperTexture={map.paperTexture}
               onSetPaperTexture={setPaperTexture}
               onUpdatePaperTexture={updatePaperTexture}
@@ -1349,10 +1371,16 @@ function App() {
             wallThickness={wallThickness}
             pathColor={pathColor}
             pathWidth={pathWidth}
+            riverColor={riverColor}
+            riverWidth={riverWidth}
+            riverType={riverType}
             onAddWallSegment={addWallSegment}
             onRemoveWallSegment={removeWallSegment}
             onAddPathSegment={addPathSegment}
             onRemovePathSegment={removePathSegment}
+            onAddRiver={addRiver}
+            onUpdateRiver={updateRiver}
+            onRemoveRiver={removeRiver}
             onAddRoomShape={addRoomShape}
             onUpdateRoomShape={updateRoomShape}
             onRemoveRoomShape={removeRoomShape}

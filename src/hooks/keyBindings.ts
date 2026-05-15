@@ -173,6 +173,7 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       match: e => isPlainKey(e) && e.shiftKey && e.key.toLowerCase() === 'w',
       action: () => actions.setActiveTool('path'),
     },
+    tool('tool.river', 'u', 'River tool — draw flowing water', 'river'),
     {
       id: 'tool.light',
       category: 'Tools',

@@ -248,6 +248,22 @@ export function exportMapSVG(
     }
   }
 
+  // Rivers: flowing vector water paths over the rasterized water tiles.
+  for (const river of map.rivers ?? []) {
+    if (river.controlPoints.length === 0) continue;
+    const w = Math.max(1, river.width * tileSize);
+    const color = sanitizeColor(river.color, '#2563eb');
+    if (river.controlPoints.length === 1) {
+      const p = river.controlPoints[0];
+      svg += `<circle cx="${p.x * tileSize}" cy="${p.y * tileSize}" r="${w / 2}" fill="${color}" fill-opacity="0.72"/>`;
+    } else {
+      const d = river.controlPoints
+        .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x * tileSize} ${p.y * tileSize}`)
+        .join(' ');
+      svg += `<path d="${escapeXML(d)}" stroke="${color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-opacity="0.72"/>`;
+    }
+  }
+
   // Annotations: GM strokes are excluded from player exports.
   for (const stroke of map.annotations ?? []) {
     if (isPlayerView && stroke.kind === 'gm') continue;
