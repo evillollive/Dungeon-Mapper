@@ -1,6 +1,10 @@
 import type { River, Tile } from '../types/map';
 
+// Parametric t increment per Catmull-Rom sample; smaller values produce
+// smoother curves at the cost of more rasterization work.
 const CURVE_SAMPLE_STEP = 0.08;
+// Cap linear two-point interpolation so very long straight rivers don't
+// allocate an unbounded number of intermediate samples.
 const MAX_LINEAR_SEGMENT_SAMPLES = 512;
 
 function cloneGrid(baseTiles: Tile[][]): Tile[][] {

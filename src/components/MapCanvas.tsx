@@ -32,6 +32,8 @@ const FOG_GM_FILL = 'rgba(107, 114, 128, 0.55)';
 /** Dimmed overlay for explored-but-not-visible cells in dynamic fog mode. */
 const EXPLORED_PLAYER_FILL = 'rgba(107, 114, 128, 0.55)';
 const EXPLORED_GM_FILL = 'rgba(107, 114, 128, 0.35)';
+// Squared tile-distance thresholds for freehand point sampling. Rivers use
+// a larger threshold so their vectors stay smooth without excessive points.
 const FREEHAND_POINT_MIN_DISTANCE_SQUARED = 0.005;
 const RIVER_POINT_MIN_DISTANCE_SQUARED = 0.01;
 
