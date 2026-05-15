@@ -8,6 +8,7 @@ import type { DungeonMap } from '../../types/map';
 import { DEFAULT_EDGE_BLEND, DEFAULT_HAND_DRAWN, DEFAULT_LIGHTING_ATMOSPHERE, DEFAULT_PAPER_TEXTURE } from '../../types/map';
 
 const blobs: Blob[] = [];
+const EASTWARD_FLOW_DEGREES = 90;
 
 function installDownloadMocks() {
   Object.defineProperty(URL, 'createObjectURL', {
@@ -104,7 +105,7 @@ describe('export and render helpers', () => {
     map.edgeBlend = DEFAULT_EDGE_BLEND;
     map.handDrawn = DEFAULT_HAND_DRAWN;
     map.lightingAtmosphere = DEFAULT_LIGHTING_ATMOSPHERE;
-    map.rivers = [{ id: 1, controlPoints: [{ x: 0, y: 64 }, { x: 64, y: 60 }, { x: 127, y: 70 }], width: 2, type: 'water', flowDirection: 90 }];
+    map.rivers = [{ id: 1, controlPoints: [{ x: 0, y: 64 }, { x: 64, y: 60 }, { x: 127, y: 70 }], width: 2, type: 'water', flowDirection: EASTWARD_FLOW_DEGREES }];
     map.markers = [{ id: 1, x: 12, y: 12, shape: 'circle', color: '#ff0000', size: 2 }];
     map.lightSources = [{ id: 1, x: 64, y: 64, radius: 12, color: '#ffffff', label: 'Torch' }];
 
