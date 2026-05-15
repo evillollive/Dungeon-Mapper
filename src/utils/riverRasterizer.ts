@@ -3,6 +3,8 @@ import type { River, Tile } from '../types/map';
 // Parametric t increment per Catmull-Rom sample; smaller values produce
 // smoother curves at the cost of more rasterization work.
 const CURVE_SAMPLE_STEP = 0.08;
+// Spatial sample spacing, in tile units, for straight two-point rivers.
+const LINEAR_SAMPLE_DISTANCE = 0.08;
 // Cap linear two-point interpolation so very long straight rivers don't
 // allocate an unbounded number of intermediate samples.
 const MAX_LINEAR_SEGMENT_SAMPLES = 512;
@@ -42,7 +44,7 @@ export function sampleRiverCurve(river: Pick<River, 'controlPoints'>): { x: numb
   if (points.length === 2) {
     const [a, b] = points;
     const dist = Math.hypot(b.x - a.x, b.y - a.y);
-    const steps = Math.max(1, Math.min(MAX_LINEAR_SEGMENT_SAMPLES, Math.ceil(dist / CURVE_SAMPLE_STEP)));
+    const steps = Math.max(1, Math.min(MAX_LINEAR_SEGMENT_SAMPLES, Math.ceil(dist / LINEAR_SAMPLE_DISTANCE)));
     return Array.from({ length: steps + 1 }, (_, i) => {
       const t = i / steps;
       return {

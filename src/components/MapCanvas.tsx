@@ -1585,6 +1585,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // Live (in-progress) freehand stroke, drawn on top so the user sees
     // immediate feedback while dragging. Use the appropriate kind/color/width
     // depending on whether the GM or player is drawing.
+    // Pen annotation strokes are drawn here; wall/path/river previews are
+    // rendered by their dedicated overlay blocks below.
     if (activeStroke && activeStroke.length > 0 && (activeTool === 'pdraw' || activeTool === 'gmdraw')) {
       const isGmDraw = !isPlayerView && activeTool === 'gmdraw';
       drawAnnotation(ctx, {
