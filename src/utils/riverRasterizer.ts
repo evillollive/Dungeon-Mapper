@@ -1,7 +1,7 @@
 import type { River, Tile } from '../types/map';
 
-const SAMPLE_STEP = 0.08;
-const MAX_LINE_SAMPLES = 512;
+const CURVE_SAMPLE_STEP = 0.08;
+const MAX_LINEAR_SEGMENT_SAMPLES = 512;
 
 function cloneGrid(baseTiles: Tile[][]): Tile[][] {
   return baseTiles.map(row => row.map(tile => ({ ...tile })));
@@ -38,7 +38,7 @@ export function sampleRiverCurve(river: Pick<River, 'controlPoints'>): { x: numb
   if (points.length === 2) {
     const [a, b] = points;
     const dist = Math.hypot(b.x - a.x, b.y - a.y);
-    const steps = Math.max(1, Math.min(MAX_LINE_SAMPLES, Math.ceil(dist / SAMPLE_STEP)));
+    const steps = Math.max(1, Math.min(MAX_LINEAR_SEGMENT_SAMPLES, Math.ceil(dist / CURVE_SAMPLE_STEP)));
     return Array.from({ length: steps + 1 }, (_, i) => {
       const t = i / steps;
       return {
@@ -54,7 +54,7 @@ export function sampleRiverCurve(river: Pick<River, 'controlPoints'>): { x: numb
     const p1 = points[i];
     const p2 = points[i + 1];
     const p3 = points[Math.min(points.length - 1, i + 2)];
-    for (let t = 0; t < 1; t += SAMPLE_STEP) {
+    for (let t = 0; t < 1; t += CURVE_SAMPLE_STEP) {
       samples.push(catmullRom(p0, p1, p2, p3, t));
     }
   }

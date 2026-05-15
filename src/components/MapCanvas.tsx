@@ -32,8 +32,8 @@ const FOG_GM_FILL = 'rgba(107, 114, 128, 0.55)';
 /** Dimmed overlay for explored-but-not-visible cells in dynamic fog mode. */
 const EXPLORED_PLAYER_FILL = 'rgba(107, 114, 128, 0.55)';
 const EXPLORED_GM_FILL = 'rgba(107, 114, 128, 0.35)';
-const FREEHAND_POINT_MIN_DISTANCE_SQ = 0.005;
-const RIVER_POINT_MIN_DISTANCE_SQ = 0.01;
+const FREEHAND_POINT_MIN_DISTANCE_SQUARED = 0.005;
+const RIVER_POINT_MIN_DISTANCE_SQUARED = 0.01;
 
 /* -------------------------------------------------------------------------- */
 /*  Fog edge feathering — soft gradient at revealed/hidden boundaries         */
@@ -2751,7 +2751,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
           const last = prev[prev.length - 1];
           const dx = fc.x - last.x;
           const dy = fc.y - last.y;
-          if (dx * dx + dy * dy < FREEHAND_POINT_MIN_DISTANCE_SQ) return prev;
+          if (dx * dx + dy * dy < FREEHAND_POINT_MIN_DISTANCE_SQUARED) return prev;
           return [...prev, fc];
         });
       }
@@ -2767,7 +2767,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
           const last = prev[prev.length - 1];
           const dx = fc.x - last.x;
           const dy = fc.y - last.y;
-          if (dx * dx + dy * dy < FREEHAND_POINT_MIN_DISTANCE_SQ) return prev;
+          if (dx * dx + dy * dy < FREEHAND_POINT_MIN_DISTANCE_SQUARED) return prev;
           return [...prev, fc];
         });
       }
@@ -2798,7 +2798,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
           const last = prev[prev.length - 1];
           const dx = fc.x - last.x;
           const dy = fc.y - last.y;
-          if (dx * dx + dy * dy < FREEHAND_POINT_MIN_DISTANCE_SQ) return prev;
+          if (dx * dx + dy * dy < FREEHAND_POINT_MIN_DISTANCE_SQUARED) return prev;
           return [...prev, fc];
         });
       }
@@ -2822,7 +2822,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
           const last = prev[prev.length - 1];
           const dx = fc.x - last.x;
           const dy = fc.y - last.y;
-          if (dx * dx + dy * dy < RIVER_POINT_MIN_DISTANCE_SQ) return prev;
+          if (dx * dx + dy * dy < RIVER_POINT_MIN_DISTANCE_SQUARED) return prev;
           return [...prev, fc];
         });
       }
