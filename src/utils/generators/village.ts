@@ -12,6 +12,7 @@ import {
 } from './common';
 import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotesEngine';
 import { makeRng, type Rng } from './random';
+import { generateRiversForMap, getGeneratedRiverType, rasterizeRiversToTypeGrid } from './riverGenerator';
 import type { GenerateContext, GeneratedMap } from './types';
 
 /* ── BSP tree ─────────────────────────────────────────────────── */
@@ -111,18 +112,18 @@ function carveBuilding(
   // Fill the building interior with floor.
   for (let dy = 0; dy < bh; dy++) {
     for (let dx = 0; dx < bw; dx++) {
-      setCell(grid, bx + dx, by + dy, 'floor');
+      if (getCell(grid, bx + dx, by + dy) !== 'water') setCell(grid, bx + dx, by + dy, 'floor');
     }
   }
 
   // Outline the building with walls.
   for (let dx = 0; dx < bw; dx++) {
-    setCell(grid, bx + dx, by, 'wall');
-    setCell(grid, bx + dx, by + bh - 1, 'wall');
+    if (getCell(grid, bx + dx, by) !== 'water') setCell(grid, bx + dx, by, 'wall');
+    if (getCell(grid, bx + dx, by + bh - 1) !== 'water') setCell(grid, bx + dx, by + bh - 1, 'wall');
   }
   for (let dy = 0; dy < bh; dy++) {
-    setCell(grid, bx, by + dy, 'wall');
-    setCell(grid, bx + bw - 1, by + dy, 'wall');
+    if (getCell(grid, bx, by + dy) !== 'water') setCell(grid, bx, by + dy, 'wall');
+    if (getCell(grid, bx + bw - 1, by + dy) !== 'water') setCell(grid, bx + bw - 1, by + dy, 'wall');
   }
 
   // Punch a door on a random wall side.
@@ -156,7 +157,7 @@ function carveBuilding(
       doorType = 'door-v';
       break;
   }
-  setCell(grid, doorX, doorY, doorType);
+  if (getCell(grid, doorX, doorY) !== 'water') setCell(grid, doorX, doorY, doorType);
 }
 
 /* ── Street network ───────────────────────────────────────────── */
@@ -181,11 +182,13 @@ function carveStreet(
 
   for (let x = xMin; x <= xMax; x++) {
     const t = getCell(grid, x, y1);
-    if (t === 'empty') setCell(grid, x, y1, 'floor');
+    if (t === 'water') setCell(grid, x, y1, 'archway');
+    else if (t === 'empty') setCell(grid, x, y1, 'floor');
   }
   for (let y = yMin; y <= yMax; y++) {
     const t = getCell(grid, x2, y);
-    if (t === 'empty') setCell(grid, x2, y, 'floor');
+    if (t === 'water') setCell(grid, x2, y, 'archway');
+    else if (t === 'empty') setCell(grid, x2, y, 'floor');
   }
 }
 
@@ -229,12 +232,12 @@ function drawTownWall(
 
   // Draw wall perimeter.
   for (let x = x0; x <= x1; x++) {
-    setCell(grid, x, y0, 'wall');
-    setCell(grid, x, y1, 'wall');
+    if (getCell(grid, x, y0) !== 'water') setCell(grid, x, y0, 'wall');
+    if (getCell(grid, x, y1) !== 'water') setCell(grid, x, y1, 'wall');
   }
   for (let y = y0; y <= y1; y++) {
-    setCell(grid, x0, y, 'wall');
-    setCell(grid, x1, y, 'wall');
+    if (getCell(grid, x0, y) !== 'water') setCell(grid, x0, y, 'wall');
+    if (getCell(grid, x1, y) !== 'water') setCell(grid, x1, y, 'wall');
   }
 
   // Punch gates at the midpoint of each side.
@@ -544,6 +547,14 @@ export function generateVillage(ctx: GenerateContext): GeneratedMap {
   const ov = tileMix ?? {};
 
   const grid = makeTypeGrid(width, height, 'empty');
+  const rivers = generateRiversForMap(
+    width,
+    height,
+    rng,
+    ctx.rivers,
+    getGeneratedRiverType(themeId),
+  );
+  rasterizeRiversToTypeGrid(grid, rivers);
 
   // ── Town walls ──
   const hasWalls = ov.walls !== undefined ? ov.walls >= 0.5 : flavor.defaultWalls;
@@ -709,5 +720,5 @@ export function generateVillage(ctx: GenerateContext): GeneratedMap {
     });
   }
 
-  return { tiles, notes, width, height, roomShapes };
+  return { tiles, notes, width, height, roomShapes, rivers };
 }

@@ -652,11 +652,12 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 
 📘 **README checkpoint #5:** GIF of drawing a river.
 
-**11.2 — Generator Integration**
+**11.2 — Generator Integration** ✅ COMPLETE
 - Optional **"Add river"** checkbox in Generate dialog → reveals sliders: count, width, meander, source edge
-- Open Terrain & Cavern: rivers carve through `floor`/`empty` cells before wall placement
-- Village (BSP): rivers placed first; partitioning routes around them; bridges auto-inserted on roads that cross
-- Underground themes (Dungeon, Cavern): river checkbox available; produces "underground stream" with appropriate tile
+- Generated maps emit editable `River[]` vectors and carry them through full-map and selection generation
+- Open Terrain & Cavern: rivers carve through generated terrain and render with flow metadata
+- Village (BSP): rivers are placed before settlement carving; roads crossing them become bridge archways
+- Underground themes (Dungeon, Cavern): generated rivers use the `underground-stream` semantic type
 
 **11.3 — River Polish**
 - Bank tiles (sand/dirt/rock edges) per theme

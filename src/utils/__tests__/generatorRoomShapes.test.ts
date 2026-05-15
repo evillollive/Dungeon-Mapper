@@ -133,3 +133,51 @@ describe('generateOpenTerrain — roomShapes', () => {
     expect(result.roomShapes).toBeUndefined();
   });
 });
+
+// ── Rivers ────────────────────────────────────────────────────────────────
+
+describe('generator river integration', () => {
+  const riverOptions = {
+    enabled: true,
+    count: 1,
+    width: 2,
+    meander: 0.5,
+    sourceEdge: 'north' as const,
+  };
+
+  it('open terrain emits editable river vectors and carved water tiles', () => {
+    const result = generateOpenTerrain(ctx({ rivers: riverOptions, themeId: 'wilderness' }));
+
+    expect(result.rivers).toHaveLength(1);
+    expect(result.rivers![0].type).toBe('water');
+    expect(result.tiles.flat().some(t => t.type === 'water')).toBe(true);
+  });
+
+  it('cavern emits underground streams', () => {
+    const result = generateCavern(ctx({ rivers: riverOptions, themeId: 'dungeon' }));
+
+    expect(result.rivers).toHaveLength(1);
+    expect(result.rivers![0].type).toBe('underground-stream');
+    expect(result.tiles.flat().some(t => t.type === 'water')).toBe(true);
+  });
+
+  it('village inserts bridge archways where streets cross generated rivers', () => {
+    const result = generateVillage(ctx({
+      width: 48,
+      height: 48,
+      seed: 9,
+      rivers: { ...riverOptions, width: 4, meander: 0 },
+      themeId: 'wilderness',
+      tileMix: { walls: 0 },
+    }));
+
+    expect(result.rivers).toHaveLength(1);
+    expect(result.tiles.flat().some(t => t.type === 'archway')).toBe(true);
+  });
+
+  it('does not emit rivers unless requested', () => {
+    const result = generateOpenTerrain(ctx());
+
+    expect(result.rivers).toEqual([]);
+  });
+});

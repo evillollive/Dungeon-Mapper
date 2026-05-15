@@ -101,7 +101,7 @@ export function rasterizeRivers(
         for (let x = minX; x <= maxX; x++) {
           const cx = x + 0.5;
           const cy = y + 0.5;
-          if (Math.hypot(cx - p.x, cy - p.y) <= radius) {
+          if (out[y][x].type !== 'archway' && Math.hypot(cx - p.x, cy - p.y) <= radius) {
             out[y][x] = {
               ...out[y][x],
               type: 'water',

@@ -583,9 +583,9 @@ function App() {
       if (target) {
         // Stamp into the existing map at the selection's offset; the rest
         // of the canvas (notes outside the rect, tokens, fog) is kept.
-        applyGeneratedRegion(result.tiles, target.x, target.y, result.notes);
+        applyGeneratedRegion(result.tiles, target.x, target.y, result.notes, result.rivers);
       } else {
-        generateMap(result.tiles, result.width, result.height, result.notes, suggestedName, result.roomShapes);
+        generateMap(result.tiles, result.width, result.height, result.notes, suggestedName, result.roomShapes, result.rivers);
       }
       setShowGenerateHub(false);
       announce('Map generated');

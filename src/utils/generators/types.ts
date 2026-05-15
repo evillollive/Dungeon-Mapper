@@ -1,4 +1,14 @@
-import type { MapNote, RoomShape, Tile } from '../../types/map';
+import type { MapNote, River, RoomShape, Tile } from '../../types/map';
+
+export type RiverSourceEdge = 'random' | 'north' | 'south' | 'east' | 'west';
+
+export interface RiverGenerationOptions {
+  enabled: boolean;
+  count: number;
+  width: number;
+  meander: number;
+  sourceEdge: RiverSourceEdge;
+}
 
 /** Inputs every generator receives. Width/height are clamped by the caller. */
 export interface GenerateContext {
@@ -78,6 +88,12 @@ export interface GenerateContext {
    * interprets this.
    */
   nameRooms?: boolean;
+  /**
+   * Optional generated river layer. Generators that support rivers emit
+   * editable River vectors and use the same vectors to reserve/carve water
+   * through their generated terrain.
+   */
+  rivers?: RiverGenerationOptions;
 }
 
 /** A generator's output — pre-built tile grid plus optional notes. */
@@ -94,6 +110,8 @@ export interface GeneratedMap {
    * open terrain) omit this field. Existing maps are unaffected.
    */
   roomShapes?: RoomShape[];
+  /** Optional editable vector rivers emitted by generators. */
+  rivers?: River[];
 }
 
 export interface MapGenerator {

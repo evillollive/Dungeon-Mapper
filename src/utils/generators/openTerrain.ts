@@ -14,6 +14,7 @@ import { assignAreaKinds, detectAreas, getOpenAreaPalette, type DetectedArea, ty
 import { getOpenTerrainFlavor } from './poi';
 import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotesEngine';
 import { makeRng, type Rng } from './random';
+import { generateRiversForMap, getGeneratedRiverType, rasterizeRiversToTypeGrid } from './riverGenerator';
 import type { GenerateContext, GeneratedMap } from './types';
 
 /**
@@ -130,6 +131,14 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
   const rng = makeRng(seed);
   const grid = makeTypeGrid(width, height, 'empty');
   carveOpenRegion(grid, rng, width, height);
+  const rivers = generateRiversForMap(
+    width,
+    height,
+    rng,
+    ctx.rivers,
+    getGeneratedRiverType(themeId),
+  );
+  rasterizeRiversToTypeGrid(grid, rivers);
 
   const area = width * height;
   const d = clampDensity(density);
@@ -299,5 +308,5 @@ export function generateOpenTerrain(ctx: GenerateContext): GeneratedMap {
     regions,
   });
 
-  return { tiles, notes, width, height };
+  return { tiles, notes, width, height, rivers };
 }

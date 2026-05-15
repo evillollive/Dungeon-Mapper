@@ -205,6 +205,7 @@ export function replaceGeneratedMapContent(
   notes: MapNote[] = [],
   name?: string,
   roomShapes: RoomShape[] = [],
+  rivers: River[] = [],
 ): DungeonMap {
   return {
     ...map,
@@ -224,7 +225,7 @@ export function replaceGeneratedMapContent(
     lightSources: [],
     wallSegments: [],
     pathSegments: [],
-    rivers: [],
+    rivers,
     backgroundImage: undefined,
   };
 }

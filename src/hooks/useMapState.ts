@@ -213,11 +213,11 @@ export function useMapState() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSave, activeLevelIndex]);
 
-  const generateMap = useCallback((tiles: Tile[][], width: number, height: number, notes: MapNote[] = [], name?: string, roomShapes?: RoomShape[]) => {
+  const generateMap = useCallback((tiles: Tile[][], width: number, height: number, notes: MapNote[] = [], name?: string, roomShapes?: RoomShape[], rivers?: River[]) => {
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...replaceGeneratedMapContent(m, tiles, width, height, notes, name, roomShapes ?? []),
+        ...replaceGeneratedMapContent(m, tiles, width, height, notes, name, roomShapes ?? [], rivers ?? []),
       }));
       debouncedSave(updated);
       return updated;
@@ -230,7 +230,7 @@ export function useMapState() {
     nextStampIdRef.current = 1;
     nextWallIdRef.current = 1;
     nextPathIdRef.current = 1;
-    nextRiverIdRef.current = 1;
+    nextRiverIdRef.current = rivers && rivers.length > 0 ? nextIdAfter(rivers) : 1;
     if (roomShapes && roomShapes.length > 0) {
       nextRoomShapeIdRef.current = nextIdAfter(roomShapes);
     } else {
@@ -240,7 +240,7 @@ export function useMapState() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSave, activeLevelIndex]);
 
-  const applyGeneratedRegion = useCallback((genTiles: Tile[][], ox: number, oy: number, genNotes: MapNote[] = []) => {
+  const applyGeneratedRegion = useCallback((genTiles: Tile[][], ox: number, oy: number, genNotes: MapNote[] = [], genRivers: River[] = []) => {
     const regionH = genTiles.length;
     const regionW = genTiles[0]?.length ?? 0;
     setProject(prev => {
@@ -266,7 +266,13 @@ export function useMapState() {
           }
         }
         const remappedNotes: MapNote[] = genNotes.map(n => ({ ...n, id: n.id + idOffset, x: n.x + ox, y: n.y + oy }));
-        return { ...m, tiles: newTiles, notes: [...m.notes, ...remappedNotes] };
+        const riverOffset = nextIdAfter(m.rivers ?? []) - 1;
+        const remappedRivers: River[] = genRivers.map(r => ({
+          ...r,
+          id: r.id + riverOffset,
+          controlPoints: r.controlPoints.map(p => ({ x: p.x + ox, y: p.y + oy })),
+        }));
+        return { ...m, tiles: newTiles, notes: [...m.notes, ...remappedNotes], rivers: [...(m.rivers ?? []), ...remappedRivers] };
       });
       debouncedSave(updated);
       return updated;
@@ -274,6 +280,10 @@ export function useMapState() {
     if (genNotes.length > 0) {
       const highestGen = nextIdAfter(genNotes) - 1;
       setNextNoteId(prev => prev + highestGen);
+    }
+    if (genRivers.length > 0) {
+      const highestGen = nextIdAfter(genRivers) - 1;
+      nextRiverIdRef.current += highestGen;
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSave, activeLevelIndex]);

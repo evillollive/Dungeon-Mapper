@@ -170,16 +170,17 @@ describe('map content reset helpers', () => {
       [{ id: 1, x: 1, y: 1, label: 'Room', description: '' }],
       'Generated',
       [{ id: 7, x: 0, y: 0, width: 2, height: 2 }],
+      [{ id: 3, controlPoints: [{ x: 0.5, y: 0.5 }, { x: 1.5, y: 1.5 }], width: 1, type: 'water', flowDirection: 45 }],
     );
 
     expect(generated.meta.name).toBe('Generated');
     expect(generated.tiles).toBe(tiles);
     expect(generated.roomShapes).toEqual([{ id: 7, x: 0, y: 0, width: 2, height: 2 }]);
+    expect(generated.rivers).toEqual([{ id: 3, controlPoints: [{ x: 0.5, y: 0.5 }, { x: 1.5, y: 1.5 }], width: 1, type: 'water', flowDirection: 45 }]);
     expect(generated.markers).toEqual([]);
     expect(generated.lightSources).toEqual([]);
     expect(generated.wallSegments).toEqual([]);
     expect(generated.pathSegments).toEqual([]);
-    expect(generated.rivers).toEqual([]);
     expect(generated.backgroundImage).toBeUndefined();
   });
 

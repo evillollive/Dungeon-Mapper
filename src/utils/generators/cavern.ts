@@ -16,6 +16,7 @@ import { getCavernFlavor } from './poi';
 import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotesEngine';
 import { largestRegion } from './connectivity';
 import { makeRng, type Rng } from './random';
+import { generateRiversForMap, getGeneratedRiverType, rasterizeRiversToTypeGrid } from './riverGenerator';
 import { placeStairs } from './stairsEngine';
 import type { GenerateContext, GeneratedMap } from './types';
 
@@ -90,6 +91,13 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
   const rng = makeRng(seed);
   const grid = makeTypeGrid(width, height, 'wall');
   const flavor = getCavernFlavor(themeId);
+  const rivers = generateRiversForMap(
+    width,
+    height,
+    rng,
+    ctx.rivers,
+    getGeneratedRiverType(themeId, true),
+  );
 
   // Slider-driven overrides come in via `ctx.tileMix`; when a key is
   // absent we fall back to density-scaled defaults so the map fills
@@ -142,6 +150,7 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
     for (let x = 0; x < width; x++) grid[y][x] = 'empty';
   }
   for (const c of bestRegion) grid[c.y][c.x] = 'floor';
+  rasterizeRiversToTypeGrid(grid, rivers);
   outlineWalls(grid);
 
   // Place the start at the first cell of the largest region and the
@@ -153,7 +162,7 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
     // Degenerate cave (the smoothing wiped everything) — return an
     // empty map so the caller still has a valid grid + notes shape.
     const tilesEmpty: Tile[][] = typeGridToTiles(grid);
-    return { tiles: tilesEmpty, notes: [], width, height };
+    return { tiles: tilesEmpty, notes: [], width, height, rivers };
   }
   const start = bestRegion[0];
   setCell(grid, start.x, start.y, 'start');
@@ -292,5 +301,5 @@ export function generateCavern(ctx: GenerateContext): GeneratedMap {
     regions,
   });
 
-  return { tiles, notes, width, height };
+  return { tiles, notes, width, height, rivers };
 }
