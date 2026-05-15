@@ -5,6 +5,11 @@ import type { Rng } from './random';
 import type { RiverGenerationOptions, RiverSourceEdge } from './types';
 
 const UNDERGROUND_THEMES = new Set(['dungeon', 'cavern', 'alien']);
+const TRIBUTARY_JOIN_MIN = 0.42;
+const TRIBUTARY_JOIN_RANGE = 0.32;
+const MIN_TRIBUTARY_LENGTH = 4;
+const TRIBUTARY_LENGTH_BASE = 0.2;
+const TRIBUTARY_LENGTH_VARIANCE = 0.16;
 
 export function supportsGeneratedRivers(generatorId: string, themeId?: string): boolean {
   return generatorId === 'open-terrain' ||
@@ -82,10 +87,14 @@ function createTributary(
   type: RiverType,
 ): River {
   const samples = sampleRiverCurve(parent);
-  const join = samples[Math.max(0, Math.min(samples.length - 1, Math.floor(samples.length * (0.42 + rng.next() * 0.32))))] ?? parent.controlPoints[parent.controlPoints.length - 1];
+  const joinT = TRIBUTARY_JOIN_MIN + rng.next() * TRIBUTARY_JOIN_RANGE;
+  const join = samples[Math.max(0, Math.min(samples.length - 1, Math.floor(samples.length * joinT)))] ?? parent.controlPoints[parent.controlPoints.length - 1];
   const angle = (parent.flowDirection * Math.PI) / 180;
   const side = rng.chance(0.5) ? 1 : -1;
-  const branchLen = Math.max(4, Math.min(width, height) * (0.2 + rng.next() * 0.16));
+  const branchLen = Math.max(
+    MIN_TRIBUTARY_LENGTH,
+    Math.min(width, height) * (TRIBUTARY_LENGTH_BASE + rng.next() * TRIBUTARY_LENGTH_VARIANCE),
+  );
   const normal = angle + side * (Math.PI / 2) + (rng.next() * 0.8 - 0.4);
   const start = clampPoint({
     x: join.x + Math.cos(normal) * branchLen,

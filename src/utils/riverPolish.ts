@@ -51,9 +51,15 @@ export function getRiverBankColor(themeId: string | undefined, bank: RiverBankTy
 
 export function getRiverEndpointMarker(river: River, endpoint: 'source' | 'mouth'): RiverEndpointMarker {
   if (endpoint === 'source') {
-    return river.sourceMarker ?? (river.type === 'lava' ? 'lava-vent' : river.type === 'underground-stream' ? 'cave' : 'spring');
+    return river.sourceMarker ?? getDefaultSourceMarker(river.type);
   }
   return river.mouthMarker ?? (river.parentRiverId !== undefined ? 'outflow' : 'delta');
+}
+
+function getDefaultSourceMarker(riverType: RiverType): RiverEndpointMarker {
+  if (riverType === 'lava') return 'lava-vent';
+  if (riverType === 'underground-stream') return 'cave';
+  return 'spring';
 }
 
 export function drawRiverBanks(

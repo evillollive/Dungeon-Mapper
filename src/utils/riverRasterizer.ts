@@ -8,6 +8,8 @@ const LINEAR_SAMPLE_DISTANCE = 0.08;
 // Cap linear two-point interpolation so very long straight rivers don't
 // allocate an unbounded number of intermediate samples.
 const MAX_LINEAR_SEGMENT_SAMPLES = 512;
+const SAND_BANK_MIN_WIDTH = 4;
+const DIRT_BANK_MIN_WIDTH = 2;
 
 function cloneGrid(baseTiles: Tile[][]): Tile[][] {
   return baseTiles.map(row => row.map(tile => ({ ...tile })));
@@ -84,8 +86,8 @@ const BANK_NEIGHBORS = [
 function bankTypeForRiver(river: River): RiverBankType {
   if (river.type === 'lava') return 'scorched';
   if (river.type === 'underground-stream') return 'rock';
-  if (river.width >= 4) return 'sand';
-  if (river.width >= 2) return 'dirt';
+  if (river.width >= SAND_BANK_MIN_WIDTH) return 'sand';
+  if (river.width >= DIRT_BANK_MIN_WIDTH) return 'dirt';
   return 'stone';
 }
 
