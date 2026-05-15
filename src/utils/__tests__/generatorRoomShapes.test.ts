@@ -148,7 +148,7 @@ describe('generator river integration', () => {
   it('open terrain emits editable river vectors and carved water tiles', () => {
     const result = generateOpenTerrain(ctx({ rivers: riverOptions, themeId: 'wilderness' }));
 
-    expect(result.rivers).toHaveLength(1);
+    expect(result.rivers!.length).toBeGreaterThanOrEqual(1);
     expect(result.rivers![0].type).toBe('water');
     expect(result.tiles.flat().some(t => t.type === 'water')).toBe(true);
   });
@@ -156,7 +156,7 @@ describe('generator river integration', () => {
   it('cavern emits underground streams', () => {
     const result = generateCavern(ctx({ rivers: riverOptions, themeId: 'dungeon' }));
 
-    expect(result.rivers).toHaveLength(1);
+    expect(result.rivers!.length).toBeGreaterThanOrEqual(1);
     expect(result.rivers![0].type).toBe('underground-stream');
     expect(result.tiles.flat().some(t => t.type === 'water')).toBe(true);
   });
@@ -171,8 +171,23 @@ describe('generator river integration', () => {
       tileMix: { walls: 0 },
     }));
 
-    expect(result.rivers).toHaveLength(1);
+    expect(result.rivers!.length).toBeGreaterThanOrEqual(1);
     expect(result.tiles.flat().some(t => t.type === 'archway')).toBe(true);
+  });
+
+  it('generates tributary river vectors when meander is enabled', () => {
+    const result = generateOpenTerrain(ctx({
+      width: 48,
+      height: 48,
+      seed: 15,
+      rivers: { ...riverOptions, meander: 1 },
+      themeId: 'wilderness',
+    }));
+
+    const tributary = result.rivers!.find(river => river.parentRiverId !== undefined);
+    expect(tributary).toBeDefined();
+    expect(result.rivers!.find(river => river.id === tributary!.parentRiverId)?.tributaryIds).toContain(tributary!.id);
+    expect(tributary!.mouthMarker).toBe('outflow');
   });
 
   it('does not emit rivers unless requested', () => {

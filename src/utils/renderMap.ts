@@ -22,6 +22,7 @@ import { drawLightingAtmosphere } from './lightingAtmosphere';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 import { deriveRenderableTiles } from './derivedRenderMap';
+import { drawRiverBanks, drawRiverEndpointMarkers } from './riverPolish';
 
 // Screen-mode canvas styling (mirrored from MapCanvas.tsx).
 const SCREEN_BG = '#f4f1e4';
@@ -192,6 +193,8 @@ export function renderMapToCanvas(
     }
   }
 
+  drawRiverBanks(ctx, tiles, width, height, tileSize, themeId, printMode);
+
   // Edge blending — render after tiles, before grid lines. Disabled in print mode.
   if (!printMode && includeEdgeBlend && map.edgeBlend?.enabled) {
     drawEdgeBlending(ctx, tiles, width, height, tileSize, map.edgeBlend, theme, customThemes);
@@ -321,6 +324,7 @@ export function renderMapToCanvas(
   for (const river of map.rivers ?? []) {
     renderRiver(ctx, river, tileSize, printMode);
   }
+  drawRiverEndpointMarkers(ctx, map.rivers ?? [], tileSize, printMode);
 
   // Annotations
   for (const stroke of map.annotations ?? []) {

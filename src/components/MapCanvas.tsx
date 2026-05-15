@@ -12,6 +12,7 @@ import { drawEdgeBlending } from '../utils/edgeBlend';
 import { drawHandDrawn } from '../utils/handDrawn';
 import { drawLightingAtmosphere } from '../utils/lightingAtmosphere';
 import { deriveRenderableTilesFromBase } from '../utils/derivedRenderMap';
+import { drawRiverBanks, drawRiverEndpointMarkers } from '../utils/riverPolish';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 import { bresenhamLine, pointNearPolyline, rectCells, rectOutline, snapToGridIntersection } from '../utils/canvasGeometry';
@@ -1417,6 +1418,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       }
     }
 
+    drawRiverBanks(ctx, renderTiles, meta.width, meta.height, tileSize, themeId, printMode);
+
     // Edge blending — render after tiles, before grid lines. Disabled in print mode.
     if (!printMode && map.edgeBlend?.enabled) {
       drawEdgeBlending(ctx, renderTiles, meta.width, meta.height, tileSize, map.edgeBlend, theme, customThemes);
@@ -1518,6 +1521,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         ctx.restore();
       }
     }
+    drawRiverEndpointMarkers(ctx, rivers, tileSize, printMode);
 
     if (!isPlayerView && roomShapes.length > 0 && isRoomTool(activeTool)) {
       const previewId = roomEditPreview?.id ?? null;

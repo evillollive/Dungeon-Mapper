@@ -1,4 +1,4 @@
-import type { River, Tile } from '../types/map';
+import type { River, RiverBankType, Tile } from '../types/map';
 
 // Parametric t increment per Catmull-Rom sample; smaller values produce
 // smoother curves at the cost of more rasterization work.
@@ -75,6 +75,48 @@ function directionBetween(a: { x: number; y: number }, b: { x: number; y: number
   return (Math.atan2(dy, dx) * 180) / Math.PI;
 }
 
+const BANK_NEIGHBORS = [
+  [-1, -1], [0, -1], [1, -1],
+  [-1, 0],           [1, 0],
+  [-1, 1],  [0, 1],  [1, 1],
+] as const;
+
+function bankTypeForRiver(river: River): RiverBankType {
+  if (river.type === 'lava') return 'scorched';
+  if (river.type === 'underground-stream') return 'rock';
+  if (river.width >= 4) return 'sand';
+  if (river.width >= 2) return 'dirt';
+  return 'stone';
+}
+
+function applyRiverBanks(out: Tile[][], riversById: Map<number, River>, width: number, height: number): void {
+  const bankUpdates: { x: number; y: number; river: River }[] = [];
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const tile = out[y][x];
+      if (tile.type === 'water' || tile.type === 'archway') continue;
+      let nearestRiver: River | undefined;
+      for (const [dx, dy] of BANK_NEIGHBORS) {
+        const neighbor = out[y + dy]?.[x + dx];
+        if (neighbor?.type !== 'water' || neighbor.riverId === undefined) continue;
+        nearestRiver = riversById.get(neighbor.riverId);
+        if (nearestRiver) break;
+      }
+      if (nearestRiver) bankUpdates.push({ x, y, river: nearestRiver });
+    }
+  }
+
+  for (const update of bankUpdates) {
+    out[update.y][update.x] = {
+      ...out[update.y][update.x],
+      riverBank: bankTypeForRiver(update.river),
+      riverBankRiverId: update.river.id,
+      riverBankType: update.river.type,
+    };
+  }
+}
+
 export function rasterizeRivers(
   baseTiles: Tile[][],
   rivers: readonly River[],
@@ -83,6 +125,7 @@ export function rasterizeRivers(
 ): Tile[][] {
   if (rivers.length === 0) return baseTiles;
   const out = cloneGrid(baseTiles);
+  const riversById = new Map(rivers.map(river => [river.id, river]));
 
   for (const river of rivers) {
     const samples = sampleRiverCurve(river);
@@ -114,6 +157,8 @@ export function rasterizeRivers(
       }
     }
   }
+
+  applyRiverBanks(out, riversById, width, height);
 
   return out;
 }

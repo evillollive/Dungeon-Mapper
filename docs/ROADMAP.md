@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
-> **Last updated:** 2026-05-11
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phase 10.4 (Generator Integration) **COMPLETE**. Phase 10.5 (Subtractive Shapes) **COMPLETE**. Phase 10.6 (Additional Shapes) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Last updated:** 2026-05-15
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phase 10.4 (Generator Integration) **COMPLETE**. Phase 10.5 (Subtractive Shapes) **COMPLETE**. Phase 10.6 (Additional Shapes) **COMPLETE**. Phase 11.1 (Vector Layer & Manual Tool) **COMPLETE**. Phase 11.2 (Generator Integration) **COMPLETE**. Phase 11.3 (River Polish) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -659,7 +659,7 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - Village (BSP): rivers are placed before settlement carving; roads crossing them become bridge archways
 - Underground themes (Dungeon, Cavern): generated rivers use the `underground-stream` semantic type
 
-**11.3 — River Polish**
+**11.3 — River Polish** ✅ COMPLETE
 - Bank tiles (sand/dirt/rock edges) per theme
 - Source / mouth markers
 - Branching tributaries
@@ -1333,6 +1333,14 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-15 — Phase 11.3 (River Polish) COMPLETE**
+- Added river bank metadata (`riverBank`, `riverBankRiverId`, `riverBankType`) on rasterized land tiles adjacent to vector rivers
+- Added source/mouth marker metadata and parent/child tributary references to `River`
+- Added per-theme river bank palettes and endpoint marker rendering for canvas, high-DPI canvas export, and SVG export
+- Generated rivers now create editable tributaries when meander is enabled; tributaries link back to parent rivers and use outflow mouth markers
+- Phase 5.4 Pass 2 premade re-review: river-relevant premades now emit editable streams/moats/harbors/bilge channels across castle, wilderness, desert, pirate, cavern, mine, crypt, and catacomb samples
+- Added tests for river bank rasterization, tributary generation, and premade river polish
 
 **2026-05-11 — Phase 10.6 (Additional Shapes) COMPLETE**
 - New `RoomShapeType` type (`'rect'` | `'circle'` | `'polygon'`) and optional `shapeType` field on `RoomShape` (defaults to `'rect'` for backward compat)

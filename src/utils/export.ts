@@ -12,6 +12,7 @@ import { drawLightingAtmosphere } from './lightingAtmosphere';
 import { wrapMapAsProject } from './storage';
 import { isTokenFogged } from './tokenVisibility';
 import { deriveRenderableTiles } from './derivedRenderMap';
+import { getRiverBankColor, getRiverEndpointMarker } from './riverPolish';
 
 const SVG_CUSTOM_TILE_FALLBACK_COLOR = '#777777';
 
@@ -167,6 +168,17 @@ export function exportMapSVG(
     }
   }
 
+  // River bank polish: theme-tinted insets on land tiles adjacent to river water.
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const tile = tiles[y]?.[x];
+      if (!tile?.riverBank) continue;
+      const inset = Math.max(1, tileSize * 0.14);
+      const fill = sanitizeColor(getRiverBankColor(theme.id, tile.riverBank, tile.riverBankType), '#777777');
+      svg += `<rect x="${x * tileSize + inset}" y="${y * tileSize + inset}" width="${tileSize - inset * 2}" height="${tileSize - inset * 2}" fill="${fill}" fill-opacity="0.55"/>`;
+    }
+  }
+
   // Edge blending layer — rasterized to an offscreen canvas and embedded
   // as an image, same approach as the paper texture.
   if (includeEdgeBlend && map.edgeBlend?.enabled) {
@@ -261,6 +273,29 @@ export function exportMapSVG(
         .map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x * tileSize} ${p.y * tileSize}`)
         .join(' ');
       svg += `<path d="${escapeXML(d)}" stroke="${color}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round" fill="none" stroke-opacity="0.72"/>`;
+    }
+    const endpoints = [
+      { point: river.controlPoints[0], marker: getRiverEndpointMarker(river, 'source'), source: true },
+      { point: river.controlPoints[river.controlPoints.length - 1], marker: getRiverEndpointMarker(river, 'mouth'), source: false },
+    ];
+    for (const endpoint of endpoints) {
+      const r = Math.max(4, tileSize * 0.22);
+      const cx = endpoint.point.x * tileSize;
+      const cy = endpoint.point.y * tileSize;
+      const fill = endpoint.source ? '#ecfeff' : '#dbeafe';
+      const stroke = endpoint.source ? '#0891b2' : '#1d4ed8';
+      const label = endpoint.marker === 'lava-vent' ? 'V'
+        : endpoint.marker === 'waterfall' ? 'W'
+        : endpoint.marker === 'cave' ? 'C'
+        : endpoint.marker === 'delta' ? 'M'
+        : endpoint.marker === 'outflow' ? 'O'
+        : 'S';
+      if (endpoint.source) {
+        svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${Math.max(1, tileSize * 0.06)}"/>`;
+      } else {
+        svg += `<rect x="${cx - r}" y="${cy - r}" width="${r * 2}" height="${r * 2}" fill="${fill}" stroke="${stroke}" stroke-width="${Math.max(1, tileSize * 0.06)}"/>`;
+      }
+      svg += `<text x="${cx}" y="${cy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(7, tileSize * 0.28)}" font-family="monospace" fill="#0f172a" font-weight="bold">${label}</text>`;
     }
   }
 

@@ -42,6 +42,26 @@ describe('riverRasterizer', () => {
     expect(out[0].some(tile => tile.type === 'water')).toBe(true);
   });
 
+  it('marks adjacent land tiles as river banks without replacing their base type', () => {
+    const grid = emptyGrid(5, 5);
+    grid[0][2] = { type: 'floor' };
+    const river: River = {
+      id: 11,
+      controlPoints: [{ x: 1.5, y: 1.5 }, { x: 3.5, y: 1.5 }],
+      width: 1,
+      flowDirection: 0,
+      type: 'underground-stream',
+    };
+
+    const out = rasterizeRivers(grid, [river], 5, 5);
+
+    expect(out[1][2].type).toBe('water');
+    expect(out[0][2].type).toBe('floor');
+    expect(out[0][2].riverBank).toBe('rock');
+    expect(out[0][2].riverBankRiverId).toBe(11);
+    expect(out[0][2].riverBankType).toBe('underground-stream');
+  });
+
   it('samples multi-point rivers as smooth curves', () => {
     const samples = sampleRiverCurve({
       controlPoints: [{ x: 0, y: 0 }, { x: 2, y: 2 }, { x: 4, y: 0 }],
@@ -69,5 +89,6 @@ describe('riverRasterizer', () => {
 
     expect(derived[1][2].type).toBe('water');
     expect(derived[1][2].riverId).toBe(2);
+    expect(derived[0][2].riverBank).toBeDefined();
   });
 });

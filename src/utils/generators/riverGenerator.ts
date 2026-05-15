@@ -66,6 +66,48 @@ function pointOnEdge(
   }
 }
 
+function clampPoint(point: { x: number; y: number }, width: number, height: number): { x: number; y: number } {
+  return {
+    x: Math.min(width - 0.5, Math.max(0.5, point.x)),
+    y: Math.min(height - 0.5, Math.max(0.5, point.y)),
+  };
+}
+
+function createTributary(
+  parent: River,
+  id: number,
+  width: number,
+  height: number,
+  rng: Rng,
+  type: RiverType,
+): River {
+  const samples = sampleRiverCurve(parent);
+  const join = samples[Math.max(0, Math.min(samples.length - 1, Math.floor(samples.length * (0.42 + rng.next() * 0.32))))] ?? parent.controlPoints[parent.controlPoints.length - 1];
+  const angle = (parent.flowDirection * Math.PI) / 180;
+  const side = rng.chance(0.5) ? 1 : -1;
+  const branchLen = Math.max(4, Math.min(width, height) * (0.2 + rng.next() * 0.16));
+  const normal = angle + side * (Math.PI / 2) + (rng.next() * 0.8 - 0.4);
+  const start = clampPoint({
+    x: join.x + Math.cos(normal) * branchLen,
+    y: join.y + Math.sin(normal) * branchLen,
+  }, width, height);
+  const mid = clampPoint({
+    x: (start.x + join.x) / 2 + Math.cos(angle) * (rng.next() * 2 - 1) * branchLen * 0.18,
+    y: (start.y + join.y) / 2 + Math.sin(angle) * (rng.next() * 2 - 1) * branchLen * 0.18,
+  }, width, height);
+  const flowDirection = (Math.atan2(join.y - start.y, join.x - start.x) * 180) / Math.PI;
+  return {
+    id,
+    controlPoints: [start, mid, join],
+    width: Math.max(1, parent.width * 0.55),
+    flowDirection,
+    type,
+    parentRiverId: parent.id,
+    sourceMarker: type === 'underground-stream' ? 'cave' : type === 'lava' ? 'lava-vent' : 'spring',
+    mouthMarker: 'outflow',
+  };
+}
+
 export function generateRiversForMap(
   width: number,
   height: number,
@@ -106,7 +148,19 @@ export function generateRiversForMap(
       width: opts.width,
       flowDirection: (Math.atan2(dy, dx) * 180) / Math.PI,
       type,
+      sourceMarker: type === 'underground-stream' ? 'cave' : type === 'lava' ? 'lava-vent' : 'spring',
+      mouthMarker: 'delta',
     });
+  }
+  if (opts.meander > 0 && Math.min(width, height) >= 16 && rivers.length > 0) {
+    const mainRivers = [...rivers];
+    const tributaryCount = Math.max(1, Math.round(opts.count * opts.meander));
+    for (let i = 0; i < tributaryCount; i++) {
+      const parent = mainRivers[i % mainRivers.length];
+      const tributary = createTributary(parent, rivers.length + 1, width, height, rng, type);
+      parent.tributaryIds = [...(parent.tributaryIds ?? []), tributary.id];
+      rivers.push(tributary);
+    }
   }
   return rivers;
 }

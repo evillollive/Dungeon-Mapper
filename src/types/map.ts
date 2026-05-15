@@ -41,6 +41,12 @@ export interface Tile {
   riverId?: number;
   /** Semantic river type that produced this tile. */
   riverType?: RiverType;
+  /** Theme-rendered bank material for land tiles adjacent to a river. */
+  riverBank?: RiverBankType;
+  /** River id that produced this adjacent bank tile. */
+  riverBankRiverId?: number;
+  /** Semantic river type that produced this adjacent bank tile. */
+  riverBankType?: RiverType;
   /**
    * Optional per-tile theme override. When set, this tile is rendered using
    * the named theme instead of the map's current `meta.theme`. This is used
@@ -286,6 +292,10 @@ export interface PathSegment {
 
 export type RiverType = 'water' | 'lava' | 'underground-stream';
 
+export type RiverBankType = 'sand' | 'dirt' | 'rock' | 'stone' | 'scorched';
+
+export type RiverEndpointMarker = 'spring' | 'waterfall' | 'cave' | 'delta' | 'lava-vent' | 'outflow';
+
 export const RIVER_TYPES: RiverType[] = ['water', 'lava', 'underground-stream'];
 
 export const RIVER_TYPE_LABELS: Record<RiverType, string> = {
@@ -310,6 +320,14 @@ export interface River {
   type: RiverType;
   /** Optional screen/export stroke color. */
   color?: string;
+  /** Optional source marker rendered at the first control point. */
+  sourceMarker?: RiverEndpointMarker;
+  /** Optional mouth marker rendered at the final control point. */
+  mouthMarker?: RiverEndpointMarker;
+  /** Parent river id when this river is a generated tributary. */
+  parentRiverId?: number;
+  /** Child tributary ids that join this river. */
+  tributaryIds?: number[];
 }
 
 // ── Room Shapes (Phase 10: Dynamic Rooms) ─────────────────────────────────
