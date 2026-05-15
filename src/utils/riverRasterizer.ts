@@ -1,6 +1,7 @@
 import type { River, Tile } from '../types/map';
 
 const SAMPLE_STEP = 0.08;
+const MAX_LINE_SAMPLES = 512;
 
 function cloneGrid(baseTiles: Tile[][]): Tile[][] {
   return baseTiles.map(row => row.map(tile => ({ ...tile })));
@@ -37,7 +38,7 @@ export function sampleRiverCurve(river: Pick<River, 'controlPoints'>): { x: numb
   if (points.length === 2) {
     const [a, b] = points;
     const dist = Math.hypot(b.x - a.x, b.y - a.y);
-    const steps = Math.max(1, Math.ceil(dist / SAMPLE_STEP));
+    const steps = Math.max(1, Math.min(MAX_LINE_SAMPLES, Math.ceil(dist / SAMPLE_STEP)));
     return Array.from({ length: steps + 1 }, (_, i) => {
       const t = i / steps;
       return {
