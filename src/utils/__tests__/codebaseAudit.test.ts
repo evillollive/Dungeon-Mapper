@@ -42,7 +42,9 @@ describe('Phase 12.2 codebase audit guardrails', () => {
   it('keeps production sources free of explicit any annotations', () => {
     const explicitAny = /(:\s*any\b|\bas\s+any\b|<any>)/;
     const offenders = sourceFiles(srcRoot).flatMap(file => {
-      const source = readFileSync(file, 'utf8');
+      const source = readFileSync(file, 'utf8')
+        .replace(/\/\*[\s\S]*?\*\//g, '')
+        .replace(/\/\/.*$/gm, '');
       return explicitAny.test(source) ? [relative(repoRoot, file)] : [];
     });
 
