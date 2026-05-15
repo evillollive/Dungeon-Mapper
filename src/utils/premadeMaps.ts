@@ -9,8 +9,10 @@ import type {
   Token,
   TokenKind,
 } from '../types/map';
+import type { RiverGenerationOptions } from './generators/types';
 import { createFogGrid } from './mapUtils';
 import { getGenerator, type GenerateContext } from './generators';
+import { generateRiversForMap, getGeneratedRiverType } from './generators/riverGenerator';
 import { makeRng, seedFromString } from './generators/random';
 
 export interface PremadeMapSummary {
@@ -50,6 +52,7 @@ interface LevelSpec {
   noteFlavor: string;
   tokenTheme: TokenRequest[];
   lightColor?: string;
+  rivers?: RiverGenerationOptions;
 }
 
 interface PremadeMapSpec {
@@ -79,6 +82,11 @@ const MEDIUM_MAP_TILE_SIZE = 16;
 const DEFAULT_PREMADE_TILE_SIZE = 20;
 // Safety guard for premade connectivity repair; normal maps converge once per disconnected component.
 const MAX_PREMADE_CONNECTION_ATTEMPTS = 128;
+const PREMADE_STREAM: RiverGenerationOptions = { enabled: true, count: 1, width: 2, meander: 0.75, sourceEdge: 'random' };
+const PREMADE_BROOK: RiverGenerationOptions = { enabled: true, count: 1, width: 3, meander: 0.65, sourceEdge: 'west' };
+const PREMADE_MOAT: RiverGenerationOptions = { enabled: true, count: 2, width: 3, meander: 0.15, sourceEdge: 'north' };
+const PREMADE_HARBOR: RiverGenerationOptions = { enabled: true, count: 1, width: 4, meander: 0.35, sourceEdge: 'south' };
+const PREMADE_UNDERGROUND_STREAM: RiverGenerationOptions = { enabled: true, count: 1, width: 2, meander: 0.8, sourceEdge: 'random' };
 const PASSABLE_TOKEN_TILE_TYPES = new Set<TileType>([
   'floor',
   'door-h',
@@ -136,6 +144,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
       height: 40,
       density: 1.15,
       seed: 'premade:sunken-crypt',
+      rivers: PREMADE_UNDERGROUND_STREAM,
       tileMix: { water: 0.04, treasure: 0.045, trap: 0.026, secretDoors: 0.14, lockedDoors: 0.1 },
       corridorStrategy: 'loops',
       corridorContinuity: 0.45,
@@ -163,6 +172,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
       height: 40,
       density: 1.1,
       seed: 'premade:winding-depths',
+      rivers: PREMADE_UNDERGROUND_STREAM,
       tileMix: { wall: 0.47, water: 0.04, treasure: 5, trap: 0.018, areas: 5, stairsDown: 1 },
       noteFlavor: 'Natural chambers are labeled for immediate exploration beats and hidden dangers.',
       tokenTheme: encounter(['Lost Prospector', 'archer'], ['Cave Bat Swarm', 'bat'], ['Bone Serpent', 'snake'], ['Deep Drake', 'dragon']),
@@ -211,6 +221,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
       height: 40,
       density: 1,
       seed: 'premade:ironhold-keep',
+      rivers: PREMADE_MOAT,
       tileMix: { roomSize: 1.15, treasure: 0.038, trap: 0.012, doors: 0.9, lockedDoors: 0.16, archways: 0.18 },
       corridorStrategy: 'mst',
       corridorContinuity: 0.75,
@@ -238,6 +249,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
       height: 48,
       density: 1.05,
       seed: 'premade:castle-grounds',
+      rivers: PREMADE_MOAT,
       tileMix: { walls: 1, buildingSize: 1.08, treasure: 0.016, trap: 0.008 },
       noteFlavor: 'The settlement generator is directed into a defensible castle yard instead of a town grid.',
       tokenTheme: encounter(['Stablemaster Elen', 'archer'], ['Bailey Guard', 'shield'], ['Tower Crossbow', 'bow'], ['Siege Captain', 'sword']),
@@ -335,6 +347,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
       height: 48,
       density: 1.2,
       seed: 'premade:xenoflora-caves',
+      rivers: PREMADE_UNDERGROUND_STREAM,
       tileMix: { wall: 0.44, water: 0.085, treasure: 6, trap: 0.026, areas: 5, stairsDown: 1 },
       noteFlavor: 'Named cavern pockets and violet lights create a strange-world expedition map.',
       tokenTheme: encounter(['Surveyor Kez', 'crystal'], ['Spore Bloom', 'fireball'], ['Cave Strider', 'spider'], ['Crystal Devourer', 'dragon']),
@@ -377,6 +390,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
       height: 40,
       density: 1,
       seed: 'premade:silver-vein-mine',
+      rivers: PREMADE_UNDERGROUND_STREAM,
       tileMix: { wall: 0.49, water: 0.018, treasure: 6, trap: 0.024, areas: 4, stairsDown: 1 },
       noteFlavor: 'Cavern generation is directed into an Old West mine with cave-in hazards and ore caches.',
       tokenTheme: encounter(['Old Miner Beck', 'mountain'], ['Claim Jumper', 'dagger'], ['Tunnel Rattler', 'snake'], ['Mine Horror', 'skull']),
@@ -446,6 +460,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
       height: 48,
       density: 1.15,
       seed: 'premade:verdant-crossing',
+      rivers: PREMADE_BROOK,
       tileMix: { wall: 0.105, water: 0.07, pillar: 0.016, treasure: 3, trap: 0.004, areas: 5 },
       noteFlavor: 'Open terrain is tuned into a ready wilderness ambush map rather than a blank clearing.',
       tokenTheme: encounter(['Trail Guide Mira', 'tree'], ['Dire Wolf', 'wolf'], ['Giant Spider', 'spider'], ['Old Bear', 'dragon']),
@@ -467,6 +482,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
       height: 48,
       density: 0.9,
       seed: 'premade:millbrook-hamlet',
+      rivers: PREMADE_BROOK,
       tileMix: { walls: 0, buildingSize: 0.9, treasure: 0.01, trap: 0.004 },
       noteFlavor: 'A calm settlement starter map with enough tokens and fog to run an immediate scene.',
       tokenTheme: encounter(['Miller Tamsin', 'campfire'], ['Woods Bandit', 'bow'], ['Hungry Wolf', 'wolf'], ['Bog Witch', 'mage']),
@@ -536,6 +552,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
       height: 48,
       density: 1.2,
       seed: 'premade:the-wastes',
+      rivers: PREMADE_STREAM,
       tileMix: { wall: 0.12, water: 0.015, pillar: 0.022, treasure: 4, trap: 0.006, areas: 5 },
       noteFlavor: 'Open terrain becomes a playable wasteland with scrap, snares, and cover.',
       tokenTheme: encounter(['Wasteland Trader', 'coin'], ['Raider Scout', 'bow'], ['Scrap Hound', 'wolf'], ['Mutant Brute', 'skull']),
@@ -628,6 +645,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
         height: 16,
         density: 0.85,
         seed: 'premade:black-harpy-deck',
+        rivers: PREMADE_HARBOR,
         tileMix: { roomSize: 0.8, treasure: 0.02, trap: 0.008, doors: 0.9, lockedDoors: 0.05, trappedDoors: 0.03 },
         corridorStrategy: 'mst',
         corridorContinuity: 0.9,
@@ -647,6 +665,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
         height: 16,
         density: 0.9,
         seed: 'premade:black-harpy-lower',
+        rivers: PREMADE_STREAM,
         tileMix: { roomSize: 0.75, treasure: 0.04, trap: 0.012, doors: 0.85, lockedDoors: 0.1, trappedDoors: 0.06 },
         corridorStrategy: 'mst',
         corridorContinuity: 0.85,
@@ -666,6 +685,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
         height: 16,
         density: 0.8,
         seed: 'premade:black-harpy-hold',
+        rivers: PREMADE_STREAM,
         tileMix: { roomSize: 0.9, treasure: 0.065, trap: 0.015, doors: 0.7, lockedDoors: 0.15, trappedDoors: 0.1 },
         corridorStrategy: 'mst',
         corridorContinuity: 0.8,
@@ -694,6 +714,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
       height: 48,
       density: 1,
       seed: 'premade:port-havoc',
+      rivers: PREMADE_HARBOR,
       tileMix: { walls: 0, buildingSize: 1, treasure: 0.024, trap: 0.006 },
       noteFlavor: 'Harbor districts and treasure-heavy notes create a port map for raids or negotiations.',
       tokenTheme: encounter(['Dockmaster Sable', 'key'], ['Smuggler', 'chest'], ['Press-Gang Thug', 'axe'], ['Harbor Witch', 'mage']),
@@ -715,6 +736,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
       height: 48,
       density: 1.1,
       seed: 'premade:shifting-sands',
+      rivers: PREMADE_STREAM,
       tileMix: { wall: 0.09, water: 0.012, pillar: 0.018, treasure: 2, trap: 0.006, areas: 4 },
       noteFlavor: 'Sparse water, more hazards, and named features turn open terrain into a desert scene.',
       tokenTheme: encounter(['Caravan Guide Samir', 'mountain'], ['Dune Raider', 'bow'], ['Sand Viper', 'snake'], ['Glass Scorpion', 'spider']),
@@ -736,6 +758,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
       height: 48,
       density: 0.95,
       seed: 'premade:sandstone-bazaar',
+      rivers: PREMADE_STREAM,
       tileMix: { walls: 1, buildingSize: 0.95, treasure: 0.018, trap: 0.008 },
       noteFlavor: 'A walled oasis town supports market encounters, chases, and desert intrigue.',
       tokenTheme: encounter(['Bazaar Elder', 'scroll'], ['Relic Thief', 'rogue'], ['Watchtower Archer', 'bow'], ['Efreeti Agent', 'fireball']),
@@ -778,6 +801,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
         height: 48,
         density: 1.05,
         seed: 'premade:forgotten-sun-catacombs',
+        rivers: PREMADE_UNDERGROUND_STREAM,
         tileMix: { wall: 0.46, water: 0.012, treasure: 7, trap: 0.028, areas: 5, stairsDown: 1 },
         noteFlavor: 'The lower level uses cavern generation for tomb passages under the temple.',
         tokenTheme: encounter(['Torchbearer Iko', 'torch'], ['Mummified Guard', 'skeleton'], ['Cursed Serpent', 'snake'], ['Buried Oracle', 'eye']),
@@ -1168,9 +1192,19 @@ function buildLevel(spec: LevelSpec): DungeonMap {
     deadEndRemoval: spec.deadEndRemoval,
     labelRooms: spec.labelRooms ?? true,
     nameRooms: spec.nameRooms ?? true,
+    rivers: spec.rivers,
   });
 
   const tiles = generated.tiles.map(row => row.map(tile => ({ ...tile })));
+  const rivers = generated.rivers ?? (spec.rivers?.enabled
+    ? generateRiversForMap(
+        generated.width,
+        generated.height,
+        makeRng(seedFromString(`${spec.seed}:rivers`)),
+        spec.rivers,
+        getGeneratedRiverType(spec.themeId, spec.generatorId === 'cavern'),
+      )
+    : []);
   connectPremadeLevel(tiles);
   const tokens = placeTokens(tiles, spec.tokenTheme);
   const notes = describeNotes(generated.notes, spec.noteFlavor);
@@ -1189,6 +1223,7 @@ function buildLevel(spec: LevelSpec): DungeonMap {
     dynamicFogEnabled: true,
     explored: createFogGrid(generated.width, generated.height, false),
     tokens,
+    rivers,
     annotations: [],
     markers: [],
     initiative: tokens.map(token => token.id),

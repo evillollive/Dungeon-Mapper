@@ -35,6 +35,18 @@ export interface CustomThemeDefinition {
 export interface Tile {
   type: TileType;
   noteId?: number;
+  /** Direction of river/water flow in degrees, when produced by the river layer. */
+  flowDirection?: number;
+  /** River id that produced this tile, when rasterized from the river vector layer. */
+  riverId?: number;
+  /** Semantic river type that produced this tile. */
+  riverType?: RiverType;
+  /** Theme-rendered bank material for land tiles adjacent to a river. */
+  riverBank?: RiverBankType;
+  /** River id that produced this adjacent bank tile. */
+  riverBankRiverId?: number;
+  /** Semantic river type that produced this adjacent bank tile. */
+  riverBankType?: RiverType;
   /**
    * Optional per-tile theme override. When set, this tile is rendered using
    * the named theme instead of the map's current `meta.theme`. This is used
@@ -274,6 +286,48 @@ export interface PathSegment {
   color: string;
   /** Stroke width in tile units (e.g., 0.3 = moderate road width). */
   width: number;
+}
+
+// ── Rivers (Phase 11) ─────────────────────────────────────────────────────
+
+export type RiverType = 'water' | 'lava' | 'underground-stream';
+
+export type RiverBankType = 'sand' | 'dirt' | 'rock' | 'stone' | 'scorched';
+
+export type RiverEndpointMarker = 'spring' | 'waterfall' | 'cave' | 'delta' | 'lava-vent' | 'outflow';
+
+export const RIVER_TYPES: RiverType[] = ['water', 'lava', 'underground-stream'];
+
+export const RIVER_TYPE_LABELS: Record<RiverType, string> = {
+  water: 'Water',
+  lava: 'Lava',
+  'underground-stream': 'Underground Stream',
+};
+
+/**
+ * A vector river layer. Rivers keep editable control points separate from the
+ * tile grid, then rasterize to water tiles with flow metadata for rendering.
+ */
+export interface River {
+  id: number;
+  /** Control points in tile coordinates (fractional for smooth curves). */
+  controlPoints: { x: number; y: number }[];
+  /** Width in tile units. */
+  width: number;
+  /** Flow direction in degrees. */
+  flowDirection: number;
+  /** Semantic river variant. */
+  type: RiverType;
+  /** Optional screen/export stroke color. */
+  color?: string;
+  /** Optional source marker rendered at the first control point. */
+  sourceMarker?: RiverEndpointMarker;
+  /** Optional mouth marker rendered at the final control point. */
+  mouthMarker?: RiverEndpointMarker;
+  /** Parent river id when this river is a generated tributary. */
+  parentRiverId?: number;
+  /** Child tributary ids that join this river. */
+  tributaryIds?: number[];
 }
 
 // ── Room Shapes (Phase 10: Dynamic Rooms) ─────────────────────────────────
@@ -660,6 +714,8 @@ export interface DungeonMap {
   wallSegments?: WallSegment[];
   /** Free-form path/road segments connecting areas. */
   pathSegments?: PathSegment[];
+  /** Vector rivers rasterized to water tiles with flow metadata. */
+  rivers?: River[];
   /**
    * Optional parchment / paper background texture layer. When present and
    * `enabled`, a procedural texture with per-theme tinting is rendered
@@ -806,7 +862,9 @@ export type ToolType =
   // GM drawing tools — freehand annotations visible only in GM view.
   | 'gmdraw' | 'gmerase'
   // Wall & path tools — free-form wall/road drawing along grid edges.
-  | 'wall' | 'wall-erase' | 'path' | 'path-erase';
+  | 'wall' | 'wall-erase' | 'path' | 'path-erase'
+  // River tools — draw/edit rivers with flow metadata.
+  | 'river' | 'river-erase';
 
 export type ViewMode = 'gm' | 'player';
 

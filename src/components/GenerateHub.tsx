@@ -27,6 +27,7 @@ import {
   getDungeonShape,
 } from '../utils/generators/shapeMask';
 import { themeSupportsRoomLabels } from '../utils/generators/roomKinds';
+import { supportsGeneratedRivers } from '../utils/generators/riverGenerator';
 import {
   PREMADE_MAP_SUMMARIES,
   buildPremadeProject,
@@ -293,6 +294,14 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
   // Fill background
   const [fillBackground, setFillBackground] = useState<boolean>(true);
 
+  // Generated rivers
+  const [addRiver, setAddRiver] = useState<boolean>(false);
+  const [riverCount, setRiverCount] = useState<number>(1);
+  const [riverWidth, setRiverWidth] = useState<number>(2);
+  const [riverMeander, setRiverMeander] = useState<number>(0.5);
+  const [riverSourceEdge, setRiverSourceEdge] = useState<'random' | 'north' | 'south' | 'east' | 'west'>('random');
+  const showRiverOptions = supportsGeneratedRivers(generatorId, themeId);
+
   // Selection handling
   const selectionUsable = !!selection &&
     selection.w >= MIN_SELECTION_DIM &&
@@ -338,6 +347,15 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
         corridorContinuity: showCorridorStrategy ? corridorContinuity : undefined,
         dungeonShape: showDungeonShape ? dungeonShapeId : undefined,
         deadEndRemoval: showDeadEndRemoval ? deadEndRemoval : undefined,
+        rivers: showRiverOptions && addRiver
+          ? {
+              enabled: true,
+              count: riverCount,
+              width: riverWidth,
+              meander: riverMeander,
+              sourceEdge: riverSourceEdge,
+            }
+          : undefined,
       });
       if (fillBackground) {
         for (const row of result.tiles) {
@@ -492,6 +510,43 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
         <input type="checkbox" checked={fillBackground} onChange={e => setFillBackground(e.target.checked)} />
         <span>Fill empty space with background tile</span>
       </label>
+
+      {showRiverOptions && (
+        <details className="generate-dialog-mix" open={addRiver}>
+          <summary>
+            <label className="generate-dialog-checkbox" onClick={e => e.stopPropagation()}>
+              <input type="checkbox" checked={addRiver} onChange={e => setAddRiver(e.target.checked)} />
+              <span>Add river</span>
+            </label>
+          </summary>
+          {addRiver && (
+            <>
+              <label className="generate-dialog-row">
+                <span>River count ({riverCount})</span>
+                <input type="range" min={1} max={4} step={1} value={riverCount} onChange={e => setRiverCount(Number(e.target.value))} />
+              </label>
+              <label className="generate-dialog-row">
+                <span>River width ({riverWidth.toFixed(1)} tiles)</span>
+                <input type="range" min={1} max={5} step={0.5} value={riverWidth} onChange={e => setRiverWidth(Number(e.target.value))} />
+              </label>
+              <label className="generate-dialog-row">
+                <span>Meander ({Math.round(riverMeander * 100)}%)</span>
+                <input type="range" min={0} max={1} step={0.05} value={riverMeander} onChange={e => setRiverMeander(Number(e.target.value))} />
+              </label>
+              <label className="generate-dialog-row">
+                <span>Source edge</span>
+                <select value={riverSourceEdge} onChange={e => setRiverSourceEdge(e.target.value as typeof riverSourceEdge)}>
+                  <option value="random">Random</option>
+                  <option value="north">North</option>
+                  <option value="south">South</option>
+                  <option value="east">East</option>
+                  <option value="west">West</option>
+                </select>
+              </label>
+            </>
+          )}
+        </details>
+      )}
 
       <label className="generate-dialog-row">
         <span>Seed</span>

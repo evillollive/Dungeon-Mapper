@@ -1,6 +1,6 @@
 import React from 'react';
-import type { ArtStylePresetId, ColorGradingMode, CustomThemeDefinition, EdgeBlendSettings, EdgeBlendStyle, EdgeMergeMode, HandDrawnSettings, HandDrawnStyle, LightingAtmosphereSettings, PaperTexturePattern, PaperTextureSettings, RoomEdge, StampDef, ToolType, TileType } from '../types/map';
-import { ALL_TILE_TYPES, TILE_LABELS, DEFAULT_PAPER_TEXTURE, DEFAULT_EDGE_BLEND, DEFAULT_HAND_DRAWN, DEFAULT_LIGHTING_ATMOSPHERE, ART_STYLE_PRESET_IDS, ART_STYLE_PRESET_LABELS, isBuiltInTileType } from '../types/map';
+import type { ArtStylePresetId, ColorGradingMode, CustomThemeDefinition, EdgeBlendSettings, EdgeBlendStyle, EdgeMergeMode, HandDrawnSettings, HandDrawnStyle, LightingAtmosphereSettings, PaperTexturePattern, PaperTextureSettings, RiverType, RoomEdge, StampDef, ToolType, TileType } from '../types/map';
+import { ALL_TILE_TYPES, TILE_LABELS, DEFAULT_PAPER_TEXTURE, DEFAULT_EDGE_BLEND, DEFAULT_HAND_DRAWN, DEFAULT_LIGHTING_ATMOSPHERE, ART_STYLE_PRESET_IDS, ART_STYLE_PRESET_LABELS, RIVER_TYPES, RIVER_TYPE_LABELS, isBuiltInTileType } from '../types/map';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { buildThemeList, getCustomTileLabel, getThemeWithCustom } from '../utils/customThemes';
 import { getPaperTint } from '../themes';
@@ -35,8 +35,15 @@ interface DrawToolsTabProps {
   pathWidth: number;
   onSetPathColor: (c: string) => void;
   onSetPathWidth: (w: number) => void;
+  riverColor: string;
+  riverWidth: number;
+  riverType: RiverType;
+  onSetRiverColor: (c: string) => void;
+  onSetRiverWidth: (w: number) => void;
+  onSetRiverType: (t: RiverType) => void;
   onClearWalls: () => void;
   onClearPaths: () => void;
+  onClearRivers: () => void;
   // Paper texture
   paperTexture?: PaperTextureSettings;
   onSetPaperTexture?: (settings: PaperTextureSettings) => void;
@@ -80,6 +87,7 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] =
   { id: 'select',     label: 'Select',      shortcut: 'S', icon: '⬜' },
   { id: 'wall',       label: 'Wall',        shortcut: 'W', icon: '🧱' },
   { id: 'path',       label: 'Path',        shortcut: 'Shift+W', icon: '🛤️' },
+  { id: 'river',      label: 'River',       shortcut: 'U', icon: '🌊' },
 ];
 
 function TilePreview({
@@ -130,7 +138,8 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   customStamps, onSaveCustomStamp, onDeleteCustomStamp,
   wallColor, wallThickness, onSetWallColor, onSetWallThickness,
   pathColor, pathWidth, onSetPathColor, onSetPathWidth,
-  onClearWalls, onClearPaths,
+  riverColor, riverWidth, riverType, onSetRiverColor, onSetRiverWidth, onSetRiverType,
+  onClearWalls, onClearPaths, onClearRivers,
   paperTexture, onSetPaperTexture, onUpdatePaperTexture, onClearPaperTexture,
   edgeBlend, onSetEdgeBlend, onUpdateEdgeBlend, onClearEdgeBlend,
   handDrawn, onSetHandDrawn, onUpdateHandDrawn, onClearHandDrawn,
@@ -265,6 +274,67 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
             <span className="tool-name">Erase Paths</span>
           </button>
           <button type="button" className="tool-btn" onClick={onClearPaths} title="Remove all path segments">
+            <span className="tool-icon" aria-hidden="true">🗑️</span>
+            <span className="tool-name">Clear All</span>
+          </button>
+        </div>
+      )}
+
+      {(activeTool === 'river' || activeTool === 'river-erase') && (
+        <div className="toolbar-section">
+          <div className="toolbar-label">RIVER SETTINGS</div>
+          <label className="tool-btn" style={{ cursor: 'pointer' }}>
+            <span className="tool-icon" aria-hidden="true">🎨</span>
+            <span className="tool-name">Color</span>
+            <input
+              type="color"
+              value={riverColor}
+              onChange={e => onSetRiverColor(e.target.value)}
+              style={{ width: 28, height: 20, border: 'none', cursor: 'pointer', padding: 0 }}
+              title="River color"
+            />
+          </label>
+          <label className="tool-btn" style={{ cursor: 'pointer' }}>
+            <span className="tool-icon" aria-hidden="true">📐</span>
+            <span className="tool-name">Width</span>
+            <select
+              className="grid-select"
+              value={String(riverWidth)}
+              onChange={e => onSetRiverWidth(Number(e.target.value))}
+              title="River width"
+            >
+              <option value="0.5">Stream</option>
+              <option value="1">River</option>
+              <option value="1.5">Wide</option>
+              <option value="2">Broad</option>
+            </select>
+          </label>
+          <label className="tool-btn" style={{ cursor: 'pointer' }}>
+            <span className="tool-icon" aria-hidden="true">💧</span>
+            <span className="tool-name">Type</span>
+            <select
+              className="grid-select"
+              value={riverType}
+              onChange={e => onSetRiverType(e.target.value as RiverType)}
+              title="River type"
+            >
+              {RIVER_TYPES.map(t => (
+                <option key={t} value={t}>{RIVER_TYPE_LABELS[t]}</option>
+              ))}
+            </select>
+          </label>
+          <button
+            type="button"
+            className="tool-btn"
+            onClick={() => onSetTool('river-erase')}
+            title="Erase river segments — click a river to remove it"
+            aria-label="Erase rivers"
+            aria-pressed={activeTool === 'river-erase'}
+          >
+            <span className="tool-icon" aria-hidden="true">🧹</span>
+            <span className="tool-name">Erase Rivers</span>
+          </button>
+          <button type="button" className="tool-btn" onClick={onClearRivers} title="Remove all river segments">
             <span className="tool-icon" aria-hidden="true">🗑️</span>
             <span className="tool-name">Clear All</span>
           </button>

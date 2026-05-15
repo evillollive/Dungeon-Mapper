@@ -7,7 +7,7 @@
  * visible canvas or its device-pixel-ratio scaling.
  */
 
-import type { CustomThemeDefinition, DungeonMap, ViewMode, Token, ShapeMarker, AnnotationStroke, PlacedStamp, StampDef } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, ViewMode, Token, ShapeMarker, AnnotationStroke, PlacedStamp, StampDef, River } from '../types/map';
 import { TOKEN_KIND_COLORS, isBuiltInTileType } from '../types/map';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 import { drawTileOverlay } from '../themes/tileOverlays';
@@ -22,6 +22,7 @@ import { drawLightingAtmosphere } from './lightingAtmosphere';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 import { deriveRenderableTiles } from './derivedRenderMap';
+import { drawRiverBanks, drawRiverEndpointMarkers } from './riverPolish';
 
 // Screen-mode canvas styling (mirrored from MapCanvas.tsx).
 const SCREEN_BG = '#f4f1e4';
@@ -192,6 +193,8 @@ export function renderMapToCanvas(
     }
   }
 
+  drawRiverBanks(ctx, tiles, width, height, tileSize, themeId, printMode);
+
   // Edge blending — render after tiles, before grid lines. Disabled in print mode.
   if (!printMode && includeEdgeBlend && map.edgeBlend?.enabled) {
     drawEdgeBlending(ctx, tiles, width, height, tileSize, map.edgeBlend, theme, customThemes);
@@ -317,6 +320,11 @@ export function renderMapToCanvas(
     }
     ctx.restore();
   }
+
+  for (const river of map.rivers ?? []) {
+    renderRiver(ctx, river, tileSize, printMode);
+  }
+  drawRiverEndpointMarkers(ctx, map.rivers ?? [], tileSize, printMode);
 
   // Annotations
   for (const stroke of map.annotations ?? []) {
@@ -536,6 +544,39 @@ function renderMarker(
   ctx.strokeStyle = marker.color;
   ctx.lineWidth = Math.max(1, tileSize * 0.08);
   ctx.stroke();
+  ctx.restore();
+}
+
+function renderRiver(
+  ctx: CanvasRenderingContext2D,
+  river: River,
+  tileSize: number,
+  printMode: boolean,
+) {
+  if (river.controlPoints.length === 0) return;
+  ctx.save();
+  ctx.strokeStyle = printMode ? '#000000' : (river.color ?? '#2563eb');
+  ctx.lineWidth = Math.max(1, river.width * tileSize);
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.globalAlpha = printMode ? 1 : 0.72;
+  ctx.beginPath();
+  for (let i = 0; i < river.controlPoints.length; i++) {
+    const p = river.controlPoints[i];
+    const px = p.x * tileSize;
+    const py = p.y * tileSize;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  if (river.controlPoints.length === 1) {
+    const p = river.controlPoints[0];
+    ctx.fillStyle = ctx.strokeStyle;
+    ctx.beginPath();
+    ctx.arc(p.x * tileSize, p.y * tileSize, Math.max(1, river.width * tileSize / 2), 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
   ctx.restore();
 }
 

@@ -1,5 +1,5 @@
 import { createContext, useContext } from 'react';
-import type { BackgroundImage, CustomThemeDefinition, StampDef, StairLink, TileType, TokenKind, MarkerShape, AnnotationStroke, StampPlacementOptions } from '../types/map';
+import type { BackgroundImage, CustomThemeDefinition, StampDef, StairLink, TileType, TokenKind, MarkerShape, AnnotationStroke, StampPlacementOptions, RoomShape, River, MapNote, Tile } from '../types/map';
 
 export interface ActionContextValue {
   // Tile operations
@@ -12,8 +12,8 @@ export interface ActionContextValue {
   clearMap: () => void;
   newMap: () => void;
   loadProjectData: (project: import('../types/map').DungeonProject) => void;
-  generateMap: (tiles: import('../types/map').Tile[][], width: number, height: number, notes?: import('../types/map').MapNote[], name?: string) => void;
-  applyGeneratedRegion: (genTiles: import('../types/map').Tile[][], ox: number, oy: number, genNotes?: import('../types/map').MapNote[]) => void;
+  generateMap: (tiles: Tile[][], width: number, height: number, notes?: MapNote[], name?: string, roomShapes?: RoomShape[], rivers?: River[]) => void;
+  applyGeneratedRegion: (genTiles: Tile[][], ox: number, oy: number, genNotes?: MapNote[], genRivers?: River[]) => void;
   // Notes
   addNote: (x: number, y: number) => void;
   updateNote: (id: number, label: string, description: string) => void;

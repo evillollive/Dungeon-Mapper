@@ -173,6 +173,7 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       match: e => isPlainKey(e) && e.shiftKey && e.key.toLowerCase() === 'w',
       action: () => actions.setActiveTool('path'),
     },
+    tool('tool.river', 'u', 'River tool — draw flowing water', 'river'),
     {
       id: 'tool.light',
       category: 'Tools',
@@ -530,4 +531,6 @@ export const TOOL_SHORTCUTS: Record<ToolType, string | undefined> = {
   'wall-erase': undefined,
   path: 'Shift+W',
   'path-erase': undefined,
+  river: 'U',
+  'river-erase': undefined,
 };

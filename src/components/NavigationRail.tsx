@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { CustomThemeDefinition, EdgeBlendSettings, HandDrawnSettings, LightingAtmosphereSettings, PaperTextureSettings, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
+import type { CustomThemeDefinition, EdgeBlendSettings, HandDrawnSettings, LightingAtmosphereSettings, PaperTextureSettings, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset, RiverType } from '../types/map';
 import type { BackgroundImage } from '../types/map';
 import DrawToolsTab from './DrawToolsTab';
 import TacticalToolsTab from './TacticalToolsTab';
@@ -100,8 +100,15 @@ interface NavigationRailProps {
   pathWidth: number;
   onSetPathColor: (c: string) => void;
   onSetPathWidth: (w: number) => void;
+  riverColor: string;
+  riverWidth: number;
+  riverType: RiverType;
+  onSetRiverColor: (c: string) => void;
+  onSetRiverWidth: (w: number) => void;
+  onSetRiverType: (t: RiverType) => void;
   onClearWalls: () => void;
   onClearPaths: () => void;
+  onClearRivers: () => void;
   // Paper texture
   paperTexture?: PaperTextureSettings;
   onSetPaperTexture?: (settings: PaperTextureSettings) => void;
@@ -214,8 +221,15 @@ const NavigationRail: React.FC<NavigationRailProps> = (props) => {
             pathWidth={props.pathWidth}
             onSetPathColor={props.onSetPathColor}
             onSetPathWidth={props.onSetPathWidth}
+            riverColor={props.riverColor}
+            riverWidth={props.riverWidth}
+            riverType={props.riverType}
+            onSetRiverColor={props.onSetRiverColor}
+            onSetRiverWidth={props.onSetRiverWidth}
+            onSetRiverType={props.onSetRiverType}
             onClearWalls={props.onClearWalls}
             onClearPaths={props.onClearPaths}
+            onClearRivers={props.onClearRivers}
             paperTexture={props.paperTexture}
             onSetPaperTexture={props.onSetPaperTexture}
             onUpdatePaperTexture={props.onUpdatePaperTexture}

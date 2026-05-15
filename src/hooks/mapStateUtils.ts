@@ -12,6 +12,7 @@ import type {
   PaperTextureSettings,
   PathSegment,
   PlacedStamp,
+  River,
   RoomShape,
   ShapeMarker,
   Tile,
@@ -43,6 +44,7 @@ export interface HistorySnapshot {
   stamps: PlacedStamp[];
   wallSegments: WallSegment[];
   pathSegments: PathSegment[];
+  rivers: River[];
   roomShapes: RoomShape[];
   backgroundImage?: BackgroundImage;
   paperTexture?: PaperTextureSettings;
@@ -80,6 +82,7 @@ export function createDefaultMap(name = 'Level 1'): DungeonMap {
     stamps: [],
     wallSegments: [],
     pathSegments: [],
+    rivers: [],
     roomShapes: [],
   };
 }
@@ -109,6 +112,7 @@ export function withDefaults(map: DungeonMap): DungeonMap {
     stamps: map.stamps ?? [],
     wallSegments: map.wallSegments ?? [],
     pathSegments: map.pathSegments ?? [],
+    rivers: map.rivers ?? [],
     roomShapes: map.roomShapes ?? [],
   };
 }
@@ -130,6 +134,7 @@ export function createHistorySnapshot(map: DungeonMap): HistorySnapshot {
     stamps: map.stamps ?? [],
     wallSegments: map.wallSegments ?? [],
     pathSegments: map.pathSegments ?? [],
+    rivers: map.rivers ?? [],
     roomShapes: map.roomShapes ?? [],
     backgroundImage: map.backgroundImage,
     paperTexture: map.paperTexture,
@@ -158,6 +163,7 @@ export function restoreHistorySnapshot(map: DungeonMap, snap: HistorySnapshot): 
     stamps: snap.stamps,
     wallSegments: snap.wallSegments,
     pathSegments: snap.pathSegments,
+    rivers: snap.rivers,
     roomShapes: snap.roomShapes,
     backgroundImage: snap.backgroundImage,
     paperTexture: snap.paperTexture,
@@ -185,6 +191,7 @@ export function clearVisibleMapContent(map: DungeonMap): DungeonMap {
     stamps: [],
     wallSegments: [],
     pathSegments: [],
+    rivers: [],
     roomShapes: [],
     backgroundImage: undefined,
   };
@@ -198,6 +205,7 @@ export function replaceGeneratedMapContent(
   notes: MapNote[] = [],
   name?: string,
   roomShapes: RoomShape[] = [],
+  rivers: River[] = [],
 ): DungeonMap {
   return {
     ...map,
@@ -217,6 +225,7 @@ export function replaceGeneratedMapContent(
     lightSources: [],
     wallSegments: [],
     pathSegments: [],
+    rivers,
     backgroundImage: undefined,
   };
 }

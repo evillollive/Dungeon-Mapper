@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useMemo, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
-import type { CustomThemeDefinition, DungeonMap, StampDef, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment, RoomShape } from '../types/map';
+import type { CustomThemeDefinition, DungeonMap, StampDef, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment, River, RiverType, RoomShape } from '../types/map';
 import { TOKEN_KIND_COLORS, isBuiltInTileType } from '../types/map';
 import { getSemanticTileType, getThemeWithCustom, preloadCustomThemeImages } from '../utils/customThemes';
 import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
@@ -12,6 +12,7 @@ import { drawEdgeBlending } from '../utils/edgeBlend';
 import { drawHandDrawn } from '../utils/handDrawn';
 import { drawLightingAtmosphere } from '../utils/lightingAtmosphere';
 import { deriveRenderableTilesFromBase } from '../utils/derivedRenderMap';
+import { drawRiverBanks, drawRiverEndpointMarkers } from '../utils/riverPolish';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 import { bresenhamLine, pointNearPolyline, rectCells, rectOutline, snapToGridIntersection } from '../utils/canvasGeometry';
@@ -32,6 +33,10 @@ const FOG_GM_FILL = 'rgba(107, 114, 128, 0.55)';
 /** Dimmed overlay for explored-but-not-visible cells in dynamic fog mode. */
 const EXPLORED_PLAYER_FILL = 'rgba(107, 114, 128, 0.55)';
 const EXPLORED_GM_FILL = 'rgba(107, 114, 128, 0.35)';
+// Squared tile-distance thresholds for freehand point sampling. Rivers use
+// a larger threshold so their vectors stay smooth without excessive points.
+const FREEHAND_POINT_MIN_DISTANCE_SQUARED = 0.005;
+const RIVER_POINT_MIN_DISTANCE_SQUARED = 0.01;
 
 /* -------------------------------------------------------------------------- */
 /*  Fog edge feathering — soft gradient at revealed/hidden boundaries         */
@@ -268,6 +273,12 @@ interface MapCanvasProps {
   pathColor?: string;
   /** Stroke width for the path tool (tile units). */
   pathWidth?: number;
+  /** Stroke color for the river tool. */
+  riverColor?: string;
+  /** River width in tile units. */
+  riverWidth?: number;
+  /** Semantic river type for new rivers. */
+  riverType?: RiverType;
   /** Called when user completes a wall segment. */
   onAddWallSegment?: (segment: Omit<WallSegment, 'id'>) => void;
   /** Called when user clicks a wall segment with wall-erase tool. */
@@ -276,6 +287,12 @@ interface MapCanvasProps {
   onAddPathSegment?: (segment: Omit<PathSegment, 'id'>) => void;
   /** Called when user clicks a path segment with path-erase tool. */
   onRemovePathSegment?: (id: number) => void;
+  /** Called when user completes a river segment. */
+  onAddRiver?: (river: Omit<River, 'id'>) => void;
+  /** Called when user edits a river segment. */
+  onUpdateRiver?: (id: number, changes: Partial<Omit<River, 'id'>>) => void;
+  /** Called when user removes a river segment. */
+  onRemoveRiver?: (id: number) => void;
   /** Called when user completes a rectangular room shape. */
   onAddRoomShape?: (shape: Omit<RoomShape, 'id'>) => number;
   /** Called when user edits a room shape (move/resize). */
@@ -467,6 +484,71 @@ function drawPathSegmentOnCanvas(
     ctx.fill();
   } else {
     ctx.stroke();
+  }
+  ctx.restore();
+}
+
+/** Draw a river vector with flow indicators. */
+function drawRiverOnCanvas(
+  ctx: CanvasRenderingContext2D,
+  river: River,
+  tileSize: number,
+  printMode: boolean,
+) {
+  if (river.controlPoints.length === 0) return;
+  const color = printMode ? '#000000' : (river.color ?? '#2563eb');
+  const lineWidth = Math.max(1, river.width * tileSize);
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = lineWidth;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.globalAlpha = printMode ? 1 : 0.72;
+  ctx.beginPath();
+  for (let i = 0; i < river.controlPoints.length; i++) {
+    const p = river.controlPoints[i];
+    const px = p.x * tileSize;
+    const py = p.y * tileSize;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  if (river.controlPoints.length === 1) {
+    const p = river.controlPoints[0];
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(p.x * tileSize, p.y * tileSize, lineWidth / 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.stroke();
+  }
+
+  const arrowEvery = Math.max(2, Math.floor(river.controlPoints.length / 4));
+  ctx.globalAlpha = printMode ? 0.9 : 0.55;
+  ctx.fillStyle = printMode ? '#000000' : '#e0f2fe';
+  ctx.strokeStyle = printMode ? '#000000' : '#0f172a';
+  ctx.lineWidth = Math.max(1, tileSize * 0.04);
+  for (let i = arrowEvery; i < river.controlPoints.length; i += arrowEvery) {
+    const prev = river.controlPoints[Math.max(0, i - 1)];
+    const p = river.controlPoints[i];
+    const angle = Math.atan2(p.y - prev.y, p.x - prev.x);
+    const size = Math.max(4, tileSize * 0.28);
+    const cx = p.x * tileSize;
+    const cy = p.y * tileSize;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(angle);
+    ctx.beginPath();
+    ctx.moveTo(size * 0.65, 0);
+    ctx.lineTo(-size * 0.45, -size * 0.35);
+    ctx.lineTo(-size * 0.2, 0);
+    ctx.lineTo(-size * 0.45, size * 0.35);
+    ctx.closePath();
+    if (printMode) ctx.stroke();
+    else {
+      ctx.fill();
+      ctx.stroke();
+    }
+    ctx.restore();
   }
   ctx.restore();
 }
@@ -712,6 +794,32 @@ function findRoomHandleAt(
       if (Math.abs(fx - p.x) <= tolerance && Math.abs(fy - p.y) <= tolerance) {
         return { shape, handle: p.handle };
       }
+    }
+  }
+  return null;
+}
+
+function findRiverAt(rivers: River[] | undefined, fx: number, fy: number): River | null {
+  if (!rivers) return null;
+  for (let i = rivers.length - 1; i >= 0; i--) {
+    const river = rivers[i];
+    if (pointNearPolyline(fx, fy, river.controlPoints, Math.max(0.35, river.width / 2))) return river;
+  }
+  return null;
+}
+
+function findRiverControlPointAt(
+  rivers: River[] | undefined,
+  fx: number,
+  fy: number,
+  tolerance = 0.35,
+): { river: River; index: number } | null {
+  if (!rivers) return null;
+  for (let i = rivers.length - 1; i >= 0; i--) {
+    const river = rivers[i];
+    for (let j = 0; j < river.controlPoints.length; j++) {
+      const p = river.controlPoints[j];
+      if (Math.hypot(fx - p.x, fy - p.y) <= tolerance) return { river, index: j };
     }
   }
   return null;
@@ -1038,10 +1146,16 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   wallThickness = 0.08,
   pathColor = '#8B7355',
   pathWidth = 0.3,
+  riverColor = '#2563eb',
+  riverWidth = 1,
+  riverType = 'water',
   onAddWallSegment,
   onRemoveWallSegment,
   onAddPathSegment,
   onRemovePathSegment,
+  onAddRiver,
+  onUpdateRiver,
+  onRemoveRiver,
   onAddRoomShape,
   onUpdateRoomShape,
   onRemoveRoomShape,
@@ -1092,6 +1206,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const draggingTokenRef = useRef<{ id: number; lastX: number; lastY: number; offsetX: number; offsetY: number } | null>(null);
   // Stamp currently being dragged via the move-stamp tool.
   const draggingStampRef = useRef<{ id: number; lastX: number; lastY: number; offsetX: number; offsetY: number } | null>(null);
+  const draggingRiverPointRef = useRef<{ id: number; pointIndex: number } | null>(null);
   // ── Multi-finger gesture tracking for undo/redo shortcuts ─────────
   // Track the maximum number of simultaneous pointers during a gesture
   // and whether any pointer moved significantly. Two-finger tap = undo,
@@ -1141,10 +1256,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const stamps = useMemo(() => map.stamps ?? [], [map.stamps]);
   const wallSegments = useMemo(() => map.wallSegments ?? [], [map.wallSegments]);
   const pathSegments = useMemo(() => map.pathSegments ?? [], [map.pathSegments]);
+  const rivers = useMemo(() => map.rivers ?? [], [map.rivers]);
   const roomShapes = useMemo(() => map.roomShapes ?? [], [map.roomShapes]);
   const renderTiles = useMemo(
-    () => deriveRenderableTilesFromBase(tiles, roomShapes, meta.width, meta.height),
-    [tiles, roomShapes, meta.width, meta.height],
+    () => deriveRenderableTilesFromBase(tiles, roomShapes, rivers, meta.width, meta.height),
+    [tiles, roomShapes, rivers, meta.width, meta.height],
   );
   const fog = map.fog;
   const fogActive = (map.fogEnabled ?? false);
@@ -1302,6 +1418,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       }
     }
 
+    drawRiverBanks(ctx, renderTiles, meta.width, meta.height, tileSize, themeId, printMode);
+
     // Edge blending — render after tiles, before grid lines. Disabled in print mode.
     if (!printMode && map.edgeBlend?.enabled) {
       drawEdgeBlending(ctx, renderTiles, meta.width, meta.height, tileSize, map.edgeBlend, theme, customThemes);
@@ -1388,6 +1506,23 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       drawPathSegmentOnCanvas(ctx, seg, tileSize);
     }
 
+    for (const river of rivers) {
+      drawRiverOnCanvas(ctx, river, tileSize, printMode);
+      if (!isPlayerView && activeTool === 'river') {
+        ctx.save();
+        ctx.fillStyle = '#e0f2fe';
+        ctx.strokeStyle = '#1e3a8a';
+        for (const p of river.controlPoints) {
+          ctx.beginPath();
+          ctx.arc(p.x * tileSize, p.y * tileSize, Math.max(3, tileSize * 0.14), 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+    }
+    drawRiverEndpointMarkers(ctx, rivers, tileSize, printMode);
+
     if (!isPlayerView && roomShapes.length > 0 && isRoomTool(activeTool)) {
       const previewId = roomEditPreview?.id ?? null;
       const activeMode = activeTool === 'room-cut' ? 'subtractive' : 'additive';
@@ -1454,7 +1589,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // Live (in-progress) freehand stroke, drawn on top so the user sees
     // immediate feedback while dragging. Use the appropriate kind/color/width
     // depending on whether the GM or player is drawing.
-    if (activeStroke && activeStroke.length > 0) {
+    // Pen annotation strokes are drawn here; wall/path/river previews are
+    // rendered by their dedicated overlay blocks below.
+    if (activeStroke && activeStroke.length > 0 && (activeTool === 'pdraw' || activeTool === 'gmdraw')) {
       const isGmDraw = !isPlayerView && activeTool === 'gmdraw';
       drawAnnotation(ctx, {
         id: -1,
@@ -1475,6 +1612,16 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       drawPathSegmentOnCanvas(ctx, {
         id: -1, points: activeStroke, color: pathColor, width: pathWidth,
       }, tileSize);
+    }
+    if (activeStroke && activeStroke.length > 0 && activeTool === 'river') {
+      drawRiverOnCanvas(ctx, {
+        id: -1,
+        controlPoints: activeStroke,
+        color: riverColor,
+        width: riverWidth,
+        type: riverType,
+        flowDirection: 0,
+      }, tileSize, printMode);
     }
 
     // Fog overlay. In player view, paint fully opaque grey cells so hidden
@@ -1974,7 +2121,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, renderTiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, polyVertices, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth]);
+  }, [map, tiles, renderTiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, rivers, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, polyVertices, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType]);
 
   // Minimap render
   useEffect(() => {
@@ -2258,6 +2405,12 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
           }
         }
       }
+    } else if (activeTool === 'river-erase') {
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        const hit = findRiverAt(rivers, fc.x, fc.y);
+        if (hit) onRemoveRiver?.(hit.id);
+      }
     }
   }, [
     activeTool, activeTile, getTileCoords, onSetTile, onFillTile, onAddNote, onSelectNote,
@@ -2266,7 +2419,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     onAddMarker, onRemoveMarker, markerShape, markerColor, markerSize, markers,
     getFractionalCoords, onFovClick, lightSources, onAddLightSource, onRemoveLightSource,
     onStairLinkClick, stamps, selectedStampId, selectedPlacedStampId, onAddStamp, onRemoveStamp, onSelectPlacedStamp, announce,
-    wallSegments, pathSegments, onRemoveWallSegment, onRemovePathSegment,
+    wallSegments, pathSegments, rivers, onRemoveWallSegment, onRemovePathSegment, onRemoveRiver,
   ]);
 
   /* ── Multi-touch gesture tracking ─────────────────────────── */
@@ -2375,6 +2528,18 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       if (fc) setActiveStroke([fc]);
       return;
     }
+    if (!isPlayerView && activeTool === 'river') {
+      const fc = getFractionalCoords(e);
+      if (fc) {
+        const controlHit = findRiverControlPointAt(rivers, fc.x, fc.y);
+        if (controlHit) {
+          draggingRiverPointRef.current = { id: controlHit.river.id, pointIndex: controlHit.index };
+          return;
+        }
+        setActiveStroke([fc]);
+      }
+      return;
+    }
     if (isPlayerView && activeTool === 'defog' && coords) {
       // Start a freehand defog stroke. Cells are accumulated locally and
       // committed in a single fog edit on pointerup.
@@ -2472,7 +2637,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     } else {
       handleCanvasAction(e);
     }
-  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens, stamps, roomShapes, zoom, onSelectPlacedStamp]);
+  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens, stamps, roomShapes, rivers, zoom, onSelectPlacedStamp]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     // Polygon tool: double-click closes the polygon and creates the shape.
@@ -2594,7 +2759,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
           const last = prev[prev.length - 1];
           const dx = fc.x - last.x;
           const dy = fc.y - last.y;
-          if (dx * dx + dy * dy < 0.005) return prev;
+          if (dx * dx + dy * dy < FREEHAND_POINT_MIN_DISTANCE_SQUARED) return prev;
           return [...prev, fc];
         });
       }
@@ -2610,7 +2775,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
           const last = prev[prev.length - 1];
           const dx = fc.x - last.x;
           const dy = fc.y - last.y;
-          if (dx * dx + dy * dy < 0.005) return prev;
+          if (dx * dx + dy * dy < FREEHAND_POINT_MIN_DISTANCE_SQUARED) return prev;
           return [...prev, fc];
         });
       }
@@ -2641,7 +2806,31 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
           const last = prev[prev.length - 1];
           const dx = fc.x - last.x;
           const dy = fc.y - last.y;
-          if (dx * dx + dy * dy < 0.005) return prev;
+          if (dx * dx + dy * dy < FREEHAND_POINT_MIN_DISTANCE_SQUARED) return prev;
+          return [...prev, fc];
+        });
+      }
+      return;
+    }
+
+    if (activeTool === 'river') {
+      const fc = getFractionalCoords(e);
+      if (fc && draggingRiverPointRef.current) {
+        const drag = draggingRiverPointRef.current;
+        const river = rivers.find(r => r.id === drag.id);
+        if (river) {
+          const nextPoints = river.controlPoints.map((p, i) => i === drag.pointIndex ? fc : p);
+          onUpdateRiver?.(river.id, { controlPoints: nextPoints });
+        }
+        return;
+      }
+      if (fc) {
+        setActiveStroke(prev => {
+          if (!prev) return [fc];
+          const last = prev[prev.length - 1];
+          const dx = fc.x - last.x;
+          const dy = fc.y - last.y;
+          if (dx * dx + dy * dy < RIVER_POINT_MIN_DISTANCE_SQUARED) return prev;
           return [...prev, fc];
         });
       }
@@ -2718,7 +2907,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     } else if (activeTool === 'paint' || activeTool === 'erase') {
       handleCanvasAction(e);
     }
-  }, [activeTool, isDragging, dragStart, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, roomShapes, meta.width, meta.height, onMoveToken, onMoveStamp, zoom]);
+  }, [activeTool, isDragging, dragStart, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, roomShapes, rivers, meta.width, meta.height, onMoveToken, onMoveStamp, onUpdateRiver, zoom]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
@@ -2824,6 +3013,24 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       setActiveStroke(null);
     }
 
+    if (activeTool === 'river') {
+      if (draggingRiverPointRef.current) {
+        draggingRiverPointRef.current = null;
+      } else if (activeStroke && activeStroke.length > 0) {
+        const first = activeStroke[0];
+        const last = activeStroke[activeStroke.length - 1];
+        const flowDirection = (Math.atan2(last.y - first.y, last.x - first.x) * 180) / Math.PI;
+        onAddRiver?.({
+          controlPoints: activeStroke,
+          color: riverColor,
+          width: riverWidth,
+          type: riverType,
+          flowDirection,
+        });
+        setActiveStroke(null);
+      }
+    }
+
     // Commit player-mode defog brush — clear fog for every cell the
     // brush touched as a single fog edit (one undo step).
     if (isPlayerView && activeTool === 'defog' && defogStroke && defogStroke.length > 0) {
@@ -2837,6 +3044,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
     if (draggingStampRef.current) {
       draggingStampRef.current = null;
+    }
+    if (draggingRiverPointRef.current) {
+      draggingRiverPointRef.current = null;
     }
 
     if (isMouseDownRef.current) {
@@ -2862,7 +3072,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setIsDragging(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, roomEditPreview, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo, wallColor, wallThickness, pathColor, pathWidth, onAddWallSegment, onAddPathSegment, onAddRoomShape, onUpdateRoomShape]);
+  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, roomEditPreview, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType, onAddWallSegment, onAddPathSegment, onAddRiver, onAddRoomShape, onUpdateRoomShape]);
 
   const handlePointerLeave = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     activePointersRef.current.delete(e.pointerId);
@@ -2883,6 +3093,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
     if (draggingTokenRef.current) draggingTokenRef.current = null;
     if (draggingStampRef.current) draggingStampRef.current = null;
+    if (draggingRiverPointRef.current) draggingRiverPointRef.current = null;
     roomEditSessionRef.current = null;
     setRoomEditPreview(null);
     setRoomHoverId(null);
@@ -2909,6 +3120,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
     if (draggingTokenRef.current) draggingTokenRef.current = null;
     if (draggingStampRef.current) draggingStampRef.current = null;
+    if (draggingRiverPointRef.current) draggingRiverPointRef.current = null;
     roomEditSessionRef.current = null;
     setRoomEditPreview(null);
     setRoomHoverId(null);
@@ -2922,9 +3134,22 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
   const handleContextMenu = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     e.preventDefault();
-    if (isPlayerView || !isRoomTool(activeTool)) return;
     const fc = getFractionalCoords(e);
     if (!fc) return;
+    if (!isPlayerView && activeTool === 'river') {
+      const hit = findRiverControlPointAt(rivers, fc.x, fc.y, 0.45);
+      if (!hit) return;
+      if (hit.river.controlPoints.length <= 1) {
+        onRemoveRiver?.(hit.river.id);
+      } else {
+        onUpdateRiver?.(hit.river.id, {
+          controlPoints: hit.river.controlPoints.filter((_, i) => i !== hit.index),
+        });
+      }
+      announce?.('River control point removed');
+      return;
+    }
+    if (isPlayerView || !isRoomTool(activeTool)) return;
     const activeMode = activeTool === 'room-cut' ? 'subtractive' : 'additive';
     const hit = findRoomShapeAt(roomShapes, fc.x, fc.y, activeMode);
     if (!hit) return;
@@ -2934,7 +3159,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
     onRemoveRoomShape?.(hit.id);
     announce?.('Room shape removed');
-  }, [activeTool, isPlayerView, getFractionalCoords, roomShapes, onRemoveRoomShape, announce]);
+  }, [activeTool, isPlayerView, getFractionalCoords, rivers, roomShapes, onRemoveRiver, onUpdateRiver, onRemoveRoomShape, announce]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
     // Shift (or Caps Lock) + wheel pans the map. Unmodified wheel is ignored
@@ -3017,6 +3242,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     : activeTool === 'wall-erase' ? 'not-allowed'
     : activeTool === 'path' ? 'crosshair'
     : activeTool === 'path-erase' ? 'not-allowed'
+    : activeTool === 'river' ? 'crosshair'
+    : activeTool === 'river-erase' ? 'not-allowed'
     : activeTool === 'room-rect' ? (roomEditPreview ? 'move' : 'crosshair')
     : activeTool === 'room-circle' ? (roomEditPreview ? 'move' : 'crosshair')
     : activeTool === 'room-poly' ? 'crosshair'
