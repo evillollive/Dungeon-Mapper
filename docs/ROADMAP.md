@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-15
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phase 10.4 (Generator Integration) **COMPLETE**. Phase 10.5 (Subtractive Shapes) **COMPLETE**. Phase 10.6 (Additional Shapes) **COMPLETE**. Phase 11.1 (Vector Layer & Manual Tool) **COMPLETE**. Phase 11.2 (Generator Integration) **COMPLETE**. Phase 11.3 (River Polish) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phase 10.4 (Generator Integration) **COMPLETE**. Phase 10.5 (Subtractive Shapes) **COMPLETE**. Phase 10.6 (Additional Shapes) **COMPLETE**. Phase 11.1 (Vector Layer & Manual Tool) **COMPLETE**. Phase 11.2 (Generator Integration) **COMPLETE**. Phase 11.3 (River Polish) **COMPLETE**. Phase 11.4 (README checkpoint #5) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -650,7 +650,7 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - State actions: `addRiver`, `updateRiver`, `removeRiver`, `clearRivers`
 - 5 new tests covering rasterization, derived render tiles, and state actions
 
-📘 **README checkpoint #5:** GIF of drawing a river.
+📘 **README checkpoint #5:** GIF/docs of drawing a river. ✅ COMPLETE
 
 **11.2 — Generator Integration** ✅ COMPLETE
 - Optional **"Add river"** checkbox in Generate dialog → reveals sliders: count, width, meander, source edge
@@ -664,6 +664,10 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - Source / mouth markers
 - Branching tributaries
 - **Premade map re-review** (Phase 5.4 Pass 2): walk each bundled sample project and add rivers/streams where the archetype calls for them — castle moat, wilderness river, pirate harbor, swamp stream, etc. Uses the same per-map checklist as 5.4 Pass 1
+
+**11.4 — README checkpoint #5** ✅ COMPLETE
+- README documents river drawing (`U`), river settings, vector editing/erasing, bank and endpoint polish, export persistence, and generated river controls
+- README shortcut and testing tables include rivers
 
 ### Phase 12: Final Pass — Accessibility, Codebase Audit & Documentation
 
@@ -1246,11 +1250,11 @@ Recommended implementation order based on dependency analysis, impact, and effor
     - *Dependency:* Test suite (Phase 7) strongly recommended
     - 📘 **README checkpoint #4** after 10.3: GIF of room overlap/merge
 
-23. **Phase 11.1 → 11.2 → 11.3 — Rivers** — Vector layer + manual tool, generator integration, polish (banks/branching) + **Phase 5.4 Pass 2 premade re-review**
+23. **Phase 11.1 → 11.2 → 11.3 → 11.4 — Rivers** — Vector layer + manual tool, generator integration, polish (banks/branching), README checkpoint #5 + **Phase 5.4 Pass 2 premade re-review**
     - *Why:* Natural water features are a gap vs open-terrain competitors; vector layer enables future editing; rivers also unblock the second sweep of the premade audit (moats, harbors, wilderness rivers)
     - *Effort:* Medium (3 sub-phases)
     - *Dependency:* Benefits from shape infrastructure (Phase 10)
-    - 📘 **README checkpoint #5** after 11.1: GIF of drawing a river
+    - 📘 **README checkpoint #5** after 11.1: GIF/docs of drawing a river ✅ COMPLETE
 
 24. **Phase 5.4 — Premade Map Design Review** — Recurring sweep that audits each bundled sample against its intended archetype (castle, boat, dungeon, cavern, etc.); ensures background tile fill on every premade; tags archetypes for hub filtering
     - *Why:* Premades drift as new tools/themes ship; a structured sweep keeps the showcase aligned with current capabilities — and it's a natural recurring task triggered by Phases 6.4.5, 9, 10, and 11
@@ -1333,6 +1337,10 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-15 — Phase 11.4 (README checkpoint #5) COMPLETE**
+- README now covers river drawing, editing, erase/clear workflows, width/type controls, bank and endpoint polish, generator controls, shortcut `U`, and river-related tests
+- Marked README checkpoint #5 complete in the Phase 11 roadmap and active priority order
 
 **2026-05-15 — Phase 11.3 (River Polish) COMPLETE**
 - Added river bank metadata (`riverBank`, `riverBankRiverId`, `riverBankType`) on rasterized land tiles adjacent to vector rivers

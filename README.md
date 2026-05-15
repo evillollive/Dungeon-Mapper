@@ -18,7 +18,7 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 - **Selection inspector** — docked right panel showing properties of the selected stamp/token/note, or a map summary (dimensions, tile counts, theme) when nothing is selected
 - **Generate Hub** — unified generation window (`G` shortcut) with tabbed Generate and Samples panels, archetype filtering, and all generation controls in one place
 - **Stamps** — 196 built-in stamps (40 universal + 156 per-theme across 13 themes) plus custom stamp upload (PNG/SVG/JPEG/WebP, 2 MB limit); place, move, rotate, flip, scale, adjust opacity, lock, and z-order stamps on the canvas (see [Stamps](#stamps) below)
-- **Wall & path drawing** — free-form wall segments snapped to grid edges (`W`) and smooth path/road lines (`Shift+W`) with erase modes; independent of tile grid (see [Wall & Path Tools](#wall--path-tools) below)
+- **Wall, path & river drawing** — free-form wall segments snapped to grid edges (`W`), smooth path/road lines (`Shift+W`), and editable flowing river vectors (`U`) with erase modes; independent of tile grid until rivers rasterize to water (see [Wall, Path & River Tools](#wall-path--river-tools) below)
 - **Scene/room templates** — save a selection of tiles, notes, and stamps as a reusable template; apply templates to stamp pre-built rooms onto any map (see [Scene Templates](#scene-templates) below)
 - **Tabbed toolbar** — GM tools organized into three tabs (Draw, Tactical, Advanced) for progressive disclosure and reduced clutter
 - **Drawing tools** — Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`, Line-of-Sight / FOV `O`, Measure `M`, Light Source `I`, GM Draw `D`, Wall `W`, Path `Shift+W`
@@ -244,18 +244,21 @@ The stamp picker provides category tabs and a **🎨 Theme** filter that shows o
 
 Upload your own stamps (PNG, SVG, JPEG, or WebP; max 2 MB) via the **Custom** tab in the stamp picker. Custom stamps are stored in the project and round-trip through JSON export/import. They appear alongside built-in stamps in the picker and on the canvas.
 
-## Wall & Path Tools
+## Wall, Path & River Tools
 
-Free-form wall and path drawing tools produce geometric overlays independent of the tile grid:
+Free-form wall, path, and river drawing tools produce geometric overlays independent of the tile grid:
 
 - **Wall tool** (`W`) — draw wall segments that snap to grid-edge intersections. Click to add vertices; the segment completes when you press Escape or start a new segment. Walls render as solid lines on top of the tile layer.
 - **Wall Erase** — click near a wall segment to remove it.
 - **Path tool** (`Shift+W`) — draw smooth freeform path/road lines using fractional coordinates for organic curves. Paths render with rounded caps and joins.
 - **Path Erase** — click near a path segment to remove it.
-- **Contextual settings** — when a wall or path tool is active, the Draw tab shows color and thickness/width controls.
-- **Clear all** — buttons to clear all wall segments or all path segments from the current level.
+- **River tool** (`U`) — drag across the canvas to draw a flowing vector river. Rivers stay editable via their control points, then rasterize to water tiles with flow direction metadata.
+- **River settings** — choose stroke color, width (stream/river/wide/broad), and semantic type (water, lava, or underground stream). River polish adds theme-aware bank tiles plus source and mouth markers.
+- **River editing** — drag control points to reshape a river, right-click a control point to remove it, use **Erase Rivers** to delete a whole river vector, or **Clear All** to remove every river from the level.
+- **Contextual settings** — when a wall, path, or river tool is active, the Draw tab shows color and thickness/width/type controls.
+- **Clear all** — buttons clear wall segments, path segments, or river vectors from the current level.
 
-Walls and paths are persisted with the map and included in all exports. They coexist with floor/wall tiles and are rendered above the tile layer but below stamps and tokens.
+Walls, paths, and rivers are persisted with the map and included in all exports. They coexist with floor/wall tiles and are rendered above the tile layer but below stamps and tokens. Rivers also contribute rasterized water, bank, flow-direction, and endpoint metadata used by the canvas and export renderers.
 
 ## Scene Templates
 
@@ -367,6 +370,7 @@ The **Algorithm** dropdown selects the generator. Opening the dialog pre-selects
 - **Dungeon shape** *(Rooms & Corridors only)* — constrains room placement to a non-rectangular mask. Eight shapes available: Rectangle (default), Circle, Diamond, Cross, L-Shape, T-Shape, Hexagon, Octagon.
 - **Dead-end pruning** *(Rooms & Corridors only)* — slider (0–100%) that iteratively removes dead-end corridor tiles. At 0% (default) dead ends are kept; at 100% all dead-end stubs are removed.
 - **Tile mix** *(collapsible section)* — per-generator sliders for fine-tuning what gets sprinkled in. Each generator exposes its own set, e.g. Rooms & Corridors offers Treasure share, Trap / Hazard share, and Door fraction; Open Terrain and Cavern have their own. The dialog remembers the values you set per algorithm as you flip between them, and a **Reset** button restores the active algorithm's theme defaults.
+- **Add river** *(supported terrain/cavern/village themes)* — opt-in river generation with controls for count, width, meander, and source edge. Generated rivers are editable vector layers; high-meander rivers can spawn tributaries, underground themes use underground-stream semantics, and village roads crossing generated rivers become bridge archways.
 - **Label rooms with theme archetypes** — Rooms & Corridors only, and only when the active theme has a room-archetype palette (built spaces such as Castle "Great Hall", Starship "Bridge", Modern City rooms, etc.). When checked, generated rooms are auto-labeled with theme-appropriate names dropped into the side notes panel.
 - **Add procedural names** — visible when room labels are enabled. Appends flavor-text suffixes (e.g. "Crypt of the Crimson Veil") to room labels using per-theme word tables.
 - **Seed** — text seed used to make generation deterministic; the same seed + algorithm + parameters always produces the same map. Accepts decimal digits, hex (with or without an `0x` prefix), or any free-form string (which is hashed). Use the **🎲** button next to the field to roll a new random seed; leaving the field blank also picks a fresh random seed at generate time.
@@ -403,6 +407,7 @@ the same registry these shortcuts are defined in.
 | `D` | GM Draw tool — freehand annotations visible only in Edit mode (dashed lines, hidden from Present view) |
 | `W` | Wall drawing tool — draw walls along grid edges |
 | `Shift+W` | Path/road drawing tool — draw free-form paths |
+| `U` | River tool — drag to draw flowing water |
 | `K` | Stair Link tool — click stairs to link between levels |
 | `Shift+R` | Rotate selected stamp 90° clockwise |
 | `Shift+H` | Flip selected stamp horizontally |
@@ -620,6 +625,7 @@ The project uses [Vitest](https://vitest.dev/) with [React Testing Library](http
 | Light sources | `src/utils/__tests__/lightSources.test.ts` | light FOV union, wall/radius handling |
 | Token visibility | `src/utils/__tests__/tokenVisibility.test.ts` | classic and dynamic fog visibility for multi-cell tokens |
 | Canvas geometry | `src/utils/__tests__/canvasGeometry.test.ts` | line, rectangle, snapping, polyline hit-test helpers used by `MapCanvas` |
+| Rivers | `src/utils/__tests__/riverRasterizer.test.ts`, `src/hooks/__tests__/mapStateRivers.test.ts`, `src/utils/__tests__/premadeMaps.test.ts` | river rasterization metadata, map state actions, generated/premade river vectors |
 | Export/rendering | `src/utils/__tests__/exportRender.test.ts` | player-safe SVG exports, dynamic fog, render-map canvas sizing |
 | UI behavior | `src/components/__tests__/uiBehavior.test.tsx` | Generate Hub, Command Palette, Navigation Rail, Selection Inspector, ExportDialog interactions |
 
