@@ -5,6 +5,7 @@ import { deriveRenderableTiles } from '../derivedRenderMap';
 import { createDefaultMap } from '../../hooks/mapStateUtils';
 import { getTheme } from '../../themes';
 import type { DungeonMap } from '../../types/map';
+import { DEFAULT_EDGE_BLEND, DEFAULT_HAND_DRAWN, DEFAULT_LIGHTING_ATMOSPHERE, DEFAULT_PAPER_TEXTURE } from '../../types/map';
 
 const blobs: Blob[] = [];
 
@@ -86,6 +87,35 @@ describe('export and render helpers', () => {
 
     expect(canvas.width).toBe(36);
     expect(canvas.height).toBe(24);
+  });
+
+  it('renders a 128×128 full-stack map without changing dimensions', () => {
+    const map = createDefaultMap('Full Stack Profile');
+    map.meta.width = 128;
+    map.meta.height = 128;
+    map.tiles = Array.from({ length: 128 }, (_, y) =>
+      Array.from({ length: 128 }, (_, x) => ({ type: (x + y) % 9 === 0 ? 'wall' as const : 'floor' as const }))
+    );
+    map.fogEnabled = true;
+    map.fog = Array.from({ length: 128 }, (_, y) =>
+      Array.from({ length: 128 }, (_, x) => (x + y) % 17 === 0)
+    );
+    map.paperTexture = DEFAULT_PAPER_TEXTURE;
+    map.edgeBlend = DEFAULT_EDGE_BLEND;
+    map.handDrawn = DEFAULT_HAND_DRAWN;
+    map.lightingAtmosphere = DEFAULT_LIGHTING_ATMOSPHERE;
+    map.rivers = [{ id: 1, controlPoints: [{ x: 0, y: 64 }, { x: 64, y: 60 }, { x: 127, y: 70 }], width: 2, type: 'water', flowDirection: 90 }];
+    map.markers = [{ id: 1, x: 12, y: 12, shape: 'circle', color: '#ff0000', size: 2 }];
+    map.lightSources = [{ id: 1, x: 64, y: 64, radius: 12, color: '#ffffff', label: 'Torch' }];
+
+    const canvas = renderMapToCanvas(map, {
+      tileSize: 1,
+      themeId: 'dungeon',
+      viewMode: 'gm',
+    });
+
+    expect(canvas.width).toBe(128);
+    expect(canvas.height).toBe(128);
   });
 
   it('derives room shapes into renderable tiles for all render paths', async () => {
