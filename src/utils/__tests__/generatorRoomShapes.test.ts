@@ -180,4 +180,10 @@ describe('generator river integration', () => {
 
     expect(result.rivers).toEqual([]);
   });
+
+  it('skips river emission on maps too small for generated rivers', () => {
+    const result = generateOpenTerrain(ctx({ width: 3, height: 3, rivers: riverOptions }));
+
+    expect(result.rivers).toEqual([]);
+  });
 });
