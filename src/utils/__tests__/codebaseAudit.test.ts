@@ -20,7 +20,9 @@ function sourceFiles(dir: string): string[] {
       if (entry === '__tests__' || entry === 'test') return [];
       return sourceFiles(fullPath);
     }
-    return ['.ts', '.tsx'].includes(extname(entry)) ? [fullPath] : [];
+    if (!['.ts', '.tsx'].includes(extname(entry))) return [];
+    if (entry.endsWith('.test.ts') || entry.endsWith('.test.tsx') || entry.endsWith('.spec.ts') || entry.endsWith('.spec.tsx')) return [];
+    return [fullPath];
   });
 }
 

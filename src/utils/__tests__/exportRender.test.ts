@@ -8,7 +8,7 @@ import type { DungeonMap } from '../../types/map';
 import { DEFAULT_EDGE_BLEND, DEFAULT_HAND_DRAWN, DEFAULT_LIGHTING_ATMOSPHERE, DEFAULT_PAPER_TEXTURE } from '../../types/map';
 
 const blobs: Blob[] = [];
-const EASTWARD_FLOW_DEGREES = 90;
+const EASTWARD_FLOW_DEGREES = 90; // River flow angles are degrees; 90° points east.
 
 function installDownloadMocks() {
   Object.defineProperty(URL, 'createObjectURL', {
