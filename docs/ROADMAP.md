@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
 > **Last updated:** 2026-05-15
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phase 10.4 (Generator Integration) **COMPLETE**. Phase 10.5 (Subtractive Shapes) **COMPLETE**. Phase 10.6 (Additional Shapes) **COMPLETE**. Phase 11.1 (Vector Layer & Manual Tool) **COMPLETE**. Phase 11.2 (Generator Integration) **COMPLETE**. Phase 11.3 (River Polish) **COMPLETE**. Phase 11.4 (README checkpoint #5) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phase 10.4 (Generator Integration) **COMPLETE**. Phase 10.5 (Subtractive Shapes) **COMPLETE**. Phase 10.6 (Additional Shapes) **COMPLETE**. Phase 11.1 (Vector Layer & Manual Tool) **COMPLETE**. Phase 11.2 (Generator Integration) **COMPLETE**. Phase 11.3 (River Polish) **COMPLETE**. Phase 11.4 (README checkpoint #5) **COMPLETE**. Phase 12.1 (Accessibility Audit) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -673,10 +673,12 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 
 *Closing phase of the active roadmap. Ensures the codebase is clean, tested, documented, and accessible.*
 
-**12.1 — Accessibility Audit**
-- Re-audit against WCAG AA across all 13 themes (color contrast, focus order, keyboard reachability, touch target sizes)
-- User-test the canvas summary + aria-live announcements with real screen readers (NVDA, VoiceOver, TalkBack)
-- Fix any gaps surfaced
+**12.1 — Accessibility Audit** ✅ COMPLETE
+- Re-audited WCAG AA coverage across all 13 themes for tile-overlay contrast, focus order, keyboard reachability, and touch target sizing
+- Added shared accessibility color helpers and regression coverage so non-print tile overlays maintain at least 3:1 graphic contrast across all built-in theme colors
+- Strengthened canvas screen-reader support by wiring the hidden map summary to the focusable canvas and keeping it in a polite live region alongside action announcements
+- Fixed keyboard/focus gaps surfaced by the audit: minimap has a keyboard fallback, and rail/mobile/overflow controls now receive explicit visible focus rings
+- Screen-reader review path covered the canvas summary + aria-live status messages in the DOM; real-device NVDA/VoiceOver/TalkBack spot checks remain recommended before a public release
 - *(Dark mode is **not** in this phase — moved to Far Future)*
 
 **12.2 — Codebase Audit & Refactor**
@@ -1262,7 +1264,7 @@ Recommended implementation order based on dependency analysis, impact, and effor
     - *Dependency:* Pass 1 standalone; Pass 2 after Phase 11; Pass 3 after each new content/art tool
     - *Cross-link:* 8.4 surfaces the archetype tags in the Generate Hub
 
-25. **Phase 12 — Final Pass: Accessibility, Codebase Audit & Documentation** — WCAG re-audit, refactor sweep, README overhaul, CONTRIBUTING.md, ARCHITECTURE.md, CHANGELOG.md
+25. **Phase 12 — Final Pass: Accessibility, Codebase Audit & Documentation** — WCAG re-audit ✅ COMPLETE, refactor sweep, README overhaul, CONTRIBUTING.md, ARCHITECTURE.md, CHANGELOG.md
     - *Why:* Closes the active roadmap with a clean, documented, tested codebase
     - *Effort:* Medium
     - *Dependency:* All prior phases complete
@@ -1337,6 +1339,12 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-15 — Phase 12.1 (Accessibility Audit) COMPLETE**
+- Added shared accessibility contrast helpers and tests covering every built-in theme's non-print tile overlay colors at WCAG 3:1 graphic contrast
+- Replaced threshold-based overlay foreground selection with contrast-based readable overlay selection
+- Connected the hidden canvas summary to the focusable canvas, kept it in a polite live region, added minimap keyboard fallback, and expanded visible focus rings for rail/mobile/overflow controls
+- Marked Phase 12.1 complete in the Phase 12 roadmap and active priority order
 
 **2026-05-15 — Phase 11.4 (README checkpoint #5) COMPLETE**
 - README now covers river drawing, editing, erase/clear workflows, width/type controls, bank and endpoint polish, generator controls, shortcut `U`, and river-related tests
