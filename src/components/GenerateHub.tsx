@@ -602,23 +602,23 @@ const SamplesPanel: React.FC<SamplesPanelProps> = ({
       .sort((a, b) => a.label.localeCompare(b.label));
   }, []);
 
-  // Collect unique archetype categories for filtering
-  const categories = useMemo(() => {
+  // Collect unique archetypes for filtering
+  const archetypes = useMemo(() => {
     const set = new Set<string>();
-    for (const s of PREMADE_MAP_SUMMARIES) set.add(s.category);
+    for (const s of PREMADE_MAP_SUMMARIES) set.add(s.archetype);
     return Array.from(set).sort();
   }, []);
 
   const [themeFilter, setThemeFilter] = useState<string>(ALL_FILTER);
-  const [categoryFilter, setCategoryFilter] = useState<string>(ALL_FILTER);
+  const [archetypeFilter, setArchetypeFilter] = useState<string>(ALL_FILTER);
   const [confirmLoadId, setConfirmLoadId] = useState<string | null>(null);
 
   const filtered = useMemo(
     () => PREMADE_MAP_SUMMARIES.filter(s =>
       (themeFilter === ALL_FILTER || s.themeId === themeFilter) &&
-      (categoryFilter === ALL_FILTER || s.category === categoryFilter)
+      (archetypeFilter === ALL_FILTER || s.archetype === archetypeFilter)
     ),
-    [themeFilter, categoryFilter]
+    [themeFilter, archetypeFilter]
   );
 
   const [selectedId, setSelectedId] = useState<string>(filtered[0]?.id ?? '');
@@ -669,14 +669,14 @@ const SamplesPanel: React.FC<SamplesPanelProps> = ({
         <label className="generate-dialog-row">
           <span>Archetype</span>
           <select
-            value={categoryFilter}
+            value={archetypeFilter}
             onChange={e => {
-              setCategoryFilter(e.target.value);
+              setArchetypeFilter(e.target.value);
               setConfirmLoadId(null);
             }}
           >
             <option value={ALL_FILTER}>All archetypes</option>
-            {categories.map(c => (
+            {archetypes.map(c => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
@@ -709,7 +709,7 @@ const SamplesPanel: React.FC<SamplesPanelProps> = ({
             <dl>
               <div>
                 <dt>Type</dt>
-                <dd>{selected.category}</dd>
+                <dd>{selected.archetype}</dd>
               </div>
               <div>
                 <dt>Size</dt>
@@ -767,7 +767,7 @@ const SampleListItem: React.FC<SampleListItemProps> = ({ summary, selected, onSe
   >
     <span className="premade-list-title">{summary.name}</span>
     <span className="premade-list-meta">
-      {summary.themeLabel} · {summary.category} · {summary.sizeLabel}
+      {summary.themeLabel} · {summary.archetype} · {summary.sizeLabel}
       {summary.levelCount > 1 ? ` · ${summary.levelCount} levels` : ''}
     </span>
   </button>
