@@ -20,7 +20,7 @@ export interface PremadeMapSummary {
   name: string;
   themeId: string;
   themeLabel: string;
-  category: string;
+  archetype: string;
   sizeLabel: string;
   levelCount: number;
   description: string;
@@ -60,7 +60,7 @@ interface PremadeMapSpec {
   name: string;
   themeId: string;
   themeLabel: string;
-  category: string;
+  archetype: string;
   description: string;
   levels: LevelSpec[];
   linkLevels?: boolean;
@@ -134,7 +134,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'The Sunken Crypt',
     themeId: 'dungeon',
     themeLabel: 'Dungeon',
-    category: 'Crypt delve',
+    archetype: 'Crypt delve',
     description: 'A flooded crypt complex with named chambers, hidden doors, traps, and a treasure vault.',
     levels: [{
       name: 'The Sunken Crypt',
@@ -162,7 +162,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'The Winding Depths',
     themeId: 'dungeon',
     themeLabel: 'Dungeon',
-    category: 'Cavern lair',
+    archetype: 'Cavern lair',
     description: 'An organic cave delve with branching chambers, pools, and a hoard in the deep rock.',
     levels: [{
       name: 'The Winding Depths',
@@ -184,7 +184,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'The Goblin Warren',
     themeId: 'dungeon',
     themeLabel: 'Dungeon',
-    category: 'Monster den',
+    archetype: 'Monster den',
     description: 'A cramped cross-shaped lair with chokepoints, dead ends, and ambush rooms.',
     levels: [{
       name: 'The Goblin Warren',
@@ -211,7 +211,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Ironhold Keep',
     themeId: 'castle',
     themeLabel: 'Castle',
-    category: 'Keep interior',
+    archetype: 'Keep interior',
     description: 'A named castle floor with a great hall, guard rooms, chapel, stores, and a strongroom.',
     levels: [{
       name: 'Ironhold Keep',
@@ -239,7 +239,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Castle Grounds',
     themeId: 'castle',
     themeLabel: 'Castle',
-    category: 'Fortified compound',
+    archetype: 'Fortified compound',
     description: 'A walled castle compound with keep, bailey, barracks, chapel, stables, and stores.',
     levels: [{
       name: 'Castle Grounds',
@@ -261,7 +261,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'ISS Constellation',
     themeId: 'starship',
     themeLabel: 'Starship',
-    category: 'Linked ship decks',
+    archetype: 'Linked ship decks',
     description: 'A two-level starship project with linked decks, named rooms, crew tokens, hazards, and dynamic fog.',
     linkLevels: true,
     levels: [
@@ -310,7 +310,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'The Hive',
     themeId: 'alien',
     themeLabel: 'Alien World',
-    category: 'Organic structure',
+    archetype: 'Organic structure',
     description: 'An alien hive with brood rooms, spore hazards, relics, and a central chamber.',
     levels: [{
       name: 'The Hive',
@@ -337,7 +337,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Xenoflora Caves',
     themeId: 'alien',
     themeLabel: 'Alien World',
-    category: 'Alien cavern',
+    archetype: 'Alien cavern',
     description: 'Bioluminescent cave pockets, strange pools, spores, and alien relics.',
     levels: [{
       name: 'Xenoflora Caves',
@@ -359,7 +359,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Dusty Gulch',
     themeId: 'oldwest',
     themeLabel: 'Old West',
-    category: 'Frontier town',
+    archetype: 'Frontier town',
     description: 'A frontier main street with saloon, store, sheriff, bank, stables, hotel, and trouble brewing.',
     levels: [{
       name: 'Dusty Gulch',
@@ -380,7 +380,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Silver Vein Mine',
     themeId: 'oldwest',
     themeLabel: 'Old West',
-    category: 'Abandoned mine',
+    archetype: 'Abandoned mine',
     description: 'A directed cavern map representing mine shafts, cave-ins, strongboxes, and lower passages.',
     levels: [{
       name: 'Silver Vein Mine',
@@ -402,7 +402,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Cogsworth Manor',
     themeId: 'steampunk',
     themeLabel: 'Steampunk',
-    category: 'Clockwork manor',
+    archetype: 'Clockwork manor',
     description: 'A manor-workshop hybrid with boiler hazards, parlors, libraries, and a clockwork vault.',
     levels: [{
       name: 'Cogsworth Manor',
@@ -429,7 +429,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Brasswick Station',
     themeId: 'steampunk',
     themeLabel: 'Steampunk',
-    category: 'Industrial district',
+    archetype: 'Industrial district',
     description: 'A steampunk station district with clocktower square, foundry, workshops, and an airship dock.',
     levels: [{
       name: 'Brasswick Station',
@@ -450,7 +450,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'The Verdant Crossing',
     themeId: 'wilderness',
     themeLabel: 'Wilderness',
-    category: 'Outdoor encounter',
+    archetype: 'Outdoor encounter',
     description: 'A forest crossing with water, boulders, named clearings, caches, and ambush predators.',
     levels: [{
       name: 'The Verdant Crossing',
@@ -472,7 +472,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Millbrook Hamlet',
     themeId: 'wilderness',
     themeLabel: 'Wilderness',
-    category: 'Rural village',
+    archetype: 'Rural village',
     description: 'A countryside hamlet with village green, cottages, mill, farmsteads, chapel, and store.',
     levels: [{
       name: 'Millbrook Hamlet',
@@ -494,7 +494,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Nexus Tower — Server Level',
     themeId: 'cyberpunk',
     themeLabel: 'Cyberpunk',
-    category: 'Corporate facility',
+    archetype: 'Corporate facility',
     description: 'A neon server level with data vaults, hab blocks, security hubs, and ICE hazards.',
     levels: [{
       name: 'Nexus Tower — Server Level',
@@ -521,7 +521,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Lowtown Market',
     themeId: 'cyberpunk',
     themeLabel: 'Cyberpunk',
-    category: 'Neon district',
+    archetype: 'Neon district',
     description: 'A street-market district with neon plaza, hab stacks, black market, noodle bar, and drone bay.',
     levels: [{
       name: 'Lowtown Market',
@@ -542,7 +542,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'The Wastes',
     themeId: 'postapocalypse',
     themeLabel: 'Post-Apocalypse',
-    category: 'Ruined open ground',
+    archetype: 'Ruined open ground',
     description: 'A wasteland encounter with scrap caches, ruins, hazards, and a fortified outpost point.',
     levels: [{
       name: 'The Wastes',
@@ -564,7 +564,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Refuge',
     themeId: 'postapocalypse',
     themeLabel: 'Post-Apocalypse',
-    category: 'Survivor settlement',
+    archetype: 'Survivor settlement',
     description: 'A survivor refuge with scrap yard, shelters, trading post, purifier, lookout, and barricades.',
     levels: [{
       name: 'Refuge',
@@ -585,7 +585,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Downtown Office — Penthouse Level',
     themeId: 'moderncity',
     themeLabel: 'Modern City',
-    category: 'Office interior',
+    archetype: 'Office interior',
     description: 'A modern office floor with lobby, offices, conference rooms, server room, storage, and vault.',
     levels: [{
       name: 'Downtown Office — Penthouse Level',
@@ -612,7 +612,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'City Block',
     themeId: 'moderncity',
     themeLabel: 'Modern City',
-    category: 'Urban block',
+    archetype: 'Urban block',
     description: 'A city block with plaza, apartments, office tower, garage, shop, station, restaurant, and clinic.',
     levels: [{
       name: 'City Block',
@@ -633,7 +633,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'The Black Harpy',
     themeId: 'pirate',
     themeLabel: 'Pirate',
-    category: 'Ship interior',
+    archetype: 'Ship interior',
     description: 'A three-deck pirate vessel with main deck, lower deck, and cargo hold.',
     linkLevels: true,
     levels: [
@@ -704,7 +704,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Port Havoc',
     themeId: 'pirate',
     themeLabel: 'Pirate',
-    category: 'Pirate port',
+    archetype: 'Pirate port',
     description: 'A pirate harbor with tavern, market, warehouses, shipwright, customs house, and lookout.',
     levels: [{
       name: 'Port Havoc',
@@ -726,7 +726,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'The Shifting Sands',
     themeId: 'desert',
     themeLabel: 'Desert',
-    category: 'Desert encounter',
+    archetype: 'Desert encounter',
     description: 'A desert travel map with oasis point, sand pits, scattered rocks, caches, and named terrain.',
     levels: [{
       name: 'The Shifting Sands',
@@ -748,7 +748,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Sandstone Bazaar',
     themeId: 'desert',
     themeLabel: 'Desert',
-    category: 'Oasis settlement',
+    archetype: 'Oasis settlement',
     description: 'A desert settlement with oasis, bazaar, caravanserai, well house, homes, shrine, and granary.',
     levels: [{
       name: 'Sandstone Bazaar',
@@ -770,7 +770,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'Temple of the Forgotten Sun',
     themeId: 'ancient',
     themeLabel: 'Lost Civilization',
-    category: 'Linked temple complex',
+    archetype: 'Linked temple complex',
     description: 'A two-level lost-civilization project linking an ancient temple to catacombs below.',
     linkLevels: true,
     levels: [
@@ -814,7 +814,7 @@ const PREMADE_MAP_SPECS: PremadeMapSpec[] = [
     name: 'The Buried City',
     themeId: 'ancient',
     themeLabel: 'Lost Civilization',
-    category: 'Ruined city',
+    archetype: 'Ruined city',
     description: 'A lost city map with central plaza, temple, marketplace, dwellings, granary, bathhouse, and guard posts.',
     levels: [{
       name: 'The Buried City',
@@ -1057,6 +1057,16 @@ function connectPremadeLevel(tiles: Tile[][]): void {
   }
 }
 
+function fillPremadeBackground(tiles: Tile[][]): void {
+  for (let y = 0; y < tiles.length; y++) {
+    for (let x = 0; x < tiles[y].length; x++) {
+      if (tiles[y][x].type === 'empty') {
+        tiles[y][x] = { ...tiles[y][x], type: 'background' };
+      }
+    }
+  }
+}
+
 function findStartCell(tiles: Tile[][]): { x: number; y: number } {
   const start = collectCells(tiles, tile => tile.type === 'start')[0];
   if (start) return start;
@@ -1206,6 +1216,7 @@ function buildLevel(spec: LevelSpec): DungeonMap {
       )
     : []);
   connectPremadeLevel(tiles);
+  fillPremadeBackground(tiles);
   const tokens = placeTokens(tiles, spec.tokenTheme);
   const notes = describeNotes(generated.notes, spec.noteFlavor);
   return {
@@ -1236,7 +1247,7 @@ export const PREMADE_MAP_SUMMARIES: PremadeMapSummary[] = PREMADE_MAP_SPECS.map(
   name: spec.name,
   themeId: spec.themeId,
   themeLabel: spec.themeLabel,
-  category: spec.category,
+  archetype: spec.archetype,
   sizeLabel: spec.levels.map(level => `${level.width}×${level.height}`).join(' + '),
   levelCount: spec.levels.length,
   description: spec.description,

@@ -2,7 +2,60 @@
 
 A retro-styled, interactive grid-based dungeon map editor built with Vite + React + TypeScript. Installable as a Progressive Web App with full offline support and touch/tablet-friendly UI.
 
-## Features
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=111827)
+![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+
+![Dungeon Mapper hero screenshot](./public/pwa-512x512.png)
+
+## Quick Start
+
+```bash
+npm install
+npm run dev
+```
+
+Open the local URL printed by Vite (typically `http://localhost:5173`).
+
+## Headline Feature GIFs
+
+| Feature | Preview |
+| --- | --- |
+| Generate Hub | ![Generate Hub preview](./docs/media/generate-hub.gif) |
+| Room Shapes & Merge | ![Room shapes preview](./docs/media/room-shapes.gif) |
+| River Tool | ![River tool preview](./docs/media/river-tool.gif) |
+
+## Feature Highlights
+
+- Four deterministic generators (Rooms & Corridors, Open Terrain, Cavern, Village)
+- Dynamic room vectors (rect, circle, polygon) with additive/subtractive workflows
+- Editable river vectors with generator integration and rasterized water flow metadata
+- Full edit/present split with fog-of-war, FOV, tokens, initiative, lights, and measure tools
+- Art system layers (paper texture, edge blending, hand-drawn mode, lighting/atmosphere)
+- JSON/PNG/SVG plus print-optimized high-DPI export
+
+## Theme Gallery
+
+| Theme | Style |
+| --- | --- |
+| Dungeon | Classic subterranean crawl |
+| Castle | Aboveground stone keep |
+| Starship | Sci-fi interior |
+| Wilderness | Outdoor overland |
+| Cyberpunk | Neon urban |
+| Pirate | Naval adventure |
+
+## Documentation
+
+- [Documentation Index](./docs/README.md)
+- [Architecture](./docs/ARCHITECTURE.md)
+- [Roadmap](./docs/ROADMAP.md)
+- [Changelog](./CHANGELOG.md)
+- [Contributing](./CONTRIBUTING.md)
+- [Code of Conduct](./CODE_OF_CONDUCT.md)
+
+## Full Feature Inventory
 
 - **Grid editor** — configurable map from 8×8 up to 128×128 (selectable widths/heights: 8, 16, 24, 32, 48, 64, 96, 128), default 32×32
 - **Tile size** — selectable tile size (12, 16, 20, 24, 32 px), default 20 px
@@ -630,6 +683,14 @@ The project uses [Vitest](https://vitest.dev/) with [React Testing Library](http
 | UI behavior | `src/components/__tests__/uiBehavior.test.tsx` | Generate Hub, Command Palette, Navigation Rail, Selection Inspector, ExportDialog interactions |
 
 Shared mock context providers live in `src/test/testHelpers.tsx` — use `TestProviders` to wrap components that depend on `ToolContext`, `MapContext`, `ViewContext`, or `ActionContext`.
+
+## Contributing
+
+Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request.
+
+## Code of Conduct
+
+This project follows [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
 
 ## License
 

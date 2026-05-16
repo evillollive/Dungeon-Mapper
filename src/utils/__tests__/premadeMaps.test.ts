@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { deriveRenderableTiles } from '../derivedRenderMap';
-import { buildPremadeProject } from '../premadeMaps';
+import { buildPremadeProject, PREMADE_MAP_SUMMARIES } from '../premadeMaps';
 
 describe('premade map river polish', () => {
   it('adds editable river vectors to river-relevant premade archetypes', () => {
@@ -19,4 +19,20 @@ describe('premade map river polish', () => {
     expect(tiles.flat().some(tile => tile.type === 'water' && tile.riverId !== undefined)).toBe(true);
     expect(tiles.flat().some(tile => tile.riverBank !== undefined)).toBe(true);
   });
+
+  it('exposes archetype tags for every premade summary', () => {
+    expect(PREMADE_MAP_SUMMARIES.length).toBeGreaterThan(0);
+    for (const summary of PREMADE_MAP_SUMMARIES) {
+      expect(summary.archetype.trim().length).toBeGreaterThan(0);
+    }
+  });
+
+  it('fills all premade empty cells with background tiles', () => {
+    for (const summary of PREMADE_MAP_SUMMARIES) {
+      const project = buildPremadeProject(summary.id);
+      for (const level of project.levels) {
+        expect(level.tiles.flat().some(tile => tile.type === 'empty')).toBe(false);
+      }
+    }
+  }, 20000);
 });
