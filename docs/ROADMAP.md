@@ -1,7 +1,7 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
-> **Last updated:** 2026-05-15
-> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phase 10.4 (Generator Integration) **COMPLETE**. Phase 10.5 (Subtractive Shapes) **COMPLETE**. Phase 10.6 (Additional Shapes) **COMPLETE**. Phase 11.1 (Vector Layer & Manual Tool) **COMPLETE**. Phase 11.2 (Generator Integration) **COMPLETE**. Phase 11.3 (River Polish) **COMPLETE**. Phase 11.4 (README checkpoint #5) **COMPLETE**. Phase 12.1 (Accessibility Audit) **COMPLETE**. Phase 12.2 (Codebase Audit & Refactor) **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
+> **Last updated:** 2026-05-16
+> **Status:** Phases 1, 2, 3, 4.1, 4.2, 4.3, 4.5.1, 4.5.2, 4.5.3, 5.1, 5.2, 5.3, 6.4.1, 6.4.2, 6.4.3, 6.4.4, 6.4.5, 6.4.6, 6.5, 6.6, 7.1, 7.3, & 7.5 complete. Accessibility fixes (partial, excluding dark mode) complete. Phase 6 (UI/UX Overhaul, Accessibility, Refactoring, Mobile, New Features) **COMPLETE**. Phase 6.4 broken into 6 sub-phases (6.4.1–6.4.6). Phase 7 (Test Infrastructure) **COMPLETE**. Phase 8.1 (Navigation Rail) **COMPLETE**. Phase 8.2 (Docked Inspector) **COMPLETE**. Phase 8.3 (UI Polish) **COMPLETE**. Phase 8.4 (Generate Hub) **COMPLETE**. Phase 9.1 (Texture & Paper Layer) **COMPLETE**. Phase 9.2 (Edge Blending) **COMPLETE**. Phase 9.3 (Hand-Drawn Mode) **COMPLETE**. Phase 9.4 (Lighting & Atmosphere) **COMPLETE**. Phase 9.5 (Art Style Presets) **COMPLETE**. Phase 10.1 (Shape Data Model & Rasterizer) **COMPLETE**. Phase 10.2 (Rectangle Drawing & Resize) **COMPLETE**. Phase 10.3 (Visual Merging) **COMPLETE**. Phase 10.4 (Generator Integration) **COMPLETE**. Phase 10.5 (Subtractive Shapes) **COMPLETE**. Phase 10.6 (Additional Shapes) **COMPLETE**. Phase 11.1 (Vector Layer & Manual Tool) **COMPLETE**. Phase 11.2 (Generator Integration) **COMPLETE**. Phase 11.3 (River Polish) **COMPLETE**. Phase 11.4 (README checkpoint #5) **COMPLETE**. Phase 12.1 (Accessibility Audit) **COMPLETE**. Phase 12.2 (Codebase Audit & Refactor) **COMPLETE**. Phase 12.3 (README & Documentation Overhaul) **COMPLETE**. Phase 12 is now **COMPLETE**. Phases 8–12 roadmap approved and integrated (2026-05-03).
 
 ---
 
@@ -688,12 +688,12 @@ Items that may be revisited someday but are not on the active roadmap. Most requ
 - Added a 128×128 full-stack render regression that exercises paper texture, edge blending, hand-drawn mode, lighting, fog, rivers, markers, and lights through `renderMapToCanvas`
 - Bundle-size audit from production build: `index-BR0wtfNd.js` 799.76 kB / 214.00 kB gzip, still above Vite's 500 kB chunk warning; defer code splitting/manual chunks to a future bundle-focused pass
 
-**12.3 — README & Documentation Overhaul (Final Pass)**
-- Best-practice README: hero screenshot, badges, quick start, feature highlights, theme gallery, install/run, contributing, license
-- Animated GIFs of headline features
-- Add `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `ARCHITECTURE.md`, `CHANGELOG.md`, `ISSUE_TEMPLATE/`, `PULL_REQUEST_TEMPLATE.md`
-- Verify `LICENSE` is present and correct
-- Move ROADMAP under a structured `docs/` tree with clean cross-links
+**12.3 — README & Documentation Overhaul (Final Pass)** ✅ COMPLETE
+- README front matter refreshed with hero image, badges, quick start, feature highlights, theme gallery, docs links, and explicit contributing/code-of-conduct sections
+- Added animated GIF previews for headline features under `docs/media/`
+- Added `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `.github/ISSUE_TEMPLATE/`, and `PULL_REQUEST_TEMPLATE.md`
+- Verified `LICENSE` is present (MIT) and consistent with README
+- Added a structured docs index (`docs/README.md`) with clean cross-links across roadmap, architecture, changelog, and contribution docs
 
 ### ~~Phase 6: UI/UX Overhaul, Accessibility, Refactoring & Mobile~~ ✅ COMPLETE
 
@@ -1263,7 +1263,7 @@ Recommended implementation order based on dependency analysis, impact, and effor
     - *Dependency:* Pass 1 standalone; Pass 2 after Phase 11; Pass 3 after each new content/art tool
     - *Cross-link:* 8.4 surfaces the archetype tags in the Generate Hub
 
-25. **Phase 12 — Final Pass: Accessibility, Codebase Audit & Documentation** — WCAG re-audit ✅ COMPLETE, refactor sweep ✅ COMPLETE, README overhaul, CONTRIBUTING.md, ARCHITECTURE.md, CHANGELOG.md
+25. ~~**Phase 12 — Final Pass: Accessibility, Codebase Audit & Documentation**~~ ✅ COMPLETE — WCAG re-audit ✅ COMPLETE, refactor sweep ✅ COMPLETE, documentation overhaul ✅ COMPLETE
     - *Why:* Closes the active roadmap with a clean, documented, tested codebase
     - *Effort:* Medium
     - *Dependency:* All prior phases complete
@@ -1338,6 +1338,12 @@ Recommended implementation order based on dependency analysis, impact, and effor
 ---
 
 ## Changes History
+
+**2026-05-16 — Phase 12.3 (README & Documentation Overhaul) COMPLETE**
+- Added a best-practice README front matter pass: badges, hero image, quick start, feature highlights, theme gallery, docs navigation, and contribution/community links
+- Added headline feature GIF previews under `docs/media/`
+- Added documentation/support files: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `docs/README.md`, `.github/ISSUE_TEMPLATE/*`, and `PULL_REQUEST_TEMPLATE.md`
+- Marked Phase 12.3 complete and closed Phase 12 in status and active priority order
 
 **2026-05-15 — Phase 12.2 (Codebase Audit & Refactor) COMPLETE**
 - Re-measured the Phase 12.2 audit targets and removed the unused embedded mobile toolbar CSS export, dropping `MobileToolbar.tsx` under its audit budget while keeping canonical styles in `App.css`
