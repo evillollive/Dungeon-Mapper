@@ -3287,7 +3287,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
   return (
     <div className="canvas-wrapper" ref={containerRef}>
-      <div className="sr-only">{canvasStateSummary}</div>
+      <div id="map-canvas-summary" className="sr-only" aria-live="polite" aria-atomic="true">
+        {canvasStateSummary}
+      </div>
       <div className="canvas-viewport" ref={viewportRef}>
         <div
           className="canvas-transform-container"
@@ -3301,6 +3303,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
             tabIndex={0}
             role="application"
             aria-label={canvasAriaLabel}
+            aria-describedby="map-canvas-summary"
             style={{
               cursor: cursorStyle,
               display: 'block',
@@ -3338,8 +3341,16 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         ref={minimapRef}
         className="minimap-canvas"
         onClick={handleMinimapClick}
+        tabIndex={0}
+        role="button"
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleFitToScreen();
+          }
+        }}
         title="Minimap - click to pan"
-        aria-label="Minimap — click to pan the main viewport"
+        aria-label="Minimap overview — click to pan, or press Enter to fit the map to screen"
       />
     </div>
   );
