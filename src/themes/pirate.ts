@@ -1,6 +1,6 @@
-import type { TileTheme } from './index';
+import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth, tileHash } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
 
 export const pirateTheme: TileTheme = {
   id: 'pirate',
@@ -32,7 +32,7 @@ export const pirateTheme: TileTheme = {
     background: '#0a1a2a',
   },
   gridColor: '#2a1a0a',
-  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
+  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number, context?: TileDrawContext) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
@@ -94,6 +94,14 @@ export const pirateTheme: TileTheme = {
         ctx.moveTo(px + 2, gy);
         ctx.lineTo(px + s * 0.4, gy + 0.5);
         ctx.stroke();
+
+        // Wall ambient occlusion
+        if (context) {
+          drawWallAO(ctx, px, py, size, x, y, (nx, ny) => {
+            const t = context.getTileBaseType(nx, ny);
+            return t === 'wall' || t === 'secret-door';
+          });
+        }
         break;
       }
 
@@ -343,6 +351,8 @@ export const pirateTheme: TileTheme = {
       }
 
       case 'water': {
+        // Use shared enhanced water base
+        drawWaterTile(ctx, px, py, size, x, y, this.tileColors.water, 'rgba(40,120,180,0.25)');
         // Bilge water with wooden planks
         // Horizontal plank lines
         ctx.strokeStyle = '#6a4a28';

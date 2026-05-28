@@ -1,6 +1,6 @@
-import type { TileTheme } from './index';
+import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth, tileHash } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
 
 export const postapocalypseTheme: TileTheme = {
   id: 'postapocalypse',
@@ -32,7 +32,7 @@ export const postapocalypseTheme: TileTheme = {
     background: '#2a2018',
   },
   gridColor: '#2a2018',
-  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
+  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number, context?: TileDrawContext) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
@@ -89,6 +89,14 @@ export const postapocalypseTheme: TileTheme = {
           ctx.moveTo(px + s * 0.6, py + s * 0.7);
           ctx.lineTo(px + s * 0.6 + Math.cos(angle1) * s * 0.25, py + s * 0.7 + Math.sin(angle1) * s * 0.2);
           ctx.stroke();
+        }
+
+        // Wall ambient occlusion
+        if (context) {
+          drawWallAO(ctx, px, py, size, x, y, (nx, ny) => {
+            const t = context.getTileBaseType(nx, ny);
+            return t === 'wall' || t === 'secret-door';
+          }, 'rgba(0,0,0,0.15)');
         }
         break;
       }
@@ -339,6 +347,8 @@ export const postapocalypseTheme: TileTheme = {
       }
 
       case 'water': {
+        // Use shared enhanced water base
+        drawWaterTile(ctx, px, py, size, x, y, this.tileColors.water, 'rgba(60,100,60,0.2)');
         // Toxic pool — concentric ring ripples, radiation dots, toxic shimmer
         const h0 = tileHash(x, y);
         // Concentric ripple rings in sickly green

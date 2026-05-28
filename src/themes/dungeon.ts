@@ -1,6 +1,6 @@
 import type { TileDrawContext, TileTheme } from './index';
 import type { BuiltInTileType, TileType } from '../types/map';
-import { jitterColor, drawWallDepth, tileHash } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile, drawFloorCracks } from './artUtils';
 
 const WALL_SEAM_HASH_OFFSET_X = 13;
 const WALL_SEAM_HASH_OFFSET_Y = 29;
@@ -227,9 +227,15 @@ export const dungeonTheme: TileTheme = {
         ctx.moveTo(px + s * (0.3 + fh * 0.4), py);
         ctx.lineTo(px + s * (0.3 + fh * 0.4), py + s);
         ctx.stroke();
-        // Subtle mortar fleck to suggest rough flagstones.
-        ctx.fillStyle = '#2a2418';
-        ctx.fillRect(cx - 1, cy - 1, 2, 2);
+        // Subtle floor cracks for organic feel
+        drawFloorCracks(ctx, px, py, size, x, y, 'rgba(0,0,0,0.06)', 1);
+        // Wall ambient occlusion
+        if (context) {
+          drawWallAO(ctx, px, py, size, x, y, (nx, ny) => {
+            const t = context.getTileBaseType(nx, ny);
+            return t === 'wall' || t === 'secret-door';
+          });
+        }
         break;
       }
 
@@ -481,6 +487,8 @@ export const dungeonTheme: TileTheme = {
       }
 
       case 'water': {
+        // Use shared enhanced water base
+        drawWaterTile(ctx, px, py, size, x, y, this.tileColors.water, 'rgba(100,170,220,0.25)');
         // Underground pool — concentric oval ripples with torchlight reflections
         const wh = tileHash(x, y);
         const wh2 = tileHash(x + 3, y + 7);
@@ -495,10 +503,10 @@ export const dungeonTheme: TileTheme = {
         }
         // Torchlight highlight dots
         ctx.fillStyle = '#8ac8e8';
-        const dotH = tileHash(x + 5, y + 11);
         ctx.beginPath();
         ctx.arc(cx + offX + s * 0.06, cy + offY - s * 0.04, 1, 0, Math.PI * 2);
         ctx.fill();
+        const dotH = tileHash(x + 5, y + 11);
         ctx.beginPath();
         ctx.arc(cx + offX - s * 0.1, cy + offY + s * (0.02 + dotH * 0.06), 0.8, 0, Math.PI * 2);
         ctx.fill();

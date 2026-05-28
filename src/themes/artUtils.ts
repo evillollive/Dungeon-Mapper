@@ -132,3 +132,181 @@ export function drawWallDepth(
 
   ctx.restore();
 }
+
+/* -------------------------------------------------------------------------- */
+/*  Ambient occlusion (wall shadow on adjacent floor tiles)                   */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Draw ambient occlusion shadows on a floor tile that is adjacent to walls.
+ * Call after drawing the floor base. `getNeighbour` should return true if
+ * the tile at (nx, ny) is a wall-like type.
+ */
+export function drawWallAO(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  size: number,
+  x: number,
+  y: number,
+  isWallAt: (nx: number, ny: number) => boolean,
+  aoColor: string = 'rgba(0,0,0,0.12)',
+  aoSize: number = 0.18,
+): void {
+  const spread = size * aoSize;
+  ctx.save();
+
+  // Top edge
+  if (isWallAt(x, y - 1)) {
+    const g = ctx.createLinearGradient(px, py, px, py + spread);
+    g.addColorStop(0, aoColor);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(px, py, size, spread);
+  }
+  // Bottom edge
+  if (isWallAt(x, y + 1)) {
+    const g = ctx.createLinearGradient(px, py + size, px, py + size - spread);
+    g.addColorStop(0, aoColor);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(px, py + size - spread, size, spread);
+  }
+  // Left edge
+  if (isWallAt(x - 1, y)) {
+    const g = ctx.createLinearGradient(px, py, px + spread, py);
+    g.addColorStop(0, aoColor);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(px, py, spread, size);
+  }
+  // Right edge
+  if (isWallAt(x + 1, y)) {
+    const g = ctx.createLinearGradient(px + size, py, px + size - spread, py);
+    g.addColorStop(0, aoColor);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(px + size - spread, py, spread, size);
+  }
+
+  ctx.restore();
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Enhanced water rendering                                                  */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Draw a stylized water tile with layered translucency, ripple patterns,
+ * and subtle color variation. Themes can call this instead of a flat fill.
+ */
+export function drawWaterTile(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  size: number,
+  x: number,
+  y: number,
+  baseColor: string = '#1e5f8e',
+  highlightColor: string = 'rgba(120,180,240,0.25)',
+): void {
+  // Base water fill with jitter
+  ctx.fillStyle = jitterColor(baseColor, x, y, 0.1);
+  ctx.fillRect(px, py, size, size);
+
+  const s = size;
+
+  // Subtle depth gradient (darker at bottom)
+  const depthGrad = ctx.createLinearGradient(px, py, px, py + s);
+  depthGrad.addColorStop(0, 'rgba(255,255,255,0.06)');
+  depthGrad.addColorStop(1, 'rgba(0,0,0,0.1)');
+  ctx.fillStyle = depthGrad;
+  ctx.fillRect(px, py, s, s);
+
+  // Ripple lines (hash-positioned for determinism)
+  ctx.strokeStyle = highlightColor;
+  ctx.lineWidth = 0.6;
+  const h1 = tileHash(x * 3, y * 7);
+  const h2 = tileHash(x * 11, y * 5);
+  const h3 = tileHash(x * 7, y * 3);
+
+  ctx.beginPath();
+  ctx.moveTo(px + s * 0.1, py + s * (0.25 + h1 * 0.2));
+  ctx.quadraticCurveTo(
+    px + s * 0.5, py + s * (0.2 + h1 * 0.15),
+    px + s * 0.9, py + s * (0.28 + h1 * 0.18),
+  );
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(px + s * 0.15, py + s * (0.55 + h2 * 0.15));
+  ctx.quadraticCurveTo(
+    px + s * 0.45, py + s * (0.5 + h2 * 0.12),
+    px + s * 0.85, py + s * (0.58 + h2 * 0.12),
+  );
+  ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+  ctx.lineWidth = 0.4;
+  ctx.beginPath();
+  ctx.moveTo(px + s * 0.2, py + s * (0.75 + h3 * 0.1));
+  ctx.quadraticCurveTo(
+    px + s * 0.55, py + s * (0.72 + h3 * 0.08),
+    px + s * 0.8, py + s * (0.78 + h3 * 0.08),
+  );
+  ctx.stroke();
+
+  // Specular highlight dots
+  const dotX = px + s * (0.3 + h1 * 0.4);
+  const dotY = py + s * (0.3 + h2 * 0.3);
+  ctx.fillStyle = 'rgba(200,230,255,0.15)';
+  ctx.beginPath();
+  ctx.arc(dotX, dotY, Math.max(0.5, s * 0.03), 0, Math.PI * 2);
+  ctx.fill();
+}
+
+/* -------------------------------------------------------------------------- */
+/*  Enhanced floor texture pattern                                            */
+/* -------------------------------------------------------------------------- */
+
+/**
+ * Draw subtle stone/tile floor texture with randomized crack lines.
+ * Use for dungeon/castle/ancient floor tiles for added visual depth.
+ */
+export function drawFloorCracks(
+  ctx: CanvasRenderingContext2D,
+  px: number,
+  py: number,
+  size: number,
+  x: number,
+  y: number,
+  crackColor: string = 'rgba(0,0,0,0.08)',
+  count: number = 2,
+): void {
+  ctx.save();
+  ctx.strokeStyle = crackColor;
+  ctx.lineWidth = 0.5;
+
+  for (let i = 0; i < count; i++) {
+    const h1 = tileHash(x * 13 + i * 7, y * 19 + i * 3);
+    const h2 = tileHash(x * 23 + i * 11, y * 7 + i * 17);
+    const h3 = tileHash(x * 31 + i * 5, y * 29 + i * 13);
+
+    const startX = px + h1 * size;
+    const startY = py + h2 * size;
+    const endX = px + h3 * size;
+    const endY = py + tileHash(x * 37 + i, y * 41 + i) * size;
+
+    ctx.beginPath();
+    ctx.moveTo(startX, startY);
+    ctx.quadraticCurveTo(
+      px + size * 0.5 + (h1 - 0.5) * size * 0.3,
+      py + size * 0.5 + (h2 - 0.5) * size * 0.3,
+      endX,
+      endY,
+    );
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}

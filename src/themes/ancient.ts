@@ -1,6 +1,6 @@
-import type { TileTheme } from './index';
+import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth, tileHash } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
 
 // Lost Civilization theme: a forgotten civilization's stone complex — sun-bleached
 // sandstone halls, carved hieroglyph-style walls, fluted pillars, toppled
@@ -42,7 +42,7 @@ export const ancientTheme: TileTheme = {
     background: '#2a2418',
   },
   gridColor: '#4a3a20',
-  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
+  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number, context?: TileDrawContext) {
     const px = x * size;
     const py = y * size;
     const color = this.tileColors[type];
@@ -85,6 +85,14 @@ export const ancientTheme: TileTheme = {
         ctx.lineTo(cx, cy - s * 0.06);
         ctx.lineTo(cx + s * 0.18, cy + s * 0.06);
         ctx.stroke();
+
+        // Wall ambient occlusion
+        if (context) {
+          drawWallAO(ctx, px, py, size, x, y, (nx, ny) => {
+            const t = context.getTileBaseType(nx, ny);
+            return t === 'wall' || t === 'secret-door';
+          });
+        }
         break;
       }
 
@@ -364,6 +372,8 @@ export const ancientTheme: TileTheme = {
       }
 
       case 'water': {
+        // Use shared enhanced water base
+        drawWaterTile(ctx, px, py, size, x, y, this.tileColors.water, 'rgba(60,120,180,0.2)');
         // Sacred reflecting pool — rectangular basin, calm ripples, lotus flower
         const h0 = tileHash(x, y);
         // Rectangular basin with beveled edges

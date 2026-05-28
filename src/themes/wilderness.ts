@@ -1,6 +1,6 @@
-import type { TileTheme } from './index';
+import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth, tileHash } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
 
 export const wildernessTheme: TileTheme = {
   id: 'wilderness',
@@ -32,7 +32,7 @@ export const wildernessTheme: TileTheme = {
     background: '#1a2a10',
   },
   gridColor: '#1a3a10',
-  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
+  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number, context?: TileDrawContext) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
@@ -53,19 +53,35 @@ export const wildernessTheme: TileTheme = {
         ctx.fillStyle = jitterColor(this.tileColors.floor, x, y, 0.08);
         ctx.fillRect(px, py, size, size);
         // Hash-seeded grass blade strokes
-        const grassColors = ['#2a6a1a', '#4a8a2a'];
+        const grassColors = ['#2a6a1a', '#4a8a2a', '#3a7a2a'];
         ctx.lineWidth = 0.8;
-        for (let i = 0; i < 6; i++) {
+        for (let i = 0; i < 8; i++) {
           const h = tileHash(x * 7 + i, y * 13 + i);
           const h2 = tileHash(x * 11 + i, y * 3 + i);
           const bx = px + 2 + h * (s - 4);
           const by = py + 2 + h2 * (s - 4);
           const angle = (h * 2 - 1) * 0.6;
-          ctx.strokeStyle = grassColors[i % 2];
+          const bladeLen = 3 + h * 1.5;
+          ctx.strokeStyle = grassColors[i % 3];
           ctx.beginPath();
           ctx.moveTo(bx, by);
-          ctx.lineTo(bx + Math.sin(angle) * 3, by - Math.cos(angle) * 3.5);
+          ctx.quadraticCurveTo(bx + Math.sin(angle) * 1.5, by - bladeLen * 0.5, bx + Math.sin(angle) * 3, by - Math.cos(angle) * bladeLen);
           ctx.stroke();
+        }
+        // Dirt patch variation
+        const dh = tileHash(x * 17, y * 23);
+        if (dh > 0.7) {
+          ctx.fillStyle = 'rgba(90,70,40,0.15)';
+          ctx.beginPath();
+          ctx.ellipse(cx + (dh - 0.85) * s, cy, s * 0.15, s * 0.1, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        // Wall ambient occlusion (tree shadow)
+        if (context) {
+          drawWallAO(ctx, px, py, size, x, y, (nx, ny) => {
+            const t = context.getTileBaseType(nx, ny);
+            return t === 'wall' || t === 'secret-door';
+          }, 'rgba(0,30,0,0.15)');
         }
         break;
       }
@@ -304,7 +320,8 @@ export const wildernessTheme: TileTheme = {
       }
 
       case 'water': {
-        // Flowing river with current lines and ">" arrows
+        // Enhanced flowing river with depth and current lines
+        drawWaterTile(ctx, px, py, size, x, y, this.tileColors.water, 'rgba(100,200,240,0.2)');
         const wh = tileHash(x, y);
         ctx.strokeStyle = '#6ac8f0';
         ctx.lineWidth = 1;

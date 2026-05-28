@@ -1,6 +1,6 @@
-import type { TileTheme } from './index';
+import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth, tileHash } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
 
 export const steampunkTheme: TileTheme = {
   id: 'steampunk',
@@ -32,7 +32,7 @@ export const steampunkTheme: TileTheme = {
     background: '#1a1a20',
   },
   gridColor: '#3a2810',
-  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
+  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number, context?: TileDrawContext) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
@@ -75,6 +75,14 @@ export const steampunkTheme: TileTheme = {
         ctx.beginPath();
         ctx.arc(px + s - 4, py + s - 4, rr, 0, Math.PI * 2);
         ctx.fill();
+
+        // Wall ambient occlusion
+        if (context) {
+          drawWallAO(ctx, px, py, size, x, y, (nx, ny) => {
+            const t = context.getTileBaseType(nx, ny);
+            return t === 'wall' || t === 'secret-door';
+          });
+        }
         break;
       }
 
@@ -354,6 +362,8 @@ export const steampunkTheme: TileTheme = {
       }
 
       case 'water': {
+        // Use shared enhanced water base
+        drawWaterTile(ctx, px, py, size, x, y, this.tileColors.water, 'rgba(80,140,180,0.2)');
         // Steam pipe with vapor
         const vh = tileHash(x, y);
         const valveX = px + s * 0.3 + vh * s * 0.3;

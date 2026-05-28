@@ -1,6 +1,6 @@
-import type { TileTheme } from './index';
+import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth, tileHash } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash, drawWallAO } from './artUtils';
 
 export const cyberpunkTheme: TileTheme = {
   id: 'cyberpunk',
@@ -32,7 +32,7 @@ export const cyberpunkTheme: TileTheme = {
     background: '#0a0a14',
   },
   gridColor: '#1a0a2a',
-  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
+  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number, context?: TileDrawContext) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
@@ -79,6 +79,22 @@ export const cyberpunkTheme: TileTheme = {
         ctx.beginPath();
         ctx.arc(px + s * 0.5, py + s - 3, 1.5, 0, Math.PI * 2);
         ctx.fill();
+        // Additional via pads for more circuit detail
+        const fh2 = tileHash(x * 5, y * 3);
+        ctx.fillStyle = '#3a2a60';
+        ctx.beginPath();
+        ctx.arc(px + s * (0.2 + fh2 * 0.3), py + s * 0.3, 1, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(px + s * 0.8, py + s * (0.6 + fh * 0.2), 1, 0, Math.PI * 2);
+        ctx.fill();
+        // Neon glow AO near walls
+        if (context) {
+          drawWallAO(ctx, px, py, size, x, y, (nx, ny) => {
+            const t = context.getTileBaseType(nx, ny);
+            return t === 'wall' || t === 'secret-door';
+          }, 'rgba(255,0,255,0.08)');
+        }
         break;
       }
 

@@ -1,6 +1,6 @@
-import type { TileTheme } from './index';
+import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth, tileHash } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
 
 export const desertTheme: TileTheme = {
   id: 'desert',
@@ -32,7 +32,7 @@ export const desertTheme: TileTheme = {
     background: '#3a3020',
   },
   gridColor: '#6a5020',
-  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
+  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number, context?: TileDrawContext) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
@@ -77,6 +77,14 @@ export const desertTheme: TileTheme = {
         ctx.moveTo(px + 2, py + s - 3);
         ctx.quadraticCurveTo(cx, py + s - 5, px + s - 2, py + s - 3);
         ctx.stroke();
+
+        // Wall ambient occlusion
+        if (context) {
+          drawWallAO(ctx, px, py, size, x, y, (nx, ny) => {
+            const t = context.getTileBaseType(nx, ny);
+            return t === 'wall' || t === 'secret-door';
+          });
+        }
         break;
       }
 
@@ -354,6 +362,8 @@ export const desertTheme: TileTheme = {
       }
 
       case 'water': {
+        // Use shared enhanced water base
+        drawWaterTile(ctx, px, py, size, x, y, this.tileColors.water, 'rgba(60,140,180,0.25)');
         // Oasis pool with palm silhouette
         const h0 = tileHash(x, y);
         // Irregular oval pool shape in blue

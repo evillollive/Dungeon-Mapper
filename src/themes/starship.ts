@@ -1,6 +1,6 @@
-import type { TileTheme } from './index';
+import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth, tileHash } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
 
 // Starship theme: the interior of a deep-space vessel — riveted bulkheads,
 // metal deck plating, neon blast doors, and humming data cores. This carries
@@ -35,7 +35,7 @@ export const starshipTheme: TileTheme = {
     background: '#020408',
   },
   gridColor: '#1a3050',
-  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
+  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number, context?: TileDrawContext) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
@@ -95,6 +95,14 @@ export const starshipTheme: TileTheme = {
         ctx.moveTo(cx, cy - 2);
         ctx.lineTo(cx, cy + 2);
         ctx.stroke();
+
+        // Wall ambient occlusion
+        if (context) {
+          drawWallAO(ctx, px, py, size, x, y, (nx, ny) => {
+            const t = context.getTileBaseType(nx, ny);
+            return t === 'wall' || t === 'secret-door';
+          }, 'rgba(0,150,255,0.08)');
+        }
         break;
       }
 
@@ -366,6 +374,8 @@ export const starshipTheme: TileTheme = {
       }
 
       case 'water': {
+        // Use shared enhanced water base
+        drawWaterTile(ctx, px, py, size, x, y, this.tileColors.water, 'rgba(0,180,255,0.25)');
         // Coolant fluid with bubbles and pipe line
         const bh = tileHash(x, y);
         const bh2 = tileHash(x + 3, y + 7);

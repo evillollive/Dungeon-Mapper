@@ -1,6 +1,6 @@
-import type { TileTheme } from './index';
+import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth, tileHash } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
 
 export const oldwestTheme: TileTheme = {
   id: 'oldwest',
@@ -32,7 +32,7 @@ export const oldwestTheme: TileTheme = {
     background: '#2a2010',
   },
   gridColor: '#3a2a18',
-  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
+  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number, context?: TileDrawContext) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
@@ -72,6 +72,14 @@ export const oldwestTheme: TileTheme = {
         ctx.fillRect(px + 3 + bh0 * (s - 8), py + 3 + bh1 * (s - 8), 3, 1);
         if (bh0 > 0.4) {
           ctx.fillRect(px + 3 + bh1 * (s - 8), py + 5 + bh0 * (s - 10), 3, 1);
+        }
+
+        // Wall ambient occlusion
+        if (context) {
+          drawWallAO(ctx, px, py, size, x, y, (nx, ny) => {
+            const t = context.getTileBaseType(nx, ny);
+            return t === 'wall' || t === 'secret-door';
+          });
         }
         break;
       }
@@ -337,6 +345,8 @@ export const oldwestTheme: TileTheme = {
       }
 
       case 'water': {
+        // Use shared enhanced water base
+        drawWaterTile(ctx, px, py, size, x, y, this.tileColors.water, 'rgba(80,140,170,0.2)');
         // Water trough — wooden trough with water inside
         const trW = s * 0.7;
         const trH = s * 0.4;

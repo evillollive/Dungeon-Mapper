@@ -1,6 +1,6 @@
-import type { TileTheme } from './index';
+import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth, tileHash } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
 
 export const moderncityTheme: TileTheme = {
   id: 'moderncity',
@@ -32,7 +32,7 @@ export const moderncityTheme: TileTheme = {
     background: '#1a1a1a',
   },
   gridColor: '#2a2a2a',
-  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
+  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number, context?: TileDrawContext) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
@@ -76,6 +76,14 @@ export const moderncityTheme: TileTheme = {
         ctx.fillRect(px + 3 + h2 * (s - 6), py + 3 + h3 * (s - 6), 1, 1);
         ctx.fillRect(px + 3 + h1 * (s - 6), py + 3 + h2 * (s - 6), 1, 1);
         ctx.fillRect(px + 3 + h3 * (s - 6), py + 3 + h0 * (s - 6), 1, 1);
+
+        // Wall ambient occlusion
+        if (context) {
+          drawWallAO(ctx, px, py, size, x, y, (nx, ny) => {
+            const t = context.getTileBaseType(nx, ny);
+            return t === 'wall' || t === 'secret-door';
+          }, 'rgba(0,0,0,0.10)');
+        }
         break;
       }
 
@@ -357,6 +365,8 @@ export const moderncityTheme: TileTheme = {
       }
 
       case 'water': {
+        // Use shared enhanced water base
+        drawWaterTile(ctx, px, py, size, x, y, this.tileColors.water, 'rgba(80,160,220,0.2)');
         // Urban fountain — circular basin with inner ring and spray
         ctx.fillStyle = '#9a9a9a';
         ctx.beginPath();

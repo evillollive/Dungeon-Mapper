@@ -2743,3 +2743,81 @@
   font-size: 0.85rem;
   text-align: center;
 }
+
+/* ── Phase 3: UI Visual Polish ─────────────────────────── */
+
+/* Panel depth — subtle shadows on toolbars and side panels */
+.toolbar {
+  box-shadow: 2px 0 8px rgba(42, 38, 32, 0.08);
+  z-index: 1;
+}
+
+.app-body > aside {
+  box-shadow: -2px 0 8px rgba(42, 38, 32, 0.06);
+  z-index: 1;
+}
+
+/* Level tabs lift */
+.level-tabs {
+  box-shadow: 0 1px 4px rgba(42, 38, 32, 0.06);
+  z-index: 2;
+}
+
+/* Button press feedback — slight scale on active */
+.toolbar-tab-btn:active,
+.tool-btn:active,
+.tile-btn:active,
+.stamp-btn:active,
+.level-tab:active {
+  transform: scale(0.96);
+  transition: transform 0.06s ease-out;
+}
+
+/* Smoother hover lift for tool buttons */
+.tool-btn:hover,
+.tile-btn:hover,
+.stamp-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(42, 38, 32, 0.10);
+}
+
+/* Active tool button glow */
+.tool-btn.active,
+.tile-btn.active {
+  box-shadow: 0 0 0 2px rgba(138, 58, 58, 0.2);
+}
+
+/* Toolbar section headers — subtle top border accent */
+.toolbar-section {
+  position: relative;
+}
+
+.toolbar-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 10%;
+  right: 10%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #c2bbab, transparent);
+}
+
+.toolbar-section:first-child::before {
+  display: none;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .tool-btn:hover,
+  .tile-btn:hover,
+  .stamp-btn:hover {
+    transform: none;
+  }
+  .toolbar-tab-btn:active,
+  .tool-btn:active,
+  .tile-btn:active,
+  .stamp-btn:active,
+  .level-tab:active {
+    transform: none;
+  }
+}

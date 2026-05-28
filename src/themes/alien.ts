@@ -1,6 +1,6 @@
-import type { TileTheme } from './index';
+import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth, tileHash } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
 
 // Alien World theme: a strange, biological landscape — spongy spore beds,
 // fungal walls, glowing acid pools, towering crystal spires, and pulsing
@@ -35,7 +35,7 @@ export const alienTheme: TileTheme = {
     background: '#0a1a0a',
   },
   gridColor: '#2d1a3a',
-  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
+  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number, context?: TileDrawContext) {
     const px = x * size;
     const py = y * size;
     ctx.fillStyle = this.tileColors[type];
@@ -84,6 +84,14 @@ export const alienTheme: TileTheme = {
           px + dots[3][0] * s, py + dots[3][1] * s,
         );
         ctx.stroke();
+
+        // Wall ambient occlusion
+        if (context) {
+          drawWallAO(ctx, px, py, size, x, y, (nx, ny) => {
+            const t = context.getTileBaseType(nx, ny);
+            return t === 'wall' || t === 'secret-door';
+          }, 'rgba(0,200,100,0.08)');
+        }
         break;
       }
 
@@ -372,6 +380,8 @@ export const alienTheme: TileTheme = {
       }
 
       case 'water': {
+        // Use shared enhanced water base
+        drawWaterTile(ctx, px, py, size, x, y, this.tileColors.water, 'rgba(0,255,180,0.2)');
         // Acid pool with organic swirls and rising bubbles
         const wh = tileHash(x, y);
 

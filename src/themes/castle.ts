@@ -1,6 +1,6 @@
-import type { TileTheme } from './index';
+import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
-import { jitterColor, drawWallDepth, tileHash } from './artUtils';
+import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
 
 // Castle theme: an aboveground stone keep — polished sandstone halls, heavy
 // oak doors with gold hinges, crenellated battlement walls, a moat, and a
@@ -35,7 +35,7 @@ export const castleTheme: TileTheme = {
     background: '#3a3028',
   },
   gridColor: '#5a4a30',
-  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number) {
+  drawTile(ctx: CanvasRenderingContext2D, type: TileType, x: number, y: number, size: number, context?: TileDrawContext) {
     const px = x * size;
     const py = y * size;
     const color = this.tileColors[type];
@@ -71,6 +71,14 @@ export const castleTheme: TileTheme = {
         ctx.moveTo(cx, py);
         ctx.lineTo(cx, py + s);
         ctx.stroke();
+
+        // Wall ambient occlusion
+        if (context) {
+          drawWallAO(ctx, px, py, size, x, y, (nx, ny) => {
+            const t = context.getTileBaseType(nx, ny);
+            return t === 'wall' || t === 'secret-door';
+          });
+        }
         break;
       }
 
@@ -347,6 +355,8 @@ export const castleTheme: TileTheme = {
       }
 
       case 'water': {
+        // Use shared enhanced water base
+        drawWaterTile(ctx, px, py, size, x, y, this.tileColors.water, 'rgba(80,140,200,0.2)');
         // Castle moat — gentle wave ripples with lily pads
         ctx.strokeStyle = '#7ac8f0';
         ctx.lineWidth = 1;
