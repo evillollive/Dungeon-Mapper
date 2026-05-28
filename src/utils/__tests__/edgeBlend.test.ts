@@ -5,7 +5,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { drawEdgeBlending } from '../edgeBlend';
 import type { Tile, EdgeBlendSettings } from '../../types/map';
-import type { TileTheme, TileDrawContext } from '../../themes';
+import type { TileTheme } from '../../themes';
 import type { BuiltInTileType, TileType } from '../../types/map';
 
 // ── Minimal mock theme ────────────────────────────────────────────────
