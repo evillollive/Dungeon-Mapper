@@ -1,7 +1,11 @@
 /**
- * Built-in stamp catalog — 196 SVG stamps (40 universal + 156 per-theme).
+ * Built-in stamp catalog — 226 SVG stamps (70 universal + 156 per-theme).
  * Organized by category: furniture, dungeon-dressing, nature, structures, markers.
  * Per-theme stamps are tagged with themeId and filtered via StampPicker.
+ *
+ * Universal stamps use multi-path (`paths[]`) for rich layered rendering:
+ * each sub-path carries its own fill, stroke, and strokeWidth so stamps
+ * render with depth, shading, and variable line weight.
  */
 import type { StampDef } from '../types/map';
 
@@ -12,56 +16,169 @@ export const BUILT_IN_STAMPS: StampDef[] = [
     name: 'Table',
     category: 'furniture',
     viewBox: '0 0 512 512',
-    svgPath: 'M64 192h384v32H64v-32zm80 32v160h32V224H144zm192 0v160h32V224h-32z',
+    paths: [
+      // Shadow
+      { path: 'M80 200 h360 v40 q0 8 -8 8 H88 q-8 0 -8 -8Z', fill: 'rgba(0,0,0,0.15)' },
+      // Legs
+      { path: 'M136 240v148 M376 240v148 M172 240v140 M340 240v140', stroke: '#5a3a1a', strokeWidth: 14 },
+      // Table top
+      { path: 'M72 180 h368 q8 0 8 8 v44 q0 8 -8 8 H72 q-8 0 -8 -8 v-44 q0 -8 8 -8Z', fill: '#8b6914', stroke: '#5a3a1a', strokeWidth: 10 },
+      // Wood grain
+      { path: 'M96 200 h320 M96 216 h320 M96 208 c80 -4 160 4 240 -2', stroke: '#7a5a10', strokeWidth: 2 },
+      // Highlight
+      { path: 'M88 188 h336', stroke: 'rgba(255,255,255,0.3)', strokeWidth: 4 },
+    ],
   },
   {
     id: 'chair',
     name: 'Chair',
     category: 'furniture',
     viewBox: '0 0 512 512',
-    svgPath: 'M192 128h128v192H192V128zm-16 192h160v32H176v-32zm16 32v96h32v-96h-32zm96 0v96h32v-96h-32z',
+    paths: [
+      // Shadow
+      { path: 'M192 148 h128 v180 H192Z', fill: 'rgba(0,0,0,0.1)' },
+      // Back rest
+      { path: 'M192 108 h128 v24 q0 8 -8 8 H200 q-8 0 -8 -8Z', fill: '#7a5a14', stroke: '#4a3010', strokeWidth: 8 },
+      // Seat
+      { path: 'M180 244 h152 v32 q0 6 -6 6 H186 q-6 0 -6 -6Z', fill: '#8b6914', stroke: '#4a3010', strokeWidth: 8 },
+      // Legs
+      { path: 'M196 276v108 M316 276v108', stroke: '#5a3a1a', strokeWidth: 12 },
+      // Back spindles
+      { path: 'M220 132v112 M256 132v112 M292 132v112', stroke: '#6a4a14', strokeWidth: 6 },
+    ],
   },
   {
     id: 'bed',
     name: 'Bed',
     category: 'furniture',
     viewBox: '0 0 512 512',
-    svgPath: 'M96 192h320v128H96V192zm0-48h96v48H96v-48zm0 176h32v48H96v-48zm288 0h32v48h-32v-48zM96 144c0-26.5 21.5-48 48-48h48v48H96z',
+    paths: [
+      // Shadow
+      { path: 'M88 170 h340 v180 H88Z', fill: 'rgba(0,0,0,0.08)' },
+      // Frame
+      { path: 'M80 160 h352 q8 0 8 8 v184 q0 8 -8 8 H80 q-8 0 -8 -8 v-184 q0 -8 8 -8Z', fill: '#7a5a14', stroke: '#4a3010', strokeWidth: 10 },
+      // Mattress
+      { path: 'M100 176 h312 q6 0 6 6 v140 q0 6 -6 6 H100 q-6 0 -6 -6 v-140 q0 -6 6 -6Z', fill: '#e8dcc8', stroke: '#c2b090', strokeWidth: 4 },
+      // Pillow
+      { path: 'M112 184 q0 -4 4 -4 h80 q4 0 4 4 v40 q0 4 -4 4 h-80 q-4 0 -4 -4Z', fill: '#f4efe4', stroke: '#c8c0b0', strokeWidth: 3 },
+      // Blanket fold
+      { path: 'M100 260 h312 M100 290 c60 12 120 -8 180 6 c40 8 92 -4 132 2', stroke: '#b8a888', strokeWidth: 3 },
+      // Headboard
+      { path: 'M80 148 h100 v28 H80Z', fill: '#6a4a10', stroke: '#3a2a08', strokeWidth: 6 },
+      // Legs
+      { path: 'M92 352v40 M420 352v40', stroke: '#5a3a1a', strokeWidth: 10 },
+    ],
   },
   {
     id: 'bookshelf',
     name: 'Bookshelf',
     category: 'furniture',
     viewBox: '0 0 512 512',
-    svgPath: 'M112 80h288v352H112V80zm32 32v96h64V112h-64zm96 0v96h64V112h-64zm96 0v96h64V112h-64zm-192 128v96h64V240h-64zm96 0v96h64V240h-64zm96 0v96h64V240h-64z',
+    paths: [
+      // Frame
+      { path: 'M104 68 h304 q8 0 8 8 v360 q0 8 -8 8 H104 q-8 0 -8 -8 v-360 q0 -8 8 -8Z', fill: '#6a4a14', stroke: '#3a2a08', strokeWidth: 10 },
+      // Shelves
+      { path: 'M112 196h288 M112 308h288', stroke: '#5a3a10', strokeWidth: 10 },
+      // Books row 1
+      { path: 'M128 96v92 M146 88v104 M162 92v100 M180 84v108 M198 90v102 M220 86v106 M240 94v98 M258 82v110 M278 90v102 M298 96v96 M318 84v108 M338 92v100 M358 88v104 M378 96v96', stroke: '#8a3a3a', strokeWidth: 10 },
+      { path: 'M146 88v104 M180 84v108 M258 82v110 M318 84v108', stroke: '#2a5a8a', strokeWidth: 10 },
+      { path: 'M220 86v106 M298 96v96 M378 96v96', stroke: '#3a6a3a', strokeWidth: 10 },
+      // Books row 2
+      { path: 'M128 210v90 M148 206v94 M168 212v88 M190 204v96 M212 210v90 M234 208v92 M256 214v86 M278 206v94 M300 212v88 M320 204v96 M342 210v90 M362 208v92 M382 214v86', stroke: '#6a4a8a', strokeWidth: 10 },
+      { path: 'M148 206v94 M212 210v90 M300 212v88 M362 208v92', stroke: '#8a6a2a', strokeWidth: 10 },
+      // Books row 3
+      { path: 'M128 320v88 M150 316v92 M172 322v86 M196 314v94 M218 320v88 M240 318v90 M262 324v84 M286 316v92 M308 322v86 M330 314v94 M352 318v90 M374 320v88', stroke: '#4a4a6a', strokeWidth: 10 },
+      { path: 'M150 316v92 M218 320v88 M308 322v86', stroke: '#8a5a3a', strokeWidth: 10 },
+    ],
   },
   {
     id: 'throne',
     name: 'Throne',
     category: 'furniture',
     viewBox: '0 0 512 512',
-    svgPath: 'M192 176h128v192H192V176zm-48-48h224v48H144v-48zm0 240h224v32H144v-32zm-32-288v288h32V128h-32zm288 0v288h-32V128h32zm-320-32h352v32H112V96z',
+    paths: [
+      // Shadow
+      { path: 'M152 108 h208 v310 H152Z', fill: 'rgba(0,0,0,0.1)' },
+      // Back
+      { path: 'M168 80 h176 q16 0 16 16 v60 q0 8 -8 8 H160 q-8 0 -8 -8 v-60 q0 -16 16 -16Z', fill: '#6a4a14', stroke: '#3a2a08', strokeWidth: 8 },
+      // Armrests
+      { path: 'M120 128 h48 v200 h-48Z', fill: '#7a5a18', stroke: '#3a2a08', strokeWidth: 8 },
+      { path: 'M344 128 h48 v200 h-48Z', fill: '#7a5a18', stroke: '#3a2a08', strokeWidth: 8 },
+      // Seat cushion
+      { path: 'M172 240 h168 q8 0 8 8 v72 q0 8 -8 8 H172 q-8 0 -8 -8 v-72 q0 -8 8 -8Z', fill: '#8a2020', stroke: '#5a1010', strokeWidth: 6 },
+      // Back cushion
+      { path: 'M180 120 h152 v116 H180Z', fill: '#9a2828', stroke: '#5a1010', strokeWidth: 4 },
+      // Gold trim
+      { path: 'M168 80 h176 M120 128 h272', stroke: '#d4af37', strokeWidth: 6 },
+      // Crown ornament
+      { path: 'M224 68 l16 -20 l16 20 l16 -20 l16 20', stroke: '#d4af37', strokeWidth: 5, fill: 'none' },
+      // Legs
+      { path: 'M136 328v72 M376 328v72', stroke: '#5a3a1a', strokeWidth: 12 },
+    ],
   },
   {
     id: 'cabinet',
     name: 'Cabinet',
     category: 'furniture',
     viewBox: '0 0 512 512',
-    svgPath: 'M128 96h256v320H128V96zm0 160h256M256 96v320m-96 0h192v16H160v-16zm72-208v48m48-48v48',
+    paths: [
+      // Body
+      { path: 'M136 84 h240 q8 0 8 8 v328 q0 8 -8 8 H136 q-8 0 -8 -8 v-328 q0 -8 8 -8Z', fill: '#7a5a14', stroke: '#3a2a08', strokeWidth: 10 },
+      // Divider
+      { path: 'M144 260 h224', stroke: '#4a3010', strokeWidth: 8 },
+      // Center divide
+      { path: 'M256 92 v328', stroke: '#4a3010', strokeWidth: 6 },
+      // Handles
+      { path: 'M232 178 a8 8 0 1 1 0 16 M280 178 a8 8 0 1 1 0 16', fill: '#d4af37', stroke: '#a08020', strokeWidth: 3 },
+      { path: 'M232 330 a8 8 0 1 1 0 16 M280 330 a8 8 0 1 1 0 16', fill: '#d4af37', stroke: '#a08020', strokeWidth: 3 },
+      // Feet
+      { path: 'M148 420 v16 q0 4 -8 4 M364 420 v16 q0 4 8 4', stroke: '#5a3a1a', strokeWidth: 8 },
+    ],
   },
   {
     id: 'fireplace',
     name: 'Fireplace',
     category: 'furniture',
     viewBox: '0 0 512 512',
-    svgPath: 'M96 352h320v64H96v-64zm32-192h256v192H128V160zm64 64c0 0 32 48 64 48s64-48 64-48c0 48-28.7 96-64 96s-64-48-64-96z',
+    paths: [
+      // Hearth base
+      { path: 'M80 340 h352 v80 q0 8 -8 8 H88 q-8 0 -8 -8Z', fill: '#5a5a5a', stroke: '#2a2a2a', strokeWidth: 8 },
+      // Stone surround
+      { path: 'M112 140 h288 v200 H112Z', fill: '#8a8070', stroke: '#4a4038', strokeWidth: 10 },
+      // Fire opening
+      { path: 'M176 200 q80 -40 160 0 v140 H176Z', fill: '#1a1008', stroke: '#3a2a18', strokeWidth: 6 },
+      // Fire
+      { path: 'M220 320 q16 -50 36 -80 q20 30 36 80Z', fill: '#e84820' },
+      { path: 'M236 320 q10 -36 20 -56 q10 20 20 56Z', fill: '#f0a820' },
+      { path: 'M248 320 q4 -20 8 -32 q4 12 8 32Z', fill: '#f8e040' },
+      // Mantle
+      { path: 'M96 128 h320 v20 H96Z', fill: '#6a4a14', stroke: '#3a2a08', strokeWidth: 6 },
+      // Stone detail
+      { path: 'M112 180h72 M112 220h60 M340 180h60 M350 220h50', stroke: '#6a6058', strokeWidth: 3 },
+    ],
   },
   {
     id: 'rug',
     name: 'Rug',
     category: 'furniture',
     viewBox: '0 0 512 512',
-    svgPath: 'M96 160h320v192H96V160zm16 16h288v160H112V176zm128 16l48 48-48 48-48-48 48-48z',
+    paths: [
+      // Shadow
+      { path: 'M92 164 h336 v192 H92Z', fill: 'rgba(0,0,0,0.06)' },
+      // Rug body
+      { path: 'M80 148 h352 v216 H80Z', fill: '#8a2828', stroke: '#5a1818', strokeWidth: 6 },
+      // Inner border
+      { path: 'M108 172 h296 v168 H108Z', fill: 'none', stroke: '#d4af37', strokeWidth: 5 },
+      // Inner field
+      { path: 'M128 192 h256 v128 H128Z', fill: '#6a1818' },
+      // Center diamond
+      { path: 'M256 208 l64 48 l-64 48 l-64 -48Z', fill: '#d4af37', stroke: '#a08020', strokeWidth: 3 },
+      // Corner ornaments
+      { path: 'M140 204 l20 0 l0 20 M372 204 l-20 0 l0 20 M140 308 l20 0 l0 -20 M372 308 l-20 0 l0 -20', stroke: '#d4af37', strokeWidth: 4 },
+      // Fringe
+      { path: 'M96 148v-16 M128 148v-16 M160 148v-16 M192 148v-16 M224 148v-16 M256 148v-16 M288 148v-16 M320 148v-16 M352 148v-16 M384 148v-16 M416 148v-16', stroke: '#8a2828', strokeWidth: 4 },
+      { path: 'M96 364v16 M128 364v16 M160 364v16 M192 364v16 M224 364v16 M256 364v16 M288 364v16 M320 364v16 M352 364v16 M384 364v16 M416 364v16', stroke: '#8a2828', strokeWidth: 4 },
+    ],
   },
 
   // ── Dungeon Dressing ──────────────────────────────────────────────────────
@@ -70,77 +187,242 @@ export const BUILT_IN_STAMPS: StampDef[] = [
     name: 'Chest',
     category: 'dungeon-dressing',
     viewBox: '0 0 512 512',
-    svgPath: 'M96 192h320v192H96V192zm0 0c0-35.3 28.7-64 64-64h192c35.3 0 64 28.7 64 64H96zm128 96h64v48h-64v-48zm-16-16a16 16 0 1 0 0-32 16 16 0 0 0 0 32z',
+    paths: [
+      // Shadow
+      { path: 'M100 200 h320 v196 H100Z', fill: 'rgba(0,0,0,0.1)' },
+      // Chest body
+      { path: 'M88 224 h336 v160 q0 8 -8 8 H96 q-8 0 -8 -8Z', fill: '#7a5a14', stroke: '#3a2a08', strokeWidth: 10 },
+      // Lid (arched)
+      { path: 'M88 224 q168 -80 336 0Z', fill: '#8b6914', stroke: '#3a2a08', strokeWidth: 10 },
+      // Metal bands
+      { path: 'M176 160v232 M336 160v232', stroke: '#888', strokeWidth: 8 },
+      // Lock plate
+      { path: 'M232 280 h48 v40 h-48Z', fill: '#aaa', stroke: '#666', strokeWidth: 4 },
+      // Keyhole
+      { path: 'M256 292 a6 6 0 1 1 0 12 M254 304 v10 h4 v-10', fill: '#333' },
+      // Lid highlight
+      { path: 'M120 212 q136 -60 272 0', stroke: 'rgba(255,255,255,0.2)', strokeWidth: 4 },
+    ],
   },
   {
     id: 'barrel',
     name: 'Barrel',
     category: 'dungeon-dressing',
     viewBox: '0 0 512 512',
-    svgPath: 'M176 96h160c44.2 0 80 35.8 80 80v160c0 44.2-35.8 80-80 80H176c-44.2 0-80-35.8-80-80V176c0-44.2 35.8-80 80-80zm0 32c-26.5 0-48 21.5-48 48v160c0 26.5 21.5 48 48 48h160c26.5 0 48-21.5 48-48V176c0-26.5-21.5-48-48-48H176zm-64 96h288v64H112v-64z',
+    paths: [
+      // Shadow
+      { path: 'M180 104 c70 -10 140 -10 200 0 v310 c-60 10 -140 10 -200 0Z', fill: 'rgba(0,0,0,0.08)' },
+      // Barrel body (bulging shape)
+      { path: 'M168 108 q88 -24 176 0 v296 q-88 24 -176 0Z', fill: '#8b6914', stroke: '#4a3010', strokeWidth: 10 },
+      // Staves (vertical grain lines)
+      { path: 'M208 100v312 M248 96v320 M296 96v320 M336 100v312', stroke: '#7a5a10', strokeWidth: 3 },
+      // Metal hoops
+      { path: 'M176 148 q80 -16 160 0 M172 252 q84 -20 168 0 M176 356 q80 -16 160 0', stroke: '#888', strokeWidth: 10 },
+      // Lid ellipse
+      { path: 'M176 108 q80 -20 160 0 q-80 20 -160 0Z', fill: '#9a7a20', stroke: '#5a3a10', strokeWidth: 4 },
+      // Highlight
+      { path: 'M200 140v220', stroke: 'rgba(255,255,255,0.12)', strokeWidth: 8 },
+    ],
   },
   {
     id: 'skull',
     name: 'Skull',
     category: 'dungeon-dressing',
     viewBox: '0 0 512 512',
-    svgPath: 'M256 64c-88.4 0-160 71.6-160 160 0 60 33 112.2 82 139.6V416h156v-52.4c49-27.4 82-79.6 82-139.6 0-88.4-71.6-160-160-160zm-48 160a24 24 0 1 1 0-48 24 24 0 0 1 0 48zm96 0a24 24 0 1 1 0-48 24 24 0 0 1 0 48zm-72 64h48v48h-48v-48z',
+    paths: [
+      // Shadow
+      { path: 'M256 80 c-90 0 -164 72 -164 164 c0 62 34 116 84 144 v40 h160 v-40 c50 -28 84 -82 84 -144 c0 -92 -74 -164 -164 -164Z', fill: 'rgba(0,0,0,0.08)' },
+      // Cranium
+      { path: 'M256 72 c-86 0 -156 70 -156 156 c0 58 32 108 80 136 v44 h152 v-44 c48 -28 80 -78 80 -136 c0 -86 -70 -156 -156 -156Z', fill: '#e8e0d0', stroke: '#888070', strokeWidth: 8 },
+      // Left eye socket
+      { path: 'M196 200 q12 -20 32 -16 q20 4 20 28 q0 24 -20 28 q-20 4 -32 -16Z', fill: '#2a2018' },
+      // Right eye socket
+      { path: 'M264 200 q12 -20 32 -16 q20 4 20 28 q0 24 -20 28 q-20 4 -32 -16Z', fill: '#2a2018' },
+      // Nose
+      { path: 'M244 276 l12 -20 l12 20Z', fill: '#2a2018' },
+      // Teeth
+      { path: 'M208 312 h96 v28 H208Z', fill: '#d8d0c0', stroke: '#888070', strokeWidth: 3 },
+      { path: 'M224 312v28 M240 312v28 M256 312v28 M272 312v28 M288 312v28', stroke: '#aaa090', strokeWidth: 2 },
+      // Jaw line
+      { path: 'M196 308 h120', stroke: '#888070', strokeWidth: 4 },
+      // Crack detail
+      { path: 'M280 100 q-8 40 4 60 q-4 20 8 40', stroke: '#aaa090', strokeWidth: 2 },
+    ],
   },
   {
     id: 'trap',
     name: 'Trap',
     category: 'dungeon-dressing',
     viewBox: '0 0 512 512',
-    svgPath: 'M128 128h256v256H128V128zm32 32l192 192m0-192L160 352m96-224v256m-128-128h256',
+    paths: [
+      // Floor plate
+      { path: 'M120 120 h272 v272 H120Z', fill: '#8a8070', stroke: '#5a5048', strokeWidth: 8 },
+      // Inner plate (pressure)
+      { path: 'M160 160 h192 v192 H160Z', fill: '#9a9080', stroke: '#6a6058', strokeWidth: 4 },
+      // Warning X
+      { path: 'M176 176 l160 160 M336 176 l-160 160', stroke: '#8a2020', strokeWidth: 12 },
+      // Center diamond
+      { path: 'M256 200 l40 56 l-40 56 l-40 -56Z', fill: '#8a2020', stroke: '#5a1010', strokeWidth: 4 },
+      // Corner rivets
+      { path: 'M140 140 a8 8 0 1 1 16 0 a8 8 0 1 1 -16 0', fill: '#aaa' },
+      { path: 'M356 140 a8 8 0 1 1 16 0 a8 8 0 1 1 -16 0', fill: '#aaa' },
+      { path: 'M140 356 a8 8 0 1 1 16 0 a8 8 0 1 1 -16 0', fill: '#aaa' },
+      { path: 'M356 356 a8 8 0 1 1 16 0 a8 8 0 1 1 -16 0', fill: '#aaa' },
+    ],
   },
   {
     id: 'altar',
     name: 'Altar',
     category: 'dungeon-dressing',
     viewBox: '0 0 512 512',
-    svgPath: 'M176 224h160v96H176V224zm-32 96h224v32H144V320zm32 32v64h32v-64h-32zm128 0v64h32v-64h-32zm-96-224l64-64 64 64h-128z',
+    paths: [
+      // Base/pedestal
+      { path: 'M128 340 h256 v48 q0 8 -8 8 H136 q-8 0 -8 -8Z', fill: '#8a8070', stroke: '#5a5048', strokeWidth: 8 },
+      // Altar table
+      { path: 'M160 220 h192 v120 H160Z', fill: '#a09888', stroke: '#5a5048', strokeWidth: 8 },
+      // Cloth drape
+      { path: 'M152 210 h208 v24 q-40 16 -80 8 q-40 -8 -80 8 v-24Z', fill: '#8a2020', stroke: '#5a1010', strokeWidth: 4 },
+      // Gold trim
+      { path: 'M152 234 q52 16 104 0 q52 -16 104 0', stroke: '#d4af37', strokeWidth: 4 },
+      // Candles
+      { path: 'M176 180v30 M336 180v30', stroke: '#e8dcc8', strokeWidth: 8 },
+      { path: 'M176 172 q0 -8 0 -16 M336 172 q0 -8 0 -16', stroke: '#f0a820', strokeWidth: 4 },
+      // Holy symbol
+      { path: 'M256 252 v48 M240 272 h32', stroke: '#d4af37', strokeWidth: 6 },
+      // Legs
+      { path: 'M176 340v0 M336 340v0', stroke: '#6a6058', strokeWidth: 10 },
+    ],
   },
   {
     id: 'lever',
     name: 'Lever',
     category: 'dungeon-dressing',
     viewBox: '0 0 512 512',
-    svgPath: 'M224 352h64v64H224v-64zm32-224v224m-64 32h128v16H192v-16zm64-256a16 16 0 1 1 0 32 16 16 0 0 1 0-32z',
+    paths: [
+      // Base plate
+      { path: 'M192 368 h128 v40 q0 6 -6 6 H198 q-6 0 -6 -6Z', fill: '#888', stroke: '#555', strokeWidth: 6 },
+      // Slot
+      { path: 'M240 372 h32 v28 h-32Z', fill: '#333' },
+      // Lever arm
+      { path: 'M256 380 l-48 -240', stroke: '#aaa', strokeWidth: 14 },
+      // Handle ball
+      { path: 'M208 140 a20 20 0 1 1 0 -1Z', fill: '#cc3030', stroke: '#8a2020', strokeWidth: 4 },
+      // Hinge
+      { path: 'M244 372 a12 12 0 1 1 24 0 a12 12 0 1 1 -24 0', fill: '#777', stroke: '#444', strokeWidth: 3 },
+    ],
   },
   {
     id: 'cage',
     name: 'Cage',
     category: 'dungeon-dressing',
     viewBox: '0 0 512 512',
-    svgPath: 'M144 96h224v320H144V96zm48 0v320m48-320v320m48-320v320m48-320v320M144 208h224M144 320h224',
+    paths: [
+      // Shadow
+      { path: 'M140 92 h232 v328 H140Z', fill: 'rgba(0,0,0,0.06)' },
+      // Top bar
+      { path: 'M136 88 h240 v16 H136Z', fill: '#888', stroke: '#555', strokeWidth: 4 },
+      // Bottom bar
+      { path: 'M136 408 h240 v16 H136Z', fill: '#888', stroke: '#555', strokeWidth: 4 },
+      // Vertical bars
+      { path: 'M176 88v336 M216 88v336 M256 88v336 M296 88v336 M336 88v336', stroke: '#777', strokeWidth: 8 },
+      // Horizontal bands
+      { path: 'M140 200 h232 M140 312 h232', stroke: '#888', strokeWidth: 6 },
+      // Lock
+      { path: 'M144 244 h24 v24 h-24Z', fill: '#aa8820', stroke: '#775510', strokeWidth: 3 },
+    ],
   },
   {
     id: 'cauldron',
     name: 'Cauldron',
     category: 'dungeon-dressing',
     viewBox: '0 0 512 512',
-    svgPath: 'M160 208c0-53 43-96 96-96s96 43 96 96v64c0 53-43 96-96 96s-96-43-96-96v-64zm-32 32a16 16 0 1 1 0-32 16 16 0 0 1 0 32zm256 0a16 16 0 1 1 0-32 16 16 0 0 1 0 32zm-192 160h128m-96 0v32m64-32v32',
+    paths: [
+      // Shadow
+      { path: 'M160 204 q96 -20 192 0 v160 q-96 20 -192 0Z', fill: 'rgba(0,0,0,0.08)' },
+      // Cauldron body
+      { path: 'M148 200 q108 -28 216 0 v128 q-108 40 -216 0Z', fill: '#3a3a3a', stroke: '#1a1a1a', strokeWidth: 10 },
+      // Rim
+      { path: 'M140 196 q116 -32 232 0', stroke: '#555', strokeWidth: 14 },
+      // Liquid
+      { path: 'M168 220 q80 -16 176 0 v80 q-96 28 -176 0Z', fill: '#2a7a2a' },
+      // Bubbles
+      { path: 'M220 240 a8 8 0 1 1 16 0 a8 8 0 1 1 -16 0', fill: '#4aba4a' },
+      { path: 'M280 250 a6 6 0 1 1 12 0 a6 6 0 1 1 -12 0', fill: '#4aba4a' },
+      { path: 'M248 228 a4 4 0 1 1 8 0 a4 4 0 1 1 -8 0', fill: '#4aba4a' },
+      // Handles
+      { path: 'M136 220 q-32 0 -32 -24 q0 -24 32 -24', stroke: '#555', strokeWidth: 8, fill: 'none' },
+      { path: 'M376 220 q32 0 32 -24 q0 -24 -32 -24', stroke: '#555', strokeWidth: 8, fill: 'none' },
+      // Legs
+      { path: 'M192 356v44 M320 356v44', stroke: '#333', strokeWidth: 10 },
+    ],
   },
   {
     id: 'sarcophagus',
     name: 'Sarcophagus',
     category: 'dungeon-dressing',
     viewBox: '0 0 512 512',
-    svgPath: 'M176 112h160c17.7 0 32 14.3 32 32v224c0 17.7-14.3 32-32 32H176c-17.7 0-32-14.3-32-32V144c0-17.7 14.3-32 32-32zm16 32h128v64H192V144zm40 96h48v96h-48V240z',
+    paths: [
+      // Shadow
+      { path: 'M176 112 h168 q20 0 20 20 v240 q0 20 -20 20 H176 q-20 0 -20 -20 v-240 q0 -20 20 -20Z', fill: 'rgba(0,0,0,0.08)' },
+      // Body
+      { path: 'M172 108 h168 q16 0 16 16 v248 q0 16 -16 16 H172 q-16 0 -16 -16 v-248 q0 -16 16 -16Z', fill: '#a09888', stroke: '#5a5048', strokeWidth: 10 },
+      // Lid inset
+      { path: 'M192 128 h128 v224 H192Z', fill: '#b8b0a0', stroke: '#8a8070', strokeWidth: 4 },
+      // Face area
+      { path: 'M216 148 h80 v60 H216Z', fill: '#c8c0b0', stroke: '#9a9080', strokeWidth: 3 },
+      // Crossed arms
+      { path: 'M208 240 l96 48 M304 240 l-96 48', stroke: '#8a8070', strokeWidth: 6 },
+      // Hieroglyphics
+      { path: 'M212 328 h88 M220 312 h72 M228 296 h56', stroke: '#9a9080', strokeWidth: 3 },
+      // Gold accents
+      { path: 'M232 160 h48 M256 148v24', stroke: '#d4af37', strokeWidth: 4 },
+    ],
   },
   {
     id: 'treasure-pile',
     name: 'Treasure',
     category: 'dungeon-dressing',
     viewBox: '0 0 512 512',
-    svgPath: 'M160 320c0-53 43-96 96-96s96 43 96 96H160zm-32 0h256v48H128v-48zm48-128a24 24 0 1 1 48 0 24 24 0 0 1-48 0zm96 16a24 24 0 1 1 48 0 24 24 0 0 1-48 0zm-48-64a24 24 0 1 1 48 0 24 24 0 0 1-48 0z',
+    paths: [
+      // Coin pile base
+      { path: 'M144 320 q56 -80 112 -80 q56 0 112 80Z', fill: '#d4af37', stroke: '#a08020', strokeWidth: 6 },
+      // Gold mound highlights
+      { path: 'M180 300 q40 -48 76 -48 q36 0 76 48', fill: '#e8c840' },
+      { path: 'M216 280 q24 -28 40 -28 q16 0 40 28', fill: '#f0d848' },
+      // Individual coins
+      { path: 'M180 316 a10 4 0 1 1 20 0 a10 4 0 1 1 -20 0', fill: '#f0d848', stroke: '#c0a030', strokeWidth: 2 },
+      { path: 'M280 308 a10 4 0 1 1 20 0 a10 4 0 1 1 -20 0', fill: '#f0d848', stroke: '#c0a030', strokeWidth: 2 },
+      { path: 'M330 320 a10 4 0 1 1 20 0 a10 4 0 1 1 -20 0', fill: '#f0d848', stroke: '#c0a030', strokeWidth: 2 },
+      // Gems
+      { path: 'M228 268 l8 -12 l8 12 l-8 8Z', fill: '#e03030', stroke: '#8a1010', strokeWidth: 2 },
+      { path: 'M296 280 l6 -10 l6 10 l-6 6Z', fill: '#3060e0', stroke: '#1030a0', strokeWidth: 2 },
+      { path: 'M260 260 l5 -8 l5 8 l-5 5Z', fill: '#30c030', stroke: '#108010', strokeWidth: 2 },
+      // Chest peek
+      { path: 'M320 296 h60 v28 H320Z', fill: '#7a5a14', stroke: '#3a2a08', strokeWidth: 4 },
+      // Floor line
+      { path: 'M120 332 h272', stroke: '#8a8070', strokeWidth: 3 },
+    ],
   },
   {
     id: 'well',
     name: 'Well',
     category: 'dungeon-dressing',
     viewBox: '0 0 512 512',
-    svgPath: 'M256 128c70.7 0 128 57.3 128 128s-57.3 128-128 128-128-57.3-128-128 57.3-128 128-128zm0 48c-44.2 0-80 35.8-80 80s35.8 80 80 80 80-35.8 80-80-35.8-80-80-80z',
+    paths: [
+      // Shadow
+      { path: 'M256 128 a132 132 0 1 1 -1 0Z', fill: 'rgba(0,0,0,0.06)' },
+      // Stone ring outer
+      { path: 'M256 120 a136 136 0 1 1 -1 0Z', fill: '#8a8070', stroke: '#5a5048', strokeWidth: 8 },
+      // Water/darkness inside
+      { path: 'M256 172 a84 84 0 1 1 -1 0Z', fill: '#1a2a4a' },
+      // Inner ring
+      { path: 'M256 172 a84 84 0 1 1 -1 0Z', fill: 'none', stroke: '#6a6058', strokeWidth: 6 },
+      // Water reflection
+      { path: 'M220 248 q36 -12 72 0', stroke: 'rgba(100,140,200,0.4)', strokeWidth: 4 },
+      { path: 'M232 264 q24 -8 48 0', stroke: 'rgba(100,140,200,0.3)', strokeWidth: 3 },
+      // Stone texture
+      { path: 'M160 200 a100 100 0 0 1 40 -60 M320 160 a100 100 0 0 1 32 48', stroke: '#7a7060', strokeWidth: 3 },
+    ],
   },
 
   // ── Nature ────────────────────────────────────────────────────────────────
@@ -149,56 +431,169 @@ export const BUILT_IN_STAMPS: StampDef[] = [
     name: 'Tree',
     category: 'nature',
     viewBox: '0 0 512 512',
-    svgPath: 'M256 64l-96 160h48l-64 128h56l-40 96h192l-40-96h56l-64-128h48L256 64zm-16 320h32v64h-32v-64z',
+    paths: [
+      // Shadow
+      { path: 'M256 100 q-120 60 -100 200 q10 40 60 60 q40 20 80 0 q60 -20 60 -60 q20 -140 -100 -200Z', fill: 'rgba(0,0,0,0.08)' },
+      // Trunk
+      { path: 'M240 320 v88 h32 v-88Z', fill: '#6a4a14', stroke: '#3a2a08', strokeWidth: 6 },
+      // Roots
+      { path: 'M236 400 q-20 12 -36 8 M276 400 q20 12 36 8', stroke: '#5a3a10', strokeWidth: 6 },
+      // Canopy layers (back to front for depth)
+      { path: 'M256 80 q-100 40 -108 140 q-4 60 48 88 q40 24 120 0 q52 -28 48 -88 q-8 -100 -108 -140Z', fill: '#2a6a1a', stroke: '#1a4a10', strokeWidth: 8 },
+      { path: 'M256 100 q-80 36 -84 116 q-2 48 40 68 q32 20 88 0 q42 -20 40 -68 q-4 -80 -84 -116Z', fill: '#3a8a28' },
+      { path: 'M256 120 q-56 28 -56 84 q0 32 28 48 q24 12 56 0 q28 -16 28 -48 q0 -56 -56 -84Z', fill: '#4a9a38' },
+      // Light dapples
+      { path: 'M224 180 q12 -4 20 4 M280 200 q8 -6 16 2 M248 160 q6 -4 14 0', stroke: '#5aaa48', strokeWidth: 4 },
+    ],
   },
   {
     id: 'campfire',
     name: 'Campfire',
     category: 'nature',
     viewBox: '0 0 512 512',
-    svgPath: 'M256 64c0 0 80 96 80 192s-35.8 128-80 128-80-32-80-128S256 64 256 64zm-96 320l64 64m64 0l96-64m-192 0c0 0-32 32-48 32m288-32c0 0 32 32 48 32',
+    paths: [
+      // Glow
+      { path: 'M256 160 a100 100 0 1 1 -1 0Z', fill: 'rgba(240,120,20,0.08)' },
+      // Log ring
+      { path: 'M160 340 l60 40 M352 340 l-60 40 M180 360 h152', stroke: '#5a3a1a', strokeWidth: 16 },
+      { path: 'M164 336 l64 44 M348 336 l-64 44', stroke: '#6a4a20', strokeWidth: 12 },
+      // Embers
+      { path: 'M220 352 q36 -8 72 0', fill: '#e03020', stroke: '#a02010', strokeWidth: 4 },
+      // Outer flame
+      { path: 'M256 120 q-48 40 -48 120 q0 60 48 80 q48 -20 48 -80 q0 -80 -48 -120Z', fill: '#e84820' },
+      // Mid flame
+      { path: 'M256 160 q-32 32 -32 88 q0 40 32 56 q32 -16 32 -56 q0 -56 -32 -88Z', fill: '#f0a820' },
+      // Inner flame
+      { path: 'M256 200 q-16 24 -16 52 q0 24 16 32 q16 -8 16 -32 q0 -28 -16 -52Z', fill: '#f8e040' },
+      // Sparks
+      { path: 'M240 140 v-12 M272 144 v-16 M232 160 l-8 -8 M280 156 l8 -12', stroke: '#f0a820', strokeWidth: 3 },
+    ],
   },
   {
     id: 'rock',
     name: 'Rock',
     category: 'nature',
     viewBox: '0 0 512 512',
-    svgPath: 'M192 320l-48-96 64-64 80-16 96 32 32 80-48 80-96 16-80-32z',
+    paths: [
+      // Shadow
+      { path: 'M184 328 l-56 -92 l68 -68 l84 -20 l100 36 l36 84 l-52 84 l-100 16Z', fill: 'rgba(0,0,0,0.1)' },
+      // Rock body
+      { path: 'M180 320 l-52 -88 l64 -64 l80 -16 l96 32 l32 80 l-48 80 l-96 12Z', fill: '#8a8478', stroke: '#5a5448', strokeWidth: 8 },
+      // Highlight face
+      { path: 'M192 232 l64 -64 l80 -16 l-64 80Z', fill: '#9a9488' },
+      // Cracks
+      { path: 'M240 200 l20 40 l-8 60 M300 220 l-16 48 M216 280 l28 20', stroke: '#6a6458', strokeWidth: 3 },
+      // Highlight edge
+      { path: 'M192 232 l64 -64', stroke: 'rgba(255,255,255,0.2)', strokeWidth: 4 },
+    ],
   },
   {
     id: 'bush',
     name: 'Bush',
     category: 'nature',
     viewBox: '0 0 512 512',
-    svgPath: 'M256 160c53 0 96 43 96 96s-43 96-96 96-96-43-96-96 43-96 96-96zm-64 32c-35.3 0-64 28.7-64 64s28.7 64 64 64m128-128c35.3 0 64 28.7 64 64s-28.7 64-64 64',
+    paths: [
+      // Shadow
+      { path: 'M256 160 q100 0 108 96 q4 60 -48 80 q-48 20 -120 0 q-52 -20 -48 -80 q8 -96 108 -96Z', fill: 'rgba(0,0,0,0.06)' },
+      // Left lobe
+      { path: 'M176 260 q-48 -8 -48 -52 q0 -56 64 -56 q40 0 52 32', fill: '#2a7a1a', stroke: '#1a5a10', strokeWidth: 6 },
+      // Right lobe
+      { path: 'M336 260 q48 -8 48 -52 q0 -56 -64 -56 q-40 0 -52 32', fill: '#2a7a1a', stroke: '#1a5a10', strokeWidth: 6 },
+      // Center mass
+      { path: 'M256 144 q-80 0 -88 80 q-4 48 40 68 q40 20 96 0 q44 -20 40 -68 q-8 -80 -88 -80Z', fill: '#3a8a28', stroke: '#1a6a10', strokeWidth: 6 },
+      // Leaf detail
+      { path: 'M220 200 q16 -8 28 4 M280 196 q12 -4 24 8 M248 172 q8 -6 20 2 M232 240 q20 -4 32 8', stroke: '#4a9a38', strokeWidth: 4 },
+      // Berries
+      { path: 'M212 268 a5 5 0 1 1 10 0 a5 5 0 1 1 -10 0', fill: '#c03030' },
+      { path: 'M296 264 a5 5 0 1 1 10 0 a5 5 0 1 1 -10 0', fill: '#c03030' },
+    ],
   },
   {
     id: 'mushroom',
     name: 'Mushroom',
     category: 'nature',
     viewBox: '0 0 512 512',
-    svgPath: 'M256 128c-70.7 0-128 40-128 96h256c0-56-57.3-96-128-96zm-32 96v160h64V224h-64zm-80 160h224v32H144v-32z',
+    paths: [
+      // Shadow
+      { path: 'M216 256 h80 v148 H216Z', fill: 'rgba(0,0,0,0.06)' },
+      // Stem
+      { path: 'M224 256 q-4 60 0 120 q4 20 32 28 q28 -8 32 -28 q4 -60 0 -120Z', fill: '#e8dcc8', stroke: '#b8a888', strokeWidth: 6 },
+      // Cap
+      { path: 'M256 108 q-108 0 -108 80 q0 48 48 68 q36 12 60 12 q24 0 60 -12 q48 -20 48 -68 q0 -80 -108 -80Z', fill: '#a03030', stroke: '#6a1818', strokeWidth: 8 },
+      // Cap spots
+      { path: 'M216 168 a12 10 0 1 1 24 0 a12 10 0 1 1 -24 0', fill: '#e8dcc8' },
+      { path: 'M272 156 a10 8 0 1 1 20 0 a10 8 0 1 1 -20 0', fill: '#e8dcc8' },
+      { path: 'M240 200 a8 6 0 1 1 16 0 a8 6 0 1 1 -16 0', fill: '#e8dcc8' },
+      { path: 'M296 188 a8 6 0 1 1 16 0 a8 6 0 1 1 -16 0', fill: '#e8dcc8' },
+      { path: 'M192 196 a6 5 0 1 1 12 0 a6 5 0 1 1 -12 0', fill: '#e8dcc8' },
+      // Underside gills hint
+      { path: 'M184 244 q72 8 144 0', stroke: '#8a7060', strokeWidth: 3 },
+    ],
   },
   {
     id: 'pond',
     name: 'Pond',
     category: 'nature',
     viewBox: '0 0 512 512',
-    svgPath: 'M256 144c88.4 0 160 50 160 112s-71.6 112-160 112-160-50-160-112 71.6-112 160-112zm0 32c-70.7 0-128 35.8-128 80s57.3 80 128 80 128-35.8 128-80-57.3-80-128-80z',
+    paths: [
+      // Muddy edge
+      { path: 'M256 128 q120 0 168 80 q24 48 0 96 q-48 80 -168 80 q-120 0 -168 -80 q-24 -48 0 -96 q48 -80 168 -80Z', fill: '#6a8a5a', stroke: '#4a6a3a', strokeWidth: 6 },
+      // Water body
+      { path: 'M256 152 q100 0 144 68 q20 40 0 80 q-44 68 -144 68 q-100 0 -144 -68 q-20 -40 0 -80 q44 -68 144 -68Z', fill: '#2a5a8a', stroke: '#1a4a7a', strokeWidth: 4 },
+      // Reflections
+      { path: 'M208 240 q48 -12 96 0', stroke: 'rgba(120,180,240,0.4)', strokeWidth: 4 },
+      { path: 'M224 268 q32 -8 64 0', stroke: 'rgba(120,180,240,0.3)', strokeWidth: 3 },
+      { path: 'M216 296 q40 -6 80 0', stroke: 'rgba(120,180,240,0.2)', strokeWidth: 3 },
+      // Lily pads
+      { path: 'M312 216 a16 12 0 1 1 32 0 a16 12 0 1 1 -32 0', fill: '#3a7a2a', stroke: '#2a5a1a', strokeWidth: 2 },
+      { path: 'M180 280 a14 10 0 1 1 28 0 a14 10 0 1 1 -28 0', fill: '#3a7a2a', stroke: '#2a5a1a', strokeWidth: 2 },
+      // Reeds
+      { path: 'M348 176 v-32 q4 -8 8 0 v24 M164 304 v-28 q4 -8 8 0 v20', stroke: '#4a6a2a', strokeWidth: 4 },
+    ],
   },
   {
     id: 'log',
     name: 'Log',
     category: 'nature',
     viewBox: '0 0 512 512',
-    svgPath: 'M128 224h256c17.7 0 32 14.3 32 32v0c0 17.7-14.3 32-32 32H128c-17.7 0-32-14.3-32-32v0c0-17.7 14.3-32 32-32zm0 48h256c17.7 0 32 14.3 32 32v0c0 17.7-14.3 32-32 32H128c-17.7 0-32-14.3-32-32v0c0-17.7 14.3-32 32-32z',
+    paths: [
+      // Shadow
+      { path: 'M108 240 h300 q24 0 24 20 q0 20 -24 20 H108 q-24 0 -24 -20 q0 -20 24 -20Z', fill: 'rgba(0,0,0,0.08)' },
+      // Log body
+      { path: 'M104 216 h304 q20 0 20 24 v16 q0 24 -20 24 H104 q-20 0 -20 -24 v-16 q0 -24 20 -24Z', fill: '#6a4a14', stroke: '#3a2a08', strokeWidth: 8 },
+      // Bark texture
+      { path: 'M120 228 c40 4 80 -2 120 2 c40 -4 80 6 120 -2 M120 256 c40 -2 80 4 120 0 c40 4 80 -2 120 2', stroke: '#5a3a10', strokeWidth: 3 },
+      // End grain (left)
+      { path: 'M84 220 q0 -16 20 -16 q20 0 20 16 v40 q0 16 -20 16 q-20 0 -20 -16Z', fill: '#c8a870', stroke: '#5a3a10', strokeWidth: 6 },
+      // Rings
+      { path: 'M96 240 a8 16 0 1 1 16 0 a8 16 0 1 1 -16 0', fill: 'none', stroke: '#a08050', strokeWidth: 2 },
+      // Moss patches
+      { path: 'M200 220 q12 -4 24 0 q-12 4 -24 0Z', fill: '#4a8a2a' },
+      { path: 'M320 224 q8 -4 20 0 q-8 4 -20 0Z', fill: '#4a8a2a' },
+      // Second log
+      { path: 'M128 272 h256 q16 0 16 20 v12 q0 20 -16 20 H128 q-16 0 -16 -20 v-12 q0 -20 16 -20Z', fill: '#7a5a18', stroke: '#4a3010', strokeWidth: 6 },
+    ],
   },
   {
     id: 'vine',
     name: 'Vine',
     category: 'nature',
     viewBox: '0 0 512 512',
-    svgPath: 'M256 64v384M224 128c-32 16-48 48-32 80s48 48 80 32M288 224c32 16 48 48 32 80s-48 48-80 32M224 320c-32 16-48 48-32 80',
+    paths: [
+      // Main vine stem
+      { path: 'M256 48 q-16 40 0 80 q16 40 0 80 q-16 40 0 80 q16 40 0 80 q-16 40 0 80 q16 40 0 80', stroke: '#3a6a1a', strokeWidth: 10 },
+      // Tendrils
+      { path: 'M256 108 q-40 -8 -56 16 M256 188 q40 -8 56 16 M256 268 q-44 -4 -60 20 M256 348 q44 -4 60 20', stroke: '#4a8a2a', strokeWidth: 6 },
+      // Leaves left
+      { path: 'M200 96 q-24 -4 -32 16 q8 12 32 8Z', fill: '#3a8a28', stroke: '#2a6a18', strokeWidth: 3 },
+      { path: 'M192 256 q-28 -8 -40 12 q12 16 40 12Z', fill: '#3a8a28', stroke: '#2a6a18', strokeWidth: 3 },
+      // Leaves right
+      { path: 'M312 176 q24 -4 32 16 q-8 12 -32 8Z', fill: '#3a8a28', stroke: '#2a6a18', strokeWidth: 3 },
+      { path: 'M316 336 q28 -8 40 12 q-12 16 -40 12Z', fill: '#3a8a28', stroke: '#2a6a18', strokeWidth: 3 },
+      // Flowers
+      { path: 'M176 116 a6 6 0 1 1 12 0 a6 6 0 1 1 -12 0', fill: '#d060d0' },
+      { path: 'M328 196 a6 6 0 1 1 12 0 a6 6 0 1 1 -12 0', fill: '#e0e040' },
+    ],
   },
 
   // ── Structures ────────────────────────────────────────────────────────────
@@ -207,56 +602,158 @@ export const BUILT_IN_STAMPS: StampDef[] = [
     name: 'Pillar',
     category: 'structures',
     viewBox: '0 0 512 512',
-    svgPath: 'M208 96h96v32h-96V96zm-16 32h128v320H192V128zm-16 320h160v32H176v-32z',
+    paths: [
+      // Shadow
+      { path: 'M204 100 h112 v340 H204Z', fill: 'rgba(0,0,0,0.08)' },
+      // Capital (top)
+      { path: 'M184 84 h144 v28 q0 8 -12 8 H196 q-12 0 -12 -8Z', fill: '#b8b0a0', stroke: '#7a7060', strokeWidth: 6 },
+      // Shaft
+      { path: 'M200 120 h112 v280 H200Z', fill: '#a09888', stroke: '#6a6058', strokeWidth: 8 },
+      // Fluting
+      { path: 'M224 120v280 M256 120v280 M288 120v280', stroke: '#8a8070', strokeWidth: 4 },
+      // Base
+      { path: 'M184 400 h144 v28 q0 8 -8 8 H192 q-8 0 -8 -8Z', fill: '#b8b0a0', stroke: '#7a7060', strokeWidth: 6 },
+      // Highlight
+      { path: 'M208 124v272', stroke: 'rgba(255,255,255,0.15)', strokeWidth: 6 },
+      // Capital detail
+      { path: 'M192 98 h128 M192 106 q32 8 64 0 q32 -8 64 0', stroke: '#8a8070', strokeWidth: 3 },
+    ],
   },
   {
     id: 'door',
     name: 'Door',
     category: 'structures',
     viewBox: '0 0 512 512',
-    svgPath: 'M176 96h160v320H176V96zm16 16h128v288H192V112zm96 144a16 16 0 1 1 0 32 16 16 0 0 1 0-32z',
+    paths: [
+      // Frame
+      { path: 'M164 84 h184 v344 H164Z', fill: '#5a5048', stroke: '#3a3028', strokeWidth: 10 },
+      // Door panel
+      { path: 'M184 100 h144 v312 H184Z', fill: '#7a5a14', stroke: '#4a3010', strokeWidth: 8 },
+      // Planks
+      { path: 'M220 100v312 M256 100v312 M292 100v312', stroke: '#6a4a10', strokeWidth: 3 },
+      // Cross brace
+      { path: 'M192 200 h128 M192 300 h128', stroke: '#5a3a10', strokeWidth: 8 },
+      // Handle
+      { path: 'M300 252 a12 12 0 1 1 24 0 a12 12 0 1 1 -24 0', fill: '#d4af37', stroke: '#a08020', strokeWidth: 3 },
+      // Keyhole
+      { path: 'M312 280 v12 M308 280 h8', stroke: '#333', strokeWidth: 3 },
+      // Hinges
+      { path: 'M184 160 h-12 v24 h12 M184 340 h-12 v24 h12', fill: '#666', stroke: '#444', strokeWidth: 3 },
+      // Arch top
+      { path: 'M184 100 q72 -32 144 0', stroke: '#5a5048', strokeWidth: 6 },
+    ],
   },
   {
     id: 'ladder',
     name: 'Ladder',
     category: 'structures',
     viewBox: '0 0 512 512',
-    svgPath: 'M192 64v384m128-384v384M192 128h128M192 208h128M192 288h128M192 368h128',
+    paths: [
+      // Shadow
+      { path: 'M196 60 h128 v396 H196Z', fill: 'rgba(0,0,0,0.06)' },
+      // Rails
+      { path: 'M192 56 v400', stroke: '#6a4a14', strokeWidth: 16 },
+      { path: 'M320 56 v400', stroke: '#6a4a14', strokeWidth: 16 },
+      // Rungs
+      { path: 'M192 112 h128 M192 184 h128 M192 256 h128 M192 328 h128 M192 400 h128', stroke: '#7a5a18', strokeWidth: 12 },
+      // Rung shadows
+      { path: 'M192 120 h128 M192 192 h128 M192 264 h128 M192 336 h128 M192 408 h128', stroke: 'rgba(0,0,0,0.15)', strokeWidth: 4 },
+      // Highlight
+      { path: 'M188 60v396', stroke: 'rgba(255,255,255,0.12)', strokeWidth: 4 },
+    ],
   },
   {
     id: 'stairs-up',
     name: 'Stairs Up',
     category: 'structures',
     viewBox: '0 0 512 512',
-    svgPath: 'M128 384h64v-64h64v-64h64v-64h64v-64h-256v256zm128-192h128v64H256v-64zm0 64h96v64h-96v-64zm0 64h64v64h-64v-64z',
+    paths: [
+      // Stair treads (back to front)
+      { path: 'M128 128 h256 v64 H128Z', fill: '#9a9488', stroke: '#6a6458', strokeWidth: 6 },
+      { path: 'M128 192 h224 v64 H128Z', fill: '#8a8478', stroke: '#6a6458', strokeWidth: 6 },
+      { path: 'M128 256 h192 v64 H128Z', fill: '#7a7468', stroke: '#5a5448', strokeWidth: 6 },
+      { path: 'M128 320 h160 v64 H128Z', fill: '#6a6458', stroke: '#4a4438', strokeWidth: 6 },
+      // Arrow indicator
+      { path: 'M340 332 l40 -120 M380 212 l-20 8 M380 212 l-8 20', stroke: '#8a3a3a', strokeWidth: 8 },
+      // Step edges
+      { path: 'M128 192 h224 M128 256 h192 M128 320 h160', stroke: 'rgba(255,255,255,0.15)', strokeWidth: 3 },
+    ],
   },
   {
     id: 'stairs-down',
     name: 'Stairs Down',
     category: 'structures',
     viewBox: '0 0 512 512',
-    svgPath: 'M128 128h256v256h-64v-64h-64v-64h-64v-64h-64V128zm0 0h64v64h64v64h64v64h64v64',
+    paths: [
+      // Stair treads
+      { path: 'M128 128 h160 v64 H128Z', fill: '#9a9488', stroke: '#6a6458', strokeWidth: 6 },
+      { path: 'M128 192 h192 v64 H128Z', fill: '#8a8478', stroke: '#6a6458', strokeWidth: 6 },
+      { path: 'M128 256 h224 v64 H128Z', fill: '#7a7468', stroke: '#5a5448', strokeWidth: 6 },
+      { path: 'M128 320 h256 v64 H128Z', fill: '#6a6458', stroke: '#4a4438', strokeWidth: 6 },
+      // Arrow indicator
+      { path: 'M340 172 l40 120 M380 292 l-20 -8 M380 292 l-8 -20', stroke: '#8a3a3a', strokeWidth: 8 },
+      // Step shadows
+      { path: 'M128 192 h192 M128 256 h224 M128 320 h256', stroke: 'rgba(0,0,0,0.15)', strokeWidth: 3 },
+    ],
   },
   {
     id: 'bridge',
     name: 'Bridge',
     category: 'structures',
     viewBox: '0 0 512 512',
-    svgPath: 'M128 208h256v96H128V208zm0 0v-48m256 48v-48M128 304v48m256-48v48M160 208v96m64-96v96m64-96v96m64-96v96',
+    paths: [
+      // Water underneath
+      { path: 'M96 200 h320 v120 H96Z', fill: '#2a5a8a' },
+      { path: 'M120 248 q40 -8 80 0 q40 8 80 0 q40 -8 80 0', stroke: 'rgba(100,160,220,0.3)', strokeWidth: 3 },
+      // Bridge deck
+      { path: 'M120 196 h272 v108 H120Z', fill: '#7a5a14', stroke: '#4a3010', strokeWidth: 8 },
+      // Planks
+      { path: 'M152 196v108 M184 196v108 M216 196v108 M248 196v108 M280 196v108 M312 196v108 M344 196v108 M376 196v108', stroke: '#6a4a10', strokeWidth: 2 },
+      // Railing posts
+      { path: 'M128 148v48 M168 148v48 M256 148v48 M344 148v48 M384 148v48', stroke: '#5a3a1a', strokeWidth: 10 },
+      { path: 'M128 304v48 M168 304v48 M256 304v48 M344 304v48 M384 304v48', stroke: '#5a3a1a', strokeWidth: 10 },
+      // Railing rails
+      { path: 'M128 160 h256 M128 340 h256', stroke: '#6a4a14', strokeWidth: 6 },
+    ],
   },
   {
     id: 'gate',
     name: 'Gate',
     category: 'structures',
     viewBox: '0 0 512 512',
-    svgPath: 'M144 128h64v256h-64V128zm160 0h64v256h-64V128zM208 128h96v32H208V128zm0 224h96v32H208v-32zm48-224v256m-48-128h96',
+    paths: [
+      // Left tower
+      { path: 'M128 112 h72 v288 H128Z', fill: '#8a8070', stroke: '#5a5048', strokeWidth: 8 },
+      // Right tower
+      { path: 'M312 112 h72 v288 H312Z', fill: '#8a8070', stroke: '#5a5048', strokeWidth: 8 },
+      // Arch
+      { path: 'M200 112 q56 -40 112 0 v180 H200Z', fill: '#1a1a1a', stroke: '#5a5048', strokeWidth: 6 },
+      // Portcullis bars
+      { path: 'M224 116v176 M256 100v192 M288 116v176', stroke: '#888', strokeWidth: 6 },
+      { path: 'M204 160 h104 M204 220 h104', stroke: '#888', strokeWidth: 4 },
+      // Battlements
+      { path: 'M128 112 v-20h20v20h-20 M148 112v-20h16v20 M180 112v-20h20v20h-20', stroke: '#6a6058', strokeWidth: 3, fill: '#8a8070' },
+      { path: 'M312 112 v-20h20v20h-20 M348 112v-20h16v20 M364 112v-20h20v20h-20', stroke: '#6a6058', strokeWidth: 3, fill: '#8a8070' },
+      // Stone texture
+      { path: 'M136 160h56 M136 208h56 M136 256h56 M136 304h56 M320 160h56 M320 208h56 M320 256h56 M320 304h56', stroke: '#7a7060', strokeWidth: 2 },
+    ],
   },
   {
     id: 'fence',
     name: 'Fence',
     category: 'structures',
     viewBox: '0 0 512 512',
-    svgPath: 'M128 192h256v16H128v-16zm0 96h256v16H128v-16zM160 160v192m64-192v192m64-192v192m64-192v192m-192-224l16-32 16 32m48-32l16-32 16 32m48-32l16-32 16 32m48-32l16-32 16 32',
+    paths: [
+      // Horizontal rails
+      { path: 'M112 200 h288 M112 296 h288', stroke: '#7a5a14', strokeWidth: 12 },
+      // Pickets with pointed tops
+      { path: 'M144 152 l12 -24 l12 24 v196 h-24Z', fill: '#8b6914', stroke: '#5a3a10', strokeWidth: 4 },
+      { path: 'M208 152 l12 -24 l12 24 v196 h-24Z', fill: '#8b6914', stroke: '#5a3a10', strokeWidth: 4 },
+      { path: 'M272 152 l12 -24 l12 24 v196 h-24Z', fill: '#8b6914', stroke: '#5a3a10', strokeWidth: 4 },
+      { path: 'M336 152 l12 -24 l12 24 v196 h-24Z', fill: '#8b6914', stroke: '#5a3a10', strokeWidth: 4 },
+      // Post caps shadow
+      { path: 'M144 152h24 M208 152h24 M272 152h24 M336 152h24', stroke: 'rgba(0,0,0,0.15)', strokeWidth: 3 },
+    ],
   },
 
   // ── Markers ───────────────────────────────────────────────────────────────
@@ -265,42 +762,403 @@ export const BUILT_IN_STAMPS: StampDef[] = [
     name: 'Flag',
     category: 'markers',
     viewBox: '0 0 512 512',
-    svgPath: 'M176 96v320m0-320h192l-48 64 48 64H176',
+    paths: [
+      // Pole
+      { path: 'M168 80 v352', stroke: '#6a4a14', strokeWidth: 12 },
+      // Flag body
+      { path: 'M168 88 h200 l-48 56 l48 56 H168Z', fill: '#8a2020', stroke: '#5a1010', strokeWidth: 6 },
+      // Flag fold shading
+      { path: 'M220 88 q20 30 0 56 q-20 30 0 56', stroke: '#6a1818', strokeWidth: 4 },
+      // Emblem
+      { path: 'M280 128 l16 24 l-16 24 l-16 -24Z', fill: '#d4af37' },
+      // Pole ball
+      { path: 'M168 80 a10 10 0 1 1 0 -1Z', fill: '#d4af37', stroke: '#a08020', strokeWidth: 3 },
+    ],
   },
   {
     id: 'star',
     name: 'Star',
     category: 'markers',
     viewBox: '0 0 512 512',
-    svgPath: 'M256 96l48 112h120l-96 72 36 116-108-80-108 80 36-116-96-72h120l48-112z',
+    paths: [
+      // Glow
+      { path: 'M256 80 l52 120 h128 l-104 80 l40 124 l-116 -88 l-116 88 l40 -124 l-104 -80 h128Z', fill: 'rgba(212,175,55,0.15)' },
+      // Star body
+      { path: 'M256 96 l48 112 h120 l-96 72 l36 116 l-108 -80 l-108 80 l36 -116 l-96 -72 h120Z', fill: '#d4af37', stroke: '#a08020', strokeWidth: 8 },
+      // Inner highlight
+      { path: 'M256 148 l28 64 h68 l-56 40 l20 68 l-60 -48 l-60 48 l20 -68 l-56 -40 h68Z', fill: '#e8c840' },
+    ],
   },
   {
     id: 'arrow-marker',
     name: 'Arrow',
     category: 'markers',
     viewBox: '0 0 512 512',
-    svgPath: 'M256 416V96m0 0l-96 96m96-96l96 96',
+    paths: [
+      // Shadow
+      { path: 'M260 420 V100 l-100 100 M260 100 l100 100', stroke: 'rgba(0,0,0,0.1)', strokeWidth: 20 },
+      // Shaft
+      { path: 'M256 400 V120', stroke: '#8a3a3a', strokeWidth: 16 },
+      // Head
+      { path: 'M256 88 l-80 80 h48 v-80Z', fill: '#8a3a3a', stroke: '#5a1010', strokeWidth: 4 },
+      { path: 'M256 88 l80 80 h-48 v-80Z', fill: '#a04040', stroke: '#5a1010', strokeWidth: 4 },
+      // Fletching
+      { path: 'M240 360 l-20 40 l36 -16 M272 360 l20 40 l-36 -16', fill: '#6a6058', stroke: '#4a4038', strokeWidth: 3 },
+    ],
   },
   {
     id: 'question-mark',
     name: 'Unknown',
     category: 'markers',
     viewBox: '0 0 512 512',
-    svgPath: 'M192 192c0-35.3 28.7-64 64-64s64 28.7 64 64c0 28-18 52-43 61v35h-42v-64c24-4 43-25 43-48 0-26.5-21.5-48-48-48s-48 21.5-48 48h-32zm48 160h32v32h-32v-32z',
+    paths: [
+      // Circle background
+      { path: 'M256 64 a192 192 0 1 1 -1 0Z', fill: 'rgba(138,58,58,0.12)' },
+      // Question mark body
+      { path: 'M192 192 q0 -48 64 -48 q64 0 64 48 q0 32 -40 48 v40 h-48 v-60 q36 -8 40 -36 q2 -24 -16 -24 q-32 0 -32 32Z', fill: '#8a3a3a', stroke: '#5a1010', strokeWidth: 4 },
+      // Dot
+      { path: 'M236 336 h40 v40 h-40Z', fill: '#8a3a3a', stroke: '#5a1010', strokeWidth: 4 },
+    ],
   },
   {
     id: 'cross-marker',
     name: 'X Mark',
     category: 'markers',
     viewBox: '0 0 512 512',
-    svgPath: 'M144 144l224 224m0-224L144 368',
+    paths: [
+      // Background circle
+      { path: 'M256 80 a176 176 0 1 1 -1 0Z', fill: 'rgba(138,32,32,0.1)' },
+      // X strokes
+      { path: 'M152 152 l208 208', stroke: '#8a2020', strokeWidth: 24 },
+      { path: 'M360 152 l-208 208', stroke: '#8a2020', strokeWidth: 24 },
+      // Highlight edges
+      { path: 'M158 146 l208 208 M354 146 l-208 208', stroke: '#a03030', strokeWidth: 6 },
+    ],
   },
   {
     id: 'key',
     name: 'Key',
     category: 'markers',
     viewBox: '0 0 512 512',
-    svgPath: 'M320 192a64 64 0 1 1-128 0 64 64 0 0 1 128 0zm-64 64v160m-32-64h64m-64-48h64',
+    paths: [
+      // Shadow
+      { path: 'M328 192 a72 72 0 1 0 -144 0 a72 72 0 1 0 144 0Z', fill: 'rgba(0,0,0,0.06)' },
+      // Bow (ring)
+      { path: 'M320 184 a64 64 0 1 0 -128 0 a64 64 0 1 0 128 0Z', fill: '#d4af37', stroke: '#a08020', strokeWidth: 10 },
+      // Bow inner
+      { path: 'M292 184 a36 36 0 1 0 -72 0 a36 36 0 1 0 72 0Z', fill: '#e8c840', stroke: '#c0a030', strokeWidth: 4 },
+      // Shaft
+      { path: 'M256 248 v168', stroke: '#d4af37', strokeWidth: 14 },
+      // Bit teeth
+      { path: 'M256 352 h36 v24 h-36 M256 392 h28 v20 h-28', fill: '#d4af37', stroke: '#a08020', strokeWidth: 4 },
+      // Highlight
+      { path: 'M236 140 a40 40 0 0 1 40 -40', stroke: 'rgba(255,255,255,0.3)', strokeWidth: 4 },
+    ],
+  },
+
+  // ── New Stamps: Lighting ──────────────────────────────────────────────────
+  {
+    id: 'torch-wall',
+    name: 'Wall Torch',
+    category: 'dungeon-dressing',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Glow
+      { path: 'M256 120 a80 80 0 1 1 -1 0Z', fill: 'rgba(240,168,32,0.1)' },
+      // Bracket
+      { path: 'M208 280 h96 v24 H208Z', fill: '#888', stroke: '#555', strokeWidth: 4 },
+      // Handle
+      { path: 'M240 200 h32 v104 h-32Z', fill: '#6a4a14', stroke: '#3a2a08', strokeWidth: 6 },
+      // Flame outer
+      { path: 'M256 100 q-28 28 -28 68 q0 32 28 44 q28 -12 28 -44 q0 -40 -28 -68Z', fill: '#e84820' },
+      // Flame mid
+      { path: 'M256 120 q-18 22 -18 48 q0 24 18 32 q18 -8 18 -32 q0 -26 -18 -48Z', fill: '#f0a820' },
+      // Flame inner
+      { path: 'M256 140 q-8 14 -8 28 q0 12 8 16 q8 -4 8 -16 q0 -14 -8 -28Z', fill: '#f8e040' },
+    ],
+  },
+  {
+    id: 'candelabra',
+    name: 'Candelabra',
+    category: 'furniture',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Base
+      { path: 'M208 400 h96 v20 q0 8 -8 8 H216 q-8 0 -8 -8Z', fill: '#d4af37', stroke: '#a08020', strokeWidth: 4 },
+      // Stem
+      { path: 'M248 200 h16 v200 h-16Z', fill: '#d4af37', stroke: '#a08020', strokeWidth: 3 },
+      // Arms
+      { path: 'M256 220 q-60 0 -60 -40 M256 220 q60 0 60 -40', stroke: '#d4af37', strokeWidth: 8 },
+      // Candles
+      { path: 'M184 148 h24 v32 h-24Z', fill: '#e8dcc8', stroke: '#b8a888', strokeWidth: 3 },
+      { path: 'M244 160 h24 v40 h-24Z', fill: '#e8dcc8', stroke: '#b8a888', strokeWidth: 3 },
+      { path: 'M304 148 h24 v32 h-24Z', fill: '#e8dcc8', stroke: '#b8a888', strokeWidth: 3 },
+      // Flames
+      { path: 'M196 120 q-6 -16 0 -28 q6 12 0 28Z', fill: '#f0a820' },
+      { path: 'M256 132 q-6 -16 0 -28 q6 12 0 28Z', fill: '#f0a820' },
+      { path: 'M316 120 q-6 -16 0 -28 q6 12 0 28Z', fill: '#f0a820' },
+    ],
+  },
+  {
+    id: 'lantern',
+    name: 'Lantern',
+    category: 'dungeon-dressing',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Glow
+      { path: 'M256 180 a80 80 0 1 1 -1 0Z', fill: 'rgba(240,168,32,0.08)' },
+      // Hook
+      { path: 'M240 88 h32 q8 0 8 8 v24 h-48 v-24 q0 -8 8 -8Z', fill: '#888', stroke: '#555', strokeWidth: 3 },
+      // Frame
+      { path: 'M208 120 h96 v160 H208Z', fill: 'none', stroke: '#888', strokeWidth: 10 },
+      // Glass panels
+      { path: 'M216 128 h80 v144 H216Z', fill: 'rgba(240,200,100,0.3)', stroke: '#aa8820', strokeWidth: 3 },
+      // Flame
+      { path: 'M256 168 q-12 16 -12 36 q0 16 12 20 q12 -4 12 -20 q0 -20 -12 -36Z', fill: '#f0a820' },
+      // Base
+      { path: 'M204 280 h104 v16 q0 4 -4 4 H208 q-4 0 -4 -4Z', fill: '#888', stroke: '#555', strokeWidth: 4 },
+    ],
+  },
+
+  // ── New Stamps: Food & Drink ──────────────────────────────────────────────
+  {
+    id: 'goblet',
+    name: 'Goblet',
+    category: 'furniture',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Base
+      { path: 'M208 400 h96 v16 q0 4 -4 4 H212 q-4 0 -4 -4Z', fill: '#d4af37', stroke: '#a08020', strokeWidth: 4 },
+      // Stem
+      { path: 'M248 280 h16 v120 h-16Z', fill: '#d4af37', stroke: '#a08020', strokeWidth: 3 },
+      // Cup
+      { path: 'M192 140 q-4 60 20 100 q16 28 44 40 q28 -12 44 -40 q24 -40 20 -100Z', fill: '#d4af37', stroke: '#a08020', strokeWidth: 8 },
+      // Wine
+      { path: 'M204 168 q52 -8 104 0 q-8 48 -28 72 q-12 16 -24 20 q-12 -4 -24 -20 q-20 -24 -28 -72Z', fill: '#6a1020' },
+      // Highlight
+      { path: 'M212 160 q24 -4 40 0', stroke: 'rgba(255,255,255,0.2)', strokeWidth: 4 },
+    ],
+  },
+  {
+    id: 'tankard',
+    name: 'Tankard',
+    category: 'furniture',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Body
+      { path: 'M184 140 h128 q8 0 8 8 v232 q0 8 -8 8 H184 q-8 0 -8 -8 v-232 q0 -8 8 -8Z', fill: '#6a4a14', stroke: '#3a2a08', strokeWidth: 8 },
+      // Handle
+      { path: 'M312 180 q48 0 48 48 v64 q0 48 -48 48', stroke: '#5a3a10', strokeWidth: 12, fill: 'none' },
+      // Ale
+      { path: 'M192 160 h112 v200 H192Z', fill: '#c08830' },
+      // Foam
+      { path: 'M192 148 q28 12 56 0 q28 -12 56 0 v20 q-28 8 -56 0 q-28 -8 -56 0Z', fill: '#f4f0e0', stroke: '#d8d0c0', strokeWidth: 2 },
+      // Band
+      { path: 'M180 260 h136', stroke: '#888', strokeWidth: 6 },
+    ],
+  },
+
+  // ── New Stamps: Magical ───────────────────────────────────────────────────
+  {
+    id: 'magic-circle',
+    name: 'Magic Circle',
+    category: 'dungeon-dressing',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Outer glow
+      { path: 'M256 64 a192 192 0 1 1 -1 0Z', fill: 'rgba(100,60,200,0.06)' },
+      // Outer ring
+      { path: 'M256 80 a176 176 0 1 1 -1 0Z', fill: 'none', stroke: '#6a3aca', strokeWidth: 6 },
+      // Inner ring
+      { path: 'M256 128 a128 128 0 1 1 -1 0Z', fill: 'none', stroke: '#6a3aca', strokeWidth: 4 },
+      // Pentagram
+      { path: 'M256 128 l74 228 l-194 -140 h240 l-194 140Z', fill: 'none', stroke: '#8a4ae0', strokeWidth: 5 },
+      // Runes on outer ring
+      { path: 'M256 84 v16 M412 256 h-16 M256 432 v-16 M100 256 h16', stroke: '#8a4ae0', strokeWidth: 4 },
+      { path: 'M366 134 l-12 12 M366 378 l-12 -12 M146 134 l12 12 M146 378 l12 -12', stroke: '#8a4ae0', strokeWidth: 4 },
+    ],
+  },
+  {
+    id: 'crystal',
+    name: 'Crystal',
+    category: 'dungeon-dressing',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Glow
+      { path: 'M256 100 a120 160 0 1 1 -1 0Z', fill: 'rgba(100,180,240,0.08)' },
+      // Main crystal
+      { path: 'M224 380 l-24 -160 l56 -140 l56 140 l-24 160Z', fill: '#4a9ae0', stroke: '#2a6aaa', strokeWidth: 6 },
+      // Highlight facet
+      { path: 'M256 80 l-56 140 l56 20Z', fill: '#6abaff' },
+      // Side crystal left
+      { path: 'M180 380 l-16 -100 l32 -80 l20 80Z', fill: '#5aaaee', stroke: '#3a8acc', strokeWidth: 4 },
+      // Side crystal right
+      { path: 'M332 380 l16 -100 l-32 -80 l-20 80Z', fill: '#5aaaee', stroke: '#3a8acc', strokeWidth: 4 },
+      // Internal facets
+      { path: 'M256 80 v300 M200 220 l56 20 l56 -20', stroke: 'rgba(255,255,255,0.15)', strokeWidth: 3 },
+    ],
+  },
+  {
+    id: 'potion',
+    name: 'Potion',
+    category: 'dungeon-dressing',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Bottle body
+      { path: 'M200 240 q-24 40 -24 88 q0 60 80 80 q80 -20 80 -80 q0 -48 -24 -88Z', fill: '#2a8a4a', stroke: '#1a5a2a', strokeWidth: 8 },
+      // Neck
+      { path: 'M232 140 h48 v100 h-48Z', fill: '#e8e0d0', stroke: '#aaa090', strokeWidth: 6 },
+      // Cork
+      { path: 'M228 112 h56 v32 h-56Z', fill: '#a08040', stroke: '#705020', strokeWidth: 4 },
+      // Liquid
+      { path: 'M208 268 q48 -12 96 0 q-8 48 -24 68 q-12 20 -24 24 q-12 -4 -24 -24 q-16 -20 -24 -68Z', fill: '#30c060' },
+      // Bubbles
+      { path: 'M244 300 a6 6 0 1 1 12 0 a6 6 0 1 1 -12 0', fill: 'rgba(200,255,200,0.5)' },
+      { path: 'M264 280 a4 4 0 1 1 8 0 a4 4 0 1 1 -8 0', fill: 'rgba(200,255,200,0.4)' },
+      // Label
+      { path: 'M228 316 h56 v32 h-56Z', fill: '#f4efe4', stroke: '#c8c0b0', strokeWidth: 2 },
+    ],
+  },
+  {
+    id: 'scroll',
+    name: 'Scroll',
+    category: 'dungeon-dressing',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Shadow
+      { path: 'M140 140 h240 v240 H140Z', fill: 'rgba(0,0,0,0.06)' },
+      // Paper body
+      { path: 'M160 148 h200 v224 H160Z', fill: '#f4efe4', stroke: '#c8b890', strokeWidth: 4 },
+      // Top roll
+      { path: 'M148 148 q4 -20 20 -20 h176 q16 0 20 20Z', fill: '#e8dcc8', stroke: '#b8a888', strokeWidth: 6 },
+      // Bottom roll
+      { path: 'M148 372 q4 20 20 20 h176 q16 0 20 -20Z', fill: '#e8dcc8', stroke: '#b8a888', strokeWidth: 6 },
+      // Text lines
+      { path: 'M184 188 h144 M184 216 h132 M184 244 h144 M184 272 h120 M184 300 h144 M184 328 h108', stroke: '#8a7a60', strokeWidth: 3 },
+      // Wax seal
+      { path: 'M316 352 a16 16 0 1 1 -1 0Z', fill: '#8a2020', stroke: '#5a1010', strokeWidth: 3 },
+    ],
+  },
+  {
+    id: 'spiderweb',
+    name: 'Spider Web',
+    category: 'nature',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Radial threads
+      { path: 'M256 256 l-160 -160 M256 256 l0 -200 M256 256 l160 -160 M256 256 l200 0 M256 256 l160 160 M256 256 l0 200 M256 256 l-160 160 M256 256 l-200 0', stroke: '#aaa', strokeWidth: 2 },
+      // Spiral rings
+      { path: 'M216 136 q40 -20 80 0 q20 40 0 80 q-40 20 -80 0 q-20 -40 0 -80Z', fill: 'none', stroke: '#bbb', strokeWidth: 2 },
+      { path: 'M176 96 q80 -40 160 0 q40 80 0 160 q-80 40 -160 0 q-40 -80 0 -160Z', fill: 'none', stroke: '#bbb', strokeWidth: 2 },
+      { path: 'M136 56 q120 -60 240 0 q60 120 0 240 q-120 60 -240 0 q-60 -120 0 -240Z', fill: 'none', stroke: '#ccc', strokeWidth: 1.5 },
+      // Spider
+      { path: 'M252 252 a8 8 0 1 1 8 0 a8 8 0 1 1 -8 0Z', fill: '#333' },
+    ],
+  },
+  {
+    id: 'crate',
+    name: 'Crate',
+    category: 'dungeon-dressing',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Shadow
+      { path: 'M136 140 h248 v248 H136Z', fill: 'rgba(0,0,0,0.08)' },
+      // Crate body
+      { path: 'M128 128 h256 v256 H128Z', fill: '#8b6914', stroke: '#4a3010', strokeWidth: 10 },
+      // Planks
+      { path: 'M128 213h256 M128 298h256', stroke: '#6a4a10', strokeWidth: 4 },
+      // Cross braces
+      { path: 'M144 144 l224 224 M368 144 l-224 224', stroke: '#5a3a08', strokeWidth: 8 },
+      // Corner irons
+      { path: 'M128 128h32v32 M384 128h-32v32 M128 384h32v-32 M384 384h-32v-32', stroke: '#888', strokeWidth: 8 },
+      // Nails
+      { path: 'M148 148 a3 3 0 1 1 6 0 a3 3 0 1 1 -6 0', fill: '#aaa' },
+      { path: 'M358 148 a3 3 0 1 1 6 0 a3 3 0 1 1 -6 0', fill: '#aaa' },
+      { path: 'M148 358 a3 3 0 1 1 6 0 a3 3 0 1 1 -6 0', fill: '#aaa' },
+      { path: 'M358 358 a3 3 0 1 1 6 0 a3 3 0 1 1 -6 0', fill: '#aaa' },
+    ],
+  },
+  {
+    id: 'anvil',
+    name: 'Anvil',
+    category: 'dungeon-dressing',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Shadow
+      { path: 'M120 280 h280 v100 H120Z', fill: 'rgba(0,0,0,0.08)' },
+      // Base
+      { path: 'M160 340 h192 v48 q0 8 -8 8 H168 q-8 0 -8 -8Z', fill: '#555', stroke: '#333', strokeWidth: 6 },
+      // Waist
+      { path: 'M192 280 h128 v60 H192Z', fill: '#666', stroke: '#444', strokeWidth: 4 },
+      // Face
+      { path: 'M120 220 h272 v60 H120Z', fill: '#777', stroke: '#444', strokeWidth: 8 },
+      // Horn
+      { path: 'M120 220 q-40 8 -56 28 q4 4 8 4 h48Z', fill: '#888', stroke: '#555', strokeWidth: 4 },
+      // Heel
+      { path: 'M392 220 q20 4 32 20 q-2 4 -8 8 h-24Z', fill: '#888', stroke: '#555', strokeWidth: 4 },
+      // Face highlight
+      { path: 'M136 228 h240', stroke: 'rgba(255,255,255,0.2)', strokeWidth: 4 },
+    ],
+  },
+  {
+    id: 'signpost',
+    name: 'Signpost',
+    category: 'structures',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Post
+      { path: 'M244 128 h24 v312 h-24Z', fill: '#6a4a14', stroke: '#3a2a08', strokeWidth: 6 },
+      // Sign right
+      { path: 'M268 148 h140 l24 28 l-24 28 H268Z', fill: '#7a5a14', stroke: '#4a3010', strokeWidth: 5 },
+      // Sign left
+      { path: 'M244 220 h-140 l-24 28 l24 28 h140Z', fill: '#8b6914', stroke: '#5a3a10', strokeWidth: 5 },
+      // Text hints
+      { path: 'M288 172 h88 M288 188 h76', stroke: '#4a3010', strokeWidth: 3 },
+      { path: 'M136 244 h80 M136 260 h68', stroke: '#4a3010', strokeWidth: 3 },
+      // Post cap
+      { path: 'M236 128 h40 v-16 q-20 -16 -40 0Z', fill: '#5a3a10', stroke: '#3a2a08', strokeWidth: 4 },
+    ],
+  },
+  {
+    id: 'bones',
+    name: 'Bones',
+    category: 'dungeon-dressing',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Bone 1 (diagonal)
+      { path: 'M160 320 l160 -160', stroke: '#e0d8c8', strokeWidth: 14 },
+      { path: 'M148 332 a12 12 0 1 1 24 0 a12 12 0 1 1 -24 0', fill: '#e8e0d0', stroke: '#c8c0b0', strokeWidth: 3 },
+      { path: 'M308 148 a12 12 0 1 1 24 0 a12 12 0 1 1 -24 0', fill: '#e8e0d0', stroke: '#c8c0b0', strokeWidth: 3 },
+      // Bone 2 (crossing)
+      { path: 'M320 320 l-160 -160', stroke: '#d8d0c0', strokeWidth: 14 },
+      { path: 'M308 332 a12 12 0 1 1 24 0 a12 12 0 1 1 -24 0', fill: '#e0d8c8', stroke: '#c0b8a8', strokeWidth: 3 },
+      { path: 'M148 172 a12 12 0 1 1 24 0 a12 12 0 1 1 -24 0', fill: '#e0d8c8', stroke: '#c0b8a8', strokeWidth: 3 },
+      // Center shadow
+      { path: 'M244 244 a16 16 0 1 1 24 0', fill: 'rgba(0,0,0,0.08)' },
+    ],
+  },
+  {
+    id: 'tombstone',
+    name: 'Tombstone',
+    category: 'structures',
+    viewBox: '0 0 512 512',
+    paths: [
+      // Shadow
+      { path: 'M172 392 h176 v24 H172Z', fill: 'rgba(0,0,0,0.1)' },
+      // Stone body
+      { path: 'M168 392 h176 v-240 q-88 -60 -176 0Z', fill: '#8a8478', stroke: '#5a5448', strokeWidth: 8 },
+      // Inner face
+      { path: 'M192 380 h128 v-208 q-64 -44 -128 0Z', fill: '#9a9488' },
+      // Cross
+      { path: 'M244 200 h24 v80 h-24Z M228 232 h56 v24 h-56Z', fill: '#b8b0a0', stroke: '#7a7468', strokeWidth: 3 },
+      // RIP text
+      { path: 'M216 320 h80', stroke: '#7a7468', strokeWidth: 4 },
+      { path: 'M224 340 h64', stroke: '#7a7468', strokeWidth: 3 },
+      // Ground
+      { path: 'M140 392 h232', stroke: '#5a7a3a', strokeWidth: 6 },
+      // Grass tufts
+      { path: 'M160 392 q4 -12 8 0 M200 392 q4 -10 8 0 M340 392 q4 -12 8 0', stroke: '#4a6a2a', strokeWidth: 3 },
+    ],
   },
 
   // ══════════════════════════════════════════════════════════════════════════
