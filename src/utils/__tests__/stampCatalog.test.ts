@@ -13,7 +13,7 @@ describe('BUILT_IN_STAMPS', () => {
       expect(stamp.name).toBeTruthy();
       expect(stamp.category).toBeTruthy();
       expect(stamp.viewBox).toBeTruthy();
-      expect(stamp.svgPath).toBeTruthy();
+      expect(stamp.svgPath || stamp.paths).toBeTruthy();
     }
   });
 
