@@ -22,15 +22,14 @@ export function useLevelManagement(
       debouncedSave(updated);
       return updated;
     });
-    setActiveLevelIndex(idx);
     setProject(prev => {
+      if (idx < 0 || idx >= prev.levels.length) return prev;
+      setActiveLevelIndex(idx);
       const level = prev.levels[idx];
-      if (level) {
-        syncIdsToLevel(level);
-        const h = getHistory(idx);
-        setCanUndo(h.past.length > 0);
-        setCanRedo(h.future.length > 0);
-      }
+      syncIdsToLevel(level);
+      const h = getHistory(idx);
+      setCanUndo(h.past.length > 0);
+      setCanRedo(h.future.length > 0);
       setSelectedNoteId(null);
       return prev;
     });

@@ -38,6 +38,7 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
       <div className="notes-header">
         <span className="toolbar-label">ROOM NOTES</span>
         <button
+          type="button"
           className="add-note-btn"
           onClick={onActivateNoteTool}
           title="Select Note tool then click on map"
@@ -88,8 +89,8 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
                   rows={3}
                 />
                 <div className="note-edit-actions">
-                  <button className="note-save-btn" onClick={() => saveEdit(note.id)}>Save</button>
-                  <button className="note-cancel-btn" onClick={() => setEditingId(null)}>Cancel</button>
+                  <button type="button" className="note-save-btn" onClick={(e) => { e.stopPropagation(); saveEdit(note.id); }}>Save</button>
+                  <button type="button" className="note-cancel-btn" onClick={(e) => { e.stopPropagation(); setEditingId(null); }}>Cancel</button>
                 </div>
               </div>
             ) : (

@@ -821,10 +821,13 @@ export interface DungeonProject {
  * `DungeonProject` (has a `levels` array) rather than a bare `DungeonMap`.
  */
 export function isDungeonProject(obj: unknown): obj is DungeonProject {
+  if (typeof obj !== 'object' || obj === null) return false;
+  const candidate = obj as Record<string, unknown>;
   return (
-    typeof obj === 'object' &&
-    obj !== null &&
-    Array.isArray((obj as DungeonProject).levels)
+    Array.isArray(candidate.levels) &&
+    candidate.levels.length > 0 &&
+    typeof candidate.name === 'string' &&
+    typeof candidate.activeLevelIndex === 'number'
   );
 }
 

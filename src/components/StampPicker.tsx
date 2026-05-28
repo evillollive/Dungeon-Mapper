@@ -118,7 +118,7 @@ const StampPicker: React.FC<StampPickerProps> = ({
       {/* Stamp grid */}
       <div className="stamp-grid" role="listbox" aria-label="Available stamps">
         {filteredStamps.map(stamp => (
-          <div key={stamp.id} style={{ position: 'relative', display: 'contents' }}>
+          <div key={stamp.id} style={{ position: 'relative' }}>
             <button
               type="button"
               role="option"
@@ -132,7 +132,6 @@ const StampPicker: React.FC<StampPickerProps> = ({
               title={stamp.name}
               aria-label={stamp.name}
               aria-selected={selectedStampId === stamp.id}
-              style={{ position: 'relative' }}
             >
               {stamp.imageDataUrl ? (
                 <img
@@ -167,24 +166,24 @@ const StampPicker: React.FC<StampPickerProps> = ({
                 </svg>
               )}
               <span className="stamp-grid-item-label">{stamp.name}</span>
-              {/* Delete overlay for custom stamps */}
-              {filterCategory === 'custom' && onDeleteCustomStamp && (
-                <button
-                  type="button"
-                  onClick={ev => { ev.stopPropagation(); onDeleteCustomStamp(stamp.id); }}
-                  title={`Delete custom stamp "${stamp.name}"`}
-                  aria-label={`Delete stamp ${stamp.name}`}
-                  style={{
-                    position: 'absolute', top: 1, right: 1,
-                    width: 14, height: 14, fontSize: '0.55rem',
-                    background: '#dc2626', color: '#fff',
-                    border: 'none', borderRadius: 2, cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    lineHeight: 1, padding: 0,
-                  }}
-                >✕</button>
-              )}
             </button>
+            {/* Delete button outside the stamp button to avoid nested interactive elements */}
+            {filterCategory === 'custom' && onDeleteCustomStamp && (
+              <button
+                type="button"
+                onClick={() => onDeleteCustomStamp(stamp.id)}
+                title={`Delete custom stamp "${stamp.name}"`}
+                aria-label={`Delete stamp ${stamp.name}`}
+                style={{
+                  position: 'absolute', top: 1, right: 1, zIndex: 1,
+                  width: 14, height: 14, fontSize: '0.55rem',
+                  background: '#dc2626', color: '#fff',
+                  border: 'none', borderRadius: 2, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  lineHeight: 1, padding: 0,
+                }}
+              >✕</button>
+            )}
           </div>
         ))}
       </div>

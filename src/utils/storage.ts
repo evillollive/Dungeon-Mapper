@@ -32,17 +32,13 @@ export function wrapMapAsProject(map: DungeonMap): DungeonProject {
 }
 
 export async function saveProject(project: DungeonProject): Promise<void> {
-  try {
-    const db = await openDB();
-    return new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      tx.objectStore(STORE_NAME).put(project, AUTOSAVE_KEY);
-      tx.oncomplete = () => resolve();
-      tx.onerror = () => reject(tx.error);
-    });
-  } catch (err) {
-    console.warn('[dungeon-mapper] Failed to save project:', err);
-  }
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    tx.objectStore(STORE_NAME).put(project, AUTOSAVE_KEY);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
 }
 
 /** @deprecated Use `saveProject` instead. Kept for migration path only. */
@@ -91,8 +87,11 @@ export async function migrateFromLocalStorage(): Promise<void> {
     if (!raw) return;
     const map = JSON.parse(raw) as DungeonMap;
     await saveProject(wrapMapAsProject(map));
+    // Only remove legacy key after a verified successful save
     localStorage.removeItem(LEGACY_KEY);
-  } catch { /* ignore */ }
+  } catch (err) {
+    console.warn('[dungeon-mapper] Migration from localStorage failed — legacy data preserved:', err);
+  }
 }
 
 export function clearSavedMap(): void {

@@ -21,8 +21,9 @@ export function useMapPersistence(
     loadProjectFromStorage().then(loaded => {
       if (loaded) {
         const ready = withProjectDefaults(loaded);
+        if (ready.levels.length === 0) return;
         setProject(ready);
-        const idx = Math.min(ready.activeLevelIndex, ready.levels.length - 1);
+        const idx = Math.max(0, Math.min(ready.activeLevelIndex, ready.levels.length - 1));
         setActiveLevelIndex(idx);
         syncIdsToLevel(ready.levels[idx]);
       }

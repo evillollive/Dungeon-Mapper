@@ -139,6 +139,7 @@ export default function LevelTabs({
           <div
             key={idx}
             role="tab"
+            tabIndex={isActive ? 0 : -1}
             aria-selected={isActive}
             className={
               'level-tab' +
@@ -148,6 +149,23 @@ export default function LevelTabs({
             }
             draggable={editingIndex !== idx}
             onClick={() => { if (editingIndex === null) onSwitch(idx); }}
+            onKeyDown={(e) => {
+              if (editingIndex !== null) return;
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSwitch(idx);
+              } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                const next = (idx + 1) % levels.length;
+                onSwitch(next);
+                (e.currentTarget.parentElement?.querySelectorAll('[role="tab"]')[next] as HTMLElement)?.focus();
+              } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                const prev = (idx - 1 + levels.length) % levels.length;
+                onSwitch(prev);
+                (e.currentTarget.parentElement?.querySelectorAll('[role="tab"]')[prev] as HTMLElement)?.focus();
+              }
+            }}
             onContextMenu={(e) => handleContextMenu(e, idx)}
             onDragStart={(e) => handleDragStart(e, idx)}
             onDragOver={(e) => handleDragOver(e, idx)}

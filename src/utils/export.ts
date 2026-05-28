@@ -44,9 +44,15 @@ export function importProjectJSON(file: File): Promise<DungeonProject> {
         const data = JSON.parse(e.target?.result as string);
         if (isDungeonProject(data)) {
           resolve(data as DungeonProject);
-        } else {
+        } else if (
+          typeof data === 'object' && data !== null &&
+          typeof data.meta === 'object' && data.meta !== null &&
+          Array.isArray(data.cells)
+        ) {
           // Legacy bare DungeonMap — wrap it.
           resolve(wrapMapAsProject(data as DungeonMap));
+        } else {
+          reject(new Error('File does not contain a valid dungeon map or project'));
         }
       } catch {
         reject(new Error('Invalid JSON file'));
@@ -64,11 +70,21 @@ export function importMapJSON(file: File): Promise<DungeonMap> {
       try {
         const data = JSON.parse(e.target?.result as string);
         if (isDungeonProject(data)) {
-          // Multi-level project — return the active level as a bare map.
           const proj = data as DungeonProject;
-          resolve(proj.levels[proj.activeLevelIndex] ?? proj.levels[0]);
-        } else {
+          const level = proj.levels[proj.activeLevelIndex] ?? proj.levels[0];
+          if (!level) {
+            reject(new Error('Project contains no levels'));
+            return;
+          }
+          resolve(level);
+        } else if (
+          typeof data === 'object' && data !== null &&
+          typeof data.meta === 'object' && data.meta !== null &&
+          Array.isArray(data.cells)
+        ) {
           resolve(data as DungeonMap);
+        } else {
+          reject(new Error('File does not contain a valid dungeon map'));
         }
       } catch {
         reject(new Error('Invalid JSON file'));
