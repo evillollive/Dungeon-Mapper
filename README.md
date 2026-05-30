@@ -5,7 +5,7 @@ A retro-styled, interactive grid-based dungeon map editor built with Vite + Reac
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=111827)
 ![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
-![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)
+![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)
 
 ![Dungeon Mapper hero screenshot](./public/pwa-512x512.png)
 
@@ -694,4 +694,4 @@ This project follows [CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md).
 
 ## License
 
-MIT © Alex Perrault
+AGPL-3.0 © Alex Perrault
