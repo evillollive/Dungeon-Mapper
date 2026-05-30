@@ -2,7 +2,7 @@
 
 **Make battle maps that look great fast, then keep polishing until they feel like your table.**
 
-Dungeon Mapper is a retro-styled, interactive, grid-based dungeon map editor built with Vite, React, and TypeScript. It is great when you want to sketch quickly, but it also has the deeper GM tools that usually show up later in the workflow: fog of war, tokens, initiative, generation, multi-level projects, flexible art layers, and exports that are ready to share or print. It is installable as a Progressive Web App, works offline, and feels comfortable on touch devices too.
+Dungeon Mapper is a retro-styled, interactive, grid-based dungeon map editor built with Vite, React, and TypeScript. It's great when you want to sketch quickly, but it also has the deeper GM tools that usually show up later in the workflow: fog of war, tokens, initiative, generation, multi-level projects, flexible art layers, and exports that are ready to share or print. It is installable as a Progressive Web App, works offline, and feels comfortable on touch devices too.
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=111827)
