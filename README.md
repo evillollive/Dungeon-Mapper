@@ -24,21 +24,6 @@ Open the local URL printed by Vite, usually `http://localhost:5173`.
 
 From there, you can paint by hand, press `G` to open Generate Hub, or load a sample and start remixing. It is a pretty friendly rabbit hole.
 
-## Feature GIFs
-
-A few quick peeks at the stuff that tends to make people say, "okay, that is neat."
-
-### Generate Hub
-
-![Generate Hub preview](./docs/media/generate-hub.gif)
-
-### Room Shapes & Merge
-
-![Room shapes preview](./docs/media/room-shapes.gif)
-
-### River Tool
-
-![River tool preview](./docs/media/river-tool.gif)
 
 ## The exciting stuff
 
