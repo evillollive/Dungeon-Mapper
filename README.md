@@ -28,11 +28,17 @@ From there, you can paint by hand, press `G` to open Generate Hub, or load a sam
 
 A few quick peeks at the stuff that tends to make people say, "okay, that is neat."
 
-| Feature | Preview |
-| --- | --- |
-| Generate Hub | ![Generate Hub preview](./docs/media/generate-hub.gif) |
-| Room Shapes & Merge | ![Room shapes preview](./docs/media/room-shapes.gif) |
-| River Tool | ![River tool preview](./docs/media/river-tool.gif) |
+### Generate Hub
+
+![Generate Hub preview](./docs/media/generate-hub.gif)
+
+### Room Shapes & Merge
+
+![Room shapes preview](./docs/media/room-shapes.gif)
+
+### River Tool
+
+![River tool preview](./docs/media/river-tool.gif)
 
 ## The exciting stuff
 
