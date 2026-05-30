@@ -2,7 +2,7 @@
 
 **Make battle maps that look great fast, then keep polishing until they feel like your table.**
 
-Dungeon Mapper is a retro-styled, interactive, grid-based dungeon map editor built with Vite, React, and TypeScript. It's great when you want to sketch quickly, but it also has the deeper GM tools that usually show up later in the workflow: fog of war, tokens, initiative, generation, multi-level projects, flexible art layers, and exports that are ready to share or print. It is installable as a Progressive Web App, works offline, and feels comfortable on touch devices too.
+Dungeon Mapper is a retro-styled, interactive, grid-based dungeon map editor built with Vite, React, and TypeScript. It's great when you want to sketch quickly, but it also has the deeper GM tools that usually show up later in the workflow: fog of war, tokens, initiative, generation, multi-level projects, flexible art layers, and exports that are ready to share or print. It's installable as a Progressive Web App, works offline, and feels comfortable on touch devices too.
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=111827)
@@ -22,7 +22,7 @@ npm run dev
 
 Open the local URL printed by Vite, usually `http://localhost:5173`.
 
-From there, you can paint by hand, press `G` to open Generate Hub, or load a sample and start remixing. It is a pretty friendly rabbit hole.
+From there, you can paint by hand, press `G` to open Generate Hub, or load a sample and start remixing. It's a pretty friendly rabbit hole.
 
 
 ## The exciting stuff
@@ -257,11 +257,11 @@ The measure tool is built for the constant, tiny rules questions that happen dur
  - **Line** - linear path from the origin.
 - **Scale** - set the feet-per-cell value (default 5 ft, range 1–100) to match your game system's grid scale.
 
-Measurements are drawn as cyan overlays with a pill-shaped distance readout. Distances use Chebyshev (king-move) distance, matching the D&D 5e diagonal movement convention. Measurements are ephemeral - they are not saved with the map.
+Measurements are drawn as cyan overlays with a pill-shaped distance readout. Distances use Chebyshev (king-move) distance, matching the D&D 5e diagonal movement convention. Measurements are ephemeral - they aren't saved with the map.
 
 ### Light Sources
 
-Lighting is not just decoration here. Light sources feed directly into dynamic fog, which means torches, lanterns, and magical glows can actively shape what the table sees. It is a small detail that makes exploration feel much more alive.
+Lighting isn't just decoration here. Light sources feed directly into dynamic fog, which means torches, lanterns, and magical glows can actively shape what the table sees. It's a small detail that makes exploration feel much more alive.
 
 - **Place** (`I`) - click a cell to drop a light source at that position.
 - **Remove** - click an existing light source to delete it.
@@ -283,7 +283,7 @@ Notes within the selection are remapped to fresh IDs on paste to avoid collision
 
 ### Background Image
 
-Background images are there for the moments when you want to trace over an existing battlemap, line up a sketch, or use outside art as a guide. It is a practical bridge between freehand planning and the structured tile grid.
+Background images are there for the moments when you want to trace over an existing battlemap, line up a sketch, or use outside art as a guide. It's a practical bridge between freehand planning and the structured tile grid.
 
 - **Import** - opens a file picker for PNG, JPEG, or WebP images. The image is loaded as a data URL and stored with the map.
 - **Remove** - clears the background image.
@@ -291,7 +291,7 @@ Background images are there for the moments when you want to trace over an exist
 - **Scale** - resizes the image (10%–500%) relative to its natural size.
 - **Offset X / Y** - repositions the image in tile units (–50 to +50) to align it with the grid.
 
-The background image is hidden in Print mode. It is included in PNG exports (captured with the canvas) and SVG exports (embedded as a data URL). The image data is persisted with auto-save and JSON export/import.
+The background image is hidden in Print mode. It's included in PNG exports (captured with the canvas) and SVG exports (embedded as a data URL). The image data is persisted with auto-save and JSON export/import.
 
 ## Stamps
 
@@ -307,11 +307,11 @@ Stamps are how you add flavor without turning every detail into tile work. Furni
 
 ### Per-theme filtering
 
-The stamp picker can stay focused on the current theme or open up the whole library. That keeps browsing quick when you are in the zone, but still lets you break the rules whenever the map wants something weird.
+The stamp picker can stay focused on the current theme or open up the whole library. That keeps browsing quick when you're in the zone, but still lets you break the rules whenever the map wants something weird.
 
 ### Custom stamp upload
 
-If the built-in library does not have the exact prop you want, bring your own. Custom stamps live with the project, so the weird altar, custom logo, or hand-drawn boss marker stays attached to the map when you export and re-import it later.
+If the built-in library doesn't have the exact prop you want, bring your own. Custom stamps live with the project, so the weird altar, custom logo, or hand-drawn boss marker stays attached to the map when you export and re-import it later.
 
 ## Wall, Path & River Tools
 
@@ -367,7 +367,7 @@ Selecting a preset instantly applies its settings. If you manually adjust any in
 
 ### Paper texture
 
-Paper texture gives the whole map a surface to live on. It is subtle, but it does a lot of work in making a digital grid feel more like something you could have unfolded on the table.
+Paper texture gives the whole map a surface to live on. It's subtle, but it does a lot of work in making a digital grid feel more like something you could have unfolded on the table.
 
 - **Pattern** - choose from 5 textures: parchment, linen, canvas, watercolor, marble.
 - **Opacity** - blend strength of the texture layer (0–1).
@@ -395,7 +395,7 @@ Hand-drawn mode is for when you want the map to feel made, not rendered. It intr
 
 ### Lighting & atmosphere
 
-Lighting and atmosphere are the finishing touches that give the map depth. They are also fully optional, which is the point: add mood when you want it, keep things clean when you do not.
+Lighting and atmosphere are the finishing touches that give the map depth. They're also fully optional, which is the point: add mood when you want it, keep things clean when you don't.
 
 - **Ambient occlusion** - darkens inner corners where wall tiles meet, simulating realistic shadow gathering. Adjustable intensity and radius.
 - **Stamp shadows** - soft drop-shadows beneath placed stamps for visual lift. Adjustable opacity and offset.
@@ -409,7 +409,7 @@ Each art layer has a corresponding export toggle in the PNG/SVG export dialogs s
 
 ## Map Generation
 
-Generate Hub is where the app earns its keep when you need ideas fast. You can spin up a whole map from a seed, pull in a sample, or generate inside a selection when only one part of the layout needs fresh life. It is built to help you iterate, not just dump out a random dungeon and call it done.
+Generate Hub is where the app earns its keep when you need ideas fast. You can spin up a whole map from a seed, pull in a sample, or generate inside a selection when only one part of the layout needs fresh life. It's built to help you iterate, not just dump out a random dungeon and call it done.
 
 - **Generate** - procedural map generation with four algorithms and full parameter controls.
 - **Samples** - a gallery of 26 bundled sample projects with archetype filtering (dungeon, village, cavern, terrain, multi-level).
@@ -536,14 +536,14 @@ Once you spend a few minutes with Dungeon Mapper, shortcuts start doing a lot of
 | `Ctrl+K` *or* `Cmd+K` | Open command palette (fuzzy-search actions) |
 
 > Some browsers reserve `Ctrl+N`, `Ctrl+O`, and `Ctrl+S` for their own
-> "new window", "open file", and "save page" actions and will not deliver
+> "new window", "open file", and "save page" actions and won't deliver
 > them to the page. The header buttons (**New**, **↑ Import**, **↓ JSON**)
 > and the documented alternates (`Ctrl+Alt+N` for **New**) work as a
 > fallback in those browsers.
 
 ## Accessibility
 
-Dungeon Mapper is designed so keyboard users and screen-reader users can actually navigate the editor with confidence. The goal is not just to check boxes, it is to make a complex tool feel dependable no matter how you use it.
+Dungeon Mapper is designed so keyboard users and screen-reader users can actually navigate the editor with confidence. The goal isn't just to check boxes, it's to make a complex tool feel dependable no matter how you use it.
 
 - **Single-listener keyboard registry.** Every global shortcut listed
  above is owned by `useGlobalShortcuts`, which automatically suppresses
@@ -591,13 +591,13 @@ Dungeon Mapper is designed so keyboard users and screen-reader users can actuall
 
 ## Saving, Exporting & Importing
 
-Your work is auto-saved constantly, which is great for peace of mind, but file export is where the project becomes portable. You can archive it, share it, print it, or move it between devices depending on what kind of session prep you are doing.
+Your work is auto-saved constantly, which is great for peace of mind, but file export is where the project becomes portable. You can archive it, share it, print it, or move it between devices depending on what kind of session prep you're doing.
 
 ### Export
 
 - **↓ JSON** - writes the full project (all levels, tiles, notes, tokens, stair links, grid size, theme, name, custom theme data, and other metadata) to a `.json` file. This is the only format that round-trips back into the editor.
-- **↓ PNG** - saves a rasterized snapshot of the current canvas as a `.png` image. Great for sharing or printing, but it cannot be re-imported.
-- **↓ SVG** - saves a vector rendering of the map as an `.svg` file, with each tile and numbered note drawn as scalable shapes. Like PNG, this is for sharing/printing only - it cannot be re-imported.
+- **↓ PNG** - saves a rasterized snapshot of the current canvas as a `.png` image. Great for sharing or printing, but it can't be re-imported.
+- **↓ SVG** - saves a vector rendering of the map as an `.svg` file, with each tile and numbered note drawn as scalable shapes. Like PNG, this is for sharing/printing only - it can't be re-imported.
 - **🖨 Print Export** (`Ctrl+Shift+P`) - opens a dialog for high-resolution, print-ready PNG output at 1 inch per tile. Options include:
  - **Resolution (DPI)** - choose the output DPI (300 DPI recommended).
  - **Page Size** - select a page preset to split large maps into printable page tiles.
@@ -609,21 +609,21 @@ If **🖨 Print** mode is active, PNG/SVG exports use the high-contrast black-an
 
 ### Import
 
-Import is intentionally straightforward: bring back a JSON export, replace the current project, and pick up where you left off. It is a clean round-trip rather than a catch-all importer, which keeps the format dependable.
+Import is intentionally straightforward: bring back a JSON export, replace the current project, and pick up where you left off. It's a clean round-trip rather than a catch-all importer, which keeps the format dependable.
 
 - **Supported file type:** `.json` files produced by Dungeon Mapper's **↓ JSON** export. The file picker is restricted to `.json`, and the file is parsed as a `DungeonProject` (multi-level project with tiles, notes, theme, grid size, map name, stair links, etc.). Legacy single-map files are automatically upgraded to a one-level project on import.
-- **Not supported:** PNG and SVG exports cannot be imported - they are image-only renders, not editable map data. No third-party formats (Dungeondraft, Universal VTT, images, CSV, etc.) are accepted.
+- **Not supported:** PNG and SVG exports can't be imported - they're image-only renders, not editable map data. No third-party formats (Dungeondraft, Universal VTT, images, CSV, etc.) are accepted.
 - **On error:** if the selected file isn't valid JSON, an alert is shown ("Failed to import map: Invalid JSON file") and your current map is left untouched.
 
 Because importing replaces the current map, export your work first if you want to keep it.
 
 ## Mobile & Touch Support
 
-Dungeon Mapper is not a desktop app awkwardly squeezed onto a phone. The interface adapts across screen sizes so tablets and touch devices feel like first-class citizens, especially when you want the map open at the table instead of at a desk.
+Dungeon Mapper isn't a desktop app awkwardly squeezed onto a phone. The interface adapts across screen sizes so tablets and touch devices feel like first-class citizens, especially when you want the map open at the table instead of at a desk.
 
 ### Responsive layout
 
-The layout shifts with the screen instead of pretending one arrangement fits everything. That keeps the important tools reachable whether you are on a big monitor, a tablet in portrait, or a phone you handed across the table.
+The layout shifts with the screen instead of pretending one arrangement fits everything. That keeps the important tools reachable whether you're on a big monitor, a tablet in portrait, or a phone you handed across the table.
 
 - **Desktop** (>1024px) - full 3-column layout: left toolbar, center canvas, right panels.
 - **Tablet landscape** (768–1024px) - 2-column grid with collapsible left toolbar (icon-only with slide-out detail), right panel as overlay drawer, icon-only header labels.
@@ -658,7 +658,7 @@ If you want Dungeon Mapper to behave more like an installed tool than a browser 
 
 ## Development & Testing
 
-If you want to hack on the project, the workflow is refreshingly normal. Spin up Vite for development, run the build when you want the production check, and use the existing test suite when you are touching behavior.
+If you want to hack on the project, the workflow is refreshingly normal. Spin up Vite for development, run the build when you want the production check, and use the existing test suite when you're touching behavior.
 
 ```bash
 npm install
