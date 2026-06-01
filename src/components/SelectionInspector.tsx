@@ -167,7 +167,7 @@ const SelectionInspector: React.FC<SelectionInspectorProps> = ({
               type="button"
               className={`tool-btn compact ${selectedStamp.flipY ? 'active' : ''}`}
               onClick={() => onUpdateStamp(selectedStamp.id, { flipY: !selectedStamp.flipY })}
-              title="Flip vertically [Shift+V]"
+              title="Flip vertically [Shift+Y]"
               aria-label="Flip vertically"
               aria-pressed={selectedStamp.flipY}
             >⇕</button>

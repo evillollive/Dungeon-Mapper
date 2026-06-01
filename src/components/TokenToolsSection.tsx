@@ -14,15 +14,15 @@ interface TokenToolsSectionProps {
   onSetTool: (tool: ToolType) => void;
 }
 
-const TOKEN_TOOLS: { id: ToolType; label: string; icon: string; kind: keyof typeof TOKEN_KIND_COLORS; title?: string }[] = [
-  { id: 'token-player',      label: 'Player',     icon: '🧝', kind: 'player' },
-  { id: 'token-npc',         label: 'NPC',        icon: '🧙', kind: 'npc' },
-  { id: 'token-monster',     label: 'Monster S',  icon: '👹', kind: 'monster',
-    title: 'Place a small (1×1) Monster token — click on a cell to drop it.' },
-  { id: 'token-monster-md',  label: 'Monster M',  icon: '👹', kind: 'monster',
-    title: 'Place a medium (2×2) Monster token — click on a cell to drop it.' },
-  { id: 'token-monster-lg',  label: 'Monster L',  icon: '👹', kind: 'monster',
-    title: 'Place a large (3×3) Monster token — click on a cell to drop it.' },
+const TOKEN_TOOLS: { id: ToolType; label: string; icon: string; kind: keyof typeof TOKEN_KIND_COLORS; shortcut: string; title?: string }[] = [
+  { id: 'token-player',      label: 'Player',     icon: '🧝', kind: 'player',  shortcut: '2' },
+  { id: 'token-npc',         label: 'NPC',        icon: '🧙', kind: 'npc',     shortcut: '3' },
+  { id: 'token-monster',     label: 'Monster S',  icon: '👹', kind: 'monster', shortcut: '4',
+    title: 'Place a small (1×1) Monster token — click on a cell to drop it. [4]' },
+  { id: 'token-monster-md',  label: 'Monster M',  icon: '👹', kind: 'monster', shortcut: '5',
+    title: 'Place a medium (2×2) Monster token — click on a cell to drop it. [5]' },
+  { id: 'token-monster-lg',  label: 'Monster L',  icon: '👹', kind: 'monster', shortcut: '6',
+    title: 'Place a large (3×3) Monster token — click on a cell to drop it. [6]' },
 ];
 
 const TokenToolsSection: React.FC<TokenToolsSectionProps> = ({ activeTool, onSetTool }) => {
@@ -35,9 +35,10 @@ const TokenToolsSection: React.FC<TokenToolsSectionProps> = ({ activeTool, onSet
           type="button"
           className={`tool-btn ${activeTool === tool.id ? 'active' : ''}`}
           onClick={() => onSetTool(tool.id)}
-          title={tool.title ?? `Place a ${tool.label} token — click on a cell to drop it.`}
+          title={tool.title ?? `Place a ${tool.label} token — click on a cell to drop it. [${tool.shortcut}]`}
           aria-label={`Place ${tool.label} token`}
           aria-pressed={activeTool === tool.id}
+          aria-keyshortcuts={tool.shortcut}
         >
           <span
             className="tool-icon"
@@ -53,29 +54,34 @@ const TokenToolsSection: React.FC<TokenToolsSectionProps> = ({ activeTool, onSet
             {tool.icon}
           </span>
           <span className="tool-name">{tool.label}</span>
+          <span className="tool-shortcut" aria-hidden="true">[{tool.shortcut}]</span>
         </button>
       ))}
       <button
         type="button"
         className={`tool-btn ${activeTool === 'move-token' ? 'active' : ''}`}
         onClick={() => onSetTool('move-token')}
-        title="Move a token — click and drag a token to relocate it."
+        title="Move a token — click and drag a token to relocate it. [Shift+M]"
         aria-label="Move token tool"
         aria-pressed={activeTool === 'move-token'}
+        aria-keyshortcuts="Shift+M"
       >
         <span className="tool-icon" aria-hidden="true">✋</span>
         <span className="tool-name">Move Token</span>
+        <span className="tool-shortcut" aria-hidden="true">[Shift+M]</span>
       </button>
       <button
         type="button"
         className={`tool-btn ${activeTool === 'remove-token' ? 'active' : ''}`}
         onClick={() => onSetTool('remove-token')}
-        title="Remove a token — click a token to delete it."
+        title="Remove a token — click a token to delete it. [X]"
         aria-label="Remove token tool"
         aria-pressed={activeTool === 'remove-token'}
+        aria-keyshortcuts="X"
       >
         <span className="tool-icon" aria-hidden="true">✕</span>
         <span className="tool-name">Remove</span>
+        <span className="tool-shortcut" aria-hidden="true">[X]</span>
       </button>
     </div>
   );

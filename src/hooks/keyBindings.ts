@@ -95,7 +95,7 @@ export interface ShortcutActions {
   rotateStampCW: () => void;
   /** Flip selected stamp horizontally (Shift+H). */
   flipStampH: () => void;
-  /** Flip selected stamp vertically (Shift+V). */
+  /** Flip selected stamp vertically (Shift+Y). */
   flipStampV: () => void;
   /** Delete selected placed stamp (Delete/Backspace). */
   deleteStamp: () => void;
@@ -190,14 +190,134 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       match: e => isPlainKey(e) && !e.shiftKey && e.key.toLowerCase() === 'd',
       action: () => { if (actions.isGmView()) actions.setActiveTool('gmdraw'); },
     },
+    {
+      id: 'tool.gmerase',
+      category: 'Tools',
+      keys: 'Shift+D',
+      description: 'GM Erase tool — click a GM drawing to remove it',
+      match: e => isPlainKey(e) && e.shiftKey && e.key === 'D',
+      action: () => { if (actions.isGmView()) actions.setActiveTool('gmerase'); },
+    },
+
+    // ── Token tools ──
+    {
+      id: 'tool.tokenPlayer',
+      category: 'Tools',
+      keys: '2',
+      description: 'Place Player token',
+      match: e => isPlainKey(e) && !e.shiftKey && e.key === '2',
+      action: () => actions.setActiveTool('token-player'),
+    },
+    {
+      id: 'tool.tokenNpc',
+      category: 'Tools',
+      keys: '3',
+      description: 'Place NPC token',
+      match: e => isPlainKey(e) && !e.shiftKey && e.key === '3',
+      action: () => actions.setActiveTool('token-npc'),
+    },
+    {
+      id: 'tool.tokenMonster',
+      category: 'Tools',
+      keys: '4',
+      description: 'Place Monster (small) token',
+      match: e => isPlainKey(e) && !e.shiftKey && e.key === '4',
+      action: () => actions.setActiveTool('token-monster'),
+    },
+    {
+      id: 'tool.tokenMonsterMd',
+      category: 'Tools',
+      keys: '5',
+      description: 'Place Monster (medium 2×2) token',
+      match: e => isPlainKey(e) && !e.shiftKey && e.key === '5',
+      action: () => actions.setActiveTool('token-monster-md'),
+    },
+    {
+      id: 'tool.tokenMonsterLg',
+      category: 'Tools',
+      keys: '6',
+      description: 'Place Monster (large 3×3) token',
+      match: e => isPlainKey(e) && !e.shiftKey && e.key === '6',
+      action: () => actions.setActiveTool('token-monster-lg'),
+    },
+    {
+      id: 'tool.moveToken',
+      category: 'Tools',
+      keys: 'Shift+M',
+      description: 'Move Token tool — click and drag a token to relocate it',
+      match: e => isPlainKey(e) && e.shiftKey && e.key === 'M',
+      action: () => actions.setActiveTool('move-token'),
+    },
+    {
+      id: 'tool.removeToken',
+      category: 'Tools',
+      keys: 'X',
+      description: 'Remove Token tool — click a token to delete it',
+      match: e => isPlainKey(e) && !e.shiftKey && e.key.toLowerCase() === 'x',
+      action: () => actions.setActiveTool('remove-token'),
+    },
+
+    // ── Marker tools ──
+    {
+      id: 'tool.marker',
+      category: 'Tools',
+      keys: 'A',
+      description: 'Place Marker — drop a shape marker (spell area, hazard zone, etc.)',
+      match: e => isPlainKey(e) && !e.shiftKey && e.key.toLowerCase() === 'a',
+      action: () => { if (actions.isGmView()) actions.setActiveTool('marker'); },
+    },
+    {
+      id: 'tool.removeMarker',
+      category: 'Tools',
+      keys: 'Shift+A',
+      description: 'Remove Marker — click a marker to delete it',
+      match: e => isPlainKey(e) && e.shiftKey && e.key === 'A',
+      action: () => { if (actions.isGmView()) actions.setActiveTool('remove-marker'); },
+    },
+
+    // ── Light tools ──
+    {
+      id: 'tool.removeLight',
+      category: 'Tools',
+      keys: 'Shift+I',
+      description: 'Remove Light Source — click a cell containing a light to delete it',
+      match: e => isPlainKey(e) && e.shiftKey && e.key === 'I',
+      action: () => { if (actions.isGmView()) actions.setActiveTool('remove-light'); },
+    },
+
+    // ── Player tools ──
+    {
+      id: 'tool.pdraw',
+      category: 'Tools',
+      keys: 'B',
+      description: 'Player Draw — freehand brush (Present mode only)',
+      match: e => isPlainKey(e) && !e.shiftKey && e.key.toLowerCase() === 'b',
+      action: () => { if (!actions.isGmView()) actions.setActiveTool('pdraw'); },
+    },
+    {
+      id: 'tool.perase',
+      category: 'Tools',
+      keys: 'Shift+B',
+      description: 'Player Erase — click a player stroke to remove it (Present mode only)',
+      match: e => isPlainKey(e) && e.shiftKey && e.key === 'B',
+      action: () => { if (!actions.isGmView()) actions.setActiveTool('perase'); },
+    },
+    {
+      id: 'tool.defog',
+      category: 'Tools',
+      keys: 'Shift+F',
+      description: 'Defog Brush — drag to wipe fog away cell-by-cell (Present mode only)',
+      match: e => isPlainKey(e) && e.shiftKey && e.key === 'F',
+      action: () => { if (!actions.isGmView()) actions.setActiveTool('defog'); },
+    },
 
     // ── View ──
     {
       id: 'view.printMode',
       category: 'View',
-      keys: 'Shift+P',
+      keys: 'Ctrl+B',
       description: 'Toggle Print / B&W mode',
-      match: e => isPlainKey(e) && e.shiftKey && e.key.toLowerCase() === 'p',
+      match: e => isCtrlOrMeta(e) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'b',
       action: actions.togglePrintMode,
     },
     {
@@ -470,9 +590,9 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
     {
       id: 'tools.flipStampV',
       category: 'Tools',
-      keys: 'Shift+V',
+      keys: 'Shift+Y',
       description: 'Flip selected stamp vertically',
-      match: e => isPlainKey(e) && e.shiftKey && e.key === 'V',
+      match: e => isPlainKey(e) && e.shiftKey && e.key === 'Y',
       action: actions.flipStampV,
     },
     {
@@ -505,28 +625,28 @@ export const TOOL_SHORTCUTS: Record<ToolType, string | undefined> = {
   select: 'S',
   reveal: 'V',
   hide: 'H',
-  defog: undefined,
-  pdraw: undefined,
-  perase: undefined,
-  'token-player': undefined,
-  'token-npc': undefined,
-  'token-monster': undefined,
-  'token-monster-md': undefined,
-  'token-monster-lg': undefined,
-  'move-token': undefined,
-  'remove-token': undefined,
-  marker: undefined,
-  'remove-marker': undefined,
+  defog: 'Shift+F',
+  pdraw: 'B',
+  perase: 'Shift+B',
+  'token-player': '2',
+  'token-npc': '3',
+  'token-monster': '4',
+  'token-monster-md': '5',
+  'token-monster-lg': '6',
+  'move-token': 'Shift+M',
+  'remove-token': 'X',
+  marker: 'A',
+  'remove-marker': 'Shift+A',
   fov: 'O',
   measure: 'M',
   light: 'I',
-  'remove-light': undefined,
+  'remove-light': 'Shift+I',
   'link-stair': 'K',
   stamp: undefined,
   'move-stamp': undefined,
   'remove-stamp': undefined,
   gmdraw: 'D',
-  gmerase: undefined,
+  gmerase: 'Shift+D',
   wall: 'W',
   'wall-erase': undefined,
   path: 'Shift+W',

@@ -33,9 +33,9 @@ interface PlayerToolbarProps {
   onResetExplored: () => void;
 }
 
-const DRAW_TOOLS: { id: ToolType; label: string; icon: string; title: string }[] = [
-  { id: 'pdraw',  label: 'Draw',  icon: '✒️', title: 'Freehand draw — annotate the visible map.' },
-  { id: 'perase', label: 'Erase', icon: '🧽', title: 'Erase player drawings — click a stroke to remove it.' },
+const DRAW_TOOLS: { id: ToolType; label: string; icon: string; title: string; shortcut: string }[] = [
+  { id: 'pdraw',  label: 'Draw',  icon: '✒️', title: 'Freehand draw — annotate the visible map. [B]', shortcut: 'B' },
+  { id: 'perase', label: 'Erase', icon: '🧽', title: 'Erase player drawings — click a stroke to remove it. [Shift+B]', shortcut: 'Shift+B' },
 ];
 
 // Fog tools are drag-rectangles of cells; they only appear when fog is
@@ -85,12 +85,14 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
               type="button"
               className={`tool-btn ${activeTool === 'defog' ? 'active' : ''}`}
               onClick={() => onSetTool('defog')}
-              title="Defog brush — drag across the map to wipe fog away cell-by-cell."
+              title="Defog brush — drag across the map to wipe fog away cell-by-cell. [Shift+F]"
               aria-label="Defog brush tool"
               aria-pressed={activeTool === 'defog'}
+              aria-keyshortcuts="Shift+F"
             >
               <span className="tool-icon" aria-hidden="true">🧹</span>
               <span className="tool-name">Defog</span>
+              <span className="tool-shortcut" aria-hidden="true">[Shift+F]</span>
             </button>
             {FOG_TOOLS.map(tool => (
               <button
@@ -170,9 +172,11 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
             title={tool.title}
             aria-label={`${tool.label} tool`}
             aria-pressed={activeTool === tool.id}
+            aria-keyshortcuts={tool.shortcut}
           >
             <span className="tool-icon" aria-hidden="true">{tool.icon}</span>
             <span className="tool-name">{tool.label}</span>
+            <span className="tool-shortcut" aria-hidden="true">[{tool.shortcut}]</span>
           </button>
         ))}
         <button

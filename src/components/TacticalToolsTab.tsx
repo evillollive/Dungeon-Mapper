@@ -95,7 +95,7 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
           <span className="tool-name">Measure</span>
           <span className="tool-shortcut" aria-hidden="true">[M]</span>
         </button>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Shape</div>
+        <div className="toolbar-sub-label">Shape</div>
         <div style={{ display: 'flex', gap: 4 }}>
           {MEASURE_SHAPES.map(s => (
             <button
@@ -106,16 +106,16 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
               title={MEASURE_SHAPE_LABELS[s]}
               aria-label={`${MEASURE_SHAPE_LABELS[s]} measurement shape`}
               aria-pressed={measureShape === s}
-              style={{ padding: 2, width: 'auto', fontSize: '0.6rem' }}
+              style={{ padding: 2, width: 'auto' }}
             >
               <span aria-hidden="true" style={{ fontSize: 14 }}>
                 {s === 'ruler' ? '📏' : s === 'circle' ? '⭕' : s === 'cone' ? '🔺' : '╱'}
               </span>
-              <span className="tile-btn-label" style={{ fontSize: '0.55rem' }}>{MEASURE_SHAPE_LABELS[s]}</span>
+              <span className="tile-btn-label">{MEASURE_SHAPE_LABELS[s]}</span>
             </button>
           ))}
         </div>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Scale</div>
+        <div className="toolbar-sub-label">Scale</div>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           <input
             type="number"
@@ -128,9 +128,9 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
             }}
             title={`Scale: ${measureFeetPerCell} ft per cell`}
             aria-label="Feet per cell"
-            style={{ width: 48, textAlign: 'center', fontSize: '0.7rem' }}
+            style={{ width: 48, textAlign: 'center' }}
           />
-          <span style={{ fontSize: '0.65rem', opacity: 0.8 }}>ft/cell</span>
+          <span className="toolbar-value-display">ft/cell</span>
         </div>
       </div>
 
@@ -142,23 +142,27 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
           type="button"
           className={`tool-btn ${activeTool === 'marker' ? 'active' : ''}`}
           onClick={() => onSetTool('marker')}
-          title="Place a shape marker (spell area, hazard zone, etc.)"
+          title="Place a shape marker (spell area, hazard zone, etc.) [A]"
           aria-label="Place marker"
           aria-pressed={activeTool === 'marker'}
+          aria-keyshortcuts="A"
         >
           <span className="tool-icon" aria-hidden="true">🔵</span>
           <span className="tool-name">Place</span>
+          <span className="tool-shortcut" aria-hidden="true">[A]</span>
         </button>
         <button
           type="button"
           className={`tool-btn ${activeTool === 'remove-marker' ? 'active' : ''}`}
           onClick={() => onSetTool('remove-marker')}
-          title="Remove a marker — click a marker to delete it."
+          title="Remove a marker — click a marker to delete it. [Shift+A]"
           aria-label="Remove marker"
           aria-pressed={activeTool === 'remove-marker'}
+          aria-keyshortcuts="Shift+A"
         >
           <span className="tool-icon" aria-hidden="true">✕</span>
           <span className="tool-name">Remove</span>
+          <span className="tool-shortcut" aria-hidden="true">[Shift+A]</span>
         </button>
         <button
           type="button"
@@ -170,7 +174,7 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
           <span className="tool-icon" aria-hidden="true">🗑</span>
           <span className="tool-name">Clear All</span>
         </button>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Shape</div>
+        <div className="toolbar-sub-label">Shape</div>
         <div style={{ display: 'flex', gap: 4 }}>
           {MARKER_SHAPES.map(s => (
             <button
@@ -189,7 +193,7 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
             </button>
           ))}
         </div>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Color</div>
+        <div className="toolbar-sub-label">Color</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
           {MARKER_COLORS.map(c => (
             <button
@@ -215,7 +219,7 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
             </button>
           ))}
         </div>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Radius</div>
+        <div className="toolbar-sub-label">Radius</div>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           <input
             type="range"
@@ -227,7 +231,7 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
             aria-label="Marker radius"
             style={{ flex: 1 }}
           />
-          <span style={{ fontSize: '0.7rem', minWidth: 16, textAlign: 'center' }}>{markerSize}</span>
+          <span className="toolbar-value-display">{markerSize}</span>
         </div>
       </div>
 
@@ -250,12 +254,14 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
           type="button"
           className={`tool-btn ${activeTool === 'remove-light' ? 'active' : ''}`}
           onClick={() => onSetTool('remove-light')}
-          title="Remove a light source — click a cell containing a light to delete it."
+          title="Remove a light source — click a cell containing a light to delete it. [Shift+I]"
           aria-label="Remove light source"
           aria-pressed={activeTool === 'remove-light'}
+          aria-keyshortcuts="Shift+I"
         >
           <span className="tool-icon" aria-hidden="true">✕</span>
           <span className="tool-name">Remove</span>
+          <span className="tool-shortcut" aria-hidden="true">[Shift+I]</span>
         </button>
         <button
           type="button"
@@ -267,7 +273,7 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
           <span className="tool-icon" aria-hidden="true">🗑</span>
           <span className="tool-name">Clear All</span>
         </button>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Preset</div>
+        <div className="toolbar-sub-label">Preset</div>
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
           {LIGHT_SOURCE_PRESETS.map(p => (
             <button
@@ -281,11 +287,11 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
               style={{ padding: '2px 4px', width: 'auto' }}
             >
               <span aria-hidden="true" style={{ fontSize: 14 }}>{p.icon}</span>
-              <span className="tile-btn-label" style={{ fontSize: '0.55rem' }}>{p.label}</span>
+              <span className="tile-btn-label">{p.label}</span>
             </button>
           ))}
         </div>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Radius</div>
+        <div className="toolbar-sub-label">Radius</div>
         <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
           <input
             type="range"
@@ -297,9 +303,9 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
             aria-label="Light radius in cells"
             style={{ flex: 1 }}
           />
-          <span style={{ fontSize: '0.7rem', minWidth: 20, textAlign: 'center' }}>{lightRadius}</span>
+          <span className="toolbar-value-display">{lightRadius}</span>
         </div>
-        <div className="toolbar-sub-label" style={{ fontSize: '0.65rem', opacity: 0.7, marginTop: 4, marginBottom: 2 }}>Color</div>
+        <div className="toolbar-sub-label">Color</div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 4 }}>
           {[
             { color: '#f97316', label: 'Torch orange' },

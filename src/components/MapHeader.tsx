@@ -211,10 +211,10 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
           type="button"
           className={`header-btn ${printMode ? 'active' : ''}`}
           onClick={onTogglePrintMode}
-          title="Toggle Print / B&W mode — renders tiles as high-contrast monochrome glyphs suitable for printing [Shift+P]"
+          title="Toggle Print / B&W mode — renders tiles as high-contrast monochrome glyphs suitable for printing [Ctrl+B]"
           aria-label="Toggle print (black and white) mode"
           aria-pressed={printMode}
-          aria-keyshortcuts="Shift+P"
+          aria-keyshortcuts="Ctrl+B"
         >
           🖨 Print
         </button>

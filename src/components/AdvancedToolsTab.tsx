@@ -215,12 +215,14 @@ const AdvancedToolsTab: React.FC<AdvancedToolsTabProps> = ({
           type="button"
           className={`tool-btn ${activeTool === 'gmerase' ? 'active' : ''}`}
           onClick={() => onSetTool('gmerase')}
-          title="GM Erase — click a GM drawing to remove it."
+          title="GM Erase — click a GM drawing to remove it. [Shift+D]"
           aria-label="GM Erase tool"
           aria-pressed={activeTool === 'gmerase'}
+          aria-keyshortcuts="Shift+D"
         >
           <span className="tool-icon" aria-hidden="true">🧽</span>
           <span className="tool-name">Erase</span>
+          <span className="tool-shortcut" aria-hidden="true">[Shift+D]</span>
         </button>
         <button
           type="button"
@@ -234,7 +236,7 @@ const AdvancedToolsTab: React.FC<AdvancedToolsTabProps> = ({
         </button>
 
         {/* Color swatches */}
-        <div className="toolbar-sub-label" style={{ fontSize: '0.6rem', opacity: 0.7, marginTop: 6 }}>Color</div>
+        <div className="toolbar-sub-label">Color</div>
         <div
           className="tile-palette"
           style={{

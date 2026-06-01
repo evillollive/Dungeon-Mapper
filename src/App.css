@@ -368,10 +368,14 @@
   font-size: var(--fs-9);
   letter-spacing: 0.5px;
   line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
 }
 .nav-rail-sep {
   border: none;
-  border-top: 1px solid #3a4570;
+  border-top: 1px solid #c2bbab;
   margin: 4px 8px;
   width: calc(100% - 16px);
 }
@@ -473,6 +477,21 @@
   padding: 2px 4px;
   border-bottom: 1px solid #c2bbab;
   margin-bottom: 4px;
+}
+
+/* Secondary label within a toolbar section (e.g. "Shape", "Scale", "Color"). */
+.toolbar-sub-label {
+  font-size: var(--fs-9);
+  opacity: 0.7;
+  margin: 4px 0 2px;
+  letter-spacing: 0.5px;
+}
+
+/* Small read-only value display next to a slider or control. */
+.toolbar-value-display {
+  font-size: var(--fs-9);
+  min-width: 20px;
+  text-align: center;
 }
 
 .tool-btn {
@@ -641,7 +660,7 @@
   flex-shrink: 0;
 }
 .stamp-grid-item-label {
-  font-size: 9px;
+  font-size: var(--fs-9);
   line-height: 1.1;
   text-align: center;
   overflow: hidden;
@@ -671,13 +690,13 @@
   min-height: 26px;
 }
 .stamp-transform-label {
-  font-size: 0.7rem;
+  font-size: var(--fs-10);
   color: #4a4a4a;
   min-width: 42px;
   flex-shrink: 0;
 }
 .stamp-transform-value {
-  font-size: 0.65rem;
+  font-size: var(--fs-9);
   color: #666;
   min-width: 30px;
   text-align: right;
@@ -685,7 +704,7 @@
 }
 .tool-btn.compact {
   padding: 2px 6px;
-  font-size: 0.8rem;
+  font-size: var(--fs-11);
   min-width: 28px;
   min-height: 26px;
 }
@@ -701,7 +720,7 @@
   display: flex;
   flex-direction: column;
   padding: 8px;
-  font-size: 0.75rem;
+  font-size: var(--fs-10);
   overflow-y: auto;
   min-height: 0;
 }
@@ -715,7 +734,7 @@
   margin-bottom: 4px;
 }
 .inspector-type-badge {
-  font-size: 0.7rem;
+  font-size: var(--fs-10);
   font-weight: 600;
   color: #4a4a4a;
   background: #eae5d8;
@@ -724,18 +743,21 @@
   white-space: nowrap;
 }
 .inspector-title {
-  font-size: 0.85rem;
+  font-size: var(--fs-11);
   font-weight: 700;
   color: #1a1a2e;
   margin-bottom: 6px;
   padding-bottom: 4px;
   border-bottom: 1px solid #c4b99a;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .inspector-section {
   margin-bottom: 6px;
 }
 .inspector-section-label {
-  font-size: 0.6rem;
+  font-size: var(--fs-9);
   font-weight: 700;
   color: #8a7f66;
   letter-spacing: 0.05em;
@@ -749,13 +771,13 @@
   margin: 1px 0;
 }
 .inspector-field-label {
-  font-size: 0.7rem;
+  font-size: var(--fs-9);
   color: #4a4a4a;
-  min-width: 48px;
+  min-width: 56px;
   flex-shrink: 0;
 }
 .inspector-field-value {
-  font-size: 0.7rem;
+  font-size: var(--fs-9);
   color: #1a1a2e;
   font-weight: 500;
 }
@@ -768,7 +790,7 @@
 .inspector-text-input {
   width: 100%;
   padding: 3px 6px;
-  font-size: 0.72rem;
+  font-size: var(--fs-10);
   border: 1px solid #c4b99a;
   border-radius: 3px;
   background: #fff;
@@ -778,7 +800,7 @@
 .inspector-textarea {
   width: 100%;
   padding: 3px 6px;
-  font-size: 0.72rem;
+  font-size: var(--fs-10);
   border: 1px solid #c4b99a;
   border-radius: 3px;
   background: #fff;
@@ -1293,7 +1315,7 @@
   max-height: 90vh;
   overflow: auto;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
-  font-size: 14px;
+  font-size: var(--fs-12);
 }
 .modal-header {
   display: flex;
@@ -1301,7 +1323,7 @@
   justify-content: space-between;
   gap: 12px;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: var(--fs-13);
   margin-bottom: 12px;
 }
 .modal-close-btn {
@@ -1311,7 +1333,7 @@
   cursor: pointer;
   padding: 2px 6px;
   border-radius: 3px;
-  font-size: 0.9rem;
+  font-size: var(--fs-13);
   opacity: 0.7;
 }
 .modal-close-btn:hover { opacity: 1; background: rgba(255,255,255,0.1); }
@@ -1319,7 +1341,7 @@
   margin-bottom: 12px;
 }
 .modal-section-label {
-  font-size: 0.7rem;
+  font-size: var(--fs-10);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -1332,7 +1354,7 @@
   border-radius: 3px;
   color: #e0e0ff;
   padding: 3px 6px;
-  font-size: 0.8rem;
+  font-size: var(--fs-11);
   outline: none;
 }
 .modal-input:focus { border-color: #6c8cff; }

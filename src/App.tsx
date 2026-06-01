@@ -952,7 +952,7 @@ function App() {
 
     // View toggles
     cmds.push(
-      { id: 'view.printMode', label: 'Toggle Print / B&W Mode', category: 'View', shortcut: 'Shift+P', action: handleTogglePrintMode },
+      { id: 'view.printMode', label: 'Toggle Print / B&W Mode', category: 'View', shortcut: 'Ctrl+B', action: handleTogglePrintMode },
       { id: 'view.presentMode', label: 'Toggle Edit ↔ Present Mode', category: 'View', shortcut: 'Shift+V', action: switchViewMode },
       { id: 'view.zoomIn', label: 'Zoom In', category: 'Canvas', shortcut: '+', action: () => canvasRef.current?.zoomIn() },
       { id: 'view.zoomOut', label: 'Zoom Out', category: 'Canvas', shortcut: '-', action: () => canvasRef.current?.zoomOut() },
