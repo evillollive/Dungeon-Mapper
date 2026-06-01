@@ -44,12 +44,12 @@ export function parseSeed(input: string): number {
   // every time regardless of whether the user thinks of it as hex.
   if (/^\d+$/.test(trimmed)) {
     const n = Number(trimmed);
-    if (Number.isFinite(n)) return (n >>> 0) || seedFromString(trimmed);
+    if (Number.isFinite(n)) return n >>> 0;
   }
   // Hex (with optional 0x prefix)
   if (/^(0x)?[0-9a-fA-F]+$/.test(trimmed)) {
     const n = parseInt(trimmed.replace(/^0x/i, ''), 16);
-    if (Number.isFinite(n)) return (n >>> 0) || seedFromString(trimmed);
+    if (Number.isFinite(n)) return n >>> 0;
   }
   return seedFromString(trimmed);
 }

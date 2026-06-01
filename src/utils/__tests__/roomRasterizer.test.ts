@@ -57,6 +57,23 @@ describe('rasterizeRoomShapes', () => {
     expect(result[1][1].type).toBe('wall');
   });
 
+  it('preserves semantic content under default room floor and wall tiles', () => {
+    const tiles = emptyGrid(8, 8);
+    tiles[2][2] = { type: 'treasure', noteId: 9 };
+    tiles[3][3] = { type: 'water' };
+    tiles[1][2] = { type: 'door-h' };
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 5, height: 5 },
+    ];
+
+    const result = rasterizeRoomShapes(tiles, shapes, 8, 8);
+
+    expect(result[2][2]).toEqual({ type: 'treasure', noteId: 9 });
+    expect(result[3][3].type).toBe('water');
+    expect(result[1][2].type).toBe('door-h');
+    expect(result[2][3].type).toBe('floor');
+  });
+
   // ── Custom fill/wall tiles ────────────────────────────────────────────
 
   it('respects custom fillTile and wallTile overrides', () => {

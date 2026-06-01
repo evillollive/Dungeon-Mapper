@@ -6,6 +6,37 @@ function shapeTypeOf(shape: RoomShape): RoomShapeType {
   return shape.shapeType ?? 'rect';
 }
 
+const PRESERVE_UNDER_DEFAULT_ROOM_TILES: ReadonlySet<TileType> = new Set([
+  'water',
+  'pillar',
+  'trap',
+  'treasure',
+  'start',
+  'stairs-up',
+  'stairs-down',
+  'door-h',
+  'door-v',
+  'secret-door',
+  'locked-door-h',
+  'locked-door-v',
+  'trapped-door-h',
+  'trapped-door-v',
+  'portcullis',
+  'archway',
+  'barricade',
+]);
+
+function shouldPreserveExistingTile(existing: Tile, nextType: TileType): boolean {
+  if (nextType !== 'floor' && nextType !== 'wall') return false;
+  return existing.noteId !== undefined || PRESERVE_UNDER_DEFAULT_ROOM_TILES.has(existing.type);
+}
+
+function writeRoomTile(tiles: Tile[][], x: number, y: number, nextType: TileType): void {
+  const existing = tiles[y]?.[x];
+  if (!existing || shouldPreserveExistingTile(existing, nextType)) return;
+  tiles[y][x] = { type: nextType };
+}
+
 /* ── Helpers: ellipse math ──────────────────────────────────────────────── */
 
 /** Centre and radii of the ellipse inscribed in a shape's bounding box. */
@@ -204,7 +235,7 @@ function rasterizeRectShape(
     for (let cx = x0; cx < x1; cx++) {
       const isPerimeter =
         cx === x || cx === x + sw - 1 || cy === y || cy === y + sh - 1;
-      tiles[cy][cx] = { type: isPerimeter ? wallTile : fillTile };
+      writeRoomTile(tiles, cx, cy, isPerimeter ? wallTile : fillTile);
     }
   }
 }
@@ -228,7 +259,7 @@ function rasterizeCircleShape(
     for (let cx = x0; cx < x1; cx++) {
       if (!cellInEllipse(cx, cy, shape)) continue;
       const interior = cellInteriorEllipse(cx, cy, shape);
-      tiles[cy][cx] = { type: interior ? fillTile : wallTile };
+      writeRoomTile(tiles, cx, cy, interior ? fillTile : wallTile);
     }
   }
 }
@@ -255,7 +286,7 @@ function rasterizePolygonShape(
     for (let cx = x0; cx < x1; cx++) {
       if (!cellInPolygon(cx, cy, verts)) continue;
       const interior = cellInteriorPolygon(cx, cy, verts);
-      tiles[cy][cx] = { type: interior ? fillTile : wallTile };
+      writeRoomTile(tiles, cx, cy, interior ? fillTile : wallTile);
     }
   }
 }
@@ -334,7 +365,7 @@ function mergeSharedWalls(
           // otherwise use the fill of whichever shape claims interior.
           const isInteriorB = cellInteriorShape(cx, cy, shapeB);
           const fillB: TileType = shapeB.fillTile ?? 'floor';
-          tiles[cy][cx] = { type: isInteriorB ? fillB : fillA };
+          writeRoomTile(tiles, cx, cy, isInteriorB ? fillB : fillA);
         }
         break; // Only need one other shape to trigger merge.
       }

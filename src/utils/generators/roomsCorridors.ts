@@ -21,6 +21,7 @@ import { applyPoiNotes, type LabeledRegion, type PoiPlacement } from './poiNotes
 import { generateRoomNameSuffix } from './nameGenerator';
 import { getRoomPalette, type RoomKind } from './roomKinds';
 import { makeRng, type Rng } from './random';
+import { generateRiversForMap, getGeneratedRiverType, rasterizeRiversToTypeGrid } from './riverGenerator';
 import { placeStairs } from './stairsEngine';
 import { getDungeonShape, rectFitsMask } from './shapeMask';
 import { DEFAULT_SECRET_DOOR_FRACTION } from './tileMix';
@@ -327,6 +328,18 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
   // complete wall frames with no missing corners.
   outlineWalls(grid);
 
+  // Generated rivers have to be carved before stairs, POIs, and doors so
+  // those later passes can avoid water cells. The editable vector layer is
+  // still returned so render/export paths can apply flow metadata and banks.
+  const rivers = generateRiversForMap(
+    width,
+    height,
+    rng,
+    ctx.rivers,
+    getGeneratedRiverType(themeId),
+  );
+  rasterizeRiversToTypeGrid(grid, rivers);
+
   // Resolve the per-room archetype before placing POIs so the bias loop
   // can consult it. Skipped when the theme has no palette or labeling is
   // disabled by the caller.
@@ -527,5 +540,5 @@ export function generateRoomsCorridors(ctx: GenerateContext): GeneratedMap {
     height: r.h,
   }));
 
-  return { tiles, notes, width, height, roomShapes };
+  return { tiles, notes, width, height, roomShapes, rivers };
 }

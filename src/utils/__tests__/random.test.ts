@@ -35,6 +35,12 @@ describe('parseSeed', () => {
     expect(parseSeed('0xff')).toBe(255);
   });
 
+  it('parses zero as numeric seed zero', () => {
+    expect(parseSeed('0')).toBe(0);
+    expect(parseSeed('0000')).toBe(0);
+    expect(parseSeed('0x0')).toBe(0);
+  });
+
   it('returns random seed for empty string', () => {
     const s = parseSeed('');
     expect(s).toBeGreaterThanOrEqual(0);
