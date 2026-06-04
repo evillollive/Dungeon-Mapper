@@ -416,14 +416,13 @@ function App() {
   }, [dynamicFogEnabled, map.tiles, map.tokens, customThemes]);
 
   // ── Light Sources ───────────────────────────────────────────────────
-  // Compute the union FOV from all placed light sources. When dynamic fog
-  // is enabled, `lightVisible` cells are treated as "visible" (clear) in
-  // the fog renderer, even without a player token in direct line-of-sight.
-  // When dynamic fog is off, `lightVisible` is used only for the canvas
-  // glow overlay — no fog is removed.
+  // Compute the union FOV from all placed light sources only when dynamic
+  // fog needs it. The visible glow overlay is drawn from `lightSources`
+  // directly, so normal editing should not pay this FOV cost on every tile
+  // or light-source change.
   const lightVisible = useMemo(
-    () => computeLightVisible(map.tiles, map.lightSources, customThemes),
-    [map.tiles, map.lightSources, customThemes],
+    () => dynamicFogEnabled ? computeLightVisible(map.tiles, map.lightSources, customThemes) : null,
+    [dynamicFogEnabled, map.tiles, map.lightSources, customThemes],
   );
 
   // Whenever the visible set changes, merge into the explored grid so
@@ -733,6 +732,15 @@ function App() {
     announce('Pasted from clipboard');
   }, [selection, pasteClipboard, announce]);
 
+  const triggerNewMap = useCallback(() => headerRef.current?.triggerNew(), []);
+  const triggerImport = useCallback(() => headerRef.current?.triggerImport(), []);
+  const triggerExportJSON = useCallback(() => headerRef.current?.triggerExportJSON(), []);
+  const triggerExportPNG = useCallback(() => headerRef.current?.triggerExportPNG(), []);
+  const zoomInCanvas = useCallback(() => canvasRef.current?.zoomIn(), []);
+  const zoomOutCanvas = useCallback(() => canvasRef.current?.zoomOut(), []);
+  const zoomResetCanvas = useCallback(() => canvasRef.current?.zoomReset(), []);
+  const fitCanvasToScreen = useCallback(() => canvasRef.current?.fitToScreen(), []);
+
   // Centralised global keyboard shortcuts. The hook owns one keydown
   // listener and dispatches to the wired actions; the registry it returns
   // also feeds the in-app help overlay.
@@ -744,18 +752,18 @@ function App() {
     toggleViewMode: switchViewMode,
     openGenerateMap: handleOpenGenerateMap,
     showShortcuts: () => setShowShortcutsHelp(true),
-    triggerNewMap: () => headerRef.current?.triggerNew(),
-    triggerImport: () => headerRef.current?.triggerImport(),
-    triggerExportJSON: () => headerRef.current?.triggerExportJSON(),
-    triggerExportPNG: () => headerRef.current?.triggerExportPNG(),
+    triggerNewMap,
+    triggerImport,
+    triggerExportJSON,
+    triggerExportPNG,
     triggerExportSVG: handleExportSVG,
     openExportDialog: () => setShowExportDialog(true),
     cycleTheme,
     cycleActiveTile,
-    zoomIn: () => canvasRef.current?.zoomIn(),
-    zoomOut: () => canvasRef.current?.zoomOut(),
-    zoomReset: () => canvasRef.current?.zoomReset(),
-    fitToScreen: () => canvasRef.current?.fitToScreen(),
+    zoomIn: zoomInCanvas,
+    zoomOut: zoomOutCanvas,
+    zoomReset: zoomResetCanvas,
+    fitToScreen: fitCanvasToScreen,
     uiScaleUp: () => adjustUIScale(1),
     uiScaleDown: () => adjustUIScale(-1),
     isGmView: () => viewMode === 'gm',
@@ -936,6 +944,7 @@ function App() {
     }
 
     // Dialogs / actions
+    /* eslint-disable react-hooks/refs -- Command callbacks are stored and executed after selection, not during render. */
     cmds.push(
       { id: 'dialog.generate', label: 'Generate Hub…', category: 'File', shortcut: 'G', action: () => setShowGenerateHub(true) },
       { id: 'dialog.premade', label: 'Sample Maps…', category: 'File', action: () => setShowGenerateHub(true) },
@@ -943,22 +952,23 @@ function App() {
       { id: 'dialog.customTheme', label: 'Custom Theme Builder…', category: 'Theme', action: () => setShowCustomThemeDialog(true) },
       { id: 'dialog.shortcuts', label: 'Keyboard Shortcuts', category: 'Help', shortcut: '?', action: () => setShowShortcutsHelp(true) },
       { id: 'dialog.exportDialog', label: 'Print-Optimized Export…', category: 'File', shortcut: 'Ctrl+Shift+P', action: () => setShowExportDialog(true) },
-      { id: 'file.exportJson', label: 'Export JSON', category: 'File', shortcut: 'Ctrl+S', action: () => headerRef.current?.triggerExportJSON() },
-      { id: 'file.exportPng', label: 'Export PNG', category: 'File', shortcut: 'Ctrl+Shift+S', action: () => headerRef.current?.triggerExportPNG() },
+      { id: 'file.exportJson', label: 'Export JSON', category: 'File', shortcut: 'Ctrl+S', action: () => triggerExportJSON() },
+      { id: 'file.exportPng', label: 'Export PNG', category: 'File', shortcut: 'Ctrl+Shift+S', action: () => triggerExportPNG() },
       { id: 'file.exportSvg', label: 'Export SVG', category: 'File', shortcut: 'Ctrl+Alt+S', action: handleExportSVG },
-      { id: 'file.import', label: 'Import JSON…', category: 'File', shortcut: 'Ctrl+O', action: () => headerRef.current?.triggerImport() },
-      { id: 'file.new', label: 'New Map', category: 'File', shortcut: 'Ctrl+Alt+N', action: () => headerRef.current?.triggerNew() },
+      { id: 'file.import', label: 'Import JSON…', category: 'File', shortcut: 'Ctrl+O', action: () => triggerImport() },
+      { id: 'file.new', label: 'New Map', category: 'File', shortcut: 'Ctrl+Alt+N', action: () => triggerNewMap() },
     );
 
     // View toggles
     cmds.push(
       { id: 'view.printMode', label: 'Toggle Print / B&W Mode', category: 'View', shortcut: 'Ctrl+B', action: handleTogglePrintMode },
       { id: 'view.presentMode', label: 'Toggle Edit ↔ Present Mode', category: 'View', shortcut: 'Shift+V', action: switchViewMode },
-      { id: 'view.zoomIn', label: 'Zoom In', category: 'Canvas', shortcut: '+', action: () => canvasRef.current?.zoomIn() },
-      { id: 'view.zoomOut', label: 'Zoom Out', category: 'Canvas', shortcut: '-', action: () => canvasRef.current?.zoomOut() },
-      { id: 'view.zoomReset', label: 'Reset Zoom', category: 'Canvas', shortcut: '0', action: () => canvasRef.current?.zoomReset() },
-      { id: 'view.fitScreen', label: 'Fit Map to Screen', category: 'Canvas', shortcut: '1', action: () => canvasRef.current?.fitToScreen() },
+      { id: 'view.zoomIn', label: 'Zoom In', category: 'Canvas', shortcut: '+', action: () => zoomInCanvas() },
+      { id: 'view.zoomOut', label: 'Zoom Out', category: 'Canvas', shortcut: '-', action: () => zoomOutCanvas() },
+      { id: 'view.zoomReset', label: 'Reset Zoom', category: 'Canvas', shortcut: '0', action: () => zoomResetCanvas() },
+      { id: 'view.fitScreen', label: 'Fit Map to Screen', category: 'Canvas', shortcut: '1', action: () => fitCanvasToScreen() },
     );
+    /* eslint-enable react-hooks/refs */
 
     // Edit
     cmds.push(
@@ -969,6 +979,8 @@ function App() {
     return cmds;
   }, [themeList, handleSetActiveTool, handleSetTheme, preserveOnThemeSwitch,
       handleTogglePrintMode, switchViewMode, handleExportSVG,
+      triggerExportJSON, triggerExportPNG, triggerImport, triggerNewMap,
+      zoomInCanvas, zoomOutCanvas, zoomResetCanvas, fitCanvasToScreen,
       handleUndo, handleRedo]);
 
   return (

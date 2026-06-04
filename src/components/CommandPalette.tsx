@@ -46,21 +46,16 @@ function fuzzyMatch(query: string, target: string): number | null {
   return qi === q.length ? score : null;
 }
 
-const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, commands }) => {
+const CommandPaletteContents: React.FC<Omit<CommandPaletteProps, 'open'>> = ({ onClose, commands }) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  // Reset state whenever the palette opens.
   useEffect(() => {
-    if (open) {
-      setQuery('');
-      setSelectedIndex(0);
-      // Small delay so the dialog transition can finish before we steal focus.
-      requestAnimationFrame(() => inputRef.current?.focus());
-    }
-  }, [open]);
+    // Small delay so the dialog transition can finish before we steal focus.
+    requestAnimationFrame(() => inputRef.current?.focus());
+  }, []);
 
   // Filter & sort commands by fuzzy match.
   const filtered = useMemo(() => {
@@ -78,18 +73,15 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, commands
     return scored.map(s => s.item);
   }, [query, commands]);
 
-  // Clamp selected index when the list shrinks.
-  useEffect(() => {
-    setSelectedIndex(idx => Math.min(idx, Math.max(0, filtered.length - 1)));
-  }, [filtered.length]);
+  const activeIndex = Math.min(selectedIndex, Math.max(0, filtered.length - 1));
 
   // Scroll the selected item into view.
   useEffect(() => {
     const container = listRef.current;
     if (!container) return;
-    const el = container.children[selectedIndex] as HTMLElement | undefined;
+    const el = container.children[activeIndex] as HTMLElement | undefined;
     el?.scrollIntoView({ block: 'nearest' });
-  }, [selectedIndex]);
+  }, [activeIndex]);
 
   const runCommand = useCallback((item: CommandItem) => {
     onClose();
@@ -110,16 +102,14 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, commands
         break;
       case 'Enter':
         e.preventDefault();
-        if (filtered[selectedIndex]) runCommand(filtered[selectedIndex]);
+        if (filtered[activeIndex]) runCommand(filtered[activeIndex]);
         break;
       case 'Escape':
         e.preventDefault();
         onClose();
         break;
     }
-  }, [filtered, selectedIndex, runCommand, onClose]);
-
-  if (!open) return null;
+  }, [filtered, activeIndex, runCommand, onClose]);
 
   return (
     <div
@@ -143,7 +133,7 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, commands
           onKeyDown={handleKeyDown}
           placeholder="Type a command…"
           aria-label="Search commands"
-          aria-activedescendant={filtered[selectedIndex] ? `cmd-${filtered[selectedIndex].id}` : undefined}
+          aria-activedescendant={filtered[activeIndex] ? `cmd-${filtered[activeIndex].id}` : undefined}
           aria-controls="command-palette-list"
           role="combobox"
           aria-expanded="true"
@@ -164,9 +154,9 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, commands
             <div
               key={item.id}
               id={`cmd-${item.id}`}
-              className={`command-palette-item${i === selectedIndex ? ' selected' : ''}`}
+              className={`command-palette-item${i === activeIndex ? ' selected' : ''}`}
               role="option"
-              aria-selected={i === selectedIndex}
+              aria-selected={i === activeIndex}
               onPointerDown={e => e.preventDefault()}
               onClick={() => runCommand(item)}
               onPointerEnter={() => setSelectedIndex(i)}
@@ -182,6 +172,11 @@ const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, commands
       </div>
     </div>
   );
+};
+
+const CommandPalette: React.FC<CommandPaletteProps> = ({ open, onClose, commands }) => {
+  if (!open) return null;
+  return <CommandPaletteContents onClose={onClose} commands={commands} />;
 };
 
 export default CommandPalette;
