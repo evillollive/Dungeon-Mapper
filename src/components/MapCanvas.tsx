@@ -17,6 +17,7 @@ import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 import { bresenhamLine, pointNearPolyline, rectCells, rectOutline, snapToGridIntersection } from '../utils/canvasGeometry';
 import { polygonBoundingBox } from '../utils/roomRasterizer';
+import { getCachedPath2D, getViewBoxSize } from '../utils/svgRenderCache';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
 // evoking traditional engineering / quad-ruled graph paper regardless of theme.
@@ -110,16 +111,10 @@ function drawFogFeather(
   ctx.restore();
 }
 
-// Cache parsed Path2D objects for icon rendering. Keyed by icon id.
-const iconPath2DCache = new Map<string, Path2D>();
 function getIconPath2D(iconId: string): Path2D | null {
-  const cached = iconPath2DCache.get(iconId);
-  if (cached) return cached;
   const def = ICON_BY_ID.get(iconId);
   if (!def) return null;
-  const p = new Path2D(def.path);
-  iconPath2DCache.set(iconId, p);
-  return p;
+  return getCachedPath2D(def.path);
 }
 
 interface MapCanvasProps {
@@ -1007,9 +1002,7 @@ function drawStamp(
   if (stamp.flipY) ctx.scale(1, -1);
 
   // Parse viewBox to get SVG coordinate system dimensions.
-  const vb = def.viewBox.split(/\s+/).map(Number);
-  const vbW = vb[2] || 512;
-  const vbH = vb[3] || 512;
+  const { width: vbW, height: vbH } = getViewBoxSize(def.viewBox);
   const svgScale = drawSize / Math.max(vbW, vbH);
 
   ctx.translate(-drawSize / 2, -drawSize / 2);
@@ -1019,14 +1012,11 @@ function drawStamp(
   if (def.imageDataUrl) {
     const img = customStampImages?.get(stamp.stampId);
     if (img) {
-      const vb = def.viewBox.split(/\s+/).map(Number);
-      const vbW = vb[2] || 512;
-      const vbH = vb[3] || 512;
       ctx.drawImage(img, 0, 0, vbW, vbH);
     }
   } else if (def.paths && def.paths.length > 0) {
     for (const p of def.paths) {
-      const path2d = new Path2D(p.path);
+      const path2d = getCachedPath2D(p.path);
       if (p.fill) {
         ctx.fillStyle = p.fill;
         ctx.fill(path2d);
@@ -1038,7 +1028,7 @@ function drawStamp(
       }
     }
   } else if (def.svgPath) {
-    const path2d = new Path2D(def.svgPath);
+    const path2d = getCachedPath2D(def.svgPath);
     ctx.fillStyle = '#4a4a4a';
     ctx.fill(path2d);
     ctx.strokeStyle = '#1a1a1a';

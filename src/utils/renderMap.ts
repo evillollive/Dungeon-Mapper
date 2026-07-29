@@ -23,6 +23,7 @@ import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 import { deriveRenderableTiles } from './derivedRenderMap';
 import { drawRiverBanks, drawRiverEndpointMarkers } from './riverPolish';
+import { getCachedPath2D, getViewBoxSize } from './svgRenderCache';
 
 // Screen-mode canvas styling (mirrored from MapCanvas.tsx).
 const SCREEN_BG = '#f4f1e4';
@@ -468,7 +469,7 @@ function renderToken(
     ctx.translate(px - iconSize / 2, py - iconSize / 2);
     ctx.scale(scale, scale);
     ctx.fillStyle = '#ffffff';
-    ctx.fill(new Path2D(iconDef.path));
+    ctx.fill(getCachedPath2D(iconDef.path));
     ctx.restore();
   } else {
     const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
@@ -601,9 +602,7 @@ function renderStamp(
   if (stamp.flipX) ctx.scale(-1, 1);
   if (stamp.flipY) ctx.scale(1, -1);
 
-  const vb = def.viewBox.split(/\s+/).map(Number);
-  const vbW = vb[2] || 512;
-  const vbH = vb[3] || 512;
+  const { width: vbW, height: vbH } = getViewBoxSize(def.viewBox);
   const svgScale = drawSize / Math.max(vbW, vbH);
 
   ctx.translate(-drawSize / 2, -drawSize / 2);
@@ -611,12 +610,12 @@ function renderStamp(
 
   if (def.paths && def.paths.length > 0) {
     for (const p of def.paths) {
-      const path2d = new Path2D(p.path);
+      const path2d = getCachedPath2D(p.path);
       if (p.fill) { ctx.fillStyle = p.fill; ctx.fill(path2d); }
       if (p.stroke) { ctx.strokeStyle = p.stroke; ctx.lineWidth = p.strokeWidth ?? 1; ctx.stroke(path2d); }
     }
   } else if (def.svgPath) {
-    const path2d = new Path2D(def.svgPath);
+    const path2d = getCachedPath2D(def.svgPath);
     ctx.fillStyle = '#4a4a4a';
     ctx.fill(path2d);
     ctx.strokeStyle = '#1a1a1a';
