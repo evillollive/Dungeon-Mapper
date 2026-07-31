@@ -46,4 +46,18 @@ describe('dynamic fog utilities', () => {
     expect(merged[1][1]).toBe(true);
     expect(explored[1][1]).toBe(false);
   });
+
+  it('mergeExplored skips malformed keys without a comma instead of throwing', () => {
+    const explored = [[false, false], [false, false]];
+
+    // A key with no comma previously produced NaN indices and crashed on
+    // `explored[NaN][x]`. It must now be skipped like any out-of-bounds cell.
+    expect(() => mergeExplored(explored, new Set(['nocomma']), 2, 2)).not.toThrow();
+    expect(mergeExplored(explored, new Set(['nocomma']), 2, 2)).toBe(explored);
+
+    // Valid keys alongside a malformed one are still applied.
+    const merged = mergeExplored(explored, new Set(['nocomma', '1,0']), 2, 2);
+    expect(merged).not.toBe(explored);
+    expect(merged[0][1]).toBe(true);
+  });
 });

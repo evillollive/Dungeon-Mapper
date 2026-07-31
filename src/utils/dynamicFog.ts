@@ -59,6 +59,7 @@ export function mergeExplored(
 
   for (const key of visible) {
     const comma = key.indexOf(',');
+    if (comma === -1) continue;
     const x = parseInt(key.substring(0, comma), 10);
     const y = parseInt(key.substring(comma + 1), 10);
     if (x < 0 || x >= width || y < 0 || y >= height) continue;

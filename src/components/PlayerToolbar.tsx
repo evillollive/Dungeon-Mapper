@@ -75,7 +75,7 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
             type="checkbox"
             checked={fogEnabled}
             onChange={onToggleFogEnabled}
-            aria-label="Enable fog of war"
+            aria-label="Enable fog-of-war"
             style={{ margin: 0 }}
           />
         </label>

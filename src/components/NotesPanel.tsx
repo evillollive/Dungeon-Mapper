@@ -63,6 +63,7 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
             role="button"
             tabIndex={0}
             aria-pressed={selectedNoteId === note.id}
+            aria-label={`Select note ${note.id}: ${note.label}`}
             onClick={() => onSelectNote(selectedNoteId === note.id ? null : note.id)}
             onKeyDown={e => {
               if (e.key === 'Enter' || e.key === ' ') {

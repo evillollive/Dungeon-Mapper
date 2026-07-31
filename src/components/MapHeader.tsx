@@ -214,7 +214,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
           title="Toggle Print / B&W mode — renders tiles as high-contrast monochrome glyphs suitable for printing [Ctrl+B]"
           aria-label="Toggle print (black and white) mode"
           aria-pressed={printMode}
-          aria-keyshortcuts="Ctrl+B"
+          aria-keyshortcuts="Control+B"
         >
           🖨 Print
         </button>
