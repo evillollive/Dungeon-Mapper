@@ -4,6 +4,10 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Refreshed `README.md` as a shareable landing page while preserving the detailed tool reference in `docs/FEATURES.md`.
+- Added `docs/DEVELOPMENT.md` for setup/test details and `docs/SHARING.md` for launch positioning, demo scripts, repo metadata, and follow-up sharing work.
+
 ## [2026-05-16]
 
 ### Added
