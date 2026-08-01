@@ -16,7 +16,7 @@ Dungeon Mapper is a retro-styled, client-only grid map editor for tabletop RPG p
 
 ![Generate Hub demo](./docs/media/generate-hub.gif)
 
-## Who it is for
+## Who it's for
 
 | Audience | What Dungeon Mapper helps with |
 | --- | --- |
@@ -24,7 +24,7 @@ Dungeon Mapper is a retro-styled, client-only grid map editor for tabletop RPG p
 | Solo designers | Rapidly explore room layouts, terrain, rivers, villages, and theme variants. |
 | TTRPG hackers | Study a compact React + TypeScript canvas app with procedural generation, FOV, fog, export, PWA, and accessibility work. |
 
-## Why it is interesting
+## Why it's interesting
 
 - **Fast first draft, deep polish later.** Start from a blank grid, a sample project, or one of four deterministic generators, then keep refining with stamps, vectors, notes, themes, art layers, and exports.
 - **Built for live-table use.** Present view hides editing controls, supports player annotations, and pairs fog-of-war with tokens, light sources, and line-of-sight.
