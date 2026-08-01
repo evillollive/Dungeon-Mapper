@@ -41,11 +41,6 @@ export async function saveProject(project: DungeonProject): Promise<void> {
   });
 }
 
-/** @deprecated Use `saveProject` instead. Kept for migration path only. */
-export async function saveMap(map: DungeonMap): Promise<void> {
-  return saveProject(wrapMapAsProject(map));
-}
-
 /**
  * Load the autosaved project from IndexedDB. If the stored data is a
  * legacy bare `DungeonMap` (no `levels` array), it is automatically
@@ -74,13 +69,6 @@ export async function loadProject(): Promise<DungeonProject | null> {
   }
 }
 
-/** @deprecated Use `loadProject` instead. */
-export async function loadMap(): Promise<DungeonMap | null> {
-  const project = await loadProject();
-  if (!project) return null;
-  return project.levels[project.activeLevelIndex] ?? project.levels[0] ?? null;
-}
-
 export async function migrateFromLocalStorage(): Promise<void> {
   try {
     const raw = localStorage.getItem(LEGACY_KEY);
@@ -92,13 +80,4 @@ export async function migrateFromLocalStorage(): Promise<void> {
   } catch (err) {
     console.warn('[dungeon-mapper] Migration from localStorage failed — legacy data preserved:', err);
   }
-}
-
-export function clearSavedMap(): void {
-  openDB().then(db => {
-    const tx = db.transaction(STORE_NAME, 'readwrite');
-    tx.objectStore(STORE_NAME).delete(AUTOSAVE_KEY);
-  }).catch(err => {
-    console.warn('[dungeon-mapper] Failed to clear saved map:', err);
-  });
 }

@@ -1,4 +1,4 @@
-import type { BuiltInTileType, Tile, TileType } from '../types/map';
+import type { Tile, TileType } from '../types/map';
 
 export function createEmptyGrid(width: number, height: number): Tile[][] {
   return Array.from({ length: height }, () =>
@@ -69,26 +69,3 @@ export function floodFill(
   return newTiles;
 }
 
-export const TILE_COLORS: Record<BuiltInTileType, string> = {
-  empty: '#1a1a2e',
-  floor: '#c8b89a',
-  wall: '#4a4a4a',
-  'door-h': '#8b6914',
-  'door-v': '#8b6914',
-  'secret-door': '#4a4a4a',
-  'locked-door-h': '#6b4f1d',
-  'locked-door-v': '#6b4f1d',
-  'trapped-door-h': '#8e1e1e',
-  'trapped-door-v': '#8e1e1e',
-  portcullis: '#5a5a5a',
-  archway: '#8a7a60',
-  barricade: '#6b4f1d',
-  'stairs-up': '#7a9e7e',
-  'stairs-down': '#5a7a5e',
-  water: '#1e5f8e',
-  pillar: '#6a6a6a',
-  trap: '#8e1e1e',
-  treasure: '#d4af37',
-  start: '#2e8b57',
-  background: '#2a2218',
-};
