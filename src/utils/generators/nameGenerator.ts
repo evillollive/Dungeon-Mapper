@@ -153,17 +153,3 @@ export function generateRoomNameSuffix(themeId: string | undefined, rng: Rng): s
   const pattern = pickPattern(rng);
   return pattern(words, rng);
 }
-
-/**
- * Generate a standalone proper name (for unlabeled rooms or POIs).
- *
- * @returns A name like `"The Ashen Vault"` or `"Morath's Sanctum"`.
- */
-export function generateProperName(themeId: string | undefined, rng: Rng): string {
-  const words = getWords(themeId);
-  const r = rng.next();
-  if (r < 0.5) {
-    return `The ${pick(words.adjectives, rng)} ${pick(words.nouns, rng)}`;
-  }
-  return `${pick(words.names, rng)}'s ${pick(words.nouns, rng)}`;
-}

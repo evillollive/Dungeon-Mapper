@@ -23,8 +23,3 @@ export function deriveRenderableTilesFromBase(
   const withRooms = roomShapes.length === 0 ? baseTiles : rasterizeRoomShapes(baseTiles, [...roomShapes], width, height);
   return rivers.length === 0 ? withRooms : rasterizeRivers(withRooms, rivers, width, height);
 }
-
-export function deriveRenderableMap(map: DungeonMap): DungeonMap {
-  const tiles = deriveRenderableTiles(map);
-  return tiles === map.tiles ? map : { ...map, tiles };
-}

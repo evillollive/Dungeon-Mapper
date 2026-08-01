@@ -1,0 +1,1447 @@
+# Roadmap Archive — Completed Phases & Changes History
+
+> Historical record split out of `docs/ROADMAP.md` to keep the active roadmap focused.
+> This file preserves the full implementation detail of every completed phase (Phases 1–12),
+> the retrospective UI/accessibility/refactoring analyses that drove Phase 6, the recommended
+> priority ordering, and the dated Changes History log.
+>
+> For current features, competitor reference, and forward-looking work, see [../ROADMAP.md](../ROADMAP.md).
+
+---
+
+## Part 4: Feature Implementation Roadmap
+
+### ~~Phase 1: Core Editor Enhancements~~ ✅ COMPLETE
+
+All 5 items shipped:
+- ✅ 1.1 — Copy/Paste & Selection Operations
+- ✅ 1.2 — Richer Separator/Door Types (locked, trapped, portcullis, archway, barricade)
+- ✅ 1.3 — Shape/Area Markers
+- ✅ 1.4 — Icon/Token Library (30+ SVG icons with search and categories)
+- ✅ 1.5 — Image Import / Background Layer
+
+### ~~Phase 2: Generation Engine Upgrades~~ ✅ COMPLETE
+
+All shipped items:
+- ✅ 2.1 — Non-Rectangular Dungeon Shapes (8 shape masks)
+- ✅ 2.2 — Corridor Style Control (continuity slider, 4 strategies)
+- ✅ 2.3 — Dead-End Management (configurable removal fraction)
+- ✅ 2.4 — Richer Door Generation (probabilistic type distribution)
+- ✅ 2.6 — Procedural Name Generation (theme-aware, 13 themes)
+
+### ~~Phase 3: Town/Settlement Generator~~ ✅ COMPLETE
+
+*Formerly Phase 2.5 — promoted to standalone phase given its scope and distinct algorithmic requirements.*
+
+A 4th generator type that is a unique differentiator — no competitor in our space does both dungeon editing AND town generation.
+
+- ✅ **3.1 — Town/Settlement Generator**
+  - BSP partitioning for district/ward layout with recursive splitting
+  - Building footprints carved inside BSP leaves with randomised insets
+  - Street network connecting sibling BSP nodes via L-shaped corridors
+  - Per-theme ward palettes (13 themes) mapping to district archetypes (Market, Temple, Barracks, etc.)
+  - Optional walls/fortifications with gates on each side
+  - Tile-mix sliders: town walls toggle, building size, treasure, traps
+  - POI placement (start at gate, treasure, traps) with theme-aware labels
+  - Full integration with POI/Notes engine for auto-labeled district notes
+
+### ~~Phase 4.1: Line-of-Sight / FOV~~ ✅ COMPLETE
+
+- ✅ **4.1 — Line-of-Sight / Field-of-View**
+  - Recursive shadowcasting algorithm (`src/utils/fov.ts`) for FOV from any cell
+  - 8-octant sweep with wall occlusion (walls, secret doors, pillars block sight)
+  - GM "Sight" tool (👁) in toolbar with keyboard shortcut [O]
+  - Click to set sight origin → darkened overlay on non-visible cells
+  - Click same cell to clear; switching tools auto-hides overlay
+  - Yellow origin marker for clear visual anchor
+  - Works alongside fog overlay (FOV stacks on top)
+
+### ~~Phase 4.2: Dynamic Fog of War~~ ✅ COMPLETE
+
+- ✅ **4.2 — Dynamic Fog of War**
+  - Union FOV computed from all player tokens via recursive shadowcasting
+  - 3-state fog: hidden (opaque) → explored (dimmed) → visible (clear)
+  - Explored cells persist across token movement (persisted in map data)
+  - Manual fog tools (reveal/hide/defog) coexist with dynamic mode
+  - Toggle in Player toolbar with "Reset Explored" to clear exploration memory
+  - Notes, tokens, and initiative panel respect dynamic fog visibility
+  - Export renderer supports 3-state fog for print/PNG output
+
+### ~~Phase 4: Vision & Lighting System (continued)~~ Phase 4 complete ✅
+
+Advanced tactical features for live play.
+
+- ✅ **4.3 — Light Sources**
+  - `LightSource` data type persisted on `DungeonMap.lightSources[]`
+  - 4 presets: Torch (radius 4, orange), Lantern (radius 6, amber), Magical (radius 8, violet), Custom
+  - Configurable illumination radius (1–20 cells) and glow color (8 swatches)
+  - FOV-limited illumination: walls block light propagation via recursive shadowcasting (same algorithm as player/GM FOV)
+  - Warm radial-gradient glow overlay rendered on canvas in all view modes
+  - When Dynamic Fog is enabled: lit cells treated as "visible" (clear, no fog) just like player-token FOV — illuminated areas visible even without direct player line-of-sight
+  - Explored grid updated for lit cells — removing a light source leaves previously lit area as "explored" (dimmed) rather than snapping back to hidden
+  - Place tool with [I] shortcut; Remove tool; Clear All button — all in GM toolbar LIGHT section
+  - Light source ghost preview (glow + dashed radius circle) follows cursor while tool is active
+
+### Phase 4.5: Art & Visual Polish
+
+Upgrade procedural tile rendering across all 13 themes simultaneously for stronger per-theme identity, richer visual detail, and a softer/more organic aesthetic inspired by Watabou and Azgaar. No new tile types — better-looking versions of existing ones. All upgrades must degrade cleanly to the existing B&W print mode.
+
+**~~4.5.1 — Foundation: Grid Colors, Tile Jitter, Wall Depth~~** ✅ COMPLETE
+- ✅ Per-theme grid line color via new `TileTheme.gridColor` field (replaces hardcoded `#2d3561` in all 13 themes and the global grid pass in MapCanvas + renderMap)
+- ✅ Deterministic per-tile color jitter using `tileHash(x, y)` in `src/themes/artUtils.ts` — floors and walls subtly vary ±6–8% in lightness so no two tiles are pixel-identical
+- ✅ Wall shadow/depth effect via `drawWallDepth()` — three styles: `shadow` (Dungeon, Castle, Wilderness, Post-Apocalypse, Pirate, Desert, Ancient), `glow` (Cyberpunk, Starship, Alien), `hard-edge` (Modern City, Old West, Steampunk)
+- ✅ Shared art utilities in `src/themes/artUtils.ts`: `tileHash()`, `jitterColor()`, `drawWallDepth()`
+- Performance: hash jitter and grid colors are essentially free; shadow effects are lightweight Canvas 2D fills/strokes
+
+**~~4.5.2 — Theme Personality: Floors, Walls, Doors~~** ✅ COMPLETE
+- ✅ Theme-specific floor textures via Canvas patterns or procedural micro-detail:
+  - Dungeon: stone flagstone mortar lines (3 mortar seams: 2 horizontal + 1 vertical offset by hash)
+  - Castle: full checkerboard hall tiles with cross seams (replaces subtle hint)
+  - Starship: deck plating seams with corner rivet dots + center panel mark
+  - Wilderness: hash-seeded grass blade strokes (5–6 angled blades per tile)
+  - Pirate: horizontal plank lines with wood knots + grain line
+  - Cyberpunk: circuit-board traces (3 neon right-angle paths + solder pad)
+  - Desert: stippled sand dots (8–10 per tile in 2 alternating shades)
+  - Alien: bioluminescent spore dots with glow halos + organic vein curve
+  - Modern City: concrete aggregate speckles; Old West: boot-print dashes; Post-Apocalypse: crack lines; Steampunk: corner rivet dots; Ancient: mortar grid with carved chevron
+- ✅ Theme-specific wall rendering — distinct material per theme:
+  - Dungeon: rough stone blocks with 2 horizontal + 1 vertical mortar seam
+  - Castle: ashlar masonry with horizontal mortar + row-offset vertical seams + crenel notch
+  - Starship: riveted bulkhead panels (4 corner rivets + center seam)
+  - Cyberpunk: holographic force-field shimmer (3 scan-lines in alternating alpha)
+  - Modern City: windowed building facade with entry mark
+  - Post-Apocalypse: cracked concrete with rebar line + diagonal crack
+  - Wilderness: dense foliage cluster with leaf highlights
+  - Old West: plank wall with nail dots; Steampunk: gear wall with inner hub + spokes; Pirate: hull planking with nail heads; Desert: sandstone bricks with erosion cracks; Ancient: carved relief blocks with mortar + diamond detail
+- ✅ Theme-specific door rendering — distinct door per theme:
+  - Castle: iron-banded oak plank with hinges + plank seam lines
+  - Starship: sliding blast door with chevron hazard stripes
+  - Cyberpunk: glitching holographic barrier with glitch lines + pixel dot
+  - Wilderness: wooden gate with crossbar + nail pegs
+  - Pirate: trapdoor hatch with ring pull + hinge marks
+  - Dungeon: iron-bound timber with band stripes + rivet; Alien: organic membrane with vein lines; Desert: tomb door with hieroglyph diamond accents; Modern City: glass door with push-bars; Old West: saloon door with louver slats; Steampunk: valve door with pressure gauge; Post-Apocalypse: barricade door with scrap metal bands + bolt; Ancient: stone slab with carved chevron marks
+- All rendering deterministic via `tileHash()` — no Math.random()
+- No changes to print mode — all art upgrades are screen-mode only
+- Performance: lightweight Canvas 2D calls only (thin lines, small dots/circles)
+
+**~~4.5.3 — Iconic Tiles: Treasure, Traps, Start, Water~~** ✅ COMPLETE
+- ✅ Per-theme treasure/trap/start icons — all 13 themes upgraded with unique thematic art:
+  - Treasure: Dungeon → chest with lock + coins, Castle → crowned chest, Starship → hexagonal data core, Alien → crystal cluster, Cyberpunk → data chip with pins, Wilderness → buried cache mound, Old West → gold nuggets, Steampunk → clockwork gears, Modern City → bank safe, Post-Apocalypse → supply crate, Pirate → skull chest, Desert → ankh relic, Ancient → sarcophagus
+  - Trap: Dungeon → pressure plate with spikes, Castle → murder hole with arrow slits, Starship → laser grid with glow, Alien → spore burst, Cyberpunk → electric arc, Wilderness → bear trap jaws, Old West → bear trap, Steampunk → gear pressure plate, Modern City → manhole cover, Post-Apocalypse → landmine, Pirate → cannon with fuse, Desert → quicksand spiral, Ancient → cursed glyph pentagram
+  - Start: Dungeon → stone archway, Castle → royal banner, Starship → airlock hatch with status lights, Alien → landing beacon, Cyberpunk → neon portal, Wilderness → campfire with stone ring, Old West → saloon doors, Steampunk → boiler engine, Modern City → bus stop sign, Post-Apocalypse → shelter entrance, Pirate → anchor with rope, Desert → caravan tent, Ancient → obelisk with inscriptions
+- ✅ Theme-specific water/liquid rendering — all 13 themes upgraded:
+  - Dungeon → dark ripple pools with torchlight reflections, Castle → moat with lily pads, Starship → coolant with bubbles and pipe, Alien → acid with organic swirls, Cyberpunk → toxic neon with shimmer, Wilderness → river with current arrows, Old West → water trough, Steampunk → steam pipe with valve, Modern City → fountain with spray, Post-Apocalypse → toxic pool with radiation dots, Pirate → bilge with deck planks, Desert → oasis with palm silhouette, Ancient → reflecting pool with lotus
+- ✅ Fog edge feathering — soft gradient at revealed/hidden boundaries (always on, both MapCanvas and exports)
+- ✅ Print mode art pass — cross-hatching for walls and stipple shading for water in B&W mode
+
+### Phase 5: Multi-Level Dungeons & Customization
+
+Features that extend dungeon mapping depth and personalization.
+
+**~~5.1 — Multi-Level Dungeon Support~~** ✅ COMPLETE *(formerly 6.2)*
+- ✅ `DungeonProject` wraps ordered array of `DungeonMap` levels with `activeLevelIndex` and `stairLinks[]`
+- ✅ Level tab bar UI with add, rename (double-click), duplicate, delete, and drag-to-reorder
+- ✅ Per-level undo/redo history (50-step, isolated per level)
+- ✅ Stair link tool ([K] shortcut) — click stairs tile to set source, switch levels, click destination stairs to create link
+- ✅ Stair link badges rendered on canvas — blue "L#" badge on linked stairs tiles showing destination level
+- ✅ Pending stair link source highlighted with dashed orange border
+- ✅ Double-click linked stairs to navigate to destination level (auto-centers viewport on destination cell)
+- ✅ Level tabs show 🔗 badge with link count for levels that have stair connections
+- ✅ Stair links auto-reindex on level delete, duplicate, and reorder
+- ✅ STAIR LINKS toolbar section with Link tool, Clear Links button, and link count display
+- ✅ PageUp/PageDown keyboard shortcuts to cycle between levels
+- ✅ Full JSON round-trip — multi-level project export/import with stair links preserved
+- ✅ IndexedDB autosave with legacy bare-map migration via `wrapMapAsProject()`
+
+**~~5.2 — Sample & Default Maps~~** ✅ COMPLETE
+- ✅ Bundled collection of 26 sample projects / 28 playable levels across 13 themes
+- ✅ Maps showcase each theme's art, tile variety, and generator capabilities (rooms-and-corridors, village, cavern, open-terrain)
+- ✅ "Sample Maps" gallery accessible from the header — browse by theme, review details, and load into editor
+- ✅ Loaded sample maps are fully editable (treated as a new project)
+- ✅ Maps range from small encounters to medium dungeon, settlement, cavern, and terrain maps
+- ✅ Multi-level sample projects showcase stair links between levels (ISS Constellation and Temple of the Forgotten Sun)
+- ✅ No backend required — maps are bundled in the application source/build
+- ✅ Serves as onboarding for new users who want to explore features without starting from scratch or using random generation
+
+**~~5.3 — Custom Tile/Theme Creation~~** ✅ COMPLETE *(formerly 5.2, originally 7.2)*
+- ✅ Project-scoped custom theme builder accessible from the GM Theme toolbar
+- ✅ Custom themes inherit a built-in base theme, with editable theme name, grid color, built-in tile colors, and built-in tile labels
+- ✅ User-defined custom tile palette entries with label, semantic base behavior, color fallback, and optional uploaded PNG/JPEG/WebP graphics stored as data URLs
+- ✅ Custom tiles render in the toolbar palette, map canvas, minimap, SVG export color fallback, and high-DPI/print export fallback
+- ✅ Custom tile base behavior feeds line-of-sight, dynamic fog, light visibility, and print-mode fallback semantics
+- ✅ Custom themes and custom tile definitions round-trip through project JSON export/import and IndexedDB autosave
+
+**~~5.4 — Premade Map Design Review~~** ✅ COMPLETE *(Pass 1 + Pass 2 complete; Pass 3 remains recurring)*
+
+*Premade maps were authored organically alongside generator/theme work; some no longer read as the archetype they're named after (castle, ship, cavern, settlement, etc.). This phase introduces a structured audit pass that repeats whenever a new content tool ships.*
+
+- ✅ **Pass 1 — archetype audit (initial): COMPLETE**
+  - Walk each of the 26 bundled sample projects in `src/utils/premadeMaps.ts` and compare its layout against its intended design (castle, boat, dungeon, cavern, terrain, settlement, temple, etc.)
+  - Per-map polish: tighten room shapes, relocate/replace stamps and tokens, sharpen flavor notes, fix walkability issues that no longer match the archetype
+  - **Background fill audit:** every premade must have its empty cells filled with the theme `background` tile so maps don't render as floating geometry — matches the default behavior of the Generate dialog (opt-out, not opt-in)
+  - Tag each premade with its intended archetype in `PremadeMapSpec` so the gallery can group/filter by archetype, not just theme
+- ✅ **Pass 2 — after Phase 11 (Rivers) ships: COMPLETE** re-review every premade and add rivers/streams where the archetype calls for them — castle moat, wilderness river, pirate harbor/docks, swamp cavern stream, etc. Uses the same checklist as Pass 1
+- 🔁 **Pass 3 — after each future content/art tool ships** (Phase 6.4.5 per-theme stamps, Phase 9 art presets, Phase 10 dynamic rooms, etc.): quick re-sweep to fold new stamps, presets, or shape features into existing premades where they improve showcase value
+- Outcome: bundled samples stay aligned with the app's current capabilities and serve as both onboarding and a feature showcase
+
+### Completed Quality-of-Life Phases
+
+**~~7.1 — Print-Optimized Export~~** ✅ COMPLETE
+- ✅ Multi-DPI export (72, 150, 300 DPI) at 1 inch per tile cell
+- ✅ Grid-aligned rendering for VTT import
+- ✅ Page-size presets (US Letter, A4) with automatic page tiling for large maps
+- ✅ Export dialog with view mode (GM/Player) and print mode toggles
+- ✅ Keyboard shortcut (Ctrl+Shift+P) and header button
+
+**~~7.3 — Measurement & Distance Tools~~** ✅ COMPLETE
+- ✅ Ruler/measurement tool showing distance in grid squares and feet (Chebyshev/D&D distance)
+- ✅ Circle, cone, and line measurement templates for spell areas
+- ✅ Configurable scale (feet per cell, default 5 ft)
+- ✅ Scale bar on exported maps (PNG print export)
+- ✅ Keyboard shortcut [M] for measure tool
+
+**~~7.5 — GM Drawing / Annotation Tools~~** ✅ COMPLETE
+- ✅ GM freehand drawing tool (`gmdraw` ToolType) in the GM toolbar with [D] keyboard shortcut
+- ✅ GM erase tool (`gmerase` ToolType) to click-remove individual GM strokes
+- ✅ GM annotations use `kind: 'gm'` on `AnnotationStroke` — hidden from player view (canvas, PNG export, SVG export)
+- ✅ GM strokes rendered with dashed line pattern to visually distinguish from player drawings
+- ✅ Independent color palette (8 swatches) and brush width controls (Thin/Medium/Thick) separate from player pen settings
+- ✅ Clear All button to remove all GM drawings from the map
+- ✅ Dashed pattern renders consistently in live canvas, PNG export (`renderMap.ts`), and SVG export (`export.ts`)
+
+**~~6.1 — Touch & Pointer Event Foundation~~** ✅ COMPLETE
+- ✅ All mouse events in MapCanvas replaced with Pointer Events API (`onPointerDown`, `onPointerMove`, `onPointerUp`, `onPointerLeave`, `onPointerCancel`)
+- ✅ `getTileCoords` and `getFractionalCoords` accept generic `{clientX, clientY}` for unified mouse/touch/pen input
+- ✅ `touch-action: none` CSS on canvas prevents browser scroll/zoom interference
+- ✅ Pinch-to-zoom gesture: two-finger distance tracking scales zoom between 0.25×–4×
+- ✅ Two-finger pan gesture: midpoint delta tracking for smooth touch panning
+- ✅ Long-press (400ms) on touch starts pan mode, replacing right-click for touch devices
+- ✅ Pointer capture (`setPointerCapture`/`releasePointerCapture`) for reliable drag tracking
+- ✅ `onPointerCancel` handling commits in-progress strokes on interrupted gestures
+- ✅ `onWheel` retained for mouse scroll panning (Shift+wheel)
+
+**~~6.2 — Responsive Layout Overhaul~~** ✅ COMPLETE
+- ✅ Desktop (>1024px): full 3-column layout unchanged, panel toggles hidden
+- ✅ Tablet landscape (768–1024px): 2-column grid, collapsible left toolbar, right panel as overlay drawer, header labels hidden, toolbar tab labels icon-only
+- ✅ Tablet portrait / large phone (480–768px): single-column grid, toolbar as bottom sheet, stacked header layout, reduced header buttons
+- ✅ Phone (<480px): minimal header (center controls hidden), nearly full-width right drawer, compact zoom controls, smaller level tabs
+- ✅ Toolbar collapse/expand toggle with `▶`/`◀` indicators
+- ✅ Right panel slide-in drawer with smooth CSS transition, toggle button at canvas edge
+- ✅ All breakpoints use progressive enhancement — no separate mobile codebase
+
+### ~~Phase 7: Test Infrastructure~~ ✅ COMPLETE
+
+*Foundation for all subsequent feature work. A test suite built before Phase 10 (dynamic rooms) — the most complex change in the roadmap — pays for itself immediately.*
+
+**~~7.A — Test Runner Setup~~** ✅ COMPLETE
+- Vitest + React Testing Library + jsdom environment
+- `npm test` script in package.json, CI-friendly config
+- `vitest.config.ts` and `src/test/setup.ts` boilerplate
+
+**~~7.B — Initial Test Coverage for High-Risk Pure Modules~~** ✅ COMPLETE
+- Generator utilities (`common.ts` outlineWalls, fillFloor, BFS; 26 tests)
+- Seedable RNG (`random.ts` makeRng, seedFromString, parseSeed; 18 tests)
+- FOV engine (`fov.ts` computeFOV edge cases; 14 tests)
+- Stamp catalog (`stampCatalog.ts` getStampDef, category filtering; 10 tests)
+- Map state utils (`mapStateUtils.ts` createDefaultMap, createDefaultProject; 18 tests)
+
+**~~7.C — Component Smoke Tests~~** ✅ COMPLETE
+- ShortcutsHelp dialog renders, displays bindings, closes (3 tests)
+- ExportDialog renders, cancel closes, export button present (3 tests)
+- Shared test helpers with mock context providers (`src/test/testHelpers.tsx`)
+
+📘 **README checkpoint #1:** Add "Development & Testing" section with `npm test` instructions.
+
+### Phase 8: UI Redesign
+
+*Modernise the interface to match proven competitor patterns (Dungeondraft-style: left icon rail → contextual panel → docked right inspector). Existing 4-tab toolbar preserved as a fallback density mode.*
+
+**~~8.1 — Navigation Rail~~** ✅ COMPLETE
+- ~~8.1.1 — Left icon-rail component (vertical strip of mode icons: Draw, Tactical, Generate, Advanced — same groupings as today)~~ ✅
+- ~~8.1.2 — Contextual sub-panel that swaps based on selected rail mode (replaces center area of current toolbar)~~ ✅
+- ~~8.1.3 — Layout density toggle in Settings: **"Rail (new)" / "Tabs (classic)"** — old 4-tab toolbar preserved as fallback~~ ✅
+- ~~8.1.4 — Mobile: rail collapses to existing bottom toolbar (no change to MobileToolbar)~~ ✅
+
+**~~8.2 — Docked Inspector~~** ✅ COMPLETE
+- ~~8.2.1 — New `<SelectionInspector>` component, docked to right panel, shows properties of currently selected stamp / token / note / light~~ ✅
+- ~~8.2.2 — Migrate stamp transform controls out of StampPicker into the inspector~~ ✅
+- ~~8.2.3 — Inspector empty-state shows quick map info (dimensions, tile counts, theme)~~ ✅
+
+**~~8.3 — UI Polish~~** ✅ COMPLETE
+- ~~8.3.1 — Command palette (Ctrl/Cmd+K) — fuzzy search for tools, themes, dialogs, recent maps~~ ✅
+- ~~8.3.2 — Persistent zoom + cursor-coordinate HUD overlaid bottom-left of canvas~~ ✅
+- ~~8.3.3 — Header simplification: collapse Export / Print / Samples / Help into one overflow menu~~ ✅
+
+~~**8.4 — Generate Hub (dedicated window)**~~ ✅ COMPLETE
+
+*Today the Generate and Samples buttons live inside the Draw tab (`DrawToolsTab.tsx`), which buries map-creation flows inside an unrelated tool category and gives users no preview of what they're getting. Competitors (Dungeondraft, DungeonFog, Worldographer) expose generation and template browsing as a dedicated surface. This sub-phase pulls those flows out into their own window/tab.*
+
+- ~~8.4.1 — New **Generate Hub** surface (full-size dialog or dockable window) that combines procedural generation and the premade map gallery in one place — left side picks generator type or premade archetype, right side previews the result with all parameters~~ ✅
+- ~~8.4.2 — All `GenerateMapDialog` controls move into the hub, including the **"Fill empty space with background tile"** toggle — which remains **on by default** so generated maps never read as floating geometry; user must explicitly opt out~~ ✅
+- ~~8.4.3 — All `PremadeMapsDialog` browsing moves into the hub, with archetype filtering surfaced from Phase 5.4's tagging~~ ✅
+- ~~8.4.4 — Reachable from the navigation rail (8.1) as its own icon, from the header File menu, and via the existing [G] shortcut~~ ✅
+- ~~8.4.5 — Remove the `🎲 Generate` and `📦 Samples` buttons from `DrawToolsTab` once the hub ships; Draw tab returns to drawing tools only~~ ✅
+
+📘 **README checkpoint #2:** Screenshots/GIFs of new UI layout *(includes the Generate Hub)*.
+
+### Phase 9: Art System v2
+
+*Visual quality leap: parchment textures, edge blending, hand-drawn mode, atmosphere, and per-map art style presets. All upgrades honor print-mode B&W contract.*
+
+**9.1 — Texture & Paper Layer** ✅ COMPLETE
+- ✅ 9.1.1 `PaperTextureSettings` type + `paperTexture` field on `DungeonMap`; `DEFAULT_PAPER_TEXTURE` constant
+- ✅ 9.1.2 `setPaperTexture` / `clearPaperTexture` / `updatePaperTexture` in `useMapState`
+- ✅ 9.1.3 Procedural texture renderer (`paperTexture.ts`): 5 patterns (parchment, linen, canvas, watercolor, marble) with grain noise + vignette + caching
+- ✅ 9.1.4 Per-theme tint colours (13 built-in themes); `getPaperTint()` helper; optional `paperTint` on `TileTheme`
+- ✅ 9.1.5 UI controls in DrawToolsTab / NavigationRail / Toolbar: enable toggle, pattern picker, opacity/grain/vignette sliders, tint colour with reset
+- ✅ 9.1.6 Export toggle: `includeTexture` option on `RenderMapOptions` + `HighResExportOptions` + SVG export; paper texture embedded as PNG data-URL `<image>` in SVG
+- ✅ 9.1.7 16 unit tests covering defaults, all patterns, determinism, caching, invalidation, and per-theme tint lookup
+- Parchment / paper background layer with per-theme tinting
+- Optional grain noise + vignette
+- **Export toggle** on PNG/SVG export so users can include or exclude the paper texture
+
+**9.2 — Edge Blending** ✅ COMPLETE
+- Stochastic edge dithering between adjacent floor/wall/water tiles to soften grid stepping
+- Per-theme blend masks; falls back cleanly in print mode
+- 9.2.1: `EdgeBlendSettings` type + `DungeonMap.edgeBlend` field + defaults
+- 9.2.2: State management (`setEdgeBlend`, `clearEdgeBlend`, `updateEdgeBlend`)
+- 9.2.3: Edge blend renderer with 3 styles (dither, smooth, stipple)
+- 9.2.4: Integrated into MapCanvas.tsx + renderMap.ts (disabled in print mode)
+- 9.2.5: UI controls in DrawToolsTab/NavigationRail/Toolbar
+- 9.2.6: `includeEdgeBlend` export toggle for PNG/SVG
+- 9.2.7: 12 unit tests
+
+**9.3 — Hand-Drawn Mode** ✅ COMPLETE (2026-05-09)
+- 9.3.1: `HandDrawnSettings` type + `DEFAULT_HAND_DRAWN` constant + `DungeonMap.handDrawn` field
+- 9.3.2: State management (`setHandDrawn`, `clearHandDrawn`, `updateHandDrawn`)
+- 9.3.3: Hand-drawn renderer with 3 styles (sketchy, pencil, ink) — wobbly grid lines (seeded value noise), cross-hatch shading on wall/pillar tiles, bold wall-to-floor boundary outlines
+- 9.3.4: Integrated into MapCanvas.tsx + renderMap.ts (honours print-mode B&W contract)
+- 9.3.5: UI controls in DrawToolsTab/NavigationRail/Toolbar (enable toggle, style selector, wobble/hatch/opacity sliders)
+- 9.3.6: `includeHandDrawn` export toggle for PNG/SVG
+- 9.3.7: 16 unit tests
+
+**9.4 — Lighting & Atmosphere** ✅ COMPLETE
+- 9.4.1: `LightingAtmosphereSettings` type + `DungeonMap.lightingAtmosphere` field with defaults (`ColorGradingMode`, `DEFAULT_LIGHTING_ATMOSPHERE`)
+- 9.4.2: State management — `setLightingAtmosphere`, `clearLightingAtmosphere`, `updateLightingAtmosphere` in `useMapState.ts`
+- 9.4.3: Lighting renderer (`drawLightingAtmosphere`) in `src/utils/lightingAtmosphere.ts` with 3 layers: ambient occlusion (wall corners), stamp shadows (soft drop-shadow), color grading (day/night/dusk tint overlay)
+- 9.4.4: Integrated into MapCanvas.tsx + renderMap.ts (disabled in print mode)
+- 9.4.5: UI controls in DrawToolsTab/NavigationRail/Toolbar (enable toggle, AO intensity/radius sliders, shadow opacity slider, color grading mode selector + intensity slider, opacity slider)
+- 9.4.6: `includeLighting` export toggle for PNG/SVG
+- 9.4.7: 20 unit tests
+
+**9.5 — Art Style Presets** ✅ COMPLETE
+- **Per-map** `artStylePreset` field on `DungeonMap`
+- Built-in presets: **Classic** (current), **Hand-Drawn**, **Painted**, **Minimal**, **Print**
+- Preset picker in Map settings; export honors active preset
+- 9.5.1: `ArtStylePresetId` type, `ART_STYLE_PRESET_IDS`, `ART_STYLE_PRESET_LABELS` in map.ts
+- 9.5.2: `artStylePresets.ts` utility — `getPresetSettings()` returns curated layer configs, `ART_STYLE_PRESET_DESCRIPTIONS` for tooltips
+- 9.5.3: State management — `applyArtStylePreset()` in useMapState.ts; individual layer tweaks auto-mark preset as `'custom'`
+- 9.5.4: ART STYLE picker section in DrawToolsTab with dropdown + description
+- 9.5.5: Wired through NavigationRail, Toolbar, App.tsx
+- 9.5.6: Export honors preset (works via individual layer settings — no extra export changes needed)
+- 9.5.7: 26 unit tests
+
+📘 **README checkpoint #3:** Showcase gallery of all presets across themes. ✅ COMPLETE
+
+### Phase 10: Dynamic Rooms (Shape Layer)
+
+*Transforms map editing from tile-only to shape+tile hybrid. Shapes rasterize to the existing tile grid; individual tile painting coexists with shapes (no lock). Merging is visual only — rooms remain separate logical objects.*
+
+**10.1 — Shape Data Model & Rasterizer** ✅ COMPLETE
+- New `RoomShape` type (rect for v1: position, dimensions, optional door hints, fill/wall tile overrides)
+- `DoorHint` type with edge + offset + optional tile override
+- `DungeonMap.roomShapes: RoomShape[]` (additive — old maps unaffected)
+- Rasterizer (`rasterizeRoomShapes`) — shapes → floor + wall tiles with door hint application, grid clipping, immutable copy
+- **Coexistence:** individual tile painting still works on top of rasterized output (no lock)
+- Undo/redo support for shape ops (`HistorySnapshot` captures `roomShapes`)
+- State management: `addRoomShape`, `updateRoomShape`, `removeRoomShape`, `clearRoomShapes`
+- Backward-compat: `withDefaults()` fills `roomShapes ?? []`
+- 18 rasterizer tests + updated `mapStateUtils` tests (built on Phase 7)
+
+**10.2 — Rectangle Drawing & Resize** ✅ COMPLETE
+- New `room-rect` tool in Draw tools (+ command palette + keyboard shortcut `Q`) to drag-create rectangular room shapes
+- Edit handles in-canvas for moving and resizing existing room shapes
+- Live preview while dragging new room rectangles and while resizing/moving existing shapes
+- Right-click / context menu delete for room shapes while `room-rect` is active
+- App wiring: `MapCanvas` now consumes `addRoomShape` / `updateRoomShape` / `removeRoomShape`
+
+**10.3 — Visual Merging** ✅ COMPLETE
+- When two rectangles overlap or touch edges, the rasterizer dissolves shared interior walls
+- Room shapes remain **separate logical objects** (visual merge only — no auto-combined notes/IDs)
+- Door inference at touch boundaries (auto / open arch / wall — per-edge override)
+- New types: `EdgeMergeMode` (`'auto'` | `'wall'` | `'door'` | `'arch'`), `EdgeMergeOverride` (edge + mode)
+- `RoomShape.edgeMergeOverrides` field for per-edge merge control
+- Rasterizer merge pass: after individual rasterization, dissolves shared walls between overlapping/touching rooms
+- Door hints re-applied after merge pass (explicit door placements always survive)
+- 11 new tests (29 total rasterizer tests covering merge, edge overrides, multi-room, non-touching)
+
+📘 **README checkpoint #4:** GIF of room overlap/merge.
+
+**10.4 — Generator Integration** ✅ COMPLETE
+- BSP / Rooms & Corridors generators emit `RoomShape[]` going forward (existing maps unaffected)
+- Generated rooms become editable as shapes immediately after generation
+- `GeneratedMap` type extended with optional `roomShapes` field
+- `generateRoomsCorridors` converts internal `Room[]` → `RoomShape[]` (sequential ids from 1)
+- `generateVillage` converts BSP leaf buildings → `RoomShape[]`
+- Cavern / Open Terrain generators unchanged (no discrete rooms)
+- `generateMap` (useMapState) accepts and stores `roomShapes`, resets `nextRoomShapeIdRef`
+- App.tsx wiring forwards `result.roomShapes` through to state
+- 13 new generator integration tests (245 total)
+
+**10.5 — Subtractive Shapes** ✅ COMPLETE
+- `RoomShapeMode` type (`'additive'` | `'subtractive'`), optional `mode` field on `RoomShape` (defaults to `'additive'`)
+- Rasterizer subtractive pass (Pass 4): subtractive shapes carve overlapping additive geometry — interior→empty, perimeter→wall
+- New `room-cut` tool (`Shift+Q`) with red/orange overlay, command palette entry, and keyboard shortcut
+- Per-tool shape filtering: `room-rect` interacts with additive shapes, `room-cut` with subtractive
+- Per-edge wall override UI: contextual EDGE OVERRIDES panel in DrawToolsTab when room tool active and a shape is selected — dropdowns for N/E/S/W (auto/wall/door/arch)
+- Props wired through NavigationRail, Toolbar, and App.tsx (`selectedRoomShapeId` + `onSelectRoomShape`)
+- 7 new subtractive tests (252 total across 19 files)
+
+**10.6 — Additional Shapes** ✅ COMPLETE
+- Circle / ellipse room shape
+- Polygon room shape (click-to-add-vertex)
+- Same merge / subtract semantics as rectangles
+
+### Phase 11: Rivers
+
+*Rivers as a vector layer (like room shapes) that rasterizes to water tiles with directional flow metadata. Generator integration via opt-in checkbox + sliders.*
+
+**11.1 — Vector Layer & Manual Tool** ✅ COMPLETE
+- New `River` type (vector layer: control points, width, flow direction, type)
+- `DungeonMap.rivers: River[]`
+- Smooth Catmull-Rom rasterizer → water tiles with `flowDirection`, `riverId`, and `riverType` metadata
+- New `river` tool (`U`) — drag to draw flowing river vectors
+- Edit handles for moving control points; right-click deletes a control point (or removes a single-point river)
+- River erase tool removes whole river vectors
+- Renders flow direction in screen mode and print/export mode
+- State actions: `addRiver`, `updateRiver`, `removeRiver`, `clearRivers`
+- 5 new tests covering rasterization, derived render tiles, and state actions
+
+📘 **README checkpoint #5:** GIF/docs of drawing a river. ✅ COMPLETE
+
+**11.2 — Generator Integration** ✅ COMPLETE
+- Optional **"Add river"** checkbox in Generate dialog → reveals sliders: count, width, meander, source edge
+- Generated maps emit editable `River[]` vectors and carry them through full-map and selection generation
+- Open Terrain & Cavern: rivers carve through generated terrain and render with flow metadata
+- Village (BSP): rivers are placed before settlement carving; roads crossing them become bridge archways
+- Underground themes (Dungeon, Cavern): generated rivers use the `underground-stream` semantic type
+
+**11.3 — River Polish** ✅ COMPLETE
+- Bank tiles (sand/dirt/rock edges) per theme
+- Source / mouth markers
+- Branching tributaries
+- **Premade map re-review** (Phase 5.4 Pass 2): walk each bundled sample project and add rivers/streams where the archetype calls for them — castle moat, wilderness river, pirate harbor, swamp stream, etc. Uses the same per-map checklist as 5.4 Pass 1
+
+**11.4 — README checkpoint #5** ✅ COMPLETE
+- README documents river drawing (`U`), river settings, vector editing/erasing, bank and endpoint polish, export persistence, and generated river controls
+- README shortcut and testing tables include rivers
+
+### Phase 12: Final Pass — Accessibility, Codebase Audit & Documentation
+
+*Closing phase of the active roadmap. Ensures the codebase is clean, tested, documented, and accessible.*
+
+**12.1 — Accessibility Audit** ✅ COMPLETE
+- Re-audited WCAG AA coverage across all 13 themes for tile-overlay contrast, focus order, keyboard reachability, and touch target sizing
+- Added shared accessibility color helpers and regression coverage so non-print tile overlays maintain at least 3:1 graphic contrast across all built-in theme colors
+- Strengthened canvas screen-reader support by wiring the hidden map summary to the focusable canvas and keeping it in a polite live region alongside action announcements
+- Fixed keyboard/focus gaps surfaced by the audit: minimap has a keyboard fallback, and rail/mobile/overflow controls now receive explicit visible focus rings
+- Screen-reader review path covered the canvas summary + aria-live status messages in the DOM; real-device NVDA/VoiceOver/TalkBack spot checks remain recommended before a public release
+- *(Dark mode is **not** in this phase — moved to Far Future)*
+
+**12.2 — Codebase Audit & Refactor** ✅ COMPLETE
+- Re-measured component sizes: `MapCanvas.tsx` 3361 lines, `MobileToolbar.tsx` now under the mobile budget after removing duplicated embedded CSS, and `useMapState.ts` 1369 lines with Phase 8–11 state already split across helper hooks
+- Dead-code sweep removed the unused `MOBILE_TOOLBAR_CSS` export; the canonical mobile styles live in `App.css`
+- Added Phase 12.2 audit guardrails covering audited module size budgets, explicit `any` annotations in production source, and the removed mobile CSS dead-code path
+- Added a 128×128 full-stack render regression that exercises paper texture, edge blending, hand-drawn mode, lighting, fog, rivers, markers, and lights through `renderMapToCanvas`
+- Bundle-size audit from production build: `index-BR0wtfNd.js` 799.76 kB / 214.00 kB gzip, still above Vite's 500 kB chunk warning; defer code splitting/manual chunks to a future bundle-focused pass
+
+**12.3 — README & Documentation Overhaul (Final Pass)** ✅ COMPLETE
+- README front matter refreshed with hero image, badges, quick start, feature highlights, theme gallery, docs links, and explicit contributing/code-of-conduct sections
+- Added animated GIF previews for headline features under `docs/media/`
+- Added `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `.github/ISSUE_TEMPLATE/`, and `PULL_REQUEST_TEMPLATE.md`
+- Verified `LICENSE` is present (MIT) and consistent with README
+- Added a structured docs index (`docs/README.md`) with clean cross-links across roadmap, architecture, changelog, and contribution docs
+
+### ~~Phase 6: UI/UX Overhaul, Accessibility, Refactoring & Mobile~~ ✅ COMPLETE
+
+*Comprehensive analysis phase — the app has grown from a simple editor to a feature-rich dungeon mapping platform with 25,000+ lines of code, 14 components, 40+ keyboard shortcuts, and 11 toolbar sections. The interface and architecture need to evolve to match.*
+
+---
+
+#### Part 3c: UI/UX Competitive Analysis
+
+### Current UI Inventory
+
+The app currently has a 3-column desktop layout: left toolbar (GM or Player), center canvas, right panels (notes + initiative). The header contains map controls, export buttons, and view toggles.
+
+| Element | Content | Clutter Level |
+|---|---|---|
+| **Header** (MapHeader) | Map name, width/height/tile-size/UI-scale dropdowns, 13+ buttons (view toggle, print mode, undo, redo, new, samples, clear, JSON/PNG/SVG export, print export, import, shortcuts help) | 🔴 High |
+| **GM Toolbar** (Toolbar) | 11 sections: tools (7), tile palette (20+ tiles), theme picker, custom theme, fog, generator, markers, background image, measure, lights, stair links — 43+ props passed from App | 🔴 High |
+| **Player Toolbar** (PlayerToolbar) | 4 sections: fog controls, draw tools, pen settings, tokens — 14 props | ✅ Clean |
+| **Canvas** (MapCanvas) | Map rendering + all mouse interactions — 54+ props, 1,925 lines | 🔴 Monolithic |
+| **Right Panels** | Initiative tracker + Notes panel — always visible | ⚠️ Moderate (takes space even when unused) |
+| **Level Tabs** | Multi-level navigation with context menus | ✅ Clean |
+| **Dialogs** (6) | Generate, Custom Theme, Export, Samples, Icon Picker, Shortcuts | ✅ Appropriately modal |
+
+### UI Problems Identified
+
+**1. GM Toolbar Overload**
+The GM toolbar has grown to 11 distinct sections with ~50+ controls. Sections include tile painting, theme selection, fog preview, generators, shape markers, background images, measurement tools, light sources, and stair linking. A new user encounters all of these at once with no progressive disclosure. Competitors like Dungeondraft and DungeonFog use collapsible panels, tabbed tool categories, and context-sensitive toolbars that only show relevant options.
+
+**2. Header Bar Congestion**
+The header contains 13+ buttons plus 4 dropdown selectors. Map metadata controls (name, width, height, tile size, UI scale) share space with action buttons (export formats, undo/redo, new/clear). This mixes "settings" with "actions" in a way that's confusing. Competitors separate file operations into menus and keep the header minimal.
+
+**3. Mode Naming: "GM" vs "Player"**
+The current view modes are named "GM" (Game Master) and "Player." These labels assume TTRPG context and may confuse users from other backgrounds (architects, game designers, writers, worldbuilders). Additionally, the distinction is unclear — GM mode is actually "Edit" mode and Player mode is actually "Present/Play" mode. The GM/Player naming also implies these are different user roles requiring separate logins, when really they're just view modes on the same session.
+
+**Recommendation:** Rename to **"Edit"** and **"Present"** (or "Edit" and "Play"). These names are universally understood and accurately describe what each mode does — one is for building/editing the map, the other is for presenting it to players with fog and restricted visibility.
+
+**4. Right Panels Always Visible**
+The Initiative Panel and Notes Panel are always rendered in the right column, even when the user isn't using tokens or notes. This wastes ~200px of horizontal space. They should be collapsible, tabbed, or drawer-based.
+
+**5. No Progressive Disclosure**
+Every tool section is visible at all times in the GM toolbar. Advanced features (light sources, stair links, shape markers, background images) should be behind expandable sections, a secondary toolbar tab, or discoverable via search.
+
+### Competitor UI Patterns Worth Adopting
+
+| Pattern | Used By | Current Status | Recommendation |
+|---|---|---|---|
+| **Collapsible tool panels** | Dungeondraft, DungeonFog, Inkarnate | ❌ All sections always visible | Add collapsible accordion sections with memory |
+| **Tabbed toolbar categories** | DungeonFog (Build/Light/Objects) | ❌ Single scrolling toolbar | Group tools into 3–4 tabs: Draw, Generate, Tactical, Advanced |
+| **Context-sensitive toolbar** | Dungeondraft | ❌ All tools always shown | Show relevant options only when a tool is active |
+| **File/Edit/View menus** | Dungeondraft, DungeonFog | ❌ All in header buttons | Move file ops (import/export/new/clear) into dropdown menus |
+| **Floating/dockable panels** | Dungeondraft | ❌ Fixed 3-column layout | Allow panels to float, dock, or hide |
+| **Command palette** | VS Code, Figma | ❌ Not implemented | Add Ctrl+P / Cmd+K command palette for power users |
+| **Bottom toolbar (mobile)** | Inkarnate (tablet mode) | ❌ Not implemented | Essential for touch/mobile support |
+| **Dark mode** | DungeonFog, Foundry VTT | ❌ Light only | Add theme toggle (reduces eye strain for long sessions) |
+
+### Proposed UI Restructure
+
+**Header (simplified):**
+- App name + map name (left)
+- Undo/Redo + View mode toggle (center)
+- File menu (dropdown: New, Import, Export JSON/PNG/SVG/Print, Samples) + Settings gear (dropdown: UI scale, tile size, print mode, shortcuts) (right)
+
+**Left Toolbar (tabbed):**
+- **Tab 1: Draw** — Paint/Erase/Fill/Line/Rect/Select + tile palette + theme picker
+- **Tab 2: Tactical** — Fog, FOV, Light Sources, Measure, Tokens, Initiative
+- **Tab 3: Generate** — Generator button, Markers, Background image
+- **Tab 4: Advanced** — Custom themes, Stair links, Level management
+- Each tab shows only its relevant controls — dramatic clutter reduction
+
+**Right Panel (collapsible drawer):**
+- Tabbed: Notes | Initiative | Map Info
+- Can be collapsed to give full canvas width
+- Auto-opens when relevant (e.g., placing a note opens Notes tab)
+
+**Canvas:**
+- Remains center stage, gains space from collapsible panels
+- Floating minimap (already exists)
+- Floating zoom controls (already exists)
+
+---
+
+#### Part 3d: Accessibility Audit
+
+### Current Accessibility Strengths (Score: 8/10 WCAG A/AA)
+
+The app has strong baseline accessibility that was built intentionally:
+
+| Feature | Status | Details |
+|---|---|---|
+| **Skip link** | ✅ | "Skip to map canvas" link, properly hidden until focused |
+| **Semantic HTML** | ✅ | `<nav>`, `<main>`, `<aside>`, `<section>` used correctly |
+| **ARIA labels** | ✅ | 200+ `aria-label` attributes across all interactive elements |
+| **ARIA roles** | ✅ | `role="dialog"`, `role="tablist"`, `role="button"`, `role="application"`, `role="status"` |
+| **Focus indicators** | ✅ | `:focus-visible` styles on all interactive elements (brick-red `#8a3a3a` outline) |
+| **Screen reader support** | ✅ | `.sr-only` class, `aria-live="polite"` announcements for state changes |
+| **Keyboard shortcuts** | ✅ | 40+ shortcuts, `aria-keyshortcuts` attributes, `?` opens help overlay |
+| **Modal dialogs** | ✅ | All 6 dialogs use `role="dialog"` + `aria-modal="true"` + Escape dismissal |
+| **Tab order** | ✅ | Logical document order, `tabIndex={0}` on interactive non-button elements |
+| **Color contrast** | ✅ | Dark text on light background, brick-red accents — likely WCAG AA compliant |
+| **Canvas keyboard nav** | ✅ | Arrow keys pan, Shift+Arrow for fast pan, canvas is focusable |
+
+### Accessibility Gaps
+
+**~~1. No `prefers-reduced-motion` support~~** ✅ FIXED
+CSS transitions exist (e.g., `transition: background 0.12s, color 0.12s`) but no `@media (prefers-reduced-motion: reduce)` query to disable them for users who need reduced motion. While the animations are subtle, WCAG 2.3.3 requires respecting this preference.
+
+**Action:** ~~Add a `prefers-reduced-motion` media query that sets all `transition-duration` and `animation-duration` to `0s`.~~ Done — global `*` selector in `@media (prefers-reduced-motion: reduce)`.
+
+**2. No dark mode / `prefers-color-scheme` support** ⏳ DEFERRED
+The app is light-theme only. Users with light sensitivity, low vision, or who simply prefer dark mode have no option. WCAG doesn't require dark mode, but it's an accessibility best practice — especially for an app used in long TTRPG sessions.
+
+**Action:** Add `prefers-color-scheme: dark` support with a manual toggle. Define CSS custom properties for all colors and swap them in dark mode. *(Deferred: requires converting 336 hardcoded colors to CSS custom properties — full session.)*
+
+**~~3. No high-contrast mode~~** ✅ FIXED
+No `forced-colors` or `prefers-contrast: more` media query support. Users with Windows High Contrast Mode may see broken layouts.
+
+**Action:** ~~Add `@media (forced-colors: active)` styles ensuring all interactive elements remain visible and distinguishable.~~ Done — buttons, dialogs, canvas, and focus indicators styled for forced-colors.
+
+**~~4. Touch target sizes below WCAG 2.5.8~~** ✅ FIXED
+Toolbar buttons are ~30–40px, below the WCAG recommended 44×44px minimum touch target. This affects both accessibility and mobile usability.
+
+**Action:** ~~Increase all interactive element minimum sizes to 44×44px (or add sufficient spacing to create 44px effective targets).~~ Done — `.tool-btn`, `.toolbar-tab-btn`, `.zoom-controls button`, `.level-tab` all have `min-height: 44px`.
+
+**~~5. Focus trapping in modals is incomplete~~** ✅ FIXED
+Modals have `aria-modal="true"` and Escape dismissal, but there is no explicit focus trap preventing Tab from escaping the dialog into background elements. The `aria-modal` attribute hints to assistive technology but doesn't enforce focus containment.
+
+**Action:** ~~Implement focus trap utility (or use a library like `focus-trap-react`) for all 6 dialog components.~~ Done — `useFocusTrap` hook implemented and applied to all 6 dialogs.
+
+**~~6. Canvas content not accessible to screen readers~~** ✅ FIXED (partial)
+The canvas element has an `aria-label` describing the map but the actual map content (tiles, tokens, notes, markers) is not programmatically accessible. A screen reader user cannot discover or interact with individual map elements.
+
+**Action (partial):** ~~Add an off-screen text description that summarizes the map state (room count, token positions, note summaries).~~ Done — off-screen `.sr-only` div summarizes token/note/marker/stamp counts and fog status. Full canvas accessibility is an unsolved problem in the industry — even Foundry VTT and Roll20 have limited canvas screen reader support.
+
+**~~7. No announcements for tool actions~~** ✅ FIXED
+When a user paints a tile, places a token, or toggles fog, there is no `aria-live` announcement confirming the action. The status message system exists but may not cover all actions.
+
+**Action:** ~~Extend the `aria-live` region to announce key actions: tile painted, token placed, fog toggled, level switched, etc.~~ Done — announcements added for token, marker, stamp, light source, and FOV actions via `announce` prop on MapCanvas.
+
+---
+
+#### Part 3e: Codebase Refactoring Assessment
+
+### Current Architecture Overview
+
+| Metric | Value | Health |
+|---|---|---|
+| **Total source lines** | ~25,350 | ⚠️ Large for a single-page app with no state management library |
+| **Largest component** | MapCanvas.tsx (1,925 lines) | 🔴 God component — rendering + interactions + tools |
+| **Largest hook** | useMapState.ts (1,177 lines) | 🔴 God hook — all state + history + persistence + 50+ actions |
+| **App.tsx** | 988 lines, 21+ useState hooks | 🔴 Prop-drilling hub — passes 54 props to MapCanvas, 43 to Toolbar |
+| **State management** | Pure React hooks, all prop-drilled from App.tsx | ⚠️ Scaling limit reached |
+| **Test coverage** | 0% — no test infrastructure | 🔴 Risk for refactoring |
+| **Circular dependencies** | None detected | ✅ Clean import hierarchy |
+| **TypeScript strictness** | Full TypeScript with strict types | ✅ Strong type safety |
+
+### Critical Refactoring Targets
+
+**1. MapCanvas.tsx (1,925 lines → split into 4–5 modules)**
+
+The canvas component handles rendering, mouse event processing, tool-specific interaction logic, overlay drawing, and token/marker management — all in one file.
+
+Proposed split:
+- `MapCanvasRenderer.ts` — Pure canvas rendering functions (tiles, tokens, markers, fog, lights, overlays)
+- `MapCanvasInteractions.tsx` — Mouse event handlers, drag logic, coordinate mapping
+- `useCanvasTools.ts` — Tool-specific handlers (paint, erase, fill, select, measure, FOV, etc.)
+- `MapCanvasOverlays.ts` — FOV, fog, light glow, measurement template rendering
+- `MapCanvas.tsx` — Thin orchestrator connecting the above
+
+**2. useMapState.ts (1,177 lines → split into 4–5 hooks)**
+
+This hook manages the entire dungeon state, undo/redo history, multi-level projects, clipboard, persistence, and 50+ action handlers.
+
+Proposed split:
+- `useMapData.ts` — Core tile/note/token/marker CRUD operations
+- `useMapHistory.ts` — Undo/redo stack management
+- `useLevelManagement.ts` — Multi-level project operations (add/delete/duplicate/reorder levels)
+- `useMapClipboard.ts` — Copy/paste/cut logic
+- `useMapPersistence.ts` — IndexedDB save/load, legacy migration
+
+**3. App.tsx state management (21+ useState → context providers)**
+
+App.tsx currently props-drills everything to children. With 54 props going to MapCanvas and 43 to Toolbar, this is at the scaling limit of pure prop-drilling.
+
+Proposed solution — introduce 3–4 React Contexts (no external library needed):
+- `ToolContext` — activeTool, activeTile, markerShape/color/size, measureShape/feetPerCell, lightPreset/radius/color
+- `MapContext` — map, project, activeLevelIndex, theme
+- `ViewContext` — viewMode, printMode, uiScale, gmShowFog
+- `ActionContext` — callbacks for setTile, setTool, undo, redo, etc.
+
+This eliminates most prop-drilling while keeping the architecture pure React.
+
+**4. Toolbar.tsx (695 lines → tabbed sub-components)**
+
+The toolbar renders 11 sections unconditionally. Splitting into tab-based sub-components aligns with the UI restructure and reduces per-render cost:
+- `DrawToolsTab.tsx` — Paint, Erase, Fill, Line, Rect, Select + tile palette + theme
+- `TacticalToolsTab.tsx` — Fog, FOV, Lights, Measure, Tokens
+- `GenerateToolsTab.tsx` — Generator, Markers, Background
+- `AdvancedToolsTab.tsx` — Custom themes, Stair links
+
+### Impact on Far Future Goals
+
+| Far Future Goal | Refactoring Benefit |
+|---|---|
+| **Real-Time Collaboration** | Context-based state management makes it straightforward to intercept state changes for sync. useMapData hook becomes the single point where remote changes are applied. Without refactoring, collaboration would require touching 50+ prop-drilled callbacks. |
+| **Multi-Layer System** | Splitting MapCanvas renderer from interactions makes it possible to add layer-aware rendering without rewriting mouse handling. Each layer could get its own render pass in MapCanvasRenderer. |
+| **World/Region Maps** | Clean separation of rendering (MapCanvasRenderer) from tile logic (useMapData) allows swapping the tile-grid model for a polygon-based model without rewriting the canvas infrastructure. |
+| **Map Organization** | useMapPersistence as a separate hook makes it trivial to add cloud storage, tagging, and folder operations alongside the existing IndexedDB persistence. |
+| **Test Coverage** | Smaller, focused modules are dramatically easier to unit test. The current god hook and god component are essentially untestable. |
+
+---
+
+#### Part 3f: Extended Competitor Analysis
+
+### Competitors Not Previously Analyzed
+
+| Competitor | Type | Key Features We Lack |
+|---|---|---|
+| **Foundry VTT** (desktop app, $50 one-time) | Full virtual tabletop | Dynamic lighting with walls/doors as light barriers, module/plugin ecosystem, journal entries linked to map locations, audio ambiance per scene, animated tiles/tokens, ruler waypoints, macro scripting |
+| **Owlbear Rodeo** (browser, free) | Lightweight VTT | Real-time multiplayer with zero setup (share URL), drag-drop simplicity, fog reveal with pointer gestures, extension marketplace, character sheet integration |
+| **Shmeppy** (browser, free/$6/mo) | Minimalist VTT | Live collaborative editing (Google Docs style), infinite canvas, ultra-simple UX with near-zero learning curve, tile labeling, persistent game rooms |
+| **Dungeondraft** (desktop, $19.99) | Dungeon map editor | Asset/stamp library (1000+ objects), wall/path tools with auto-theming, cave tool with organic edges, custom asset pack import (community packs), batch export, water tool with animated preview |
+| **Inkarnate** (browser, $5/mo) | Map design studio | 236K+ community maps (cloneable), Pro asset library (10K+ stamps), world/region/city/battle map modes, layer system with blend modes, custom stamp upload, commercial use license |
+| **DungeonFog** (browser, €4.90/mo) | Interior/dungeon editor | Dynamic lighting (Pro), 3K+ asset library, multi-floor support, reusable room templates, commercial license, Foundry VTT/Roll20 export integration |
+
+### New Feature Opportunities
+
+Based on this expanded competitor analysis, the following features represent realistic, high-impact additions that don't require backend infrastructure:
+
+**6.4 — Asset/Stamp Library** *(high impact, medium effort — broken into 6 sub-phases)*
+
+The stamp library is the single most impactful missing feature for visual map quality. Competitors: Dungeondraft has 1000+ objects, Inkarnate 10K+, DungeonFog 3K+; Dungeon Mapper currently has 30 token icons but zero placeable map objects. Each sub-phase is independently shippable.
+
+**~~6.4.1 — Stamp Data Model & Placement Engine~~** ✅ COMPLETE *(foundation, low effort)*
+- ✅ Defined `StampDef` type (id, name, category, themeId, svgPath/paths, viewBox) in `types/map.ts`
+- ✅ Defined `PlacedStamp` type (stampId, x, y, rotation, scale, flipX, flipY, opacity, locked) on `DungeonMap`
+- ✅ Added `stamps?: PlacedStamp[]` field to `DungeonMap` interface
+- ✅ Added `'stamp' | 'move-stamp' | 'remove-stamp'` to `ToolType` union
+- ✅ Wired undo/redo support for stamp add/move/remove in `useMapState`
+- ✅ No UI yet — just the data layer and state management
+
+**6.4.2 — Core Stamp Rendering & Canvas Interaction** *(foundation, low effort)*
+- Render `PlacedStamp[]` on canvas (new `canvasStampRenderer.ts` module, follows existing pattern)
+- Click-to-place stamp at cell position with snap-to-grid
+- Click stamp to select → drag to move, Delete to remove
+- Render stamp selection handles (bounding box outline)
+- Include stamps in PNG/SVG export via `renderMap.ts`
+- Include stamps in JSON save/load round-trip
+
+**6.4.3 — Stamp Picker UI & First 40 Universal Stamps** *(first visible feature, medium effort)*
+- Create `StampPicker.tsx` component (grid of stamp thumbnails with category tabs, search filter)
+- Add STAMPS section to `AdvancedToolsTab.tsx` toolbar with [Y] keyboard shortcut
+- Create `src/stamps/stampLibrary.ts` with the first 40 universal stamps across 5 categories:
+  - Furniture (10): table, chair, bed, bookshelf, chest, barrel, crate, throne, altar, fireplace
+  - Dungeon Dressing (10): skull, bones, rubble, cobweb, torch-sconce, chain, cage, well, fountain, statue
+  - Nature (10): tree, bush, rock, mushroom, flower, vine, log, stump, pond, campfire
+  - Structures (5): column, archway, bridge-plank, ladder, lever
+  - Markers (5): X-mark, arrow, exclamation, question-mark, flag
+- SVG paths use 512×512 viewBox (same convention as existing `iconLibrary.ts`)
+
+**~~6.4.4 — Stamp Transform Controls~~** ✅ COMPLETE *(polish, low effort)*
+- ✅ Click-to-select placed stamps on canvas (stamp and move-stamp tools) with yellow dashed selection highlight
+- ✅ Rotation: 90° snap with Shift+R keyboard shortcut + counter-clockwise/clockwise buttons in transform panel
+- ✅ Scale: slider control in transform panel (0.25×–4× range)
+- ✅ Flip: horizontal/vertical flip buttons in transform panel + Shift+H / Shift+V keyboard shortcuts
+- ✅ Opacity slider (10%–100%) in stamp transform panel
+- ✅ Lock/unlock stamps to prevent accidental moves — lock badge rendered on canvas
+- ✅ Z-order: bring-to-front / send-to-back buttons for overlapping stamps
+- ✅ Delete selected stamp via Delete/Backspace key or trash button
+- ✅ `updateStamp`, `bringStampToFront`, `sendStampToBack` actions in useMapState with undo/redo support
+- ✅ Transform panel appears in StampPicker when a placed stamp is selected
+- ✅ All transforms wired through ActionContext and ToolContext
+
+**~~6.4.5 — Per-Theme Stamp Sets (156 stamps)~~** ✅ COMPLETE
+- ✅ 156 per-theme stamps added to `stampCatalog.ts` (12 per theme × 13 themes), totalling 196 built-in stamps
+- ✅ Each stamp tagged with `themeId` for theme-aware filtering
+- ✅ StampPicker updated with `themeId` prop and "🎨 Theme" filter tab
+- ✅ "All" tab shows universal + current-theme stamps; category tabs filter theme-appropriately
+- ✅ Theme stamp sets:
+  - Dungeon: iron maiden, portcullis, brazier, weapon rack, chains, torch sconce, pit, cobweb, gargoyle, manacles, bone pile, mossy stone
+  - Castle: banner, chandelier, tapestry, armor stand, candelabra, stained glass, coat of arms, drawbridge, fountain, arrow slit, herald trumpet, battlement
+  - Wilderness: tent, animal tracks, fallen tree, berry bush, antler, stream, beehive, totem pole, fishing spot, wolf den, bird nest, standing stone
+  - Starship: console, cryo pod, airlock, reactor, terminal, escape pod, cargo crate, antenna, holo-table, blast door, med bay, viewport
+  - Alien: egg cluster, tentacle, crystal, spore pod, bio pod, slime pool, hive node, membrane, fungal growth, cocoon, acid vent, bio-light
+  - Cyberpunk: neon sign, dumpster, hologram, drone, server rack, vending machine, cyber arm, data port, hover bike, security camera, electric fence, junk pile
+  - Steampunk: gear, pipe, pressure gauge, boiler, clockwork, valve wheel, piston, telegraph, airship anchor, cog table, monocle, automaton
+  - Old West: cactus, wagon wheel, water trough, hitching post, saloon door, horseshoe, wanted poster, dynamite, mine cart, windmill, sheriff star, tumbleweed
+  - Pirate: anchor, cannon, treasure map, rum barrel, ship wheel, jolly roger, parrot perch, rope coil, plank, pirate chest, crow's nest, cutlass
+  - Desert: oasis palm, sand dune, scarab, obelisk, desert tent, sand pit, sphinx, sun dial, amphora, sand worm, mirage, camel
+  - Ancient: hieroglyph, broken column, urn, mosaic, stone slab, scroll, statue, carved face, offering bowl, sun disc, vine ruin, labyrinth
+  - Modern City: trash can, park bench, lamppost, fire hydrant, mailbox, traffic cone, parking meter, bus stop, sewer grate, dumpster, manhole, ATM
+  - Post-Apocalypse: radiation sign, wrecked car, barbed wire, gas mask, bunker hatch, toxic barrel, camp ruins, scrap pile, warning sign, chain fence, generator, hazmat suit
+
+**6.4.6 — Custom Stamp Upload** *(extension, low effort)* **✅ COMPLETE**
+- Upload user PNG/SVG images as custom stamps (reuses pattern from custom tile upload)
+- Custom stamps stored as data URLs in `DungeonProject.customStamps?: StampDef[]`
+- Appear in a "Custom" category in the stamp picker with upload UI (PNG/SVG/JPEG/WebP, 2MB limit)
+- Delete overlay on custom stamp grid items; `saveCustomStamp` / `deleteCustomStamp` in useMapState
+- `getStampDef()` now accepts `customStamps` param, resolving custom before built-in
+- Canvas image cache with preloader in MapCanvas; SVG export uses `<image>` elements
+- Import/export with JSON project files
+
+**~~6.5 — Wall & Path Drawing Tools~~** *(medium impact, medium effort)* **✅ COMPLETE**
+- ✅ `WallSegment` and `PathSegment` data model types — polyline-based, independent of tile grid
+- ✅ Wall tool [W] — click-drag to draw wall segments along grid edges with automatic grid-intersection snapping
+- ✅ Path tool [Shift+W] — click-drag to draw free-form path/road segments with smooth fractional coordinates
+- ✅ Configurable wall color + 4 thickness presets (Thin/Medium/Thick/Heavy)
+- ✅ Configurable path color + 4 width presets (Narrow/Medium/Wide/Road)
+- ✅ Wall-erase and path-erase tools — click near a segment to remove it (polyline hit testing)
+- ✅ Clear All buttons for both wall and path segments
+- ✅ Full undo/redo support — `HistorySnapshot` includes `wallSegments` and `pathSegments`
+- ✅ Canvas rendering — walls as solid polylines, paths as semi-transparent (0.7 alpha) polylines
+- ✅ Live preview — in-progress stroke rendered during drag before commit
+- ✅ SVG export — wall and path segments exported as `<path>` elements
+- ✅ PNG/print export — wall and path segments rendered in `renderMap.ts`
+- ✅ Mobile toolbar support — Wall & Path category in MobileToolbar flyout
+- ✅ JSON round-trip — `wallSegments` and `pathSegments` on `DungeonMap` persist through export/import and IndexedDB autosave
+- Complements the tile-based wall system rather than replacing it
+
+**6.6 — Scene/Room Templates** *(medium impact, low effort)* **✅ COMPLETE**
+- Save and reuse room configurations as reusable templates
+- Templates include tiles, notes, and stamps for a selected region (via selection tool)
+- `SceneTemplate` type with tiles, notes, stamps, dimensions, createdAt
+- `DungeonProject.sceneTemplates` array; `saveSceneTemplate` / `deleteSceneTemplate` / `renameSceneTemplate` / `applySceneTemplate` in useMapState
+- `SceneTemplateDialog.tsx` modal — save from selection, list/apply/rename/delete
+- 📋 Templates button in Advanced tab
+- `ClipboardBuffer` now includes stamps field — copy/cut/paste captures stamps within selection
+- Builds on existing copy/paste infrastructure
+
+**6.7 — Map Linking & Journal Integration** *(medium impact, medium effort)*
+- Link notes to external content (URLs, text documents)
+- Cross-map note references (link a note on one map to a location on another)
+- Rich text formatting in notes (bold, italic, lists)
+- Competitors: Foundry VTT has deep journal/map integration
+
+**6.8 — Audio Ambiance** *(low-medium impact, low effort)*
+- Per-map ambient audio URL or uploaded audio file
+- Play/pause controls in present mode
+- Optional: per-room audio zones
+- Competitors: Foundry VTT, Syrinscape integration
+
+**6.9 — Animated Tokens & Effects** *(low impact, high effort)*
+- Animated token movement (smooth interpolation between cells)
+- Spell effect animations (fireball, lightning bolt)
+- Water/lava tile animation
+- Competitors: Foundry VTT has extensive animation support
+- Lower priority — high effort for marginal gameplay benefit in a mapping tool
+
+---
+
+#### Part 3g: Mobile & Tablet Adaptation Analysis
+
+### Current Mobile Readiness (Score: 3/10)
+
+| Aspect | Status | Details |
+|---|---|---|
+| **Viewport meta** | ✅ | `<meta name="viewport" content="width=device-width, initial-scale=1.0">` |
+| **Touch events** | ❌ | Zero touch/pointer event handlers — canvas uses only mouse events |
+| **Responsive layout** | ⚠️ | Grid layout with `clamp()` but only 2 media queries (both at 760px, both for dialogs only) |
+| **Touch target sizes** | ❌ | Buttons are ~30–40px (below 44px minimum) |
+| **Gesture support** | ❌ | No pinch-to-zoom, no two-finger pan, no long-press |
+| **Mobile toolbar** | ❌ | No collapsible/bottom toolbar pattern |
+| **PWA** | ❌ | No manifest.json, no service worker, no offline support |
+| **Tablet landscape** | ⚠️ | Usable but cramped — left/right panels consume ~40% of width on 10" tablets |
+
+### Mobile Adaptation Strategy
+
+#### Approach: Progressive Enhancement (not a separate mobile app)
+
+The app should remain a single codebase with responsive behavior, following the pattern used by Inkarnate and DungeonFog — both are browser-based map tools that work on tablets through responsive design and touch event support.
+
+**Phase 6.1 — Touch & Pointer Event Foundation**
+
+Replace all mouse events in MapCanvas with Pointer Events API (`pointerdown`, `pointermove`, `pointerup`). Pointer Events unify mouse, touch, and stylus input into a single API, eliminating the need for separate mouse and touch handlers.
+
+Key changes:
+- `onMouseDown` → `onPointerDown` (with `pointerType` detection for mouse vs touch vs pen)
+- `onMouseMove` → `onPointerMove`
+- `onMouseUp` → `onPointerUp`
+- `onWheel` → keep for mouse scroll, add pinch-to-zoom via touch gesture detection
+- Add `touch-action: none` CSS on canvas to prevent browser scroll/zoom interference
+- Two-finger pan gesture (detect 2 active pointers, compute delta)
+- Pinch-to-zoom gesture (detect 2 active pointers, compute distance change)
+- Long-press for context menu (replaces right-click on touch)
+- Add `onPointerCancel` handling for interrupted gestures
+
+**Phase 6.2 — Responsive Layout Overhaul**
+
+Breakpoint strategy:
+- **Desktop** (>1024px): Current 3-column layout — left toolbar, center canvas, right panels
+- **Tablet landscape** (768–1024px): Collapsible left toolbar (icon-only rail with slide-out detail), canvas expands, right panel as overlay drawer
+- **Tablet portrait / large phone** (480–768px): Bottom toolbar with tool selection, canvas fills viewport, panels as full-screen overlays
+- **Phone** (<480px): Simplified bottom toolbar, canvas fills viewport, panels as modal sheets, reduced tool set
+
+Key CSS changes:
+- Convert fixed grid to responsive grid with `@container` queries or media queries
+- Left toolbar collapses to icon rail at tablet widths
+- Right panels become slide-in drawers (toggle button at edge)
+- Header simplifies: hide text labels, use icon-only buttons, overflow menu
+- Dialog max-widths already use `min(Xpx, 94vw)` — good
+
+**Phase 6.3 — Mobile-First Tool UX** ✅ COMPLETE
+
+Implemented a dedicated mobile toolbar experience for touch screens ≤ 768 px:
+- **MobileToolbar component** (`MobileToolbar.tsx`, 1026 lines) — replaces desktop toolbar on mobile
+- **Bottom bar**: 5–6 primary tool buttons (44×44 px touch targets) — Draw, Erase, Fill, Fog/Defog, Select, More
+- **"More" flyout**: Slides up from bottom (60vh max), categorized tool grid (Drawing/Fog/Tactical/Tokens/Advanced)
+- **Floating action button (FAB)**: 56 px circular undo button; long-press reveals vertical menu with Undo/Redo/Generate/Switch Mode
+- **Gesture shortcuts**: Two-finger tap = undo, three-finger tap = redo (in MapCanvas pointer handlers)
+- **Tool options bar**: Contextual controls above bottom bar — tile badge for paint/fill, color picker + width slider for draw, shape buttons for measure, shape + color + size for markers, Clear/Fill buttons for fog
+- **isMobile detection**: `matchMedia('(max-width: 768px)')` with live listener in App.tsx
+- **GM and Player modes**: Separate quick-button sets and flyout categories per view mode
+
+**Phase 6.3.1 — PWA Support** ✅ COMPLETE
+
+Converted to installable Progressive Web App:
+- **manifest.webmanifest** with app name, icons, theme color (#f4f1ea), `display: standalone`
+- **Service worker** via vite-plugin-pwa (Workbox generateSW) — precaches all JS/CSS/HTML/SVG/PNG assets
+- **PWA icons**: 192×192 and 512×512 PNG generated from favicon.svg (with maskable variant)
+- **Apple mobile web app** meta tags: apple-touch-icon, apple-mobile-web-app-capable, status-bar-style
+- **Offline support**: App shell and all assets cached for full offline use
+- **viewport-fit: cover**: Ensures proper rendering in notched/island device safe areas
+
+---
+
+## Part 5: Recommended Priority Order
+
+### Next Up — Completed ✅
+- ~~**Phase 4.1** — Line-of-Sight / FOV~~ ✅
+- ~~**Phase 4.2** — Dynamic Fog of War~~ ✅
+- ~~**Phase 7.3** — Measurement & Distance Tools~~ ✅
+- ~~**Phase 4.3** — Light Sources~~ ✅
+- ~~**Phase 4.5.2** — Theme Personality: Floors, Walls, Doors~~ ✅
+- ~~**Phase 4.5.3** — Iconic Tiles: Treasure, Traps, Start, Water~~ ✅
+- ~~**Phase 5.1** — Multi-Level Dungeon Support~~ ✅
+- ~~**Phase 5.2** — Sample & Default Maps~~ ✅
+- ~~**Phase 5.3** — Custom Tile/Theme Creation~~ ✅
+- ~~**Phase 7.5** — GM Drawing / Annotation Tools~~ ✅
+- ~~**Phase 6.1** — Touch & Pointer Events~~ ✅
+- ~~**Phase 6.2** — Responsive Layout~~ ✅
+- ~~**Phase 6.3** — Mobile-First Tool UX~~ ✅
+- ~~**Phase 6.3.1** — PWA Support~~ ✅
+- ~~**Phase 6.4.1** — Stamp Data Model & Placement Engine~~ ✅
+
+### Medium-Term — Active Roadmap (Phase 6)
+
+Recommended implementation order based on dependency analysis, impact, and effort:
+
+**Sprint 1: Foundation (enables everything else)** ✅ COMPLETE
+1. ~~**Phase 6 Refactoring** — Split MapCanvas, useMapState, and introduce React Contexts~~ ✅
+   - *Why first:* Every subsequent phase modifies these files. Splitting them first prevents merge conflicts and makes parallel work possible. Also enables testing.
+   - *Effort:* Medium (restructuring, no new features)
+   - *Risk:* Low (pure refactoring, no behavior change)
+
+2. ~~**Phase 6.1 — Touch & Pointer Events** — Replace mouse events with Pointer Events API~~ ✅
+   - *Why second:* Foundation for all mobile/tablet work. Small, self-contained change.
+   - *Effort:* Low-medium
+   - *Risk:* Low (Pointer Events are a superset of mouse events)
+
+**Sprint 2: UI/UX Overhaul** ✅ COMPLETE
+3. ~~**Phase 6.2 — Responsive Layout** — Breakpoint system, collapsible panels, drawer-based right panel~~ ✅
+   - *Why:* Largest UX improvement — reduces clutter for desktop users AND enables tablet use
+   - *Effort:* Medium-high
+   - *Dependency:* Benefits from refactored Toolbar (Sprint 1)
+
+4. ~~**Accessibility fixes (partial)** — prefers-reduced-motion, focus traps, high-contrast, touch targets, canvas summary, action announcements~~ ✅
+   - *Why:* Ships alongside layout changes — same CSS files being modified
+   - *Effort:* Low-medium
+   - *Dependency:* Layout work in 6.2
+   - *Note:* Dark mode deferred to a dedicated session (requires converting 336 hardcoded colors to CSS custom properties)
+
+5. ~~**Mode rename** — "GM" → "Edit", "Player" → "Present"~~ ✅
+   - *Why:* Trivial change, big clarity improvement, no dependencies
+   - *Effort:* Very low
+
+**Sprint 3: Mobile & Polish** ✅ COMPLETE
+6. ~~**Phase 6.3 — Mobile Tool UX** — Bottom toolbar, gesture shortcuts, contextual options bar~~ ✅
+   - *Why:* Makes the app usable on tablets (large new user segment)
+   - *Effort:* Medium
+   - *Dependency:* Requires 6.1 (touch events) and 6.2 (responsive layout)
+
+7. ~~**Phase 6.3.1 — PWA** — manifest.json, service worker, offline caching~~ ✅
+   - *Why:* Enables "install" on tablets, offline use
+   - *Effort:* Low
+   - *Dependency:* Standalone, can ship anytime after 6.3
+
+**Sprint 4: New Features** ✅ COMPLETE
+8. ~~**Phase 6.4.1 — Stamp Data Model & Placement Engine** — Types, state management, undo/redo~~ ✅
+   - *Why:* Foundation for all stamp features — no UI, just data layer
+   - *Effort:* Low
+   - *Dependency:* Benefits from refactored MapCanvas (Sprint 1)
+
+9. ~~**Phase 6.4.2 — Stamp Rendering & Canvas Interaction** — Draw stamps on canvas, click-to-place, drag-to-move~~ ✅
+   - *Why:* Makes stamps functional end-to-end
+   - *Effort:* Low
+   - *Dependency:* Requires 6.4.1
+
+10. ~~**Phase 6.4.3 — Stamp Picker UI & First 40 Stamps** — Picker component, toolbar integration, 40 universal SVG stamps~~ ✅
+    - *Why:* First user-visible stamp feature — immediately usable
+    - *Effort:* Medium
+    - *Dependency:* Requires 6.4.2
+
+11. ~~**Phase 6.4.4 — Stamp Transform Controls** — Rotation, scale, flip, opacity, lock, z-order~~ ✅
+    - *Why:* Polish that makes stamps flexible enough for real use
+    - *Effort:* Low
+    - *Dependency:* Requires 6.4.2
+
+12. ~~**Phase 6.4.5 — Per-Theme Stamp Sets (156 stamps)** — 12 stamps per theme × 13 themes, theme-filtered picker~~ ✅
+    - *Why:* Bulk content that closes the competitive gap
+    - *Effort:* High (mostly SVG authoring, can deliver incrementally per theme)
+    - *Dependency:* Requires 6.4.3
+
+13. ~~**Phase 6.4.6 — Custom Stamp Upload** — User PNG/SVG upload, project-scoped storage~~ ✅
+    - *Why:* Lets users bring their own assets (matches custom tile upload pattern)
+    - *Effort:* Low
+    - *Dependency:* Requires 6.4.3
+
+14. ~~**Phase 6.6 — Scene/Room Templates** — Save/reuse room configurations~~ ✅
+    - *Why:* Builds on existing clipboard infrastructure, high user value
+    - *Effort:* Low
+    - *Dependency:* None
+
+15. ~~**Phase 6.5 — Wall & Path Tools** — Free-form wall drawing along grid edges, path/road drawing~~ ✅
+    - *Why:* Fills a competitive gap vs Dungeondraft/DungeonFog
+    - *Effort:* Medium
+    - *Dependency:* Benefits from refactored MapCanvas
+
+**Later / As Needed:**
+16. **Phase 6.7 — Map Linking & Journal** — Rich notes, cross-map references
+17. **Phase 6.8 — Audio Ambiance** — Per-map ambient audio
+18. **Phase 6.9 — Animated Tokens** — Smooth movement, spell effects
+
+**Active Roadmap — Phases 7–12** (approved 2026-05-03):
+
+19. **Phase 7 — Test Infrastructure** — Vitest + React Testing Library setup, initial coverage for high-risk modules, component smoke tests
+    - *Why first:* Phase 10 (dynamic rooms) is the most complex change in the roadmap; a test suite built before that work pays for itself immediately
+    - *Effort:* Medium
+    - *Dependency:* None — standalone
+    - 📘 **README checkpoint #1** after completion: add "Development & Testing" section
+
+20. **Phase 8.1 → 8.2 → 8.3 → 8.4 — UI Redesign** — Navigation rail, docked inspector, command palette + HUD, **Generate Hub (dedicated window for generators + samples)**
+    - *Why:* Matches proven competitor layout (Dungeondraft: left icon rail + contextual panel + docked right inspector); reduces toolbar complexity; pulls map creation out of the Draw tab into its own surface
+    - *Effort:* Medium-high (4 sub-phases)
+    - *Dependency:* Benefits from test suite (Phase 7); 8.4 depends on 8.1 navigation rail being in place
+    - 📘 **README checkpoint #2** after 8.4: screenshots/GIFs of new UI (including Generate Hub)
+
+21. **Phase 9.1 → 9.2 → 9.3 → 9.4 → 9.5 — Art System v2** — Texture/paper layer, edge blending, hand-drawn mode, lighting/atmosphere, style presets
+    - *Why:* Visual quality leap; parchment + hand-drawn mode are the most requested art features
+    - *Effort:* High (5 sub-phases, can deliver incrementally)
+    - *Dependency:* None — standalone art work
+    - 📘 **README checkpoint #3** after 9.5: showcase gallery of all presets across themes ✅ COMPLETE
+
+22. **Phase 10.1 → 10.2 → 10.3 → 10.4 → 10.5 → 10.6 — Dynamic Rooms** — Shape data model, rectangle drawing, visual merging, generator integration, subtractive shapes, additional shapes (circle/polygon)
+    - *Why:* Biggest architectural change — transforms map editing from tile-only to shape+tile hybrid
+    - *Effort:* High (6 sub-phases)
+    - *Dependency:* Test suite (Phase 7) strongly recommended
+    - 📘 **README checkpoint #4** after 10.3: GIF of room overlap/merge
+
+23. **Phase 11.1 → 11.2 → 11.3 → 11.4 — Rivers** — Vector layer + manual tool, generator integration, polish (banks/branching), README checkpoint #5 + **Phase 5.4 Pass 2 premade re-review**
+    - *Why:* Natural water features are a gap vs open-terrain competitors; vector layer enables future editing; rivers also unblock the second sweep of the premade audit (moats, harbors, wilderness rivers)
+    - *Effort:* Medium (3 sub-phases)
+    - *Dependency:* Benefits from shape infrastructure (Phase 10)
+    - 📘 **README checkpoint #5** after 11.1: GIF/docs of drawing a river ✅ COMPLETE
+
+24. ~~**Phase 5.4 — Premade Map Design Review**~~ ✅ COMPLETE (Pass 1 + Pass 2) — Recurring sweep that audits each bundled sample against its intended archetype (castle, boat, dungeon, cavern, etc.); ensures background tile fill on every premade; tags archetypes for hub filtering
+    - *Why:* Premades drift as new tools/themes ship; a structured sweep keeps the showcase aligned with current capabilities — and it's a natural recurring task triggered by Phases 6.4.5, 9, 10, and 11
+    - *Effort:* Low-medium per pass (mostly authoring)
+    - *Dependency:* Pass 1 standalone; Pass 2 after Phase 11; Pass 3 after each new content/art tool
+    - *Cross-link:* 8.4 surfaces the archetype tags in the Generate Hub
+
+25. ~~**Phase 12 — Final Pass: Accessibility, Codebase Audit & Documentation**~~ ✅ COMPLETE — WCAG re-audit ✅ COMPLETE, refactor sweep ✅ COMPLETE, documentation overhaul ✅ COMPLETE
+    - *Why:* Closes the active roadmap with a clean, documented, tested codebase
+    - *Effort:* Medium
+    - *Dependency:* All prior phases complete
+
+---
+
+
+---
+
+## Changes History
+
+**2026-05-16 — Phase 5.4 (Premade Map Design Review) COMPLETE**
+- Completed Pass 1 + Pass 2 checklist closure: premade sample specs are now explicitly tagged with archetypes and surfaced in Generate Hub archetype filtering metadata
+- Added a hard invariant in premade build flow to replace all leftover `empty` cells with `background` tiles so bundled maps render as full scenes instead of floating geometry
+- Added regression tests asserting archetype metadata coverage and no-`empty` premade tiles across every bundled sample level
+- Marked Phase 5.4 complete in roadmap status and active priority order while keeping Pass 3 as a recurring post-feature sweep
+
+**2026-05-16 — Phase 12.3 (README & Documentation Overhaul) COMPLETE**
+- Added a best-practice README front matter pass: badges, hero image, quick start, feature highlights, theme gallery, docs navigation, and contribution/community links
+- Added headline feature GIF previews under `docs/media/`
+- Added documentation/support files: `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `CHANGELOG.md`, `docs/ARCHITECTURE.md`, `docs/README.md`, `.github/ISSUE_TEMPLATE/*`, and `PULL_REQUEST_TEMPLATE.md`
+- Marked Phase 12.3 complete and closed Phase 12 in status and active priority order
+
+**2026-05-15 — Phase 12.2 (Codebase Audit & Refactor) COMPLETE**
+- Re-measured the Phase 12.2 audit targets and removed the unused embedded mobile toolbar CSS export, dropping `MobileToolbar.tsx` under its audit budget while keeping canonical styles in `App.css`
+- Added codebase audit guardrail tests for module-size budgets, explicit `any` annotations in production source, and the removed mobile CSS dead-code path
+- Added a 128×128 full-stack render regression covering the expensive render layers surfaced by the performance audit
+- Recorded bundle audit results from the production build and marked Phase 12.2 complete in the Phase 12 roadmap and active priority order
+
+**2026-05-15 — Phase 12.1 (Accessibility Audit) COMPLETE**
+- Added shared accessibility contrast helpers and tests covering every built-in theme's non-print tile overlay colors at WCAG 3:1 graphic contrast
+- Replaced threshold-based overlay foreground selection with contrast-based readable overlay selection
+- Connected the hidden canvas summary to the focusable canvas, kept it in a polite live region, added minimap keyboard fallback, and expanded visible focus rings for rail/mobile/overflow controls
+- Marked Phase 12.1 complete in the Phase 12 roadmap and active priority order
+
+**2026-05-15 — Phase 11.4 (README checkpoint #5) COMPLETE**
+- README now covers river drawing, editing, erase/clear workflows, width/type controls, bank and endpoint polish, generator controls, shortcut `U`, and river-related tests
+- Marked README checkpoint #5 complete in the Phase 11 roadmap and active priority order
+
+**2026-05-15 — Phase 11.3 (River Polish) COMPLETE**
+- Added river bank metadata (`riverBank`, `riverBankRiverId`, `riverBankType`) on rasterized land tiles adjacent to vector rivers
+- Added source/mouth marker metadata and parent/child tributary references to `River`
+- Added per-theme river bank palettes and endpoint marker rendering for canvas, high-DPI canvas export, and SVG export
+- Generated rivers now create editable tributaries when meander is enabled; tributaries link back to parent rivers and use outflow mouth markers
+- Phase 5.4 Pass 2 premade re-review: river-relevant premades now emit editable streams/moats/harbors/bilge channels across castle, wilderness, desert, pirate, cavern, mine, crypt, and catacomb samples
+- Added tests for river bank rasterization, tributary generation, and premade river polish
+
+**2026-05-11 — Phase 10.6 (Additional Shapes) COMPLETE**
+- New `RoomShapeType` type (`'rect'` | `'circle'` | `'polygon'`) and optional `shapeType` field on `RoomShape` (defaults to `'rect'` for backward compat)
+- New `vertices?: {x, y}[]` field on `RoomShape` for polygon geometry
+- Rasterizer updated: `rasterizeOneShape`, `cellInsideShape`, `cellInteriorShape`, `getPerimeterCells`, `getOpposingEdge`, and `applySubtractiveShape` all dispatch on shape type
+- Circle/ellipse rasterization: ellipse inscribed in bounding box, 1-tile perimeter ring via shrunk-ellipse interior test
+- Polygon rasterization: ray-casting point-in-polygon, distance-to-edge perimeter classification, nearest-edge-normal for cardinal direction
+- Visual merging and subtractive carving work identically for all shape types
+- New `room-circle` tool (`Shift+C`, ⭕ icon): drag to define bounding box for circle/ellipse
+- New `room-poly` tool (`Shift+P`, 🔷 icon): click to add vertices, double-click to close polygon, Escape to cancel
+- Canvas overlay rendering: ellipse path for circles, polygon path for polygons, vertex handles for polygon editing
+- Hit-testing updated for circle (ellipse equation) and polygon (ray-casting) shapes
+- Command palette entries and keyboard shortcuts for both new tools
+- Exported `polygonBoundingBox` utility for computing bounding box from vertices
+- 12 new tests (264 total across 19 test files): circle rasterization, circle subtraction, circle merging, custom fill/wall, triangle polygon, L-shape polygon, degenerate polygon, polygon subtraction, polygon-rect merging, bounding box utility
+
+**2026-05-11 — Phase 10.5 (Subtractive Shapes) COMPLETE**
+- New `RoomShapeMode` type (`'additive'` | `'subtractive'`) and optional `mode` field on `RoomShape`
+- Rasterizer subtractive pass (Pass 4): after additive shapes are rasterized and merged, subtractive shapes carve overlapping additive geometry — interior cells→empty, perimeter cells→wall (sealing the cut)
+- New `room-cut` tool (`Shift+Q`, ✂️ icon) creates subtractive shapes; red/orange overlay distinguishes them from additive shapes (blue)
+- Per-tool shape filtering: `room-rect` only interacts with additive shapes, `room-cut` only with subtractive — each tool shows handles only for its own mode
+- Per-edge wall override UI: contextual EDGE OVERRIDES panel appears in DrawToolsTab/NavigationRail/Toolbar when a room tool is active and a shape is selected — N/E/S/W dropdowns (auto/wall/door/arch)
+- `selectedRoomShapeId` state + `onSelectRoomShape` callback wired through MapCanvas→App→NavigationRail/Toolbar→DrawToolsTab
+- Command palette entry for Room Cut tool
+- 7 new subtractive rasterizer tests (252 total across 19 test files)
+
+**2026-05-11 — Phase 10.4 (Generator Integration) COMPLETE**
+- `GeneratedMap` type extended with optional `roomShapes?: RoomShape[]` field
+- Rooms & Corridors generator (`roomsCorridors.ts`) now emits `RoomShape[]` from its internal `Room[]` array — each generated room becomes an editable shape
+- Village generator (`village.ts`) now emits `RoomShape[]` from BSP leaf buildings — each building becomes an editable shape
+- Cavern and Open Terrain generators unchanged (no discrete rooms, no shapes emitted)
+- `generateMap` in `useMapState.ts` accepts optional `roomShapes` parameter, stores them on the map, and resets `nextRoomShapeIdRef`
+- App.tsx `handleGenerateMap` forwards `result.roomShapes` to state management
+- 13 new generator integration tests (245 total across 19 test files)
+- Existing maps unaffected — `roomShapes` field is optional with backward-compat
+
+**2026-05-11 — Phase 10.3 (Visual Merging) COMPLETE**
+- Rasterizer now performs a merge pass after individual shape rasterization:
+  - Perimeter cells shared between overlapping/touching rooms are dissolved to floor
+  - Door hints are re-applied after merge (explicit doors always survive)
+- New types in `map.ts`:
+  - `EdgeMergeMode`: `'auto'` | `'wall'` | `'door'` | `'arch'`
+  - `EdgeMergeOverride`: per-edge merge behaviour override (edge + mode)
+- `RoomShape.edgeMergeOverrides` field for per-edge merge control
+- Merge modes: `'auto'` dissolves walls, `'wall'` preserves walls, `'door'` places door tiles, `'arch'` places archway tiles
+- 11 new rasterizer tests (29 total): shared boundaries, full overlap, partial overlap, edge overrides (wall/door/arch), door hint survival, multi-room L-shape, non-touching rooms
+
+**2026-05-11 — Phase 10.2 (Rectangle Drawing & Resize) COMPLETE**
+- Added new `room-rect` tool to `ToolType` + DrawToolsTab + MobileToolbar + command palette + keybindings (`Q`)
+- Extended `MapCanvas` with room-shape editing UX:
+  - Drag-create rectangle room shapes with live preview
+  - Hit-tested resize handles (N/S/E/W + corners) and drag-to-move
+  - Right-click/context-menu deletion of room shapes
+  - Visual overlays and handle rendering when the room tool is active
+- Wired room shape callbacks from `App.tsx` into `MapCanvas` (`onAddRoomShape`, `onUpdateRoomShape`, `onRemoveRoomShape`)
+- Synced `nextRoomShapeIdRef` in `useMapState` when switching/resetting levels
+
+**2026-05-11 — Phase 10.1 (Shape Data Model & Rasterizer) COMPLETE**
+- Added `RoomShape` interface: rectangular room with `id`, `x`, `y`, `width`, `height`, optional `fillTile`/`wallTile` overrides
+- Added `DoorHint` interface: per-edge door placement with `edge` (n/s/e/w), `offset`, optional `type` override
+- Added `RoomEdge` type alias for cardinal directions
+- New `roomShapes?: RoomShape[]` field on `DungeonMap` (backward-compatible — old maps unaffected)
+- `withDefaults()` fills `roomShapes ?? []`; `createDefaultMap()` initializes with empty array
+- Created `src/utils/roomRasterizer.ts` with `rasterizeRoomShapes()`:
+  - Fills interior cells with `fillTile` (default `'floor'`), perimeter with `wallTile` (default `'wall'`)
+  - Applies `doorHints` with correct door orientation (`door-h` for n/s, `door-v` for e/w)
+  - Clips to grid bounds; ignores out-of-range hints; returns immutable copy
+  - Shapes applied in array order (later overwrites earlier)
+- State management in `useMapState.ts`: `addRoomShape`, `updateRoomShape`, `removeRoomShape`, `clearRoomShapes` — all with undo/redo support
+- `HistorySnapshot` captures `roomShapes` array; undo/redo restores shapes correctly
+- 18 rasterizer unit tests: basic rect, custom tiles, door hints (all 4 edges + custom type), multiple shapes, edge cases (1×1, 2×2, 3×3, clipping, negative origin, no shapes, preservation of existing tiles)
+- Updated `mapStateUtils` tests: `createDefaultMap` and `withDefaults` assertions for `roomShapes`
+
+**2026-05-09 — Phase 9.5 (Art Style Presets) COMPLETE**
+- Added `ArtStylePresetId` type (`'classic' | 'hand-drawn' | 'painted' | 'minimal' | 'print' | 'custom'`) and `artStylePreset` field on `DungeonMap`
+- Created `artStylePresets.ts` with curated settings for 5 built-in presets:
+  - **Classic**: parchment texture, dither edge blending, ambient occlusion — the default look
+  - **Hand-Drawn**: canvas texture, sketchy wobbly lines with cross-hatch, subtle AO, no edge blending
+  - **Painted**: watercolor texture, smooth blending, ink outlines, dusk color grading
+  - **Minimal**: all art layers disabled — clean digital look
+  - **Print**: linen texture, stipple blending, pencil lines — optimised for B&W printing
+- `applyArtStylePreset()` in `useMapState.ts` applies all four layer settings at once
+- Individual layer tweaks (set/update/clear paper texture, edge blend, hand-drawn, lighting) auto-mark preset as `'custom'`
+- ART STYLE picker section in DrawToolsTab with dropdown selector and description text
+- Wired through NavigationRail, Toolbar, App.tsx
+- Export honors active preset via existing individual layer settings (no export changes needed)
+- 26 unit tests covering preset lookup, value validation, determinism, and distinctness
+
+**2026-05-09 — Phase 9.4 (Lighting & Atmosphere) COMPLETE**
+- Implemented `LightingAtmosphereSettings` type with AO intensity/radius, stamp shadow opacity/offset, color grading mode/intensity, and overall opacity
+- Added `lightingAtmosphere` field to `DungeonMap` for per-level persistence
+- Lighting renderer in `lightingAtmosphere.ts`: 3-layer system — ambient occlusion in wall corners (radial gradient shadows), stamp shadows (soft drop-shadow blobs using multiply blending), color grading (day/night/dusk tint overlays)
+- `ColorGradingMode` type: `'day'` (warm golden overlay), `'night'` (deep blue multiply), `'dusk'` (warm orange-red overlay), `'none'` (disabled)
+- AO algorithm: scans non-wall floor tiles for adjacent wall/pillar neighbours forming L-shaped corners; draws radial gradient darkening into the corner of the floor tile
+- Stamp shadows: offset drop-shadow blobs with multiply compositing; respects stamp scale
+- UI controls: enable toggle, AO intensity/radius sliders, shadow opacity slider, color grading mode selector with conditional tint intensity slider, overall opacity slider — wired through DrawToolsTab, NavigationRail, Toolbar
+- Export support: `includeLighting` option on `RenderMapOptions`, `HighResExportOptions`, and SVG export (embedded as PNG data-URL image)
+- 20 unit tests covering defaults, wall-like classification, color grading tints, AO corner detection, stamp shadows, all 3 grading modes, pillar handling, empty tile skipping, and multiple stamps
+- Canvas rendering: lighting layer inserted after hand-drawn overlay, before light source glows; disabled in print mode
+- State management: `setLightingAtmosphere`, `clearLightingAtmosphere`, `updateLightingAtmosphere` in `useMapState`
+
+**2026-05-09 — Phase 9.3 (Hand-Drawn Mode) COMPLETE**
+- Implemented `HandDrawnSettings` type with 3 styles (sketchy, pencil, ink), wobble, cross-hatch density, and opacity controls
+- Added `handDrawn` field to `DungeonMap` for per-level persistence
+- Hand-drawn renderer in `handDrawn.ts`: wobbly grid lines via seeded value noise, cross-hatch shading on wall/pillar tiles, bold outlines at wall-to-floor boundaries
+- 3 style presets: sketchy (loose, high-wobble), pencil (thin, soft), ink (bold, dense cross-hatch) — each with tuned line widths, frequencies, and hatch parameters
+- Dyson / Watabou inspired: thick outer walls at tile-type boundaries, diagonal cross-hatching fills on wall tiles
+- Honours print-mode B&W contract: uses solid black strokes in print mode
+- UI controls: enable toggle, style dropdown, wobble/hatch/opacity sliders — wired through DrawToolsTab, NavigationRail, Toolbar
+- Export support: `includeHandDrawn` option on `RenderMapOptions` and SVG export (embedded as PNG data-URL image)
+- 16 unit tests covering all styles, determinism, empty tile handling, wobble amplitude, pillar tiles, and print mode
+- Canvas rendering: hand-drawn overlay inserted after grid lines, before light sources
+- State management: `setHandDrawn`, `clearHandDrawn`, `updateHandDrawn` in `useMapState`
+
+**2026-05-08 — Phase 9.2 (Edge Blending) COMPLETE**
+- Implemented `EdgeBlendSettings` type with 3 styles (dither, smooth, stipple), intensity, and opacity controls
+- Added `edgeBlend` field to `DungeonMap` for per-level persistence
+- Edge blend renderer in `edgeBlend.ts`: stochastic dithering between adjacent tiles of different types using seeded PRNG and per-theme colour sampling
+- 3 blend styles: dither (noise scatter), smooth (gradient), stipple (dot pattern) — each with fade-out from tile boundary
+- UI controls: enable toggle, style dropdown, intensity/opacity sliders — wired through DrawToolsTab, NavigationRail, Toolbar
+- Export support: `includeEdgeBlend` option on `RenderMapOptions`, `HighResExportOptions`, and SVG export (embedded as PNG data-URL image)
+- 12 unit tests covering all styles, determinism, empty tile handling, intensity scaling, and edge cases
+- Canvas rendering: edge blend layer inserted after tiles, before grid lines; disabled in print mode
+- State management: `setEdgeBlend`, `clearEdgeBlend`, `updateEdgeBlend` in `useMapState`
+
+**2026-05-08 — Phase 9.1 (Texture & Paper Layer) COMPLETE**
+- Implemented `PaperTextureSettings` type with 5 patterns (parchment, linen, canvas, watercolor, marble), grain noise, and vignette
+- Added `paperTexture` field to `DungeonMap` for per-level persistence
+- Procedural texture renderer in `paperTexture.ts` with seeded PRNG for deterministic output and LRU caching
+- Per-theme tint colours for all 13 built-in themes via `getPaperTint()` and optional `TileTheme.paperTint` override
+- UI controls: enable toggle, pattern dropdown, opacity/grain/vignette sliders, custom tint colour picker with reset — wired through DrawToolsTab, NavigationRail, Toolbar
+- Export support: `includeTexture` option on `RenderMapOptions`, `HighResExportOptions`, and SVG export (embedded as PNG data-URL image)
+- 16 unit tests covering all patterns, caching, invalidation, and theme tint lookup
+- Canvas rendering: paper texture layer inserted after background image, before tiles; disabled in print mode
+- State management: `setPaperTexture`, `clearPaperTexture`, `updatePaperTexture` in `useMapState`
+
+**2026-05-03 — Generate Hub, Premade Map Design Review, and default background-fill captured**
+- Added **Phase 5.4 — Premade Map Design Review** as a recurring sweep: Pass 1 audits each of the 26 bundled premades against its intended archetype (castle, boat, dungeon, cavern, etc.) and enforces background-tile fill on every map; Pass 2 re-reviews after Phase 11 (Rivers) to add moats/streams/harbors; Pass 3 re-sweeps after each new content/art tool (6.4.5, 9, 10)
+- Added **Phase 8.4 — Generate Hub (dedicated window)** to Phase 8: pulls Generate + Samples out of the Draw tab into a single dedicated surface (Dungeondraft / DungeonFog pattern), reachable from the rail, header File menu, and `[G]` shortcut; surfaces 5.4 archetype tags for filtering; preserves the "Fill empty space with background tile" toggle as on-by-default opt-out
+- Cross-linked **Phase 11.3 — River Polish** to 5.4 Pass 2 so the premade re-review ships alongside river polish
+- Codified that **background tile fill defaults to ON** for generated maps (already the case in `GenerateMapDialog.tsx`) and made it a Phase 5.4 audit requirement for premade maps
+- Updated **Part 5 priority order**: item 20 now spans 8.1 → 8.4; item 23 (Rivers) cross-links to the 5.4 Pass 2 re-review; new item 24 covers Phase 5.4
+- Logged 5 new design decisions: generate-as-dedicated-hub, background-fill-default-on, premade-background-fill, recurring premade design review, archetype tagging
+
+**2026-05-03 — Phases 7–12 roadmap approved and integrated**
+- Added **Phase 7: Test Infrastructure** — Vitest + React Testing Library setup, initial coverage for high-risk pure modules (useMapState, generators, FOV, stamps), component smoke tests
+- Added **Phase 8: UI Redesign** — 8.1 Navigation Rail (left icon rail + contextual panel + density toggle), 8.2 Docked Inspector (right-panel property inspector), 8.3 UI Polish (command palette, zoom HUD, header simplification)
+- Added **Phase 9: Art System v2** — 9.1 Texture & Paper Layer (parchment background + export toggle), 9.2 Edge Blending (stochastic dithering), 9.3 Hand-Drawn Mode (wobbly walls + cross-hatch), 9.4 Lighting & Atmosphere (AO + day/night), 9.5 Art Style Presets (per-map presets: Classic/Hand-Drawn/Painted/Minimal/Print)
+- Added **Phase 10: Dynamic Rooms** — 10.1 Shape Data Model & Rasterizer, 10.2 Rectangle Drawing & Resize, 10.3 Visual Merging, 10.4 Generator Integration, 10.5 Subtractive Shapes, 10.6 Additional Shapes (circle/polygon)
+- Added **Phase 11: Rivers** — 11.1 Vector Layer & Manual Tool, 11.2 Generator Integration (opt-in checkbox + sliders), 11.3 Polish (banks/branching)
+- Added **Phase 12: Final Pass** — 12.1 Accessibility Audit, 12.2 Codebase Audit & Refactor, 12.3 README & Documentation Overhaul
+- **Far Future additions:** Dark Mode, River ↔ FOV/Lighting Interaction
+- **5 README checkpoints** interspersed throughout Phases 7–11 (after 7, 8.3, 9.5, 10.3, 11.1)
+- Priority order extended with items 19–24 covering the full Phase 7–12 sequence
+- 14 new design decisions logged (test-first, rail fallback, docked inspector, per-map presets, parchment export toggle, shape coexistence, visual merge, forward-only generators, rect-only v1, vector rivers, docs at checkpoints, dark mode deferred, river FOV deferred)
+
+**2026-05-03 — Accessibility fixes (partial) complete: 6 of 7 WCAG gaps addressed**
+- Added `@media (prefers-reduced-motion: reduce)` — disables all CSS transitions and animations for users who need reduced motion (WCAG 2.3.3)
+- Added `@media (forced-colors: active)` — ensures buttons, dialogs, focus indicators, and canvas remain visible in Windows High Contrast Mode
+- Increased touch target sizes to 44×44px minimum on toolbar buttons, tab buttons, zoom controls, and level tabs (WCAG 2.5.5)
+- Implemented `useFocusTrap` hook — traps Tab/Shift+Tab focus inside modals, moves focus on open, restores focus on close
+- Applied focus trap to all 6 dialog components: GenerateMapDialog, CustomThemeDialog, ExportDialog, PremadeMapsDialog, ShortcutsHelp, IconPicker
+- Added off-screen canvas state summary — screen readers can discover token count, note count, marker count, stamp count, and fog status
+- Extended action announcements via `aria-live` — token placed/removed, marker placed/removed, stamp placed/removed, light source placed/removed, FOV origin set
+- Dark mode (gap #2) deferred to a dedicated session — requires converting 336 hardcoded color values to CSS custom properties
+
+**2026-05-02 — Phase 6.4.3 complete: Stamp Picker UI & First 40 Stamps shipped**
+- Expanded stamp catalog from 8 to 40 universal SVG stamps across 5 categories: Furniture (8), Dungeon Dressing (12), Nature (8), Structures (8), Markers (6)
+- Created `StampPicker` component (`src/components/StampPicker.tsx`) with category filter tabs, scrollable grid, and SVG previews
+- Integrated stamp tool buttons (Place, Move, Remove, Clear) into the picker UI
+- Clicking a stamp auto-selects the 'stamp' placement tool if not already in a stamp tool mode
+- Added `STAMP_CATEGORY_LABELS` to stamp catalog for category display names
+- Integrated StampPicker into DrawToolsTab with props threaded through Toolbar from App.tsx
+- Added stamp picker CSS: category tab bar, responsive grid layout with SVG thumbnails, active states
+
+**2026-05-02 — Phase 6.4.2 complete: Stamp Rendering & Canvas Interaction shipped**
+- Created stamp catalog (`src/utils/stampCatalog.ts`) with 8 built-in universal stamps (chest, table, chair, barrel, campfire, skull, tree, pillar)
+- Added `drawStamp()` rendering function in MapCanvas — renders SVG-path stamps at tile coordinates with rotation, scale, flip, and opacity
+- Added `findStampAt()` hit-testing for stamp click detection
+- Added stamp placement via `stamp` tool (click-to-place using `selectedStampId`)
+- Added stamp dragging via `move-stamp` tool (drag to reposition, respects `locked` flag)
+- Added stamp removal via `remove-stamp` tool (click to delete)
+- Added `selectedStampId` to ToolContext for stamp selection state
+- Wired stamp callbacks (`onAddStamp`, `onMoveStamp`, `onRemoveStamp`) from App.tsx → MapCanvas
+- Added stamp rendering in high-DPI PNG export (`renderMap.ts`) and SVG export (`export.ts`)
+- Added appropriate cursor styles for all stamp tools (copy, grab, not-allowed)
+
+**2026-05-02 — Phase 6.4.1 complete: Stamp Data Model & Placement Engine shipped**
+- Added stamp data model types: `StampDef`, `StampSvgPath`, `StampCategory`, `PlacedStamp`, and `StampPlacementOptions`
+- Added `DungeonMap.stamps` with defaults for new maps, loaded/imported legacy maps, generated maps, cleared maps, and resized maps
+- Added stamp tool ids (`stamp`, `move-stamp`, `remove-stamp`) to the shared `ToolType` union
+- Added stamp state operations in `useMapState`: add, move, remove, and clear stamps
+- Extended undo/redo snapshots so stamp placement, movement, removal, and clearing can be undone/redone
+- Exposed stamp actions through `ActionContext` for Phase 6.4.2 canvas interaction and Phase 6.4.3 picker UI
+
+**2026-04-29 — Phase 7.5 complete: GM Drawing / Annotation Tools shipped**
+- GM freehand drawing tool (`gmdraw` ToolType) with [D] keyboard shortcut in the GM toolbar
+- GM erase tool (`gmerase` ToolType) — click a GM stroke to remove it
+- GM annotations stored as `AnnotationStroke` with `kind: 'gm'` — hidden from player view in canvas, PNG export, and SVG export
+- GM strokes rendered with dashed line pattern to visually distinguish from solid player drawings
+- Independent 8-color swatch palette and 3 brush widths (Thin/Medium/Thick) separate from player pen settings
+- Clear All button removes all GM drawings from the current level
+- Dashed rendering consistent across live canvas (`MapCanvas.tsx`), high-DPI PNG (`renderMap.ts`), and SVG export (`export.ts`)
+- Data model forward-compatibility: `AnnotationStroke.kind` already existed as `'player' | 'gm'` — no schema changes needed
+- Priority order and feature inventory updated
+
+**2026-04-29 — Phase 6 analysis complete: UI/UX Overhaul, Accessibility, Refactoring & Mobile**
+- Comprehensive UI competitive analysis: identified 11-section toolbar overload, header congestion, GM/Player naming confusion, non-collapsible right panels, zero progressive disclosure
+- Proposed UI restructure: simplified header with dropdown menus, 4-tab toolbar (Draw/Tactical/Generate/Advanced), collapsible right panel drawer, command palette for power users
+- Accessibility audit (8/10 WCAG A/AA): documented strengths (skip link, 200+ ARIA labels, 40+ keyboard shortcuts, semantic HTML, focus indicators, screen reader support) and 7 gaps (prefers-reduced-motion, dark mode, high-contrast mode, touch targets, focus traps, canvas screen reader access, action announcements)
+- Codebase refactoring assessment: identified god component (MapCanvas 1,925 lines), god hook (useMapState 1,177 lines), excessive prop drilling (54 props to MapCanvas, 43 to Toolbar); proposed splits and React Context introduction; analyzed impact on far-future goals (collaboration, multi-layer, world maps, testing)
+- Extended competitor analysis: added Foundry VTT, Owlbear Rodeo, Shmeppy, Dungeondraft, Inkarnate, DungeonFog; identified 6 new feature opportunities (asset/stamp library, wall/path tools, room templates, journal integration, audio ambiance, animated tokens)
+- Mobile/tablet analysis (3/10): zero touch events, 2 media queries, no gestures, no PWA; proposed 3-phase adaptation (pointer events → responsive layout → mobile tool UX + PWA)
+- Implementation priority: 4 sprints ordered by dependency (Foundation → UI/UX → Mobile → Features); refactoring first to enable all subsequent work
+- 8 new design decisions logged
+
+**2026-04-29 — Phase 5.2 complete: Sample & Default Maps shipped**
+- Code-confirmed bundled samples in `src/utils/premadeMaps.ts`: 26 sample projects / 28 playable levels across all 13 themes
+- Gallery UI in `src/components/PremadeMapsDialog.tsx`, opened from the header `Samples` button, supports theme filtering and loading into the editor
+- Sample projects include generated notes, themed tokens, light sources, fog-of-war setup, initiative order, and two multi-level linked-stair examples
+- Roadmap status updated to make Phase 5.3 the next active phase
+
+**2026-04-29 — Phase 5.2 added: Sample & Default Maps**
+- New Phase 5.2: bundled sample maps — at least 2 hand-crafted maps per theme (26+ maps across 13 themes)
+- Maps showcase theme art, tile variety, and generator types; range from small encounters to medium dungeons; includes multi-level projects with stair links
+- Gallery UI for browsing by theme with thumbnail preview; loaded maps are fully editable
+- No backend required — maps bundled as JSON in the app build
+- Competitor research: Inkarnate (236K+ cloneable community maps, Pro templates), DungeonFog (community map library + 3K+ assets), Mipui (public community maps, browse & edit), DungeonForge (community gallery with search/tags), Dave's Mapper (tile-based remixing), Donjon (random generation only, no saved samples), Dungeondraft (no built-in samples, import only)
+- Most successful competitors (Inkarnate, DungeonFog) treat sample/template maps as a core onboarding and retention feature
+- Former Phase 5.2 (Custom Tile/Theme Creation) renumbered to Phase 5.3
+- Priority order updated: 5.2 (Sample Maps) → 5.3 (Custom Themes)
+- Design decision logged: sample maps before custom themes
+
+**2026-04-29 — Phase 5.1 complete: Multi-level dungeon support shipped**
+- Stair link tool ([K] shortcut) in GM toolbar: click stairs tile to set source, switch levels, click destination stairs to link
+- Blue "L#" badges rendered on linked stairs tiles showing destination level number
+- Pending stair link source highlighted with dashed orange border
+- Double-click any linked stairs tile to navigate to destination level (viewport auto-centers on destination cell)
+- Level tabs show 🔗 badge with link count for levels that have stair connections
+- STAIR LINKS toolbar section with Link tool button, Clear Links button, and total link count
+- `addStairLink()` and `removeStairLink()` functions in useMapState (bidirectional removal)
+- Stair links auto-reindex on level delete, duplicate, and reorder (existing infrastructure)
+- Tool state cleanup: switching away from link-stair tool clears pending source
+- Priority order updated to show 5.2 as next
+
+**2026-04-28 — Phase 4.5.3 complete: Iconic tiles shipped**
+- All 13 themes: water tiles upgraded with unique per-theme liquid rendering (dungeon ripple pools, castle moat with lily pads, starship coolant bubbles, alien acid swirls, cyberpunk neon shimmer, wilderness river currents, old west water trough, steampunk steam pipe + valve, modern city fountain, post-apocalypse toxic pool, pirate bilge planks, desert oasis + palm, ancient reflecting pool + lotus)
+- All 13 themes: trap tiles upgraded with thematic trap art (pressure plate, murder hole, laser grid, spore burst, electric arc, bear trap jaws, gear plate, manhole cover, landmine, cannon, quicksand spiral, cursed glyph pentagram)
+- All 13 themes: treasure tiles upgraded with unique treasure art (chest with coins, crowned chest, data core, crystal cluster, data chip, buried cache, gold nuggets, clockwork gears, bank safe, supply crate, skull chest, ankh relic, sarcophagus)
+- All 13 themes: start tiles upgraded with distinct entrance art (stone archway, royal banner, airlock hatch, landing beacon, neon portal, campfire, saloon doors, boiler engine, bus stop, shelter, anchor, caravan tent, obelisk)
+- Print mode art pass: walls now use cross-hatching (diagonal white lines over black fill), water uses stipple dot pattern under wave lines
+- Fog edge feathering: soft 1–2px gradient at revealed/hidden boundaries in both MapCanvas (live) and renderMap (exports) — always on
+- All detail rendering is deterministic via `tileHash()` — no runtime randomness
+- Priority order updated to show 5.1 as next
+
+**2026-04-28 — Phase 4.5.2 complete: Theme personality shipped**
+- All 13 themes: floor tiles upgraded with distinct per-theme micro-detail (flagstone mortar, checkerboard, deck plating rivets, grass blades, plank knots, circuit traces, sand stipple, spore glow, concrete aggregate, boot prints, iron rivets, rubble cracks, carved mortar grid)
+- All 13 themes: wall tiles upgraded with unique material rendering (stone blocks + mortar, ashlar masonry, riveted bulkheads, holographic shimmer, windowed facade + entry, cracked concrete + rebar, foliage highlights, plank nails, gear hub, hull nails, sandstone erosion, carved relief diamonds)
+- All 13 themes: door-h and door-v tiles upgraded with distinct door art (iron-banded timber, oak + plank seams, blast door chevrons, holographic glitch, membrane veins, gate crossbar, hatch ring pull, tomb hieroglyphs, glass push-bars, saloon louvers, valve gauge, barricade scrap, stone slab chevrons)
+- All detail rendering is deterministic via `tileHash()` — no runtime randomness
+- No changes to print mode — all art upgrades are screen-mode only
+- Priority order updated to show 4.5.3 as next
+
+**2026-04-28 — Phase 4.5.1 complete: Foundation art polish shipped**
+- New `TileTheme.gridColor` field replaces hardcoded `#2d3561` grid color across all 13 themes
+- Per-theme grid colors: Dungeon `#2d3561`, Castle `#5a4a30`, Starship `#1a3050`, Alien `#2d1a3a`, Cyberpunk `#1a0a2a`, Wilderness `#1a3a10`, Old West `#3a2a18`, Steampunk `#3a2810`, Modern City `#2a2a2a`, Post-Apocalypse `#2a2018`, Pirate `#2a1a0a`, Desert `#6a5020`, Ancient `#4a3a20`
+- `SCREEN_GRID` constant removed from MapCanvas.tsx and renderMap.ts — global grid pass now uses `theme.gridColor`
+- New `src/themes/artUtils.ts` shared utility: `tileHash(x,y)` spatial hash, `jitterColor()` for ±6–8% lightness variation, `drawWallDepth()` with 3 styles (shadow/glow/hard-edge)
+- All 13 themes: floor tiles now use `jitterColor` for subtle per-cell color variation
+- All 13 themes: wall tiles now use `jitterColor` + `drawWallDepth` for visual depth (shadow for fantasy themes, neon glow for sci-fi, hard-edge for modern)
+- No changes to print mode — all art upgrades are screen-mode only
+- Priority order updated to show 4.5.2 as next
+
+**2026-04-29 — Phase 6.1 + 6.2 implemented: Touch Events & Responsive Layout**
+- Phase 6.1: All MapCanvas mouse events replaced with Pointer Events API; pinch-to-zoom and two-finger pan gestures; long-press pan for touch; pointer capture for reliable drag; `onPointerCancel` for interrupted gestures
+- Phase 6.2: 4-breakpoint responsive CSS (>1024px, 768–1024, 480–768, <480px); collapsible left toolbar with toggle; right panel as slide-in overlay drawer; header simplification at narrow widths; toolbar as bottom sheet on portrait tablets/phones
+- Sprint 1 (Foundation) fully complete; Sprint 2 (UI/UX) in progress
+- 2 new design decisions logged (media queries over container queries, right panel as overlay drawer)
+
+**2026-04-28 — Phase 4.5 added: Art & Visual Polish roadmap**
+- New Part 3b: Competitor Art & Visual Style Analysis — detailed review of Azgaar, Watabou, Mipui, Donjon, Dave's Mapper, and HexTML art approaches
+- New Phase 4.5 with 3 sub-phases: Foundation (grid colors, tile jitter, wall depth), Theme Personality (floors, walls, doors), Iconic Tiles (treasure, traps, start, water)
+- Art direction: softer/organic look inspired by Watabou and Azgaar, all 13 themes upgraded simultaneously
+- Grid color picker with per-theme defaults added to Phase 4.5.1
+- All art upgrades must degrade to B&W print mode
+- Shadow/depth effects auto-disable on large maps if frame budget exceeded
+- Phase 4.5 placed before Phase 5 in priority order
+- 6 new design decisions logged
+
+**2026-04-28 — Roadmap restructured: backend & world-mapping items moved to Far Future**
+- Former Phase 5 (Collaboration & Sharing: shareable links, real-time collab, map forking) moved to Far Future — app stays client-only with no backend
+- Former Phase 6.1 (Multi-Layer System), 6.3 (Geomorphic Tiles), 6.4 (World Map Generator), 6.5 (SVG Rendering) moved to Far Future — focus stays on dungeon-scale mapping
+- Former Phase 7.4 (Map Search & Organization) moved to Far Future — depends on cloud storage
+- Multi-Level Dungeon Support (formerly 6.2) and Custom Tile/Theme Creation (formerly 7.2) renumbered as Phase 5.1 and 5.2
+- Architecture notes simplified: removed backend-dependent libraries and decisions
+- Design decisions log updated with rationale
+
+**2026-04-28 — Phase 4.3 complete: Light Sources shipped**
+- `LightSource` data type (`id`, `x`, `y`, `radius`, `color`, `label`) persisted on `DungeonMap.lightSources[]`
+- `computeLightVisible()` in `src/utils/lightSources.ts` computes union FOV from all light sources using the existing recursive shadowcasting engine — walls block light propagation exactly as they block sight
+- 4 presets in GM toolbar LIGHT section: Torch (radius 4, orange 🕯), Lantern (radius 6, amber 🔦), Magical (radius 8, violet ✨), Custom (💡) — each sets a sensible default radius and color with one click
+- Configurable radius slider (1–20 cells) and 8 color swatches (orange, amber, pale yellow, white, violet, arcane green, ice blue, infernal red)
+- Place Light tool with `[I]` keyboard shortcut; Remove Light tool; Clear All button
+- Ghost preview: warm glow + dashed radius circle follows cursor while Place tool is active
+- Dynamic fog integration: when `dynamicFogEnabled` is true, `lightVisible` cells are treated as "visible" (clear, no fog) alongside `playerVisible` cells — torches light up areas no player can directly see
+- Explored grid updated for lit cells in dynamic fog mode — previously lit areas remain "explored" (dimmed) after a light is removed
+- Warm radial-gradient halos and candle-emoji icons rendered on canvas in screen mode (hidden in print mode)
+- Priority order, feature inventory, and phase status updated
+
+**2026-04-28 — Phase 7.3 complete: Measurement & Distance Tools shipped**
+- Measure tool (`measure` ToolType) with [M] keyboard shortcut
+- 4 measurement shapes: ruler (point-to-point), circle (radius template), cone (90° arc), line (1-cell-wide corridor)
+- Chebyshev distance calculation (D&D 5e style: diagonals count as 1 square)
+- Configurable feet-per-cell scale (default 5 ft) in toolbar
+- Distance readout overlay with dark pill background showing "N sq · N ft"
+- Scale bar on print-optimized PNG exports (toggle in Export dialog)
+- Cyan-themed measurement overlays with dashed borders for visual clarity
+- Priority order and feature inventory updated
+
+**2026-04-28 — Phase 4.2 complete: Dynamic Fog of War shipped**
+- Union FOV computed from all player-kind tokens via `computePlayerFOV()` in `src/utils/dynamicFog.ts`
+- 3-state fog rendering: hidden (opaque) → explored (dimmed/semi-transparent) → visible (clear)
+- `explored` boolean grid persisted on `DungeonMap` so exploration survives saves/reloads
+- `dynamicFogEnabled` toggle in Player toolbar; manual fog tools (reveal/hide/defog) still work alongside
+- "Reset Explored" button to clear exploration memory
+- Notes, tokens, and initiative panel all respect dynamic fog visibility states
+- Export renderer (`renderMap.ts`) supports 3-state fog for print/PNG output
+- Priority order updated to reflect Phase 4.2 completion
+
+**2026-04-28 — Phase 4.1 complete: Line-of-Sight / FOV shipped**
+- Recursive shadowcasting FOV algorithm in `src/utils/fov.ts` (8-octant sweep)
+- Walls, secret doors, and pillars block line of sight
+- GM "Sight" tool (👁) in toolbar with [O] keyboard shortcut
+- Click to set origin → darkened overlay on non-visible cells, yellow origin marker
+- Click same cell to clear; overlay auto-hides when switching tools
+- Stacks with existing fog overlay
+- Competitor table updated: Mipui Vision/FOV marked ✅
+- Shadowcasting removed from "clean-room reimplement" table (done)
+- Priority order updated to reflect Phase 4.1 completion
+
+**2026-04-28 — Phase 7.1 complete: Print-Optimized Export shipped**
+- Standalone `renderMapToCanvas()` utility for offscreen high-DPI rendering
+- `ExportDialog` component with DPI (72/150/300), page-size (Letter, A4), view-mode, and print-mode options
+- `exportHighResPNG()` function with page tiling for large maps
+- Header button (🖨 Print Export) and keyboard shortcut (Ctrl+Shift+P)
+- Competitor table updated: Mipui multi-resolution export marked ✅
+- Priority order updated to reflect Phase 7.1 completion
+
+**2026-04-28 — Phase 3 complete: Village Generator shipped**
+- New `village` generator added (4th generator type)
+- BSP-based district/building layout with street network
+- Per-theme ward palettes for 13 themes
+- Optional town walls with gates
+- Tile-mix sliders (walls, building size, treasure, traps)
+- Theme-aware POI labels for village context
+- Competitor tables updated (Watabou BSP/wards/walls, Azgaar settlements)
+- BSP/A* removed from "clean-room reimplement" table (done)
+- Priority order updated to reflect Phase 3 completion
+
+**2026-04-28 — Initial committed version (revised from chat-based plan)**
+- Part 1 updated to reflect all features shipped in Phases 1 & 2
+- Competitor tables updated with new ✅ marks for shipped features
+- Former Phase 2.5 (Town/Settlement Generator) promoted to Phase 3
+- Former Phase 3 (Hex Grid Support) removed entirely — not a desired feature
+- Subsequent phases renumbered to be contiguous
+- Priority order updated to reflect completed work
+- Hex grid entries removed from architecture notes
+- Already-implemented algorithms removed from "clean-room reimplement" table
