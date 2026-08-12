@@ -2453,7 +2453,9 @@ export const STAMP_CATEGORY_LABELS: Record<string, string> = {
   'custom': 'Custom',
 };
 
+const BUILT_IN_STAMPS_BY_ID = new Map(BUILT_IN_STAMPS.map(stamp => [stamp.id, stamp]));
+
 /** Lookup a stamp definition by id. Returns undefined if not found. */
 export function getStampDef(stampId: string, customStamps: readonly StampDef[] = []): StampDef | undefined {
-  return customStamps.find(s => s.id === stampId) ?? BUILT_IN_STAMPS.find(s => s.id === stampId);
+  return customStamps.find(s => s.id === stampId) ?? BUILT_IN_STAMPS_BY_ID.get(stampId);
 }
