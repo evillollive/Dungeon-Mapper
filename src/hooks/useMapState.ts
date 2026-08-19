@@ -12,6 +12,37 @@ import { getPresetSettings as getPresetSettingsFn } from '../utils/artStylePrese
 
 export { getClipboard } from './useMapClipboard';
 
+type TileUpdate = { x: number; y: number; type: TileType };
+
+function applyTileUpdates(
+  tiles: Tile[][],
+  updates: readonly TileUpdate[],
+  width: number,
+  height: number,
+): Tile[][] | null {
+  let nextTiles: Tile[][] | null = null;
+
+  const copyRow = (y: number): Tile[] => {
+    if (!nextTiles) nextTiles = tiles.slice();
+    if (nextTiles[y] === tiles[y]) nextTiles[y] = tiles[y].slice();
+    return nextTiles[y];
+  };
+
+  for (const { x, y, type } of updates) {
+    if (y < 0 || y >= height || x < 0 || x >= width) continue;
+    const current = (nextTiles ?? tiles)[y]?.[x];
+    if (!current) continue;
+    if (current.type === type && current.theme === undefined) continue;
+
+    const row = copyRow(y);
+    const next: Tile = { ...current, type };
+    delete next.theme;
+    row[x] = next;
+  }
+
+  return nextTiles;
+}
+
 export function useMapState() {
   const [project, setProject] = useState<DungeonProject>(createDefaultProject);
   const [activeLevelIndex, setActiveLevelIndex] = useState(0);
@@ -99,16 +130,11 @@ export function useMapState() {
 
   const setTile = useCallback((x: number, y: number, type: TileType) => {
     setProject(prev => {
-      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
-        const newTiles = m.tiles.map(row => row.map(t => ({ ...t })));
-        if (y >= 0 && y < m.meta.height && x >= 0 && x < m.meta.width) {
-          const next = { ...newTiles[y][x], type };
-          delete next.theme;
-          newTiles[y][x] = next;
-        }
-        return { ...m, tiles: newTiles };
-      });
+      const prevMap = prev.levels[activeLevelIndex];
+      const newTiles = applyTileUpdates(prevMap.tiles, [{ x, y, type }], prevMap.meta.width, prevMap.meta.height);
+      if (!newTiles) return prev;
+      pushHistory(prevMap, activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, tiles: newTiles }));
       debouncedSave(updated);
       return updated;
     });
@@ -132,18 +158,11 @@ export function useMapState() {
 
   const setTiles = useCallback((updates: { x: number; y: number; type: TileType }[]) => {
     setProject(prev => {
-      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
-        const newTiles = m.tiles.map(row => row.map(t => ({ ...t })));
-        for (const { x, y, type } of updates) {
-          if (y >= 0 && y < m.meta.height && x >= 0 && x < m.meta.width) {
-            const next = { ...newTiles[y][x], type };
-            delete next.theme;
-            newTiles[y][x] = next;
-          }
-        }
-        return { ...m, tiles: newTiles };
-      });
+      const prevMap = prev.levels[activeLevelIndex];
+      const newTiles = applyTileUpdates(prevMap.tiles, updates, prevMap.meta.width, prevMap.meta.height);
+      if (!newTiles) return prev;
+      pushHistory(prevMap, activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, tiles: newTiles }));
       debouncedSave(updated);
       return updated;
     });
