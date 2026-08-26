@@ -1316,7 +1316,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
   // Notes positioned on a fogged cell are hidden from the player view so a
   // visible note number doesn't leak the existence of a hidden room.
-  const visibleNotes = (fogActive && isPlayerView)
+  const visibleNotes = useMemo(() => (fogActive && isPlayerView)
     ? notes.filter(n => {
         if (!(fog?.[n.y]?.[n.x])) return true;
         if (dynamicFogEnabled) {
@@ -1326,14 +1326,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         }
         return false;
       })
-    : notes;
+    : notes, [fogActive, isPlayerView, notes, fog, dynamicFogEnabled, playerVisible, explored]);
 
   // Tokens are hidden from players when *any* cell of their footprint sits
   // under fog — otherwise a multi-cell monster anchored on a fogged cell
   // could still be visible (or vice-versa) and leak the GM's prep.
-  const visibleTokens = (fogActive && isPlayerView)
+  const visibleTokens = useMemo(() => (fogActive && isPlayerView)
     ? tokens.filter(t => !isTokenFogged(t, fog, dynamicFogEnabled ? playerVisible : undefined, explored))
-    : tokens;
+    : tokens, [fogActive, isPlayerView, tokens, fog, dynamicFogEnabled, playerVisible, explored]);
 
   // Main render
   useEffect(() => {
