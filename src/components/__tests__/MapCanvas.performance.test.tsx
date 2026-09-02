@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react';
+import { fireEvent, render, waitFor } from '@testing-library/react';
 import React from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import MapCanvas from '../MapCanvas';
@@ -66,5 +66,35 @@ describe('MapCanvas render performance', () => {
     await new Promise(resolve => setTimeout(resolve, 0));
 
     expect(getContextSpy).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not redraw the main canvas for repeated pointer moves within the same tile', async () => {
+    const getContextSpy = vi.spyOn(HTMLCanvasElement.prototype, 'getContext');
+    const props = mapCanvasProps();
+    const canvasWidth = props.map.meta.width * props.map.meta.tileSize;
+    const canvasHeight = props.map.meta.height * props.map.meta.tileSize;
+    vi.spyOn(HTMLCanvasElement.prototype, 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: 0,
+      left: 0,
+      top: 0,
+      right: canvasWidth,
+      bottom: canvasHeight,
+      width: canvasWidth,
+      height: canvasHeight,
+      toJSON: () => {},
+    });
+    const { getByRole } = render(<MapCanvas {...props} />);
+
+    await waitFor(() => expect(getContextSpy).toHaveBeenCalledTimes(2));
+    const canvas = getByRole('application');
+
+    fireEvent.pointerMove(canvas, { clientX: 8, clientY: 8 });
+    await waitFor(() => expect(getContextSpy).toHaveBeenCalledTimes(3));
+
+    fireEvent.pointerMove(canvas, { clientX: 12, clientY: 12 });
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    expect(getContextSpy).toHaveBeenCalledTimes(3);
   });
 });

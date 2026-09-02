@@ -2717,7 +2717,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
 
     const coords = getTileCoords(e);
-    if (coords) setMousePos(coords);
+    if (coords) {
+      setMousePos(prev => (prev?.x === coords.x && prev.y === coords.y ? prev : coords));
+    }
 
     if (!isPlayerView && isRoomTool(activeTool)) {
       const fc = getFractionalCoords(e);
