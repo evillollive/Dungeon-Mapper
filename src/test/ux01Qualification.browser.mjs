@@ -11,6 +11,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { build } from 'esbuild';
 
 const origin = process.env.QA_ORIGIN ?? 'http://127.0.0.1:5297/Dungeon-Mapper/';
+const catalog = process.env.QA_CATALOG === '1';
 assert(['127.0.0.1', 'localhost'].includes(new URL(origin).hostname), 'Only isolated loopback servers are allowed');
 assert(process.env.QA_OUTPUT, 'QA_OUTPUT must designate a session artifact directory');
 const output = resolve(process.env.QA_OUTPUT);
@@ -21,6 +22,8 @@ await build({ entryPoints: ['src/test/ux01Qualification.fixtures.ts'], bundle: t
 const { fixtures } = await import(pathToFileURL(fixtureModule).href);
 const results = {
   sha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+  applicationSourceSha: process.env.QA_SOURCE_SHA,
+  catalog,
   origin, startedAt: new Date().toISOString(), node: process.version,
   fixtures: Object.fromEntries(Object.entries(fixtures).map(([key, value]) => [key, Buffer.byteLength(JSON.stringify(value))])),
   limitations: [
@@ -49,17 +52,19 @@ function assertProject(actual, expected) {
 const saved = page => page.getByRole('status').filter({ hasText: 'Saved on this device' }).waitFor();
 const failed = page => page.getByRole('status').filter({ hasText: 'Save failed' }).waitFor();
 const mapName = page => page.getByRole('textbox', { name: 'Map name', exact: true });
-const rawRead = (page, key = 'autosave') => page.evaluate(key => new Promise((resolve, reject) => {
+const rawRead = (page, key) => page.evaluate(({ key, catalog }) => new Promise((resolve, reject) => {
   const request = indexedDB.open('dungeon-mapper');
   request.onerror = () => reject(request.error);
   request.onsuccess = () => {
     const db = request.result;
     const tx = db.transaction('maps', 'readonly');
-    const get = tx.objectStore('maps').get(key);
+    const id = new URL(location.href).searchParams.get('project');
+    if (catalog && id && (key === undefined || key === 'replacement-recovery')) key = key === undefined ? `project:${id}` : `recovery:${id}`;
+    const get = tx.objectStore('maps').get(key ?? 'autosave');
     tx.oncomplete = () => { db.close(); resolve(get.result); };
     tx.onabort = () => { db.close(); reject(tx.error); };
   };
-}), key);
+}), { key, catalog });
 const seed = (page, raw) => page.evaluate(raw => new Promise((resolve, reject) => {
   const request = indexedDB.open('dungeon-mapper', 1);
   request.onupgradeneeded = () => request.result.createObjectStore('maps');
@@ -76,7 +81,7 @@ async function initialize(page, project = fixtures.rich) {
   await page.goto(origin);
   await page.waitForLoadState('networkidle');
   await seed(page, { schemaVersion: 1, storageRevision: 'qualification-seed', project });
-  await page.reload();
+  await page.goto(origin);
   await saved(page);
 }
 async function edit(page, name) {
@@ -142,7 +147,7 @@ for (const engine of selected) {
     await menu(page, 'Clear current level');
     await saved(page);
     await edit(page, 'Edited after clear');
-    await page.reload();
+    await page.goto(origin);
     await saved(page);
     const records = await rawRead(page, 'replacement-recovery');
     const checkpoint = records.find(record => record.reason === 'Clear level');
@@ -179,8 +184,22 @@ for (const engine of selected) {
     assert.equal(await page.evaluate(() => localStorage.getItem('dungeon-mapper-autosave')), legacy);
     const samples = [];
     for (const sample of fixtures.samples) {
-      await seed(page, sample.project);
-      await page.reload();
+      if (catalog) {
+        await page.evaluate(({ project, id }) => new Promise((resolve, reject) => {
+          const request = indexedDB.open('dungeon-mapper');
+          request.onsuccess = () => {
+            const db = request.result;
+            const tx = db.transaction('maps', 'readwrite');
+            tx.objectStore('maps').put({ schemaVersion: 1, project, localProjectId: id, storageRevision: crypto.randomUUID(), createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }, `project:${id}`);
+            tx.oncomplete = () => { db.close(); resolve(); };
+            tx.onabort = () => { db.close(); reject(tx.error); };
+          };
+        }), { project: sample.project, id: sample.id });
+        await page.goto(`${origin}?project=${sample.id}`);
+      } else {
+        await seed(page, sample.project);
+        await page.reload();
+      }
       await saved(page);
       const width = sample.project.levels[sample.project.activeLevelIndex].meta.width;
       const height = sample.project.levels[sample.project.activeLevelIndex].meta.height;
@@ -196,7 +215,7 @@ for (const engine of selected) {
     const original = structuredClone(fixtures.rich);
     original.levels[0].fog = original.levels[0].fog.slice(0, 8);
     await seed(page, original);
-    await page.reload();
+    await page.goto(origin);
     await page.getByRole('status').filter({ hasText: 'Could not restore your project' }).waitFor();
     await page.getByRole('button', { name: 'Review fog repair', exact: true }).click();
     await page.getByRole('region', { name: 'Fog repair preview' }).waitFor();
@@ -210,8 +229,11 @@ for (const engine of selected) {
     const expected = structuredClone(original);
     expected.levels[0].fog.push(...Array.from({ length: 8 }, () => Array(16).fill(true)));
     assertProject((await rawRead(page)).project, expected);
-    const checkpoints = await rawRead(page, 'replacement-recovery');
-    assertProject(checkpoints.find(record => record.reason === 'Fog repair').data, original);
+    if (catalog) assertProject(await rawRead(page, 'autosave'), original);
+    else {
+      const checkpoints = await rawRead(page, 'replacement-recovery');
+      assertProject(checkpoints.find(record => record.reason === 'Fog repair').data, original);
+    }
     return { originalBytes: Buffer.byteLength(JSON.stringify(original)), repairedBytes: Buffer.byteLength(JSON.stringify(expected)) };
   });
 
@@ -237,9 +259,10 @@ for (const engine of selected) {
       await page.evaluate(failure => {
         window.qaOriginalPut = IDBObjectStore.prototype.put;
         IDBObjectStore.prototype.put = function (...args) {
-          if (args[1] === 'autosave' && failure === 'quota') throw new DOMException('Injected qualification quota', 'QuotaExceededError');
+          const projectWrite = args[1] === 'autosave' || String(args[1]).startsWith('project:');
+          if (projectWrite && failure === 'quota') throw new DOMException('Injected qualification quota', 'QuotaExceededError');
           const request = window.qaOriginalPut.apply(this, args);
-          if (args[1] === 'autosave' && failure === 'abort') request.addEventListener('success', () => this.transaction.abort());
+          if (projectWrite && failure === 'abort') request.addEventListener('success', () => this.transaction.abort());
           return request;
         };
       }, failure);
@@ -263,7 +286,7 @@ for (const engine of selected) {
         ? { schemaVersion: 999, futurePrivateData: ['Preserve exact original', 17] }
         : { schemaVersion: 1, project: { ...fixtures.rich, levels: [] } };
       await seed(page, original);
-      await page.reload();
+      await page.goto(origin);
       await page.getByRole('status').filter({ hasText: 'Could not restore your project' }).waitFor();
       assert.equal(await mapName(page).count(), 0);
       const backup = await download(page, () => page.getByRole('button', { name: 'Download original', exact: true }).click());
@@ -382,7 +405,7 @@ for (const engine of selected) {
       for (let offset = 0; offset < payload.length; offset += 65536) crypto.getRandomValues(payload.subarray(offset, offset + 65536));
       window.qaOriginalPut = IDBObjectStore.prototype.put;
       IDBObjectStore.prototype.put = function (...args) {
-        if (args[1] === 'autosave') args[0] = { ...args[0], qualificationQuotaPadding: payload };
+        if (args[1] === 'autosave' || String(args[1]).startsWith('project:')) args[0] = { ...args[0], qualificationQuotaPadding: payload };
         return window.qaOriginalPut.apply(this, args);
       };
     });

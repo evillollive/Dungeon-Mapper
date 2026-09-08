@@ -17,7 +17,7 @@ for (const engine of (process.env.QA_ENGINES ?? 'chromium,firefox,webkit').split
   const profile = await mkdtemp(join(tmpdir(), 'dungeon-offline-qa-'));
   let context;
   let server;
-  const evidence = { engine, origin };
+  const evidence = { engine, origin, applicationSourceSha: process.env.QA_SOURCE_SHA };
   const stage = value => { evidence.stage = value; console.log(`${engine}: ${value}`); };
   try {
     stage('starting production preview');
