@@ -100,6 +100,37 @@
 }
 .context-close { align-self: flex-end; flex-shrink: 0; }
 .editor-shell .tool-btn { font-size: var(--text-small); flex-wrap: wrap; }
+.focused-tool-material { position: sticky; top: -16px; z-index: 2; background: var(--surface-panel); padding: 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
+.focused-tool-material .active-material { margin-bottom: 8px; }
+.tool-discovery summary, .editing-objects summary { padding: 12px 0; min-height: 44px; cursor: pointer; font-size: var(--text-small); }
+.editing-objects { margin-bottom: 16px; }
+.editing-objects label, .asset-search { display: grid; gap: 8px; font-size: var(--text-small); margin-bottom: 12px; }
+.editing-objects select, .editing-objects input, .asset-search input, .object-form input:not([type="checkbox"]), .object-form textarea, .object-form select {
+  width: 100%; min-width: 0; min-height: 44px; padding: 8px; border: 1px solid var(--border);
+  border-radius: var(--radius-control); background: var(--surface-raised); color: var(--text-primary); font: inherit;
+}
+.object-form { display: grid; gap: 12px; font-size: var(--text-small); }
+.object-form label { display: grid; gap: 6px; }
+.object-form fieldset { display: grid; gap: 8px; min-width: 0; padding: 8px; border: 1px solid var(--border); }
+.object-form label:has([type="checkbox"]) { display: flex; align-items: center; min-height: 44px; }
+.object-form small { color: var(--text-secondary); }
+.inspector-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.inspector-form-actions { display: flex; flex-wrap: wrap; gap: 8px; position: sticky; bottom: 0; padding: 8px 0; background: var(--surface-panel); }
+.editor-shell .selection-inspector { display: grid; gap: 16px; padding: 0; }
+.selection-inspector h2 { font-size: var(--text-heading); }
+.selection-inspector button, .editing-objects button, .asset-card button {
+  min-height: 44px; padding: 8px; font: inherit; color: var(--text-primary); background: var(--surface-raised);
+  border: 1px solid var(--border); border-radius: var(--radius-control); white-space: normal;
+}
+.inspector-form-actions button[type="submit"] { background: var(--action-primary); color: var(--action-ink); }
+.inspector-form-actions button[aria-disabled="true"] { opacity: .65; }
+.asset-card { display: grid; gap: 4px; min-width: 0; }
+.editor-shell .stamp-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); max-height: 400px; }
+.asset-card .asset-favorite { font-size: var(--text-small); }
+.asset-card .asset-favorite[aria-pressed="true"] { background: var(--surface-active); border-color: var(--accent); }
+.asset-card .asset-delete { color: var(--danger); }
+.editor-shell .stamp-grid-item-label { white-space: normal; font-size: var(--text-small); }
+.context-close { position: sticky; top: 0; z-index: 5; background: var(--surface-panel); }
 .editor-shell .tool-name { overflow: visible; text-overflow: clip; white-space: normal; min-width: 0; }
 .editor-shell .tool-shortcut { font-size: var(--text-small); color: var(--text-secondary); }
 .editor-shell .toolbar-label, .editor-shell .toolbar-sub-label, .editor-shell .tile-btn-label { font-size: var(--text-small); color: var(--text-secondary); }
@@ -164,6 +195,19 @@
 }
 @media (max-width: 768px) {
   .editor-shell .app-body > nav.nav-collapsed { max-width: 110px; }
+  .editor-shell .app-body > nav:not(.nav-collapsed) {
+    position: fixed; top: calc(var(--visual-top, 0px) + 8px); bottom: auto;
+    height: calc(var(--visual-height, 100dvh) - 96px - env(safe-area-inset-bottom));
+    max-height: none; z-index: 45;
+  }
+  .editor-shell .context-sheet {
+    position: fixed; top: calc(var(--visual-top, 0px) + 8px); bottom: auto; left: 8px; right: 8px;
+    width: auto; max-width: none; max-height: calc(var(--visual-height, 100dvh) - 16px - env(safe-area-inset-bottom));
+    z-index: 60; border: 1px solid var(--border); border-radius: var(--radius-panel);
+    padding-bottom: max(16px, env(safe-area-inset-bottom)); overscroll-behavior: contain;
+    box-shadow: 0 0 0 100vmax #09070dcc;
+  }
+  .shell-mobile-tools { padding-bottom: max(8px, env(safe-area-inset-bottom)); }
 }
 @media (forced-colors: active) {
   .action-button[aria-pressed="true"] { outline: 2px solid Highlight; }

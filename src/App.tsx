@@ -18,6 +18,9 @@ import ShortcutsHelp from './components/ShortcutsHelp';
 import ExportDialog from './components/ExportDialog';
 import SceneTemplateDialog from './components/SceneTemplateDialog';
 import SelectionInspector from './components/SelectionInspector';
+import EditingObjects from './components/EditingObjects';
+import ContextPanel from './components/ContextPanel';
+import { useVisualViewport } from './hooks/useVisualViewport';
 import CommandPalette from './components/CommandPalette';
 import { buildKeyBindings } from './hooks/keyBindings';
 import { buildEditorActions, TOOL_ACTIONS, type EditorPanel, type ExtraAction } from './utils/editorActions';
@@ -30,6 +33,7 @@ import { createFogGrid } from './utils/mapUtils';
 import { createProjectFromTemplate } from './utils/projectCreation';
 import { useMapState, getClipboard } from './hooks/useMapState';
 import { useDrawingTool } from './hooks/useDrawingTool';
+import { useEditorSelection, type RegionSelection } from './hooks/useEditorSelection';
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
 import { useOfflineStatus } from './hooks/useOfflineStatus';
 import { SAVE_PHASE_LABELS } from './utils/saveStatus';
@@ -110,6 +114,7 @@ function loadInitialUIScale(): number {
 }
 
 function App() {
+  useVisualViewport();
   const offline = useOfflineStatus();
   const {
     map,
@@ -117,8 +122,6 @@ function App() {
     saveState, retrySave, originalStoredData, recoverProjectData, projectId, switchProject, setProjectName, refreshCheckpoints, projectGeneration,
     forgetDeletedProject,
     activeLevelIndex,
-    selectedNoteId,
-    setSelectedNoteId,
     setTile,
     fillTiles,
     setTiles,
@@ -158,6 +161,7 @@ function App() {
     copySelection,
     cutSelection,
     pasteClipboard,
+    moveRegion,
     addMarker,
     removeMarker,
     clearMarkers,
@@ -258,7 +262,19 @@ function App() {
   const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
   const [showSceneTemplateDialog, setShowSceneTemplateDialog] = useState<boolean>(false);
   const [showCommandPalette, setShowCommandPalette] = useState<boolean>(false);
-  const [selectedRoomShapeId, setSelectedRoomShapeId] = useState<number | null>(null);
+  const { selection: inspected, select: selectObject } = useEditorSelection(`${projectGeneration}:${activeLevelIndex}:${viewMode}`, map);
+  const selectedRoomShapeId = inspected?.kind === 'room' ? inspected.id : null;
+  const selectedRiverId = inspected?.kind === 'river' ? inspected.id : null;
+  const selectedNoteId = inspected?.kind === 'note' ? inspected.id : null;
+  const selectedTokenId = inspected?.kind === 'token' ? inspected.id : null;
+  const selectedPlacedStampId = inspected?.kind === 'stamp' ? inspected.id : null;
+  const selection = inspected?.kind === 'region' ? inspected.bounds : null;
+  const setSelectedRoomShapeId = useCallback((id: number | null) => selectObject(id === null ? null : { kind: 'room', id }), [selectObject]);
+  const setSelectedRiverId = useCallback((id: number | null) => selectObject(id === null ? null : { kind: 'river', id }), [selectObject]);
+  const setSelectedNoteId = useCallback((id: number | null) => selectObject(id === null ? null : { kind: 'note', id }), [selectObject]);
+  const setSelectedTokenId = useCallback((id: number | null) => selectObject(id === null ? null : { kind: 'token', id }), [selectObject]);
+  const setSelectedPlacedStampId = useCallback((id: number | null) => selectObject(id === null ? null : { kind: 'stamp', id }), [selectObject]);
+  const setSelection = useCallback((bounds: RegionSelection | null) => selectObject(bounds === null ? null : { kind: 'region', bounds }), [selectObject]);
   // Polite live-region message announced to screen readers when the user
   // performs an action whose visual feedback is the canvas (e.g. undo,
   // theme switch, view-mode toggle). Cleared automatically a moment
@@ -269,11 +285,9 @@ function App() {
   // coordinates), mirrored from `MapCanvas` so the Generate Map dialog can
   // offer "Generate into selection" as a target region. `null` when no
   // selection is active.
-  const [selection, setSelection] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
   // Token currently highlighted in the Initiative panel (and rendered with
   // a yellow ring on the map). Cleared on view-mode switch and when the
   // user clicks the same entry again.
-  const [selectedTokenId, setSelectedTokenId] = useState<number | null>(null);
   // Player drawing pen state — color and brush width are UI-only and not
   // persisted on the map; they're a per-session preference.
   const [drawColor, setDrawColor] = useState<string>('#dc2626');
@@ -285,7 +299,6 @@ function App() {
   // Stamp tool settings — currently selected stamp definition id.
   const [selectedStampId, setSelectedStampId] = useState<string | null>(null);
   // Currently selected placed stamp id (for transform controls).
-  const [selectedPlacedStampId, setSelectedPlacedStampId] = useState<number | null>(null);
   // Wall tool settings — color and thickness for grid-edge walls.
   const [wallColor, setWallColor] = useState<string>('#1a1a2e');
   const [wallThickness, setWallThickness] = useState<number>(0.08);
@@ -371,7 +384,9 @@ function App() {
     setSelectedRoomShapeId(null);
     setStairLinkSource(null);
     setShowGenerateHub(false);
+    setShowIconPicker(false);
   }
+  useEffect(() => { pendingTokenRef.current = null; }, [projectGeneration, activeLevelIndex, viewMode]);
 
   // Clear pending source when the tool changes away from link-stair.
   const handleSetActiveTool = useCallback((tool: ToolType | ((prev: ToolType) => ToolType)) => {
@@ -575,22 +590,14 @@ function App() {
     const pending = pendingTokenRef.current;
     if (!pending) return;
     pendingTokenRef.current = null;
-    const tokenId = addToken(pending.kind, pending.x, pending.y, pending.label, pending.size);
-    // If the user selected a library icon, update the token with it.
-    if (iconId && tokenId != null) {
-      updateToken(tokenId, { icon: iconId });
-    }
-  }, [addToken, updateToken]);
+    const tokenId = addToken(pending.kind, pending.x, pending.y, pending.label, pending.size, iconId ?? undefined);
+    if (tokenId !== null) setSelectedTokenId(tokenId);
+  }, [addToken, setSelectedTokenId]);
 
   const handleIconPickerCancel = useCallback(() => {
     setShowIconPicker(false);
-    // Still place the token even if the user cancels — just without a
-    // library icon (falls back to emoji/letter).
-    const pending = pendingTokenRef.current;
-    if (!pending) return;
     pendingTokenRef.current = null;
-    addToken(pending.kind, pending.x, pending.y, pending.label, pending.size);
-  }, [addToken]);
+  }, []);
 
   const handleRenameToken = useCallback((id: number, label: string) => {
     updateToken(id, { label });
@@ -776,7 +783,6 @@ function App() {
   useEffect(() => {
     if (showLibrary) return;
     const frame = requestAnimationFrame(() => {
-      canvasRef.current?.fitToScreen();
       document.getElementById('dm-canvas-area')?.focus();
     });
     return () => cancelAnimationFrame(frame);
@@ -890,8 +896,7 @@ function App() {
     if (!command) throw new Error(`Unregistered tool: ${tool}`);
     command.action();
   };
-  const hasInspection = (map.stamps ?? []).some(item => item.id === selectedPlacedStampId) ||
-    (map.tokens ?? []).some(item => item.id === selectedTokenId) || map.notes.some(item => item.id === selectedNoteId);
+  const hasInspection = inspected !== null;
   useGlobalShortcuts(editorActions, !showLibrary && !showCreateProject &&
     !['restoring', 'restore-failed', 'replacing'].includes(saveState.phase));
 
@@ -1085,6 +1090,22 @@ function App() {
             </button>
             {!toolbarCollapsed && (
             <NavigationRail
+              objectControls={<EditingObjects key={`${projectGeneration}:${activeLevelIndex}`} map={map} selection={inspected}
+                onSelect={selectObject} hasStamp={selectedStampId !== null}
+                onPlace={(kind, x, y, width, height) => {
+                  if (kind === 'region') setSelection({ x, y, w: width, h: height });
+                  else if (kind === 'note') setSelectedNoteId(addNote(x, y));
+                  else if (kind === 'token') handleAddToken('player', x, y);
+                  else if (kind === 'stamp' && selectedStampId) setSelectedPlacedStampId(addStamp(selectedStampId, x, y));
+                  else if (kind === 'river') setSelectedRiverId(addRiver({
+                    controlPoints: [{ x, y }, { x: x + width, y: y + height }], width: riverWidth, type: riverType, color: riverColor,
+                    flowDirection: Math.atan2(height, width) * 180 / Math.PI,
+                  }));
+                  else if (kind === 'room' || kind === 'polygon') setSelectedRoomShapeId(addRoomShape({
+                    x, y, width, height, fillTile: activeTile, shapeType: kind === 'polygon' ? 'polygon' : 'rect',
+                    ...(kind === 'polygon' ? { vertices: [{ x, y }, { x: x + width, y }, { x: x + width, y: y + height }, { x, y: y + height }] } : {}),
+                  }));
+                }} />}
               activePanel={activePanel}
               activeTool={activeTool}
               activeTile={activeTile}
@@ -1227,7 +1248,11 @@ function App() {
           </nav>
         )}
         <main id="dm-canvas-area" className="canvas-area" aria-label="Map canvas area" tabIndex={-1}>
-          <MapCanvas key={projectGeneration}
+          <MapCanvas key={`${projectGeneration}:${activeLevelIndex}:${viewMode}`}
+            viewportKey={`${projectId ?? `new-${projectGeneration}`}:${activeLevelIndex}`}
+            regionSelection={selection}
+            onSelectToken={setSelectedTokenId}
+            onSelectRiver={setSelectedRiverId}
             ref={canvasRef}
             map={map}
             activeTool={activeTool}
@@ -1247,7 +1272,7 @@ function App() {
             onSetTile={setTile}
             onSetTiles={setTiles}
             onFillTile={fillTiles}
-            onAddNote={addNote}
+            onAddNote={(x, y) => setSelectedNoteId(addNote(x, y))}
             onSelectNote={setSelectedNoteId}
             onEraseTiles={handleEraseTiles}
             onSetFogCells={setFogCells}
@@ -1313,9 +1338,9 @@ function App() {
           />
         </main>
         {viewMode === 'gm' && (rightPanelOpen || hasInspection) && (
-          <aside className="right-panel context-panel" aria-label="Context panel">
+          <ContextPanel mobile={isMobile} onClose={() => { setRightPanelOpen(false); selectObject(null); }}>
             <button type="button" className="context-close" onClick={() => {
-              setRightPanelOpen(false); setSelectedPlacedStampId(null); setSelectedTokenId(null); setSelectedNoteId(null);
+              setRightPanelOpen(false); selectObject(null);
               document.getElementById('dm-canvas-area')?.focus();
             }}><Icon name="close" />Close panel</button>
             {(activePanel === 'info' || hasInspection) && <SelectionInspector
@@ -1325,6 +1350,23 @@ function App() {
               selectedPlacedStampId={selectedPlacedStampId}
               selectedTokenId={selectedTokenId}
               selectedNoteId={selectedNoteId}
+              selectedRoomShapeId={selectedRoomShapeId}
+              selectedRiverId={selectedRiverId}
+              region={selection}
+              materials={getThemeWithCustom(themeId, customThemes).tiles}
+              onUpdateRoomShape={updateRoomShape}
+              onRemoveRoomShape={removeRoomShape}
+              onUpdateRiver={updateRiver}
+              onRemoveRiver={removeRiver}
+              onDeselect={() => selectObject(null)}
+              onSetRegion={setSelection}
+              onFillRegion={(region, tile) => setTiles(Array.from({ length: region.w * region.h }, (_, index) => ({
+                x: region.x + index % region.w, y: region.y + Math.floor(index / region.w), type: tile,
+              })))}
+              onMoveRegion={(region, dx, dy) => {
+                moveRegion(region, dx, dy);
+                setSelection({ ...region, x: region.x + dx, y: region.y + dy });
+              }}
               stamps={map.stamps ?? []}
               tokens={map.tokens ?? []}
               notes={map.notes}
@@ -1361,7 +1403,7 @@ function App() {
               onDeleteNote={deleteNote}
               onActivateNoteTool={() => handleSetActiveTool('note')}
             />}
-          </aside>
+          </ContextPanel>
         )}
         {viewMode === 'player' && rightPanelOpen && (
           <aside className="right-panel context-panel" aria-label="DM view information">

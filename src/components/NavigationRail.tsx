@@ -24,6 +24,7 @@ const PANELS = [
 /* ------------------------------------------------------------------ */
 
 interface NavigationRailProps {
+  objectControls?: React.ReactNode;
   activePanel: EditorPanel;
   activeTool: ToolType;
   activeTile: TileType;
@@ -165,6 +166,7 @@ const NavigationRail: React.FC<NavigationRailProps> = (props) => {
         </div>}
         {['build', 'decorate', 'look'].includes(activeMode) && (
           <DrawToolsTab
+            objectControls={props.objectControls}
             section={activeMode === 'build' ? 'build' : activeMode === 'decorate' ? 'decorate' : 'look'}
             activeTool={props.activeTool}
             activeTile={props.activeTile}

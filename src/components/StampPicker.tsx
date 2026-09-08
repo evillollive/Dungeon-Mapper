@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback, useRef } from 'react';
 import type { ToolType, StampCategory, StampDef } from '../types/map';
 import { BUILT_IN_STAMPS, STAMP_CATEGORY_LABELS } from '../utils/stampCatalog';
+import { useAssetFavorites } from '../hooks/useAssetFavorites';
 
 interface StampPickerProps {
   activeTool: ToolType;
@@ -32,13 +33,18 @@ const StampPicker: React.FC<StampPickerProps> = ({
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
   const [uploadName, setUploadName] = useState('');
   const uploadRef = useRef<HTMLInputElement>(null);
+  const [query, setQuery] = useState('');
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const { favorites, toggle, error } = useAssetFavorites('stamps');
 
   const filteredStamps = useMemo(() => {
-    if (filterCategory === 'custom') return customStamps as StampDef[];
-    if (filterCategory === 'theme') return BUILT_IN_STAMPS.filter(s => s.themeId === themeId);
-    if (filterCategory === 'all') return BUILT_IN_STAMPS.filter(s => !s.themeId || s.themeId === themeId);
-    return BUILT_IN_STAMPS.filter(s => s.category === filterCategory && (!s.themeId || s.themeId === themeId));
-  }, [filterCategory, customStamps, themeId]);
+    return [...BUILT_IN_STAMPS, ...customStamps].filter(stamp =>
+      (filterCategory === 'all' ? !stamp.themeId || stamp.themeId === themeId :
+        filterCategory === 'theme' ? stamp.themeId === themeId :
+          stamp.category === filterCategory && (!stamp.themeId || stamp.themeId === themeId)) &&
+      `${stamp.name} ${stamp.category}`.toLowerCase().includes(query.trim().toLowerCase()) &&
+      (!favoritesOnly || favorites.includes(stamp.id)));
+  }, [filterCategory, customStamps, themeId, query, favoritesOnly, favorites]);
 
   const handleCustomUpload = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -69,6 +75,10 @@ const StampPicker: React.FC<StampPickerProps> = ({
   return (
     <div className="toolbar-section">
       <div className="toolbar-label">STAMPS</div>
+      <label className="asset-search">Search stamps<input type="search" value={query} onChange={e => setQuery(e.target.value)} /></label>
+      <button type="button" className="tool-btn" aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly(!favoritesOnly)}>Favorite stamps only</button>
+      {error && <p role="status">{error}</p>}
+      <p role="status">{filteredStamps.length} stamps</p>
 
       {/* Stamp tool buttons */}
       <div className="stamp-tools">
@@ -116,12 +126,11 @@ const StampPicker: React.FC<StampPickerProps> = ({
       </div>
 
       {/* Stamp grid */}
-      <div className="stamp-grid" role="listbox" aria-label="Available stamps">
+      <div className="stamp-grid" role="group" aria-label="Available stamps">
         {filteredStamps.map(stamp => (
-          <div key={stamp.id} style={{ position: 'relative' }}>
+          <div key={stamp.id} className="asset-card">
             <button
               type="button"
-              role="option"
               className={`stamp-grid-item ${selectedStampId === stamp.id ? 'active' : ''}`}
               onClick={() => {
                 onSelectStamp(stamp.id);
@@ -131,7 +140,7 @@ const StampPicker: React.FC<StampPickerProps> = ({
               }}
               title={stamp.name}
               aria-label={stamp.name}
-              aria-selected={selectedStampId === stamp.id}
+              aria-pressed={selectedStampId === stamp.id}
             >
               {stamp.imageDataUrl ? (
                 <img
@@ -167,26 +176,22 @@ const StampPicker: React.FC<StampPickerProps> = ({
               )}
               <span className="stamp-grid-item-label">{stamp.name}</span>
             </button>
+            <button type="button" className="asset-favorite" aria-label={`Favorite ${stamp.name}`} aria-pressed={favorites.includes(stamp.id)}
+              onClick={() => toggle(stamp.id)}>{favorites.includes(stamp.id) ? 'Favorited' : 'Favorite'}</button>
             {/* Delete button outside the stamp button to avoid nested interactive elements */}
-            {filterCategory === 'custom' && onDeleteCustomStamp && (
+            {stamp.category === 'custom' && onDeleteCustomStamp && (
               <button
                 type="button"
                 onClick={() => onDeleteCustomStamp(stamp.id)}
                 title={`Delete custom stamp "${stamp.name}"`}
                 aria-label={`Delete stamp ${stamp.name}`}
-                style={{
-                  position: 'absolute', top: 1, right: 1, zIndex: 1,
-                  width: 14, height: 14, fontSize: '0.55rem',
-                  background: '#dc2626', color: '#fff',
-                  border: 'none', borderRadius: 2, cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  lineHeight: 1, padding: 0,
-                }}
-              >✕</button>
+                className="asset-delete"
+              >Delete</button>
             )}
           </div>
         ))}
       </div>
+      {filteredStamps.length === 0 && <p>No matching stamps. Change the search, category or favorites filter.</p>}
 
       {/* Custom stamp upload UI */}
       {filterCategory === 'custom' && (

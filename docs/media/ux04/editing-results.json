@@ -1,0 +1,301 @@
+[
+  {
+    "engine": "chromium",
+    "version": "151.0.7922.34",
+    "layouts": [
+      {
+        "name": "desktop-room",
+        "width": 1440,
+        "height": 900,
+        "overflow": false,
+        "context": {
+          "x": 1140,
+          "y": 109,
+          "width": 300,
+          "height": 734,
+          "top": 109,
+          "right": 1440,
+          "bottom": 843,
+          "left": 1140
+        },
+        "visualHeight": 900
+      },
+      {
+        "name": "tablet-note",
+        "width": 768,
+        "height": 1024,
+        "overflow": false,
+        "context": {
+          "x": 8,
+          "y": 8,
+          "width": 752,
+          "height": 629.921875,
+          "top": 8,
+          "right": 760,
+          "bottom": 637.921875,
+          "left": 8
+        },
+        "visualHeight": 1024
+      },
+      {
+        "name": "phone-note",
+        "width": 390,
+        "height": 844,
+        "overflow": false,
+        "context": {
+          "x": 8,
+          "y": 8,
+          "width": 374,
+          "height": 629.921875,
+          "top": 8,
+          "right": 382,
+          "bottom": 637.921875,
+          "left": 8
+        },
+        "visualHeight": 844
+      },
+      {
+        "name": "phone-keyboard-equivalent",
+        "width": 390,
+        "height": 460,
+        "overflow": false,
+        "context": {
+          "x": 8,
+          "y": 8,
+          "width": 374,
+          "height": 444,
+          "top": 8,
+          "right": 382,
+          "bottom": 452,
+          "left": 8
+        },
+        "visualHeight": 460
+      },
+      {
+        "name": "zoom-equivalent",
+        "width": 720,
+        "height": 450,
+        "overflow": false,
+        "visualHeight": 450
+      },
+      {
+        "name": "phone-text-200",
+        "width": 390,
+        "height": 844,
+        "overflow": false,
+        "context": {
+          "x": 8,
+          "y": 8,
+          "width": 374,
+          "height": 828,
+          "top": 8,
+          "right": 382,
+          "bottom": 836,
+          "left": 8
+        },
+        "visualHeight": 844
+      }
+    ],
+    "pen": "Chromium native dispatch passed",
+    "touch": "Native two-touch interruption passed",
+    "status": "passed"
+  },
+  {
+    "engine": "firefox",
+    "version": "153.0",
+    "layouts": [
+      {
+        "name": "desktop-room",
+        "width": 1440,
+        "height": 900,
+        "overflow": false,
+        "context": {
+          "x": 1140,
+          "y": 109,
+          "width": 300,
+          "height": 734,
+          "top": 109,
+          "right": 1440,
+          "bottom": 843,
+          "left": 1140
+        },
+        "visualHeight": 900
+      },
+      {
+        "name": "tablet-note",
+        "width": 768,
+        "height": 1024,
+        "overflow": false,
+        "context": {
+          "x": 8,
+          "y": 8,
+          "width": 752,
+          "height": 629.933349609375,
+          "top": 8,
+          "right": 760,
+          "bottom": 637.933349609375,
+          "left": 8
+        },
+        "visualHeight": 1024
+      },
+      {
+        "name": "phone-note",
+        "width": 390,
+        "height": 844,
+        "overflow": false,
+        "context": {
+          "x": 8,
+          "y": 8,
+          "width": 374,
+          "height": 629.933349609375,
+          "top": 8,
+          "right": 382,
+          "bottom": 637.933349609375,
+          "left": 8
+        },
+        "visualHeight": 844
+      },
+      {
+        "name": "phone-keyboard-equivalent",
+        "width": 390,
+        "height": 460,
+        "overflow": false,
+        "context": {
+          "x": 8,
+          "y": 8,
+          "width": 374,
+          "height": 444,
+          "top": 8,
+          "right": 382,
+          "bottom": 452,
+          "left": 8
+        },
+        "visualHeight": 460
+      },
+      {
+        "name": "zoom-equivalent",
+        "width": 720,
+        "height": 450,
+        "overflow": false,
+        "visualHeight": 450
+      },
+      {
+        "name": "phone-text-200",
+        "width": 390,
+        "height": 844,
+        "overflow": false,
+        "context": {
+          "x": 8,
+          "y": 8,
+          "width": 374,
+          "height": 828,
+          "top": 8,
+          "right": 382,
+          "bottom": 836,
+          "left": 8
+        },
+        "visualHeight": 844
+      }
+    ],
+    "status": "passed"
+  },
+  {
+    "engine": "webkit",
+    "version": "26.5",
+    "layouts": [
+      {
+        "name": "desktop-room",
+        "width": 1440,
+        "height": 900,
+        "overflow": false,
+        "context": {
+          "x": 1140,
+          "y": 109,
+          "width": 300,
+          "height": 734,
+          "top": 109,
+          "right": 1440,
+          "bottom": 843,
+          "left": 1140
+        },
+        "visualHeight": 900
+      },
+      {
+        "name": "tablet-note",
+        "width": 768,
+        "height": 1024,
+        "overflow": false,
+        "context": {
+          "x": 8,
+          "y": 8,
+          "width": 752,
+          "height": 629.859375,
+          "top": 8,
+          "right": 760,
+          "bottom": 637.859375,
+          "left": 8
+        },
+        "visualHeight": 1024
+      },
+      {
+        "name": "phone-note",
+        "width": 390,
+        "height": 844,
+        "overflow": false,
+        "context": {
+          "x": 8,
+          "y": 8,
+          "width": 374,
+          "height": 629.859375,
+          "top": 8,
+          "right": 382,
+          "bottom": 637.859375,
+          "left": 8
+        },
+        "visualHeight": 844
+      },
+      {
+        "name": "phone-keyboard-equivalent",
+        "width": 390,
+        "height": 460,
+        "overflow": false,
+        "context": {
+          "x": 8,
+          "y": 8,
+          "width": 374,
+          "height": 444,
+          "top": 8,
+          "right": 382,
+          "bottom": 452,
+          "left": 8
+        },
+        "visualHeight": 460
+      },
+      {
+        "name": "zoom-equivalent",
+        "width": 720,
+        "height": 450,
+        "overflow": false,
+        "visualHeight": 450
+      },
+      {
+        "name": "phone-text-200",
+        "width": 390,
+        "height": 844,
+        "overflow": false,
+        "context": {
+          "x": 8,
+          "y": 8,
+          "width": 374,
+          "height": 828,
+          "top": 8,
+          "right": 382,
+          "bottom": 836,
+          "left": 8
+        },
+        "visualHeight": 844
+      }
+    ],
+    "status": "passed"
+  }
+]

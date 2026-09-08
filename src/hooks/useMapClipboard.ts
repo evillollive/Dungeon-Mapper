@@ -2,6 +2,8 @@ import { useCallback } from 'react';
 import type { DungeonMap, DungeonProject, MapNote, PlacedStamp, Tile } from '../types/map';
 import type { ClipboardBuffer } from './mapStateUtils';
 import { nextIdAfter, updateActiveLevel } from './mapStateUtils';
+import { moveRegionContents } from '../utils/regionEditing';
+import type { RegionSelection } from './useEditorSelection';
 
 let clipboard: ClipboardBuffer | null = null;
 
@@ -146,5 +148,16 @@ export function useMapClipboard(
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSave, activeLevelIndex]);
 
-  return { copySelection, cutSelection, pasteClipboard };
+  const moveRegion = useCallback((region: RegionSelection, dx: number, dy: number) => {
+    setProject(prev => {
+      const current = prev.levels[activeLevelIndex];
+      const moved = moveRegionContents(current, region, dx, dy);
+      if (moved === current) return prev;
+      pushHistory(current, activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, () => moved);
+      debouncedSave(updated);
+      return updated;
+    });
+  }, [setProject, activeLevelIndex, pushHistory, debouncedSave]);
+  return { copySelection, cutSelection, pasteClipboard, moveRegion };
 }

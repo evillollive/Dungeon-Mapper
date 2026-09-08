@@ -8,7 +8,7 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
-**Latest delivery:** UX-03 implements the production unified navigation and design foundations on UX-01 recovery and UX-02 Library/Create. The shared action registry, command migration record, semantic tokens, responsive layout evidence, and compatibility decisions are documented in [the UX-03 handoff](./UX-03-HANDOFF.md). UX-00 participant research remains deferred with zero participants; UX-09 acceptance is still required.
+**Latest delivery:** UX-04 implements focused editing and browser-qualified device parity on merged UX-03 #162. Unified selection, gesture history/cancellation, searchable favorites, responsive sheets and retained viewport behavior are documented in [the UX-04 handoff](./UX-04-HANDOFF.md). The [UX-03 handoff](./UX-03-HANDOFF.md) retains the action registry and design foundation contract. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
 
 ## 1. Product direction
 
@@ -478,6 +478,8 @@ Resolve one decision at a time with the owner: local-first release scope; migrat
 
 ### UX-04: Focused editing and device parity
 
+**Status:** Implemented and browser-qualified on September 8, 2026. Exact-head CI and Agent Merge readiness remain required before landing. [UX-04-HANDOFF.md](./UX-04-HANDOFF.md) records the selection/input model, three-engine evidence, compatibility contracts and physical-device limitations. No participant acceptance is claimed.
+
 **Priority:** P1. **Depends on:** UX-03; creation integration uses UX-02.
 
 **Deliverables:** Co-located tool/material controls, unified contextual selection inspector, searchable/favoritable asset browser, clear Build/Decorate/Look categories, responsive sheets, and complete cancel/undo behavior. Fit newly opened maps once without resetting a returning user's viewport.
@@ -683,8 +685,8 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-00 | Prototype accepted; research deferred | [Owner-approved closeout and dependency exception](./UX-00-HANDOFF.md); no participant acceptance claimed |
 | UX-01 | Foundations merged in #159; browser/storage candidate qualified, Ready with minor follow-ups | [98-pass qualification, provenance and limitations](./UX-01-QUALIFICATION.md); [repository/recovery handoff](./UX-01-HANDOFF.md). Focus-return follow-up and later device/release gates remain; UX-00 research is deferred with zero participants; UX-09 gates are not waived |
 | UX-02 | Implemented and browser-qualified | [Production library, creation, migration contract, and actual evidence](./UX-02-HANDOFF.md): 519 unit/component tests, 33 native library scenario-engine passes, three-engine production creation and stopped-origin offline journeys. UX-00 research remains deferred; UX-09 acceptance is not claimed |
-| UX-03 | Not started | Shell, actions, design tokens |
-| UX-04 | Not started | Editing and device parity |
+| UX-03 | Merged in #162 | [Production shell, action migration and design tokens](./UX-03-HANDOFF.md) |
+| UX-04 | Implemented and browser-qualified | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); exact-head CI/Agent Merge and later physical-device/research gates remain |
 | UX-05 | Not started | Visibility and player projection |
 | UX-06 | Not started | Session lifecycle and local display |
 | UX-07 | Not started | Art vertical slice and pack pipeline |
