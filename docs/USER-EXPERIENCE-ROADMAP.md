@@ -323,7 +323,7 @@ Use original commissioned art or assets with explicitly compatible permissions. 
 
 Retain IndexedDB; introduce a repository interface rather than coupling each screen to object-store calls.
 
-**UX-01 follow-up implementation:** local UUID project records, atomic migration of the former autosave, per-project CAS/serialized saves, URL-scoped tab selection, and a minimal chooser/recovery manager are implemented for review. This is not the UX-02 Library. The owner approved pausing named destructive actions for explicit cleanup at 20 durable checkpoints per project while ordinary edits continue saving. Legacy originals are outside checkpoint cleanup. See [UX-01 handoff](./UX-01-HANDOFF.md) for actual keys, APIs, evidence, and unclosed qualification gates.
+**UX-01 follow-up closeout:** local UUID project records, atomic migration of the former autosave, per-project CAS/serialized saves, URL-scoped tab selection, and a minimal chooser/recovery manager are merged in [#159](https://github.com/evillollive/Dungeon-Mapper/pull/159). Independent browser/storage qualification is **Ready with minor follow-ups**, with 98 scenario-engine passes and no remaining failed data-integrity scenarios. This is not the UX-02 Library or UX-09 release certification. The owner approved pausing named destructive actions for explicit cleanup at 20 durable checkpoints per project while ordinary edits continue saving. Legacy originals are outside checkpoint cleanup. See [UX-01 handoff](./UX-01-HANDOFF.md) for keys/APIs and [qualification](./UX-01-QUALIFICATION.md) for exact candidate/merge provenance, evidence and remaining limitations.
 
 Proposed records:
 
@@ -677,7 +677,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | Package | Status | Completion reference / next gate |
 | --- | --- | --- |
 | UX-00 | Prototype accepted; research deferred | [Owner-approved closeout and dependency exception](./UX-00-HANDOFF.md); no participant acceptance claimed |
-| UX-01 | Project identity, migration, switching and general recovery follow-up implemented for review; milestone incomplete pending qualification | [Repository API, retained originals, explicit 20-checkpoint cleanup, previews and remaining gates](./UX-01-HANDOFF.md); UX-00 research remains deferred with zero participants; UX-09 gates are not waived |
+| UX-01 | Foundations merged in #159; browser/storage candidate qualified, Ready with minor follow-ups | [98-pass qualification, provenance and limitations](./UX-01-QUALIFICATION.md); [repository/recovery handoff](./UX-01-HANDOFF.md). Focus-return follow-up and later device/release gates remain; UX-00 research is deferred with zero participants; UX-09 gates are not waived |
 | UX-02 | Not started | Local library and creation |
 | UX-03 | Not started | Shell, actions, design tokens |
 | UX-04 | Not started | Editing and device parity |
