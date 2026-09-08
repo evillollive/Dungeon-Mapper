@@ -1,127 +1,120 @@
-# UX-01A: save trust and compatibility foundations
+# UX-01: project identity, save trust, and recovery foundations
 
-**Baseline:** `fbbfb2b`, including UX-00 PR #157.
+**Baseline:** `34f09851959a7fd5aa5d5818e52276af60dac5b5`, merged #158.
 
-**Scope:** Bounded UX-01A implementation with an owner-requested follow-up for explicit fog repair and named destructive-action checkpoints. This is not completion of UX-01 or authorization to start UX-02. UX-00 participant research remains explicitly deferred by the owner, with zero participants. UX-09 qualification gates are unchanged.
+**Status:** Follow-up implementation for review, not a declaration that UX-01 is complete. The owner authorized the remaining UX-01 foundations. Parent coordination owns final review, broader qualification, and merge. UX-00 participant research remains explicitly deferred with **zero participants**. UX-09 release gates are not waived.
 
-## Schema and migration
+## Current architecture
 
-`src/utils/projectSchema.ts` exposes schema version **1**, `decodeProject(unknown)`, and `encodeProject(project)`. Portable backups use `{ schemaVersion: 1, project }`; the device adds `storageRevision` outside the project payload.
+The existing IndexedDB database `dungeon-mapper`, version **1**, and `maps` store remain. No database-version upgrade is required. Project content remains portable schema **1**. No authored/session split or visibility migration is introduced.
 
-The decoder accepts a versioned envelope, an unversioned multi-level project, or a legacy bare map with `tiles`. It preserves unknown project/map/asset fields, promotes libraries carried by bare maps without removing their original fields, and validates nested arrays, enums, finite numbers, dimension/grid agreement, token footprints, and level-link indices. Existing custom themes, stamp images/SVG definitions, templates, room shapes, rivers, fog, annotations, and links remain project content. Note descriptions are unchanged; visibility migration remains UX-05.
-
-Decoding does not mutate the original. Missing legacy optional fields remain absent in the portable payload, except that missing stair links become an empty array; existing editor defaults are applied when opening the validated project. Unversioned IndexedDB records are upgraded on their next successful save, with their prior value retained as `previous-save`. localStorage migration commits once and retains the source bytes.
-
-Validation allows legitimate off-grid notes, rooms, vectors, markers, and stair cells retained by existing resize behavior. Standard decoding still rejects mismatched `fog` or `explored` grids. **Explicit repair:** `previewFogRepair()` prepares a separate validated project and a per-level/per-layer summary of old/new dimensions, added cells, and excluded cells. It accepts only non-empty rectangular boolean grids with a dimension mismatch; ragged/non-boolean grids, unrelated invalid fields, and future schemas remain rejected. New cells are covered in static fog and unexplored in explored memory. Other project content is unchanged.
-
-Use **Review fog repair** after a failed device restore, or **Recovery copies > Review a fog repair file** for a legacy file. Preview and cancellation perform no writes. Confirmation commits before opening the repaired project. A stored original is retained in the same CAS transaction; for a selected file, the file itself is never modified, its raw content remains downloadable from the preview, and the current device project is checkpointed. A competing revision or quota failure keeps the preview available and does not open the repaired candidate.
-
-## Storage and save contract
-
-The existing IndexedDB database `dungeon-mapper`, version 1, and `maps` object store are retained. This is still one active `autosave`, not a project catalog.
-
-| Key | Contents and retention |
+| Key | Contract |
 | --- | --- |
-| `autosave` | Versioned project envelope with a unique `storageRevision` for optimistic concurrency. |
-| `previous-save` | The complete prior committed autosave, replaced on each successful save. |
-| `replacement-recovery` | Up to five previous committed projects retained for replacement, generation, clear, resize, level deletion, template application, or explicit recovery. New entries include a reason. Ordinary subsequent edits do not evict these copies. The next checkpoint beyond the limit evicts the oldest checkpoint. |
-| localStorage `dungeon-mapper-autosave` | Original legacy bytes retained after migration. Migration only runs if IndexedDB has no autosave. An existing IndexedDB project always takes precedence. |
+| `project:<UUID>` | One local project record: `{ schemaVersion, project, storageRevision, localProjectId, createdAt, updatedAt }`. |
+| `project-migration-v1` | ID of the project migrated from the former single autosave. Created in the same transaction as that project. Not a shared active-selection setting. |
+| `previous:<UUID>` | The complete prior committed record, rotated on each successful save of this project. |
+| `recovery:<UUID>` | Up to 20 explicitly retained checkpoints, each with an ID, project ID, timestamp, reason, and complete predecessor data. |
+| `autosave`, `previous-save`, `replacement-recovery` | Retained legacy archive. Migration does not rewrite or delete these keys. Accessible through Recovery copies. |
+| localStorage `dungeon-mapper-autosave` | Original bytes retained verbatim, including whitespace. Used as migration input only when IndexedDB `autosave` is absent. |
 
-`src/utils/storage.ts` provides:
+Local identity is a generated UUID outside the portable payload. It does not depend on project name, level names, or imported IDs. Project names edit `DungeonProject.name`; map names still edit the current level's metadata. Imported `id`, `sourceProjectId`, and other portable extension fields are preserved as content/provenance, never used as local repository keys. This slice does not introduce a new portable identity schema or claim a cross-device identity registry.
 
-- `loadProject(): Promise<{ project, revision }>`: validates before returning a project. Absence is distinct from failure. Unsupported or invalid data throws `RestoreError` with the original value and expected revision.
-- `saveProject(project, expectedRevision, checkpoint?): Promise<string>`: validates, reads the current revision, retains recovery data, and writes in one readwrite transaction. `checkpoint` accepts a boolean or a named action reason. Resolves only on transaction completion. An aborted transaction, including one whose put request succeeded first, is a failure.
-- `loadRecoveryRecords()`: reads local copies for download, including original localStorage data. Unreadable recovery metadata is reported rather than rendered or silently discarded.
-- `downloadRecoveryData()`: downloads the original object as JSON, or preserves original localStorage text exactly.
+New, import, and sample paths allocate separate local IDs. Repeated imports of the same backup cannot alias each other. Prior projects remain in the chooser rather than depending on a rotating replacement archive. Creating a new project is initially an in-memory action with a queued first save; it is not labeled saved before transaction completion. A failed first save retains the candidate in memory and leaves all earlier project records intact.
 
-All connections close when their transactions finish. A blocked open reports an actionable error; a late successful connection after that failure is closed. Database version changes close existing connections.
+The current selection is `?project=<local ID>` in the tab's URL, updated after successful initialization/save. Reload restores that selection. Another tab's selection cannot change this tab. Without a selection URL, startup uses the migration project or an existing catalog record, or creates an unsaved blank candidate when the catalog is empty. The browser Back button is not a project-navigation history in this slice.
 
-`src/utils/saveCoordinator.ts` serializes writes within an editor and coalesces queued edits to the latest project. Newer edits cannot be marked saved by completion of an older transaction. Revision comparison in the transaction prevents stale cooperating tabs from automatically overwriting each other. Conflicts stop retry and automatic writes; edits remain in memory and can be exported.
+## Migration and repository API
 
-Its `replace()` path commits a repaired-file replacement against the current revision before opening it. The editor becomes inert and global shortcuts pause during that transaction, while save/recovery feedback stays accessible. A failed transaction restores the unchanged prior save state and surfaces the repair error; a revision conflict stops automatic writes. If an unexpected internal edit arrives during replacement, that newer in-memory work is preserved and a conflict is surfaced rather than discarding it.
+`src/utils/projectRepository.ts` owns catalog loading, migration, recovery listing, and explicit checkpoint deletion. `src/utils/storage.ts` retains the shared database lifecycle and save transaction.
+
+- `loadProject(projectId?) -> { project, revision, projectId, checkpointCount }`: validates before opening the editor. Missing, unsupported, or invalid selected records produce retained-source diagnostics rather than an editable blank replacement.
+- `saveProject(project, expectedRevision, checkpoint?, projectId?) -> revision`: validates and compares the expected revision, stores the previous record/checkpoint, and writes the project in one readwrite transaction. An explicit ID addresses that project only. The optional no-ID path is the historical single-autosave compatibility API, not the application writer.
+- `listProjects()`: minimal catalog summaries with original values and per-record diagnostics. Invalid records remain downloadable, not hidden or silently repaired.
+- `projectRecoveryRecords(projectId?)`: current-project copies plus the legacy archive and original localStorage bytes. Invalid recovery metadata is surfaced with its retained source.
+- `recoverLegacyProject(project, expectedRevision)`: commit-gated recovery of an unsupported/invalid legacy source. Creates the new project and migration marker atomically, retains the original source unchanged, and rejects a competing migration or changed source revision.
+- `checkpointCount(projectId)`: reads capacity for preflight. Malformed lists are errors, not silently reset.
+- `deleteCheckpoint(projectId, checkpointId, expectedData)`: transactionally compares the selected checkpoint's ID and source before removing only that checkpoint. Missing/changed copies conflict. This API cannot delete projects, legacy archives, or localStorage originals.
+- `downloadRecoveryData(data, filename?)`: downloads objects as JSON or original strings verbatim. Its attached download link is removed after use; the object URL stays alive for 60 seconds so the browser can consume it. Editable project export uses the same delayed-release policy.
+
+Migration compares and writes inside one transaction, including its marker. Concurrent migrations resolve to one project identity. A put/add request succeeding is not success if its transaction later aborts. A failed migration leaves both source and catalog unchanged and keeps the editor blocked. Retrying is idempotent.
+
+Database connections close on completion/abort and on version changes. Blocked opens report an actionable error and close a late successful connection. An older client can still write the legacy archive, but cannot automatically overwrite an already migrated project record. Close older application tabs and export backups before rolling back.
+
+## Save coordination and switching
+
+`SaveCoordinator` serializes writes and coalesces pending edits. Only the latest completed transaction can produce Saved. Each editor keeps its own local ID and expected revision. Same-project stale writes stop automatic saving/retry and retain in-memory work; different projects can save independently.
+
+Switching requires a clean, non-writing editor and pauses editing/global shortcuts while the target loads. A failed target read leaves the prior project and revision selected. A newer edit arriving during a successful switch blocks activation with a conflict. A newer edit arriving during a failed switch is explicitly Failed, not falsely Saved, and can retry against the original project.
+
+`useProjectDispatch` associates editor mutation callbacks with a coordinator generation. New projects, successful switches, and restores invalidate prior callbacks. A late upload callback from a prior project reports that it was not applied rather than writing into the newly opened project. Selection, pending stair-link selection, canvas gestures, and memory undo reset across these boundaries.
+
+Recovery of a healthy current project uses `replace()`: validate, require clean state/capacity, write and retain the predecessor with CAS, then hydrate the editor. Quota failure leaves the prior content and preview available. Conflict stops automatic writes. Recovery after a failed initial project restore uses the retained expected revision and the same project key.
 
 ```mermaid
 stateDiagram-v2
     [*] --> Restoring
-    Restoring --> Unsaved: no stored project
-    Restoring --> Saved: validated project restored
-    Restoring --> RestoreFailed: storage or validation failure
-    Unsaved --> Saving: edit
+    Restoring --> Unsaved: empty catalog
+    Restoring --> Saved: validated selected project
+    Restoring --> RestoreFailed: invalid source or storage failure
+    Unsaved --> Saving: first edit or new project
     Saved --> Saving: edit
-    Saving --> Saving: newer edit queued
     Saving --> Saved: latest transaction completed
     Saving --> Failed: transaction failed
-    Failed --> Saving: retry or new edit
-    Saving --> Conflict: stored revision changed
-    Saved --> Replacing: confirm repaired-file replacement
-    Replacing --> Saved: transaction committed, or failure with original unchanged
-    Replacing --> Conflict: stale revision or unexpected concurrent edit
-    RestoreFailed --> Saved: explicit validated recovery transaction completed
+    Saving --> Conflict: stale project revision
+    Saved --> Opening: switch or restore
+    Opening --> Saved: target loaded or restore committed
+    Opening --> Saved: failure without pending edits, original retained
+    Opening --> Failed: failed switch with pending original edits
+    Opening --> Conflict: competing revision or unexpected edit
+    Failed --> Saving: explicit retry
+    RestoreFailed --> Saved: explicit recovery committed
 ```
 
-## User-facing behavior
+## Recovery management and retention
 
-`SaveHealth.tsx` exposes Restoring, Not saved yet, Saving, Saved on this device, Save failed, and Save conflict. Offline is an independent indication, not a save failure. Existing editor layout and commands are retained, with a compact save/recovery strip rather than a redesigned shell.
+**Owner-approved policy:** pause for explicit cleanup at **20 durable checkpoints per project**. Ordinary edits must continue saving. Named destructive-action guards check capacity before mutating the in-memory map, and the repository rechecks in the CAS transaction. Cleanup refreshes coordinator capacity. This changes the old five-copy silent rotation policy only for new project records; legacy archives remain untouched.
 
-The editor and its global shortcuts are unavailable until restore succeeds or reports an empty store. Failed restore never exposes a fresh editable blank map that could overwrite the original. The failure screen offers retry, original-data download when available, recovery-copy downloads, and an explicit recovery-file import when the original revision is known. That import validates before asking to replace; it retains the unreadable original in the same transaction, then opens the recovered project only after commit. A stale revision, invalid file, or storage failure leaves the original intact.
+Named checkpoints cover clear, full-level generation, selection generation, resize, level deletion, scene-template application, explicit fog repair, and general recovery restore. Each snapshot is whole-project scope, even when its reason names a current-level action. New/import/sample do not need replacement checkpoints because the prior project itself remains saved.
 
-New/import/sample replacement, current-level generation, selected-region generation, clear, resize, level deletion, and scene-template application are paused while saving, after save failure, or during conflict. This prevents those actions from discarding newer in-memory work that has not committed. A saved predecessor is checkpointed when the resulting save commits. Until then, the original remains the active persisted record. Blocked generation/template actions keep their dialogs open and do not announce success.
+Recovery copies offers metadata and validated whole-project previews with project title, every level's actual dimensions and note/token counts, and asset-library counts. Cancel does not write. Restore replaces all current project contents while preserving its local ID and retaining its committed predecessor. Failed/quota/conflict restores keep their preview/source available. Preview files are never modified.
 
-Clear and generation confirmations identify the current-level scope; level deletion identifies its affected stair links. Other levels remain intact. Resize now also creates a memory undo snapshot. This is a bounded pre-change checkpoint policy, not persisted undo for every edit.
+Checkpoint deletion requires explicit confirmation and targets the selected checkpoint only. The UI warns to download first. At capacity, the message routes users to Recovery copies for cleanup; it does not discard the oldest copy or attach a doomed checkpoint to an ordinary edit. A concurrent writer can still invalidate a previously clean revision; CAS then stops the action's save rather than silently overwriting.
 
-Backup controls explicitly warn that editable files include DM-only content. Save failure leaves Export backup and Retry save available; conflict leaves backup export available without permitting blind retry. The browser receives a before-unload warning while work is unsaved, failed, or conflicted, but browser termination can still bypass that warning.
+Backups and previews explicitly warn about DM-only/private content. Original data, current in-memory work, prior saves, checkpoint records, and legacy sources remain downloadable. Invalid/future records provide diagnostics and raw-source export. No unrelated corruption is inferred or silently repaired.
 
-Map dimension selects now include the actual loaded dimension, not only fixed presets. A 40 x 40 sample and other valid non-preset dimensions display truthfully without causing a resize. Resizing also resizes explored fog memory alongside static fog.
+**Durable versus memory-only:** checkpoints and the rotating previous-save slot survive reload only after their transactions commit. Undo/redo remains per-level memory history and resets on project switching, new/import/sample, or restore. Ordinary painting, clipboard operations, and individual layer deletions do not create unbounded persistent undo. Forced termination can lose debounced edits. Browser data deletion, eviction, device loss, and quota exhaustion can defeat local recovery; device copies are not external backups.
 
-## Recovery and compatibility limits
+## Compatibility retained
 
-These are bounded local recovery copies, not a full durable history or an external backup. Browser storage deletion, device loss, storage eviction, or quota exhaustion can defeat local recovery. Undo remains memory-only and is not restored on reload.
+The decoder accepts versioned v1 envelopes, unversioned multi-level projects, and bare legacy maps with `tiles`. Nested unknown project/map/asset fields, custom themes, stamp definitions/images, templates, every current layer, and existing note descriptions remain portable content. A project-level `schemaVersion` extension is interpreted inside an explicit envelope rather than confused with the envelope version.
 
-Only successfully committed predecessors can be retained. Debounced work lost through a forced tab/process termination is not promised durable. An unsaved blank project is not labeled saved merely because the application loaded. Ordinary painting, clipboard edits, and individual/per-layer deletions still use the previous-save copy and memory undo, not named checkpoints for every action. There is no browsable version-history manager or general restore preview; the new preview is specifically for fog-dimension repair.
+Fog repair remains explicit and limited to nonempty rectangular boolean `fog`/`explored` grids whose dimensions disagree with valid tiles. It preserves intersection cells, adds covered static fog/unexplored memory, and reports added/excluded cells per level/layer. Ragged/non-boolean grids, unrelated corruption, and future schemas are rejected. The original is retained before the repaired project opens.
 
-Revision protection requires clients using the new repository contract. Already-open older application versions cannot be retroactively made cooperative; close older tabs before using the updated application. The new client detects a changed legacy record instead of blindly overwriting it.
+Dimension selectors continue displaying actual loaded values, including 40 x 40 samples and non-preset sizes. Resize covers explored memory. No generator, PNG/SVG rendering, print, player visibility, offline architecture, or asset behavior is intentionally redesigned.
 
-Recovery imports preserve originals locally but can fail if there is insufficient space to keep both. Export original and in-memory backups before clearing any browser data. No cleanup of legacy bytes is automatic.
+## Evidence and qualification boundary
 
-## Developer evidence
+This follow-up uses existing Vitest, TypeScript/Vite, ESLint, and the available external Playwright SDK, without new dependencies or changed guardrails. `useMapState.ts` stays below its unchanged 1,400-line limit.
 
-Run on September 7, 2026, against this worktree:
+Targeted automated evidence covers schema/repair/export compatibility, coordinator serialization and switching races, hook integration, retention preflight/cleanup, recovery controls, dimensions/dialog behavior, and module guardrails. `src/test/projectFoundations.browser.mjs` exports `runProjectFoundations(browser, origin?)`, defaults to dev port 5191, and creates/closes a fresh browser context for every scenario. It covers native IndexedDB migration, concurrent CAS, transaction abort, quota injection, independent identities, explicit retention/deletion, retained malformed archives, chooser/reload/two-tab behavior, recovery preview/cancel/restore, repeated import/New isolation, fog repair, and loaded-editor offline saving.
 
-```sh
-npm run build
-npm test -- src/utils/__tests__/projectSchema.test.ts src/utils/__tests__/projectRepair.test.ts src/utils/__tests__/exportProjectJSON.test.ts src/utils/__tests__/saveCoordinator.test.ts src/hooks/__tests__/savePersistence.test.tsx src/hooks/__tests__/mapStateUtils.test.ts src/hooks/__tests__/mapStatePerformance.test.ts src/hooks/__tests__/mapStateRivers.test.ts src/components/__tests__/saveTrust.test.tsx src/components/__tests__/uiBehavior.test.tsx src/components/__tests__/dialogs.test.tsx src/utils/__tests__/exportRender.test.ts
-```
+September 7, 2026 evidence: production build succeeded; **179 tests across 14 targeted files passed**; changed-scope ESLint and the unchanged module guardrails passed. **Ten isolated Chromium browser scenario groups passed**, including native transactions and actual download events. A read-only review identified a failed-switch/pending-edit status race, which was corrected and covered by a coordinator regression; generation-bound callbacks also have an integration regression. Cross-engine and production-offline qualification is separately owned by QA and is not claimed by these results.
 
-The follow-up production build succeeded; 160 cases across twelve targeted files passed. Changed-scope ESLint reported no errors and nine pre-existing dependency warnings in `useLevelManagement.ts`, reproduced against the previous committed version. Build retains the existing large-chunk warning. jsdom reports unsupported document navigation from download-link exercises; those cases pass and actual browser download events were also exercised. The initial slice had 120 cases across nine files.
+The earlier `saveTrust.browser.js` and `recoveryChanges.browser.js` are historical #158 single-autosave scenarios. Their key assumptions should not be used to qualify the new catalog without adaptation. The new script directly exercises project-record semantics. Python's helper was unavailable; no new browser runner was installed in the repository.
 
-Schema fixtures in `projectSchema.test.ts` include a minimal bare map, a full multi-level project with custom assets and every current layer, every bundled sample, invalid nested fields, future versions, unknown fields, migration idempotence, and portable JSON round trips. Coordinator cases deliberately hold a transaction pending while newer edits arrive, then assert that only the latest committed state becomes Saved.
+Quota and transaction-abort scenarios are injected failures, not claims of realistic device exhaustion. Development-server offline editing is not production offline cold-start qualification. The existing large-bundle warning and development manifest-path observation are not resolved by this slice.
 
-CI on `1587a21` exposed the existing module-size guardrail: `useMapState.ts` was 1,417 lines against a 1,400-line limit. The pure resize transformation was extracted into `mapStateUtils.ts` as `resizeMapContent`, keeping the hook responsible for checkpoint/history/save orchestration. The hook is now 1,388 lines; the limit and formatting policy are unchanged. Two direct resize regressions were added, and the targeted guardrail, state-utility, and persistence suites passed all 46 cases. Production build and extraction-scope lint also passed.
+## Remaining UX-01 and release gates
 
-Persistent browser regression script: `src/test/saveTrust.browser.js`. Start the existing dev server with `npm run dev -- --host 127.0.0.1 --port 5191 --strictPort`, then execute that file through Playwright MCP `browser_run_code_unsafe`. The script creates and closes fresh contexts, never uses existing personal browser storage, and completed twelve scenario groups:
+- Parent review and independent QA against the exact follow-up commit before merge.
+- Supported-engine production builds under the real Pages base path, cold-start/reload offline, service-worker update behavior, and storage-failure journeys.
+- Realistic project-size retention/quota pressure, interruption/device eviction behavior, and external-backup recovery qualification.
+- Broader keyboard, nonvisual, touch, and responsive workflows for the chooser and recovery manager.
+- Preserve deterministic generation, asset fidelity, all exports/print, and existing shortcuts through final qualification.
+- Participant research remains deferred with zero participants; UX-09 acceptance is not claimed.
 
-- Native IndexedDB migration/revision/replacement and transaction-abort cases.
-- Unsupported/malformed data retention and a simulated blocked-open event.
-- Visible save status and project reload.
-- Two real tabs with stale-write conflict and retained in-memory work.
-- Simulated quota exhaustion, backup availability, and successful explicit retry.
-- Local saving while an already-loaded editor is offline.
-- Failed-restore UI, raw download event, invalid recovery-file rejection, successful recovery import, 40 x 40 selects, and retained original after reload.
-
-Quota exhaustion is injected at IndexedDB `put`; blocked open is a synthetic blocked event. These are not real device exhaustion or a live database-version upgrade. The offline case is not an offline cold-start or production service-worker qualification. The existing development manifest-path error remains outside this slice. The Python browser helper was absent, so the available Playwright MCP was used without adding dependencies or a new test runner.
-
-The additional `src/test/recoveryChanges.browser.js` function uses the same server and tool, with a fresh context. Five further scenario groups passed: cancel/confirm clear with other-level preservation and a full checkpoint surviving later edits/reload; five-copy retention under native transactions; fog repair preview/cancel/quota failure/retry and exact original retention after reload; a second tab writing between preview and confirmation; and a repaired legacy-file import. The original twelve browser groups were rerun successfully after integration.
-
-## Remaining UX-01 gates
-
-- Broader persisted history/recovery management and general restore previews, beyond one previous save and five named pre-change copies.
-- Broader invalid-data diagnostics or repair beyond the supported rectangular fog-dimension mismatch; no speculative repair of unrelated corruption.
-- UX-01B project-record identity and non-destructive switching foundations, before UX-02 Library work.
-- Expand fixtures and browser qualification for supported browsers, reload/offline failure journeys, and retention/quota behavior at realistic project sizes.
-- Preserve all existing exports, deterministic generators, assets, and shortcuts through those additional slices.
-
-No authored-versus-session-progress separation, note-visibility migration, player projection, remote interaction, Library, or production art redesign is implemented here.
+There is no UX-02 searchable library, tags, thumbnails, trash, guided creation, session-state split, visibility migration, remote/player projection, multiplayer, or broad art redesign in this follow-up.
 
 ## Rollback
 
-Before switching to an older application, download editable backups and any original/recovery records needed. Do not assume old builds understand the versioned envelope. Work on copies when extracting the `project` payload for an older build, and keep the original versioned file. Rolling back code is not authorization to delete IndexedDB or localStorage.
+Export editable project backups and retained original/checkpoint data first. Older builds do not understand project-record keys and may reopen the old autosave archive, which is not necessarily the latest project. Do not delete IndexedDB or localStorage to roll back. Keep original versioned files when extracting a payload for an older build.

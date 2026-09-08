@@ -4,12 +4,14 @@ import { exportProjectJSON, importProjectJSON } from '../export';
 import { encodeProject } from '../projectSchema';
 
 afterEach(() => {
+  vi.useRealTimers();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
 });
 
 describe('project JSON import/export', () => {
   it('downloads a versioned envelope with the existing backup filename', async () => {
+    vi.useFakeTimers();
     const project = createDefaultProject();
     project.name = 'Backup Name';
     let downloaded: Blob | undefined;
@@ -25,6 +27,8 @@ describe('project JSON import/export', () => {
     expect(filename).toBe('Backup_Name.json');
     expect(downloaded?.type).toBe('application/json');
     expect(JSON.parse(await downloaded!.text())).toEqual(encodeProject(project));
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled();
+    await vi.advanceTimersByTimeAsync(60_000);
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:backup');
   });
 

@@ -4,13 +4,15 @@ import MapHeader from '../MapHeader';
 import SaveHealth from '../SaveHealth';
 import SceneTemplateDialog from '../SceneTemplateDialog';
 import { createDefaultProject } from '../../hooks/mapStateUtils';
-import { downloadRecoveryData, loadRecoveryRecords } from '../../utils/storage';
+import { downloadRecoveryData } from '../../utils/storage';
+import { projectRecoveryRecords } from '../../utils/projectRepository';
 import { exportProjectJSON } from '../../utils/export';
 
 vi.mock('../../utils/storage', () => ({
   downloadRecoveryData: vi.fn(),
   loadRecoveryRecords: vi.fn(),
 }));
+vi.mock('../../utils/projectRepository', () => ({ projectRecoveryRecords: vi.fn(), deleteCheckpoint: vi.fn() }));
 vi.mock('../../utils/export', () => ({
   exportProjectJSON: vi.fn(),
   importProjectJSON: vi.fn(),
@@ -56,7 +58,7 @@ describe('save trust controls', () => {
 
   it('offers the untouched unsupported original, not a blank project backup', async () => {
     const original = { schemaVersion: 999, project: { unknown: 'preserve' } };
-    vi.mocked(loadRecoveryRecords).mockResolvedValue([]);
+    vi.mocked(projectRecoveryRecords).mockResolvedValue([]);
     render(<SaveHealth state={{ phase: 'restore-failed', message: 'Unsupported version' }}
       original={original} project={createDefaultProject()} onRetry={vi.fn()} onRecover={vi.fn()} />);
     expect(screen.queryByRole('button', { name: 'Export backup' })).not.toBeInTheDocument();

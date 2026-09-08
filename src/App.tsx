@@ -9,6 +9,7 @@ import InitiativePanel from './components/InitiativePanel';
 import IconPicker from './components/IconPicker';
 import MapHeader, { type MapHeaderHandle } from './components/MapHeader';
 import SaveHealth from './components/SaveHealth';
+import ProjectChooser from './components/ProjectChooser';
 import GenerateHub from './components/GenerateHub';
 import CustomThemeDialog from './components/CustomThemeDialog';
 import ShortcutsHelp from './components/ShortcutsHelp';
@@ -111,7 +112,7 @@ function App() {
   const {
     map,
     project,
-    saveState, retrySave, originalStoredData, recoverProjectData,
+    saveState, retrySave, originalStoredData, recoverProjectData, projectId, switchProject, setProjectName, refreshCheckpoints, projectGeneration,
     activeLevelIndex,
     selectedNoteId,
     setSelectedNoteId,
@@ -340,6 +341,16 @@ function App() {
   const [stairLinkSource, setStairLinkSource] = useState<{
     level: number; x: number; y: number;
   } | null>(null);
+  const [selectionGeneration, setSelectionGeneration] = useState(projectGeneration);
+  if (selectionGeneration !== projectGeneration) {
+    setSelectionGeneration(projectGeneration);
+    setSelection(null);
+    setSelectedTokenId(null);
+    setSelectedPlacedStampId(null);
+    setSelectedRoomShapeId(null);
+    setStairLinkSource(null);
+    setShowGenerateHub(false);
+  }
 
   // Clear pending source when the tool changes away from link-stair.
   const handleSetActiveTool = useCallback((tool: ToolType | ((prev: ToolType) => ToolType)) => {
@@ -987,7 +998,7 @@ function App() {
 
   if (saveState.phase === 'restoring' || saveState.phase === 'restore-failed') {
     return <div className="app">
-      <SaveHealth state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
+      <SaveHealth key={projectId} projectId={projectId} onRefreshCheckpoints={refreshCheckpoints} state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
     </div>;
   }
 
@@ -998,7 +1009,9 @@ function App() {
     <ActionContext.Provider value={actionContextValue}>
     <div className="app">
       <a className="skip-link" href="#dm-canvas-area">Skip to map canvas</a>
-      <SaveHealth state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
+      <SaveHealth key={projectId} projectId={projectId} onRefreshCheckpoints={refreshCheckpoints} state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
+      <ProjectChooser projectId={projectId} name={project.name} onRename={setProjectName}
+        onSwitch={switchProject} disabled={!['saved', 'unsaved'].includes(saveState.phase)} locked={saveState.phase === 'replacing'} />
       <div className="editor-workspace" inert={saveState.phase === 'replacing'}>
       <MapHeader
         ref={headerRef}
@@ -1332,7 +1345,7 @@ function App() {
           </nav>
         )}
         <main id="dm-canvas-area" className="canvas-area" aria-label="Map canvas area">
-          <MapCanvas
+          <MapCanvas key={projectGeneration}
             ref={canvasRef}
             map={map}
             activeTool={activeTool}

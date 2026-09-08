@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDefaultProject } from '../../hooks/mapStateUtils';
 import { SaveCoordinator } from '../saveCoordinator';
-import { saveProject, StorageConflictError } from '../storage';
+import { loadProject, saveProject, StorageConflictError } from '../storage';
 
 vi.mock('../storage', () => ({
   saveProject: vi.fn(),
+  loadProject: vi.fn(),
+  MAX_PROJECT_CHECKPOINTS: 20,
   StorageConflictError: class extends Error {},
 }));
 
@@ -18,6 +20,93 @@ function deferred<T>() {
 describe('revision-aware save coordinator', () => {
   beforeEach(() => { vi.useFakeTimers(); vi.mocked(saveProject).mockReset(); });
   afterEach(() => { vi.useRealTimers(); });
+
+  it('keeps the old identity while switching and saves only to the selected project afterward', async () => {
+    const target = deferred<Awaited<ReturnType<typeof loadProject>>>();
+    vi.mocked(loadProject).mockReturnValueOnce(target.promise);
+    const writer = new SaveCoordinator();
+    writer.initialize('a-rev', true, 'a');
+    const switching = writer.switchProject('b');
+    expect(writer.getProjectId()).toBe('a');
+    expect(writer.getSnapshot().phase).toBe('replacing');
+    expect(() => writer.startProject(createDefaultProject())).toThrow();
+    target.resolve({ project: createDefaultProject(), revision: 'b-rev', projectId: 'b' });
+    await switching;
+    vi.mocked(saveProject).mockResolvedValueOnce('b-next');
+    writer.schedule(createDefaultProject());
+    await vi.advanceTimersByTimeAsync(500);
+    expect(saveProject).toHaveBeenLastCalledWith(expect.anything(), 'b-rev', false, 'b');
+  });
+
+  it('refuses a switch while an old save is pending and retains unexpected edits during a switch', async () => {
+    const writer = new SaveCoordinator();
+    writer.initialize('a-rev', true, 'a');
+    const target = deferred<Awaited<ReturnType<typeof loadProject>>>();
+    vi.mocked(loadProject).mockReturnValueOnce(target.promise);
+    const switching = writer.switchProject('b');
+    const failure = expect(switching).rejects.toThrow(/Newer edits/);
+    writer.schedule({ ...createDefaultProject(), name: 'Keep in memory' });
+    target.resolve({ project: createDefaultProject(), revision: 'b-rev', projectId: 'b' });
+    await failure;
+    expect(writer.getProjectId()).toBe('a');
+    expect(writer.getSnapshot().phase).toBe('conflict');
+    await expect(writer.switchProject('b')).rejects.toThrow();
+    expect(saveProject).not.toHaveBeenCalled();
+  });
+
+  it('leaves a failed switch on the prior project and revision', async () => {
+    vi.mocked(loadProject).mockRejectedValueOnce(new Error('Unreadable target'));
+    const writer = new SaveCoordinator();
+    writer.initialize('a-rev', true, 'a');
+    await expect(writer.switchProject('b')).rejects.toThrow('Unreadable target');
+    expect(writer.getProjectId()).toBe('a');
+    expect(writer.getSnapshot().phase).toBe('saved');
+  });
+
+  it('never labels edits saved when they arrive during a failed target load', async () => {
+    const target = deferred<Awaited<ReturnType<typeof loadProject>>>();
+    vi.mocked(loadProject).mockReturnValueOnce(target.promise);
+    const writer = new SaveCoordinator();
+    writer.initialize('a-rev', true, 'a');
+    const switching = writer.switchProject('b');
+    const failure = expect(switching).rejects.toThrow('Read failed');
+    const pending = { ...createDefaultProject(), name: 'Late upload' };
+    writer.schedule(pending);
+    target.reject(new Error('Read failed'));
+    await failure;
+    expect(writer.getSnapshot().phase).toBe('failed');
+    expect(writer.getProjectId()).toBe('a');
+    vi.mocked(saveProject).mockResolvedValueOnce('a-next');
+    writer.retry();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(saveProject).toHaveBeenLastCalledWith(pending, 'a-rev', false, 'a');
+    expect(writer.getSnapshot().phase).toBe('saved');
+  });
+
+  it('gives copies new local identity without treating portable IDs as repository keys', async () => {
+    vi.mocked(saveProject).mockResolvedValue('copy-rev');
+    const writer = new SaveCoordinator();
+    writer.initialize('a-rev', true, 'a');
+    const copy = { ...createDefaultProject(), id: 'portable-source', sourceProjectId: 'original-source' };
+    writer.startProject(copy);
+    expect(writer.getProjectId()).not.toBe('a');
+    expect(writer.getProjectId()).not.toBe(copy.id);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(saveProject).toHaveBeenLastCalledWith(copy, null, false, writer.getProjectId());
+  });
+
+  it('pauses checkpoint actions at capacity without blocking ordinary saves or new projects', async () => {
+    vi.mocked(saveProject).mockResolvedValue('a-next');
+    const writer = new SaveCoordinator();
+    writer.initialize('a-rev', true, 'a', 20);
+    expect(writer.assertCheckpointCapacity).toThrow(/20 durable checkpoints/);
+    await expect(writer.replace(createDefaultProject(), true)).rejects.toThrow(/20 durable checkpoints/);
+    writer.schedule(createDefaultProject());
+    await vi.advanceTimersByTimeAsync(500);
+    expect(saveProject).toHaveBeenLastCalledWith(expect.anything(), 'a-rev', false, 'a');
+    writer.startProject(createDefaultProject());
+    expect(writer.assertCheckpointCapacity).not.toThrow();
+  });
 
   it('does not write before restoration or after restoration fails', async () => {
     const writer = new SaveCoordinator();

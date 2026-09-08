@@ -52,6 +52,59 @@
 
 .editor-workspace { display: contents; }
 
+.project-chooser {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  padding: 8px 12px;
+  color: #eee8ff;
+  background: #141320;
+  font-family: 'Avenir Next', Avenir, sans-serif;
+  border-bottom: 1px solid #655475;
+  max-height: 35vh;
+  overflow: auto;
+}
+.project-chooser input {
+  margin-left: 8px;
+  max-width: 55vw;
+  padding: 8px;
+  color: #f6f3ff;
+  background: #252037;
+  border: 1px solid #817696;
+  border-radius: 4px;
+  font: inherit;
+}
+.project-chooser .header-btn, .recovery-manager .header-btn {
+  min-height: 44px;
+  background: #272344;
+  color: #f6f3ff;
+  border: 1px solid #817696;
+}
+.project-chooser :focus-visible, .recovery-manager :focus-visible {
+  outline: 2px solid #f2ae78;
+  outline-offset: 2px;
+}
+.project-chooser .header-btn:hover:not(:disabled),
+.save-health .header-btn:hover:not(:disabled) {
+  background: #3a2d54;
+  color: #fff4e8;
+  border-color: #f2ae78;
+}
+.project-choices, .recovery-manager { width: 100%; }
+.project-choice, .recovery-entry {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 0;
+  border-top: 1px solid #655475;
+}
+.project-choice small, .recovery-entry small { color: #c4bdd7; overflow-wrap: anywhere; }
+.recovery-manager table { border-collapse: collapse; width: 100%; }
+.recovery-manager th, .recovery-manager td { padding: 8px; text-align: left; border-bottom: 1px solid #655475; }
+
 .app-body {
   display: grid;
   /* Side panel widths scale with the same factor as the chrome font
