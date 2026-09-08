@@ -2,7 +2,7 @@
 
 **Baseline:** `34f09851959a7fd5aa5d5818e52276af60dac5b5`, merged #158.
 
-**Status:** Follow-up implementation for review, not a declaration that UX-01 is complete. The owner authorized the remaining UX-01 foundations. Parent coordination owns final review, broader qualification, and merge. UX-00 participant research remains explicitly deferred with **zero participants**. UX-09 release gates are not waived.
+**Status:** Foundations merged in [#159](https://github.com/evillollive/Dungeon-Mapper/pull/159); independent candidate qualification is **Ready with minor follow-ups**. The [qualification report](./UX-01-QUALIFICATION.md) records 98 scenario-engine passes, application-content/merge provenance, integration validation, and explicit limitations. This closes the pending browser/storage qualification within its documented bounds, not every device or release gate. UX-00 participant research remains explicitly deferred with **zero participants**. UX-09 release gates are not waived.
 
 ## Current architecture
 
@@ -102,7 +102,7 @@ This follow-up uses existing Vitest, TypeScript/Vite, ESLint, and the available 
 
 Targeted automated evidence covers schema/repair/export compatibility, coordinator serialization and switching races, hook integration, retention preflight/cleanup, recovery controls, dimensions/dialog behavior, and module guardrails. `src/test/projectFoundations.browser.mjs` exports `runProjectFoundations(browser, origin?)`, defaults to dev port 5191, and creates/closes a fresh browser context for every scenario. It covers native IndexedDB migration, concurrent CAS, transaction abort, quota injection, independent identities, explicit retention/deletion, retained malformed archives, chooser/reload/two-tab behavior, recovery preview/cancel/restore, repeated import/New isolation, fog repair, and loaded-editor offline saving.
 
-September 7, 2026 initial evidence: production build succeeded; **179 tests across 14 targeted files passed**; changed-scope ESLint and the unchanged module guardrails passed. **Ten isolated Chromium browser scenario groups passed**, including native transactions and actual download events. A read-only review identified a failed-switch/pending-edit status race, which was corrected and covered by a coordinator regression; generation-bound callbacks also have an integration regression. Parent review subsequently added missing/corrupt startup escape, bounded catalog enumeration, and first-save checkpoint accounting regressions. Cross-engine and production-offline qualification is separately owned by QA and is not claimed by these results.
+September 7, 2026 initial evidence: production build succeeded; **179 tests across 14 targeted files passed**; changed-scope ESLint and the unchanged module guardrails passed. **Ten isolated Chromium browser scenario groups passed**, including native transactions and actual download events. A read-only review identified a failed-switch/pending-edit status race, which was corrected and covered by a coordinator regression; generation-bound callbacks also have an integration regression. Parent review subsequently added missing/corrupt startup escape, bounded catalog enumeration, and first-save checkpoint accounting regressions. Cross-engine and production-offline qualification is separately owned by QA and is not claimed by these implementation results.
 
 The parent-review follow-up passed **187 tests across the same 14 targeted files**, production build, changed-scope ESLint, and **14 isolated Chromium browser groups**. Added browser evidence verifies missing/corrupt selected projects can open a healthy alternative without touching originals, failed alternate loads keep the editor gated, catalog reads exclude retention archives at the IndexedDB range boundary, and both first-save/first-restore paths allow 20 real checkpoints without a phantom count.
 
@@ -110,13 +110,15 @@ The earlier `saveTrust.browser.js` and `recoveryChanges.browser.js` are historic
 
 Quota and transaction-abort scenarios are injected failures, not claims of realistic device exhaustion. Development-server offline editing is not production offline cold-start qualification. The existing large-bundle warning and development manifest-path observation are not resolved by this slice.
 
-## Remaining UX-01 and release gates
+## Qualification closeout and remaining release gates
 
-- Parent review and independent QA against the exact follow-up commit before merge.
-- Supported-engine production builds under the real Pages base path, cold-start/reload offline, service-worker update behavior, and storage-failure journeys.
-- Realistic project-size retention/quota pressure, interruption/device eviction behavior, and external-backup recovery qualification.
-- Broader keyboard, nonvisual, touch, and responsive workflows for the chooser and recovery manager.
-- Preserve deterministic generation, asset fidelity, all exports/print, and existing shortcuts through final qualification.
+Independent QA qualified application candidate `275ed482f6ec162baec16f85032895ce44bdb308`, whose application source/build inputs match merged #159 (`4289da6984c5c4a70cf07e794c1d8b97cd9dfb42`). Chromium, Firefox and WebKit passed the production common/catalog matrix, genuine stopped-origin reload/process reopen, and a bounded real service-worker comment-only byte update with a pending transaction. Realistic rich-project retention, full semantic backups, exports/print, controlled storage-clear recovery, and bounded keyboard/reflow journeys passed. See [exact evidence, reproduction, and limitations](./UX-01-QUALIFICATION.md). These results supersede the earlier pending cross-engine qualification, not later release requirements.
+
+- Focus return after dynamic panel removal remains a minor accessibility follow-up, including Firefox reverse Shift+Tab traversal and long forward paths.
+- Native device quota exhaustion, natural eviction and OS interruption remain unqualified; injected failures and isolated-profile deletion are not substitutes.
+- The worker probe activates a real updated worker with unchanged application bundles, not a mixed-version deployment certification.
+- Broader nonvisual, touch/pen, physical-device, native browser zoom and responsive workflows remain later accessibility/release work.
+- Existing application regression tests pass; the bounded exports/print and rich-content checks do not replace later full release qualification.
 - Participant research remains deferred with zero participants; UX-09 acceptance is not claimed.
 
 There is no UX-02 searchable library, tags, thumbnails, trash, guided creation, session-state split, visibility migration, remote/player projection, multiplayer, or broad art redesign in this follow-up.
