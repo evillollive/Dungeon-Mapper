@@ -96,6 +96,8 @@ The follow-up production build succeeded; 160 cases across twelve targeted files
 
 Schema fixtures in `projectSchema.test.ts` include a minimal bare map, a full multi-level project with custom assets and every current layer, every bundled sample, invalid nested fields, future versions, unknown fields, migration idempotence, and portable JSON round trips. Coordinator cases deliberately hold a transaction pending while newer edits arrive, then assert that only the latest committed state becomes Saved.
 
+CI on `1587a21` exposed the existing module-size guardrail: `useMapState.ts` was 1,417 lines against a 1,400-line limit. The pure resize transformation was extracted into `mapStateUtils.ts` as `resizeMapContent`, keeping the hook responsible for checkpoint/history/save orchestration. The hook is now 1,388 lines; the limit and formatting policy are unchanged. Two direct resize regressions were added, and the targeted guardrail, state-utility, and persistence suites passed all 46 cases. Production build and extraction-scope lint also passed.
+
 Persistent browser regression script: `src/test/saveTrust.browser.js`. Start the existing dev server with `npm run dev -- --host 127.0.0.1 --port 5191 --strictPort`, then execute that file through Playwright MCP `browser_run_code_unsafe`. The script creates and closes fresh contexts, never uses existing personal browser storage, and completed twelve scenario groups:
 
 - Native IndexedDB migration/revision/replacement and transaction-abort cases.

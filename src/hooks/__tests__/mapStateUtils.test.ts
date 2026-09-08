@@ -6,6 +6,7 @@ import {
   clearVisibleMapContent,
   replaceGeneratedMapContent,
   restoreHistorySnapshot,
+  resizeMapContent,
   withDefaults,
   nextIdAfter,
   updateActiveLevel,
@@ -64,6 +65,52 @@ describe('createDefaultMap', () => {
   it('fog is enabled by default', () => {
     const map = createDefaultMap();
     expect(map.fogEnabled).toBe(true);
+  });
+});
+
+describe('resizeMapContent', () => {
+  it('expands tiles and both fog grids without changing existing cells or the input map', () => {
+    const original = createDefaultMap();
+    original.tiles[0][0] = { type: 'water', flowDirection: 90, riverId: 1 };
+    original.explored = original.tiles.map(row => row.map(() => true));
+    const resized = resizeMapContent(original, 40, 37);
+    expect(resized.meta).toEqual({ ...original.meta, width: 40, height: 37 });
+    expect(resized.tiles).toHaveLength(37);
+    expect(resized.tiles[0]).toHaveLength(40);
+    expect(resized.tiles[0][0]).toBe(original.tiles[0][0]);
+    expect(resized.tiles[36][39]).toEqual({ type: 'empty' });
+    expect(resized.fog?.[36][39]).toBe(true);
+    expect(resized.explored?.[0][0]).toBe(true);
+    expect(resized.explored?.[36][39]).toBe(false);
+    expect(original.meta.width).toBe(32);
+    expect(original.explored).toHaveLength(32);
+  });
+
+  it('filters cropped footprints and their initiative while preserving off-grid authored geometry', () => {
+    const original = createDefaultMap();
+    original.tokens = [
+      { id: 1, kind: 'player', x: 0, y: 0, label: 'Keep' },
+      { id: 2, kind: 'monster', x: 3, y: 3, size: 2, label: 'Cropped' },
+    ];
+    original.initiative = [2, 1, 99];
+    original.lightSources = [
+      { id: 1, x: 0, y: 0, radius: 5, color: '#fff', label: 'Keep' },
+      { id: 2, x: 4, y: 0, radius: 5, color: '#fff', label: 'Cropped' },
+    ];
+    original.stamps = [0, 4].map((x, id) => ({
+      id, stampId: 'test', x, y: 0, rotation: 0, scale: 1, opacity: 1,
+      flipX: false, flipY: false, locked: false,
+    }));
+    original.notes = [{ id: 1, x: 10, y: 10, label: 'Keep outside grid', description: 'Private' }];
+    const resized = resizeMapContent(original, 4, 4);
+    expect(resized.tokens).toEqual([original.tokens[0]]);
+    expect(resized.initiative).toEqual([1]);
+    expect(resized.lightSources).toEqual([original.lightSources[0]]);
+    expect(resized.stamps).toEqual([original.stamps[0]]);
+    expect(resized.notes).toBe(original.notes);
+    expect(resized.explored).toBeUndefined();
+    expect(original.tokens).toHaveLength(2);
+    expect(original.tiles).toHaveLength(32);
   });
 });
 

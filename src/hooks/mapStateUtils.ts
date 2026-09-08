@@ -20,7 +20,7 @@ import type {
   WallSegment,
   ArtStylePresetId,
 } from '../types/map';
-import { createEmptyGrid, createFogGrid } from '../utils/mapUtils';
+import { createEmptyGrid, createFogGrid, resizeFogGrid } from '../utils/mapUtils';
 
 export const DEFAULT_WIDTH = 32;
 export const DEFAULT_HEIGHT = 32;
@@ -171,6 +171,31 @@ export function restoreHistorySnapshot(map: DungeonMap, snap: HistorySnapshot): 
     handDrawn: snap.handDrawn,
     lightingAtmosphere: snap.lightingAtmosphere,
     artStylePreset: snap.artStylePreset,
+  };
+}
+
+export function resizeMapContent(map: DungeonMap, width: number, height: number): DungeonMap {
+  const tiles: Tile[][] = Array.from({ length: height }, (_, y) =>
+    Array.from({ length: width }, (_, x): Tile => map.tiles[y]?.[x] ?? { type: 'empty' })
+  );
+  const tokens = (map.tokens ?? []).filter(token => {
+    const size = Math.max(1, Math.floor(token.size ?? 1));
+    return token.x >= 0 && token.y >= 0 && token.x + size <= width && token.y + size <= height;
+  });
+  return {
+    ...map,
+    meta: { ...map.meta, width, height },
+    tiles,
+    fog: resizeFogGrid(map.fog, width, height, true),
+    explored: map.explored ? resizeFogGrid(map.explored, width, height, false) : undefined,
+    tokens,
+    initiative: (map.initiative ?? []).filter(id => tokens.some(token => token.id === id)),
+    lightSources: (map.lightSources ?? []).filter(
+      light => light.x >= 0 && light.x < width && light.y >= 0 && light.y < height,
+    ),
+    stamps: (map.stamps ?? []).filter(
+      stamp => stamp.x >= 0 && stamp.x < width && stamp.y >= 0 && stamp.y < height,
+    ),
   };
 }
 

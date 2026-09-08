@@ -1,9 +1,9 @@
 import { useState, useCallback, useRef, useSyncExternalStore, useEffect } from 'react';
 import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, SceneTemplate, StampDef, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment, River, RoomShape } from '../types/map';
-import { createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
+import { createFogGrid, floodFill } from '../utils/mapUtils';
 import { SaveCoordinator } from '../utils/saveCoordinator';
 import { reThemeNotes } from '../utils/reThemeNotes';
-import { clearVisibleMapContent, createDefaultProject, nextIdAfter, replaceGeneratedMapContent, updateActiveLevel } from './mapStateUtils';
+import { clearVisibleMapContent, createDefaultProject, nextIdAfter, replaceGeneratedMapContent, resizeMapContent, updateActiveLevel } from './mapStateUtils';
 import { useMapHistory } from './useMapHistory';
 import { useMapClipboard } from './useMapClipboard';
 import { useLevelManagement } from './useLevelManagement';
@@ -195,36 +195,7 @@ export function useMapState() {
     if (!prepareReplacement('Resize level')) return;
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
-        const newTiles: Tile[][] = Array.from({ length: height }, (_, y) =>
-          Array.from({ length: width }, (_, x) =>
-            m.tiles[y]?.[x] ?? { type: 'empty' as TileType }
-          )
-        );
-        return {
-          ...m,
-          meta: { ...m.meta, width, height },
-          tiles: newTiles,
-          fog: resizeFogGrid(m.fog, width, height, true),
-          explored: m.explored ? resizeFogGrid(m.explored, width, height, false) : undefined,
-          tokens: (m.tokens ?? []).filter(t => {
-            const sz = Math.max(1, Math.floor(t.size ?? 1));
-            return t.x >= 0 && t.y >= 0 && t.x + sz <= width && t.y + sz <= height;
-          }),
-          initiative: (m.initiative ?? []).filter(id =>
-            (m.tokens ?? []).some(t => {
-              const sz = Math.max(1, Math.floor(t.size ?? 1));
-              return t.id === id && t.x >= 0 && t.y >= 0 && t.x + sz <= width && t.y + sz <= height;
-            })
-          ),
-          lightSources: (m.lightSources ?? []).filter(
-            ls => ls.x >= 0 && ls.x < width && ls.y >= 0 && ls.y < height,
-          ),
-          stamps: (m.stamps ?? []).filter(
-            stamp => stamp.x >= 0 && stamp.x < width && stamp.y >= 0 && stamp.y < height,
-          ),
-        };
-      });
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => resizeMapContent(m, width, height));
       debouncedSave(updated);
       return updated;
     });
