@@ -253,12 +253,7 @@ function portableCopy(value: unknown, path: string, ancestors = new Set<object>(
   return result;
 }
 
-/**
- * Read schema v1, an unversioned multi-level project, or a legacy bare map.
- * Unknown project/map/asset fields are retained. Envelope transport metadata
- * (for example a device's storage revision) is not part of the project.
- */
-export function decodeProject(data: unknown): DungeonProject {
+function projectSource(data: unknown): { source: RecordValue; bareMap: boolean } {
   const root = record(data, 'file');
   let source = root;
   let bareMap = false;
@@ -271,6 +266,16 @@ export function decodeProject(data: unknown): DungeonProject {
   } else if (!Object.hasOwn(root, 'levels')) {
     bareMap = true;
   }
+  return { source, bareMap };
+}
+
+/**
+ * Read schema v1, an unversioned multi-level project, or a legacy bare map.
+ * Unknown project/map/asset fields are retained. Envelope transport metadata
+ * (for example a device's storage revision) is not part of the project.
+ */
+export function decodeProject(data: unknown): DungeonProject {
+  const { source, bareMap } = projectSource(data);
   const copied = record(portableCopy(source, bareMap ? 'map' : 'project'), 'project');
   let project: RecordValue;
   if (bareMap) {
@@ -295,4 +300,65 @@ export function encodeProject(project: DungeonProject): object {
   // Wrap explicitly so an unknown project-level schemaVersion field remains
   // project data rather than being mistaken for envelope metadata.
   return { schemaVersion: PROJECT_SCHEMA_VERSION, project: decodeProject({ schemaVersion: PROJECT_SCHEMA_VERSION, project }) };
+}
+
+export interface FogRepairChange {
+  levelIndex: number;
+  levelName: string;
+  layer: 'fog' | 'explored';
+  fromWidth: number;
+  fromHeight: number;
+  toWidth: number;
+  toHeight: number;
+  addedCells: number;
+  excludedCells: number;
+}
+
+export interface FogRepairPreview {
+  project: DungeonProject;
+  changes: FogRepairChange[];
+}
+
+/** Preview only. The caller must retain the untouched source before committing the repaired project. */
+export function previewFogRepair(data: unknown): FogRepairPreview {
+  const parsed: unknown = typeof data === 'string' ? JSON.parse(data) : data;
+  // Reject unsupported versions before cloning or attempting any repair.
+  projectSource(parsed);
+  const copy = portableCopy(parsed, 'file');
+  const { source, bareMap } = projectSource(copy);
+  const levels = bareMap ? [source] : source.levels;
+  if (!Array.isArray(levels)) invalid('project.levels', 'an array');
+  const changes: FogRepairChange[] = [];
+  levels.forEach((value, levelIndex) => {
+    const path = `project.levels[${levelIndex}]`;
+    const level = record(value, path);
+    const meta = record(level.meta, `${path}.meta`);
+    fields({ name: text, width: dimension, height: dimension })(meta, `${path}.meta`);
+    const width = meta.width as number;
+    const height = meta.height as number;
+    // Never allocate a repaired grid based on dimensions unsupported by the actual tile data.
+    grid(level.tiles, `${path}.tiles`, width, height, tile);
+    for (const layer of ['fog', 'explored'] as const) {
+      const original = level[layer];
+      if (original === undefined) continue;
+      array(array(boolean))(original, `${path}.${layer}`);
+      const rows = original as boolean[][];
+      const oldWidth = rows[0]?.length ?? 0;
+      if (!rows.length || !oldWidth || rows.some(row => row.length !== oldWidth)) {
+        invalid(`${path}.${layer}`, 'a non-empty rectangular boolean grid for dimension repair');
+      }
+      if (rows.length === height && oldWidth === width) continue;
+      const retained = Math.min(rows.length, height) * Math.min(oldWidth, width);
+      changes.push({
+        levelIndex, levelName: meta.name as string, layer,
+        fromWidth: oldWidth, fromHeight: rows.length, toWidth: width, toHeight: height,
+        addedCells: width * height - retained,
+        excludedCells: oldWidth * rows.length - retained,
+      });
+      level[layer] = Array.from({ length: height }, (_, y) =>
+        Array.from({ length: width }, (_, x) => rows[y]?.[x] ?? (layer === 'fog')));
+    }
+  });
+  if (!changes.length) throw new Error('No mismatched fog dimensions were found. No repair has been applied.');
+  return { project: decodeProject(copy), changes };
 }

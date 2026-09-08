@@ -8,7 +8,7 @@ interface SceneTemplateDialogProps {
   onSave: (name: string, sel: { x: number; y: number; w: number; h: number }) => void;
   onDelete: (templateId: string) => void;
   onRename: (templateId: string, newName: string) => void;
-  onApply: (templateId: string, ox: number, oy: number) => void;
+  onApply: (templateId: string, ox: number, oy: number) => boolean | void;
   onClose: () => void;
 }
 
@@ -49,7 +49,7 @@ const SceneTemplateDialog: React.FC<SceneTemplateDialogProps> = ({
 
   const handleApply = () => {
     if (!applyingId) return;
-    onApply(applyingId, applyX, applyY);
+    if (onApply(applyingId, applyX, applyY) === false) return;
     setApplyingId(null);
   };
 

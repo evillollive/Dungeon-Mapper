@@ -8,8 +8,8 @@ const LEGACY_KEY = 'dungeon-mapper-autosave';
 const RECOVERY_KEY = 'replacement-recovery';
 
 export class StorageConflictError extends Error {
-  constructor() {
-    super('Another tab changed the saved project. Export your in-memory backup before reloading. Automatic saving is stopped.');
+  constructor(message = 'Another tab changed the saved project. Export your in-memory backup before reloading. Automatic saving is stopped.') {
+    super(message);
   }
 }
 
@@ -76,14 +76,21 @@ export interface LoadedProject {
 export interface RecoveryRecord {
   savedAt: string;
   data: unknown;
+  reason?: string;
 }
+
+export type CheckpointReason = 'Clear level' | 'Generate level' | 'Generate region' |
+  'Delete level' | 'Resize level' | 'Apply scene template' | 'Fog repair';
 
 function recoveryRecord(value: unknown): RecoveryRecord {
   if (typeof value !== 'object' || value === null || !('savedAt' in value) ||
       typeof value.savedAt !== 'string' || !('data' in value)) {
     throw new Error('A local recovery record is unreadable. It has not been overwritten.');
   }
-  return { savedAt: value.savedAt, data: value.data };
+  if ('reason' in value && typeof value.reason !== 'string') {
+    throw new Error('A local recovery reason is unreadable. It has not been overwritten.');
+  }
+  return { savedAt: value.savedAt, data: value.data, ...('reason' in value ? { reason: value.reason as string } : {}) };
 }
 
 function recoveryList(value: unknown): RecoveryRecord[] {
@@ -95,7 +102,7 @@ function recoveryList(value: unknown): RecoveryRecord[] {
 export async function saveProject(
   project: DungeonProject,
   expectedRevision: string | null,
-  checkpoint = false,
+  checkpoint: boolean | CheckpointReason = false,
 ): Promise<string> {
   const encoded = encodeProject(project);
   const storageRevision = crypto.randomUUID();
@@ -120,7 +127,9 @@ export async function saveProject(
             recovery.onsuccess = () => {
               try {
                 const records = recoveryList(recovery.result);
-                store.put([...records.slice(-4), previous], RECOVERY_KEY);
+                store.put([...records.slice(-4), {
+                  ...previous, reason: typeof checkpoint === 'string' ? checkpoint : 'Project replacement',
+                }], RECOVERY_KEY);
               } catch (error) {
                 failure = error instanceof Error ? error : new Error('Could not retain the replacement recovery copy.');
                 tx.abort();

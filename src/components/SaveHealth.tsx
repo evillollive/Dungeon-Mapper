@@ -3,19 +3,21 @@ import type { DungeonProject } from '../types/map';
 import type { SaveState } from '../utils/saveCoordinator';
 import { downloadRecoveryData, loadRecoveryRecords, type RecoveryRecord } from '../utils/storage';
 import { exportProjectJSON, importProjectJSON } from '../utils/export';
+import { previewFogRepair, type FogRepairPreview } from '../utils/projectSchema';
 
 interface Props {
   state: SaveState;
   project: DungeonProject;
   onRetry: () => void;
   original?: unknown;
-  onRecover: (project: DungeonProject) => Promise<void>;
+  onRecover: (project: DungeonProject, reason?: 'Fog repair') => Promise<void>;
 }
 
 const LABELS: Record<SaveState['phase'], string> = {
   restoring: 'Restoring device storage',
   unsaved: 'Not saved yet',
   saving: 'Saving',
+  replacing: 'Saving recovery copy',
   saved: 'Saved on this device',
   failed: 'Save failed',
   conflict: 'Save conflict',
@@ -27,6 +29,7 @@ export default function SaveHealth({ state, project, onRetry, original, onRecove
   const [records, setRecords] = useState<RecoveryRecord[] | null>(null);
   const [error, setError] = useState('');
   const [recovering, setRecovering] = useState(false);
+  const [repair, setRepair] = useState<(FogRepairPreview & { original: unknown }) | null>(null);
   useEffect(() => {
     const update = () => setOffline(!navigator.onLine);
     window.addEventListener('online', update);
@@ -61,6 +64,15 @@ export default function SaveHealth({ state, project, onRetry, original, onRecove
         }}>Export backup</button>}
         {state.phase === 'failed' && <button type="button" className="header-btn" onClick={onRetry}>Retry save</button>}
         {original !== undefined && <button type="button" className="header-btn" onClick={() => downloadRecoveryData(original)}>Download original</button>}
+        {state.phase === 'restore-failed' && original !== undefined && <button type="button" className="header-btn"
+          disabled={recovering} onClick={() => {
+            try {
+              setRepair({ ...previewFogRepair(original), original });
+              setError('');
+            } catch (error) {
+              setError(error instanceof Error ? error.message : 'Could not prepare a fog repair.');
+            }
+          }}>Review fog repair</button>}
         {state.phase === 'restore-failed' && <button type="button" className="header-btn" onClick={() => window.location.reload()}>Retry restore</button>}
         {state.phase !== 'restoring' && <button type="button" className="header-btn" onClick={() => { void showRecovery(); }}>Recovery copies</button>}
       </div>
@@ -71,6 +83,33 @@ export default function SaveHealth({ state, project, onRetry, original, onRecove
         onClick={() => downloadRecoveryData(project, 'dungeon-in-memory-recovery.json')}>
         Download raw in-memory recovery data
       </button>}
+      {repair && <section className="save-repair-preview" aria-label="Fog repair preview">
+        <h3>Review fog dimension repair</h3>
+        <p>Only fog dimensions change. Added fog cells are covered; added explored cells are unexplored.
+          Cells outside the map are excluded from the repaired copy, not from the untouched original.</p>
+        <ul>{repair.changes.map(change => <li key={`${change.levelIndex}-${change.layer}`}>
+          Level {change.levelIndex + 1}, {change.levelName}: {change.layer} {change.fromWidth} x {change.fromHeight}
+          {' to '}{change.toWidth} x {change.toHeight}. {change.addedCells} added, {change.excludedCells} excluded.
+        </li>)}</ul>
+        <p>The saved project is retained as a local recovery copy on commit. Download the original for an external copy.</p>
+        <button className="header-btn" type="button" onClick={() => downloadRecoveryData(repair.original)}>
+          Download repair original
+        </button>
+        <button className="header-btn" type="button" disabled={recovering} onClick={async () => {
+          setRecovering(true);
+          try {
+            await onRecover(repair.project, 'Fog repair');
+            setRepair(null);
+            setRecords(null);
+            setError('');
+          } catch (error) {
+            setError(error instanceof Error ? error.message : 'Could not save the repaired project.');
+          } finally {
+            setRecovering(false);
+          }
+        }}>Use repaired project</button>
+        <button className="header-btn" type="button" disabled={recovering} onClick={() => setRepair(null)}>Cancel repair</button>
+      </section>}
       {state.phase === 'restore-failed' && original !== undefined && (
         <label>Import recovery file
           <input type="file" accept=".json,application/json" disabled={recovering} onChange={async event => {
@@ -94,14 +133,32 @@ export default function SaveHealth({ state, project, onRetry, original, onRecove
       )}
       {records !== null && (
         <div className="save-recovery-list">
-          <p>Download a copy, then import it to recover. Replacement copies retain up to five saved projects; the previous save is also retained.</p>
+          <p>Download a copy, then import it to recover. Up to five pre-change project copies and the previous save are retained.
+            Ordinary subsequent edits do not remove the pre-change copies.</p>
           {records.length === 0 && <p>No recovery copies are available on this device.</p>}
           {records.map((record, index) => (
             <button className="header-btn" type="button" key={`${record.savedAt}-${index}`}
               onClick={() => downloadRecoveryData(record.data, `dungeon-recovery-${index + 1}.json`)}>
-              Download {record.savedAt ? `recovery copy (${new Date(record.savedAt).toLocaleString()})` : 'original localStorage save'}
+              Download {record.savedAt ? `${record.reason ?? 'Recovery copy'} (${new Date(record.savedAt).toLocaleString()})` : 'original localStorage save'}
             </button>
           ))}
+          <label>Review a fog repair file
+            <input type="file" accept=".json,application/json" disabled={recovering} onChange={async event => {
+              const file = event.target.files?.[0];
+              event.target.value = '';
+              if (!file) return;
+              setRecovering(true);
+              try {
+                const raw = await file.text();
+                setRepair({ ...previewFogRepair(raw), original: raw });
+                setError('');
+              } catch (error) {
+                setError(error instanceof Error ? error.message : 'Could not read the repair file.');
+              } finally {
+                setRecovering(false);
+              }
+            }} />
+          </label>
           <button className="header-btn" type="button" onClick={() => setRecords(null)}>Close recovery copies</button>
         </div>
       )}

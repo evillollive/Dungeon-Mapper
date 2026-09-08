@@ -2,8 +2,9 @@ import { StrictMode } from 'react';
 import { act, renderHook, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { useMapState } from '../useMapState';
-import { createDefaultProject } from '../mapStateUtils';
-import { loadProject, saveProject, RestoreError } from '../../utils/storage';
+import { createDefaultMap, createDefaultProject } from '../mapStateUtils';
+import { loadProject, saveProject, RestoreError, type CheckpointReason } from '../../utils/storage';
+import { createEmptyGrid } from '../../utils/mapUtils';
 
 vi.mock('../../utils/storage', async importOriginal => {
   const actual = await importOriginal<typeof import('../../utils/storage')>();
@@ -16,7 +17,7 @@ describe('save restoration and replacement integration', () => {
     vi.mocked(saveProject).mockReset().mockResolvedValue('saved-revision');
     vi.spyOn(window, 'alert').mockImplementation(() => {});
   });
-  afterEach(() => { vi.restoreAllMocks(); });
+  afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
 
   it('restores once through StrictMode without saving the default blank project', async () => {
     const project = { ...createDefaultProject(), name: 'Original campaign' };
@@ -56,6 +57,23 @@ describe('save restoration and replacement integration', () => {
     expect(saveProject).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Recovered campaign' }), 'original', true);
     expect(result.current.saveState.phase).toBe('saved');
     expect(result.current.project.name).toBe('Recovered campaign');
+  });
+
+  it('does not open a repaired-file replacement before its transaction commits', async () => {
+    vi.mocked(loadProject).mockResolvedValue({ project: createDefaultProject(), revision: 'original' });
+    let finish!: (revision: string) => void;
+    vi.mocked(saveProject).mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    const { result } = renderHook(() => useMapState());
+    await waitFor(() => expect(result.current.saveState.phase).toBe('saved'));
+    const before = result.current.project;
+    const repaired = { ...createDefaultProject(), name: 'Repaired file' };
+    let replacing!: Promise<void>;
+    await act(async () => { replacing = result.current.recoverProjectData(repaired, 'Fog repair'); });
+    expect(result.current.project).toBe(before);
+    expect(result.current.saveState.phase).toBe('replacing');
+    await act(async () => { finish('repaired'); await replacing; });
+    expect(result.current.project.name).toBe('Repaired file');
+    expect(result.current.saveState.phase).toBe('saved');
   });
 
   it('refuses New and sample replacement while current work is awaiting a save', async () => {
@@ -116,5 +134,55 @@ describe('save restoration and replacement integration', () => {
     expect(result.current.map.explored?.every(row => row.length === 40)).toBe(true);
     expect(result.current.map.explored?.[0][0]).toBe(true);
     expect(result.current.map.explored?.[36][39]).toBe(false);
+  });
+
+  const destructiveActions: [CheckpointReason, (state: ReturnType<typeof useMapState>) => unknown][] = [
+    ['Clear level', state => state.clearMap()],
+    ['Generate level', state => state.generateMap(createEmptyGrid(8, 8), 8, 8)],
+    ['Generate region', state => state.applyGeneratedRegion([[{ type: 'wall' }]], 0, 0)],
+    ['Resize level', state => state.resizeMap(40, 37)],
+    ['Delete level', state => state.deleteLevel(1)],
+    ['Apply scene template', state => state.applySceneTemplate('test-template', 0, 0)],
+  ];
+
+  function projectWithLevelsAndTemplate() {
+    const project = createDefaultProject();
+    project.levels.push(createDefaultMap('Upper floor'));
+    project.levels[0].tiles[1][1] = { type: 'treasure' };
+    project.sceneTemplates = [{
+      id: 'test-template', name: 'Template', width: 1, height: 1, createdAt: '2026-09-07T00:00:00Z',
+      tiles: [[{ type: 'floor' }]], notes: [], stamps: [],
+    }];
+    return project;
+  }
+
+  it.each(destructiveActions)('retains a named checkpoint for %s', async (reason, perform) => {
+    const project = projectWithLevelsAndTemplate();
+    vi.mocked(loadProject).mockResolvedValue({ project, revision: 'original' });
+    const { result } = renderHook(() => useMapState(), { wrapper: StrictMode });
+    await waitFor(() => expect(result.current.saveState.phase).toBe('saved'));
+    vi.useFakeTimers();
+    act(() => { perform(result.current); });
+    expect(result.current.saveState.phase).toBe('saving');
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    expect(saveProject).toHaveBeenCalledOnce();
+    expect(saveProject).toHaveBeenCalledWith(result.current.project, 'original', reason);
+    expect(result.current.saveState.phase).toBe('saved');
+    expect(project.levels[0].tiles[1][1].type).toBe('treasure');
+    expect(project.levels).toHaveLength(2);
+  });
+
+  it.each(destructiveActions)('does not discard pending in-memory edits for %s', async (_reason, perform) => {
+    vi.mocked(loadProject).mockResolvedValue({ project: projectWithLevelsAndTemplate(), revision: 'original' });
+    const { result } = renderHook(() => useMapState());
+    await waitFor(() => expect(result.current.saveState.phase).toBe('saved'));
+    vi.useFakeTimers();
+    act(() => result.current.setMapName('Unsaved original'));
+    const pending = result.current.project;
+    act(() => { perform(result.current); });
+    expect(result.current.project).toBe(pending);
+    expect(window.alert).toHaveBeenCalledOnce();
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    expect(saveProject).toHaveBeenCalledWith(pending, 'original', false);
   });
 });

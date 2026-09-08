@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DungeonMap, DungeonProject } from '../types/map';
-import { loadProject as loadProjectFromStorage, RestoreError, saveProject } from '../utils/storage';
+import { loadProject as loadProjectFromStorage, RestoreError, saveProject, type CheckpointReason } from '../utils/storage';
 import type { LevelHistory } from './mapStateUtils';
 import { createDefaultProject, withProjectDefaults } from './mapStateUtils';
 import { decodeProject, PROJECT_SCHEMA_VERSION } from '../utils/projectSchema';
@@ -45,24 +45,33 @@ export function useMapPersistence(
     return () => { cancelled = true; coordinator.dispose(); };
   }, [coordinator, setActiveLevelIndex, setProject, syncIdsToLevel]);
 
-  const recoverProjectData = useCallback(async (loaded: DungeonProject) => {
-    if (restoreRevision.current === undefined) throw new Error('Retry restoring device storage before importing a recovery file.');
+  const recoverProjectData = useCallback(async (loaded: DungeonProject, reason: true | 'Fog repair' = true) => {
     const ready = withProjectDefaults(decodeProject({ schemaVersion: PROJECT_SCHEMA_VERSION, project: loaded }));
-    const revision = await saveProject(ready, restoreRevision.current, true);
+    if (coordinator.getSnapshot().phase === 'restore-failed') {
+      if (restoreRevision.current === undefined) throw new Error('Retry restoring device storage before importing a recovery file.');
+      const revision = await saveProject(ready, restoreRevision.current, reason);
+      coordinator.initialize(revision, true);
+    } else {
+      await coordinator.replace(ready, reason);
+    }
+    historyRef.current = new Map();
+    setCanUndo(false);
+    setCanRedo(false);
     setProject(ready);
     setActiveLevelIndex(ready.activeLevelIndex);
     syncIdsToLevel(ready.levels[ready.activeLevelIndex]);
+    setSelectedNoteId(null);
     setOriginal(undefined);
-    coordinator.initialize(revision, true);
-  }, [coordinator, setActiveLevelIndex, setProject, syncIdsToLevel]);
+  }, [coordinator, setActiveLevelIndex, setProject, syncIdsToLevel, historyRef,
+    setCanUndo, setCanRedo, setSelectedNoteId]);
 
-  const prepareReplacement = useCallback(() => {
+  const prepareReplacement = useCallback((reason: true | CheckpointReason = true) => {
     const { phase } = coordinator.getSnapshot();
     if (phase !== 'saved' && phase !== 'unsaved') {
-      window.alert('Replacement is paused until your current project is saved. Export a backup of your in-memory work before reloading if saving has failed.');
+      window.alert('This action is paused until your current project is saved. Export a backup of your in-memory work before reloading if saving has failed.');
       return false;
     }
-    coordinator.retainReplacement();
+    coordinator.retainReplacement(reason);
     return true;
   }, [coordinator]);
 
@@ -81,9 +90,9 @@ export function useMapPersistence(
   }, [debouncedSave, prepareReplacement, historyRef, setActiveLevelIndex, setCanRedo,
     setCanUndo, setProject, setSelectedNoteId, syncIdsToLevel]);
 
-  const loadProjectData = useCallback((loaded: DungeonProject) => {
+  const loadProjectData = useCallback((loaded: DungeonProject, reason: true | CheckpointReason = true) => {
     const proj = withProjectDefaults(decodeProject({ schemaVersion: PROJECT_SCHEMA_VERSION, project: loaded }));
-    if (!prepareReplacement()) return false;
+    if (!prepareReplacement(reason)) return false;
     historyRef.current = new Map();
     setCanUndo(false);
     setCanRedo(false);
@@ -112,5 +121,5 @@ export function useMapPersistence(
   }, [debouncedSave, prepareReplacement, historyRef, resetIds, setActiveLevelIndex,
     setCanRedo, setCanUndo, setProject, setSelectedNoteId]);
 
-  return { loadMapData, loadProjectData, newMap, original, recoverProjectData };
+  return { loadMapData, loadProjectData, newMap, original, recoverProjectData, prepareReplacement };
 }

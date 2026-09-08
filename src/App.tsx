@@ -584,9 +584,9 @@ function App() {
       if (target) {
         // Stamp into the existing map at the selection's offset; the rest
         // of the canvas (notes outside the rect, tokens, fog) is kept.
-        applyGeneratedRegion(result.tiles, target.x, target.y, result.notes, result.rivers);
+        if (!applyGeneratedRegion(result.tiles, target.x, target.y, result.notes, result.rivers)) return;
       } else {
-        generateMap(result.tiles, result.width, result.height, result.notes, suggestedName, result.roomShapes, result.rivers);
+        if (!generateMap(result.tiles, result.width, result.height, result.notes, suggestedName, result.roomShapes, result.rivers)) return;
       }
       setShowGenerateHub(false);
       announce('Map generated');
@@ -811,7 +811,7 @@ function App() {
       setSelectedPlacedStampId(null);
     },
     openCommandPalette: () => setShowCommandPalette(true),
-  }, saveState.phase !== 'restoring' && saveState.phase !== 'restore-failed');
+  }, !['restoring', 'restore-failed', 'replacing'].includes(saveState.phase));
 
   // ── Context values ──────────────────────────────────────────────────
   const toolContextValue = useMemo<ToolContextValue>(() => ({
@@ -999,6 +999,7 @@ function App() {
     <div className="app">
       <a className="skip-link" href="#dm-canvas-area">Skip to map canvas</a>
       <SaveHealth state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
+      <div className="editor-workspace" inert={saveState.phase === 'replacing'}>
       <MapHeader
         ref={headerRef}
         map={map}
@@ -1596,6 +1597,7 @@ function App() {
         onClose={() => setShowCommandPalette(false)}
         commands={commandPaletteItems}
       />
+      </div>
     </div>
     </ActionContext.Provider>
     </ViewContext.Provider>

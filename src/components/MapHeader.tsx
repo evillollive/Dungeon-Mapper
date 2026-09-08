@@ -73,7 +73,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
   }, [overflowOpen]);
 
   const handleClear = useCallback(() => {
-    if (window.confirm('Clear the entire map? This cannot be undone.')) {
+    if (window.confirm('Clear the current level? Other levels are unchanged. The saved project will be retained as a local recovery copy.')) {
       onClear();
     }
   }, [onClear]);
@@ -245,7 +245,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
               <hr className="header-overflow-sep" />
               <button role="menuitem" onClick={() => { onOpenGenerateHub(); setOverflowOpen(false); }} title="Generate Hub — procedural generation and sample maps [G]">🗺️ Generate Hub</button>
               <button role="menuitem" onClick={() => { fileInputRef.current?.click(); setOverflowOpen(false); }} title="Import JSON [Ctrl+O]">↑ Import</button>
-              <button role="menuitem" className="danger" onClick={() => { handleClear(); setOverflowOpen(false); }} title="Clear Map" aria-label="Clear entire map">🗑 Clear</button>
+              <button role="menuitem" className="danger" onClick={() => { handleClear(); setOverflowOpen(false); }} title="Clear current level" aria-label="Clear current level">🗑 Clear</button>
               <hr className="header-overflow-sep" />
               <button role="menuitem" onClick={() => { onShowShortcuts(); setOverflowOpen(false); }} title="Show keyboard shortcuts [?]">❓ Shortcuts</button>
             </div>

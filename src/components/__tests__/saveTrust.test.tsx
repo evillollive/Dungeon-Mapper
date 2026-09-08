@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import MapHeader from '../MapHeader';
 import SaveHealth from '../SaveHealth';
+import SceneTemplateDialog from '../SceneTemplateDialog';
 import { createDefaultProject } from '../../hooks/mapStateUtils';
 import { downloadRecoveryData, loadRecoveryRecords } from '../../utils/storage';
 import { exportProjectJSON } from '../../utils/export';
@@ -72,5 +73,55 @@ describe('save trust controls', () => {
     expect(screen.getByText('Offline')).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent('Saved on this device');
     Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
+  });
+
+  it('previews fog repair, supports cancellation, and keeps a failed commit retryable', async () => {
+    const original = createDefaultProject();
+    original.levels[0].fog = [Array<boolean>(8).fill(false)];
+    const before = JSON.stringify(original);
+    const recover = vi.fn().mockRejectedValueOnce(new Error('Quota exceeded')).mockResolvedValue(undefined);
+    render(<SaveHealth state={{ phase: 'restore-failed', message: 'Fog dimensions do not match' }}
+      original={original} project={createDefaultProject()} onRetry={vi.fn()} onRecover={recover} />);
+    expect(recover).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Review fog repair' }));
+    expect(screen.getByRole('region', { name: 'Fog repair preview' })).toHaveTextContent('8 x 1 to 32 x 32');
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel repair' }));
+    expect(screen.queryByRole('region', { name: 'Fog repair preview' })).not.toBeInTheDocument();
+    expect(recover).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Review fog repair' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Use repaired project' }));
+    await waitFor(() => expect(screen.getByText('Quota exceeded')).toBeInTheDocument());
+    expect(screen.getByRole('region', { name: 'Fog repair preview' })).toBeInTheDocument();
+    expect(recover).toHaveBeenCalledWith(expect.objectContaining({ levels: [
+      expect.objectContaining({ fog: expect.arrayContaining([expect.arrayContaining([false])]) }),
+    ] }), 'Fog repair');
+    expect(JSON.stringify(original)).toBe(before);
+    fireEvent.click(screen.getByRole('button', { name: 'Use repaired project' }));
+    await waitFor(() => expect(screen.queryByRole('region', { name: 'Fog repair preview' })).not.toBeInTheDocument());
+  });
+
+  it('never offers an inferred repair for an unsupported schema', () => {
+    const recover = vi.fn();
+    render(<SaveHealth state={{ phase: 'restore-failed', message: 'Unsupported version' }}
+      original={{ schemaVersion: 999, project: {} }} project={createDefaultProject()}
+      onRetry={vi.fn()} onRecover={recover} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Review fog repair' }));
+    expect(screen.queryByRole('region', { name: 'Fog repair preview' })).not.toBeInTheDocument();
+    expect(screen.getByText(/uses schema version 999/)).toBeInTheDocument();
+    expect(recover).not.toHaveBeenCalled();
+  });
+
+  it('keeps template placement controls open when the save guard refuses replacement', () => {
+    const apply = vi.fn().mockReturnValue(false);
+    render(<SceneTemplateDialog templates={[{
+      id: 'room', name: 'Room', width: 1, height: 1, tiles: [[{ type: 'floor' }]],
+      notes: [], stamps: [], createdAt: '2026-09-07T00:00:00Z',
+    }]} selection={null} onSave={vi.fn()} onDelete={vi.fn()} onRename={vi.fn()}
+    onApply={apply} onClose={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: 'Apply template Room' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Confirm apply' }));
+    expect(apply).toHaveBeenCalledWith('room', 0, 0);
+    expect(screen.getByRole('button', { name: 'Confirm apply' })).toBeInTheDocument();
+    expect(screen.getByLabelText('Apply X offset')).toHaveValue(0);
   });
 });

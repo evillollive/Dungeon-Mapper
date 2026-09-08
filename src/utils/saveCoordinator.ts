@@ -1,8 +1,8 @@
 import type { DungeonProject } from '../types/map';
-import { saveProject, StorageConflictError } from './storage';
+import { saveProject, StorageConflictError, type CheckpointReason } from './storage';
 
 export interface SaveState {
-  phase: 'restoring' | 'unsaved' | 'saving' | 'saved' | 'failed' | 'conflict' | 'restore-failed';
+  phase: 'restoring' | 'unsaved' | 'saving' | 'replacing' | 'saved' | 'failed' | 'conflict' | 'restore-failed';
   message?: string;
 }
 
@@ -11,7 +11,7 @@ export class SaveCoordinator {
   private revision: string | null = null;
   private ready = false;
   private pending: DungeonProject | null = null;
-  private checkpoint = false;
+  private checkpoint: boolean | CheckpointReason = false;
   private writing = false;
   private timer: ReturnType<typeof setTimeout> | undefined;
   private listeners = new Set<() => void>();
@@ -38,14 +38,40 @@ export class SaveCoordinator {
   }
   schedule = (project: DungeonProject) => {
     this.pending = project;
+    if (this.state.phase === 'replacing') return;
     if (!this.ready || this.state.phase === 'conflict') return;
     clearTimeout(this.timer);
     this.publish({ phase: 'saving' });
     this.timer = setTimeout(() => { void this.flush(); }, 500);
   };
-  retainReplacement = () => { this.checkpoint = true; };
+  retainReplacement = (reason: true | CheckpointReason = true) => { this.checkpoint = reason; };
+  replace = async (project: DungeonProject, reason: true | CheckpointReason) => {
+    if (!this.ready || this.pending || this.writing || !['saved', 'unsaved'].includes(this.state.phase)) {
+      throw new Error('Save your current project before applying a recovery copy. Export current work before reloading if there is a conflict.');
+    }
+    const prior = this.state;
+    clearTimeout(this.timer);
+    this.writing = true;
+    this.publish({ phase: 'replacing' });
+    try {
+      this.revision = await saveProject(project, this.revision, reason);
+      if (this.pending) {
+        throw new StorageConflictError('The map changed while the recovery copy was saving. Your newer edits remain in memory. Export them before reloading; automatic saving is stopped.');
+      }
+      this.publish({ phase: 'saved' });
+    } catch (error) {
+      this.publish(error instanceof StorageConflictError
+        ? { phase: 'conflict', message: error.message }
+        : this.pending
+          ? { phase: 'failed', message: error instanceof Error ? error.message : 'Recovery save failed.' }
+          : prior);
+      throw error;
+    } finally {
+      this.writing = false;
+    }
+  };
   retry = () => {
-    if (!this.ready || this.state.phase === 'conflict') return;
+    if (!this.ready || this.state.phase === 'conflict' || this.state.phase === 'replacing') return;
     this.publish({ phase: 'saving' });
     void this.flush();
   };

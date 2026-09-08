@@ -97,4 +97,56 @@ describe('revision-aware save coordinator', () => {
     await vi.advanceTimersByTimeAsync(600);
     expect(saveProject).not.toHaveBeenCalled();
   });
+
+  it('keeps recovery replacement pending until its transaction completes', async () => {
+    const transaction = deferred<string>();
+    vi.mocked(saveProject).mockReturnValueOnce(transaction.promise);
+    const writer = new SaveCoordinator();
+    writer.initialize('original', true);
+    const replacement = createDefaultProject();
+    const replacing = writer.replace(replacement, 'Fog repair');
+    expect(writer.getSnapshot().phase).toBe('replacing');
+    writer.retry();
+    expect(saveProject).toHaveBeenCalledOnce();
+    expect(saveProject).toHaveBeenCalledWith(replacement, 'original', 'Fog repair');
+    transaction.resolve('repaired');
+    await replacing;
+    expect(writer.getSnapshot().phase).toBe('saved');
+  });
+
+  it('restores the unchanged save state after a failed recovery replacement', async () => {
+    vi.mocked(saveProject).mockRejectedValueOnce(new Error('Quota exceeded'));
+    const writer = new SaveCoordinator();
+    writer.initialize('original', true);
+    await expect(writer.replace(createDefaultProject(), 'Fog repair')).rejects.toThrow('Quota exceeded');
+    expect(writer.getSnapshot().phase).toBe('saved');
+    vi.mocked(saveProject).mockResolvedValueOnce('repaired');
+    await writer.replace(createDefaultProject(), 'Fog repair');
+    expect(saveProject).toHaveBeenLastCalledWith(expect.anything(), 'original', 'Fog repair');
+  });
+
+  it('stops recovery confirmation if another tab changed the previewed revision', async () => {
+    vi.mocked(saveProject).mockRejectedValueOnce(new StorageConflictError());
+    const writer = new SaveCoordinator();
+    writer.initialize('previewed-revision', true);
+    await expect(writer.replace(createDefaultProject(), 'Fog repair')).rejects.toThrow();
+    expect(writer.getSnapshot().phase).toBe('conflict');
+    await expect(writer.replace(createDefaultProject(), 'Fog repair')).rejects.toThrow(/Save your current project/);
+    expect(saveProject).toHaveBeenCalledOnce();
+  });
+
+  it('never labels newer in-memory edits saved or discards them during recovery replacement', async () => {
+    const transaction = deferred<string>();
+    vi.mocked(saveProject).mockReturnValueOnce(transaction.promise);
+    const writer = new SaveCoordinator();
+    writer.initialize('original', true);
+    const replacing = writer.replace(createDefaultProject(), 'Fog repair');
+    const failure = expect(replacing).rejects.toThrow();
+    writer.schedule({ ...createDefaultProject(), name: 'Newer in-memory edits' });
+    expect(writer.getSnapshot().phase).toBe('replacing');
+    transaction.resolve('repaired');
+    await failure;
+    expect(writer.getSnapshot().phase).toBe('conflict');
+    expect(saveProject).toHaveBeenCalledOnce();
+  });
 });

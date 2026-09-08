@@ -61,7 +61,7 @@ export function useMapState() {
   const [coordinator] = useState(() => new SaveCoordinator());
   const saveState = useSyncExternalStore(coordinator.subscribe, coordinator.getSnapshot);
   useEffect(() => {
-    if (!['saving', 'failed', 'conflict'].includes(saveState.phase)) return;
+    if (!['saving', 'replacing', 'failed', 'conflict'].includes(saveState.phase)) return;
     const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
       event.preventDefault();
       event.returnValue = '';
@@ -112,7 +112,7 @@ export function useMapState() {
     syncIdsToLevel, resetIds, setSelectedNoteId,
     coordinator,
   );
-  const { loadMapData, loadProjectData, newMap } = persistence;
+  const { loadMapData, loadProjectData, newMap, prepareReplacement } = persistence;
 
   const clipboardHook = useMapClipboard(
     map, setProject, debouncedSave, activeLevelIndex,
@@ -125,6 +125,7 @@ export function useMapState() {
     history.historyRef, history.getHistory,
     history.setCanUndo, history.setCanRedo,
     syncIdsToLevel, setSelectedNoteId,
+    project.levels.length, prepareReplacement,
   );
   const {
     switchLevel, addLevel, renameLevel, deleteLevel,
@@ -190,7 +191,10 @@ export function useMapState() {
   }, [debouncedSave, activeLevelIndex]);
 
   const resizeMap = useCallback((width: number, height: number) => {
+    if (width === map.meta.width && height === map.meta.height) return;
+    if (!prepareReplacement('Resize level')) return;
     setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => {
         const newTiles: Tile[][] = Array.from({ length: height }, (_, y) =>
           Array.from({ length: width }, (_, x) =>
@@ -224,9 +228,11 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex, map.meta.width, map.meta.height, prepareReplacement]);
 
   const clearMap = useCallback(() => {
+    if (!prepareReplacement('Clear level')) return;
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
@@ -237,9 +243,10 @@ export function useMapState() {
     });
     resetIds();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [debouncedSave, activeLevelIndex, prepareReplacement]);
 
   const generateMap = useCallback((tiles: Tile[][], width: number, height: number, notes: MapNote[] = [], name?: string, roomShapes?: RoomShape[], rivers?: River[]) => {
+    if (!prepareReplacement('Generate level')) return false;
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
@@ -263,12 +270,18 @@ export function useMapState() {
       nextRoomShapeIdRef.current = 1;
     }
     setSelectedNoteId(null);
+    return true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [debouncedSave, activeLevelIndex, prepareReplacement]);
 
   const applyGeneratedRegion = useCallback((genTiles: Tile[][], ox: number, oy: number, genNotes: MapNote[] = [], genRivers: River[] = []) => {
     const regionH = genTiles.length;
     const regionW = genTiles[0]?.length ?? 0;
+    if (regionH === 0 || regionW === 0) {
+      window.alert('The generated region is empty. The project has not been changed.');
+      return false;
+    }
+    if (!prepareReplacement('Generate region')) return false;
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => {
@@ -311,8 +324,9 @@ export function useMapState() {
       const highestGen = nextIdAfter(genRivers) - 1;
       nextRiverIdRef.current += highestGen;
     }
+    return true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [debouncedSave, activeLevelIndex, prepareReplacement]);
 
   // ── Notes ─────────────────────────────────────────────────────────────
 
@@ -1301,6 +1315,11 @@ export function useMapState() {
   }, [debouncedSave]);
 
   const applySceneTemplate = useCallback((templateId: string, ox: number, oy: number) => {
+    if (!(project.sceneTemplates ?? []).some(template => template.id === templateId)) {
+      window.alert('That scene template is no longer available. The project has not been changed.');
+      return false;
+    }
+    if (!prepareReplacement('Apply scene template')) return false;
     setProject(prev => {
       const templates = prev.sceneTemplates ?? [];
       const template = templates.find(t => t.id === templateId);
@@ -1355,7 +1374,8 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+    return true;
+  }, [debouncedSave, activeLevelIndex, pushHistory, project.sceneTemplates, prepareReplacement]);
 
   return {
     map, project, activeLevelIndex,

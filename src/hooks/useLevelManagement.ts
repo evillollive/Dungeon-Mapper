@@ -14,6 +14,8 @@ export function useLevelManagement(
   setCanRedo: React.Dispatch<React.SetStateAction<boolean>>,
   syncIdsToLevel: (level: DungeonMap) => void,
   setSelectedNoteId: React.Dispatch<React.SetStateAction<number | null>>,
+  levelCount: number,
+  prepareReplacement: (reason: 'Delete level') => boolean,
 ) {
   const switchLevel = useCallback((idx: number) => {
     setProject(prev => {
@@ -67,6 +69,8 @@ export function useLevelManagement(
   }, [debouncedSave]);
 
   const deleteLevel = useCallback((idx: number) => {
+    if (levelCount <= 1 || idx < 0 || idx >= levelCount) return;
+    if (!prepareReplacement('Delete level')) return;
     setProject(prev => {
       if (prev.levels.length <= 1 || idx < 0 || idx >= prev.levels.length) return prev;
       const newLevels = prev.levels.filter((_, i) => i !== idx);
@@ -99,7 +103,7 @@ export function useLevelManagement(
       return updated;
     });
 
-  }, [debouncedSave, activeLevelIndex]);
+  }, [debouncedSave, activeLevelIndex, levelCount, prepareReplacement]);
 
   const duplicateLevel = useCallback((idx: number) => {
     setProject(prev => {

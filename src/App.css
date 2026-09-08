@@ -50,6 +50,8 @@
 }
 .save-health .header-btn:focus-visible { outline: 2px solid #8dbbff; outline-offset: 2px; }
 
+.editor-workspace { display: contents; }
+
 .app-body {
   display: grid;
   /* Side panel widths scale with the same factor as the chrome font
