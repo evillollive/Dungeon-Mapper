@@ -89,7 +89,7 @@ export default function LevelTabs({
   const handleDelete = useCallback((idx: number) => {
     setMenuIndex(null);
     if (levels.length <= 1) return;
-    if (window.confirm(`Delete level "${levels[idx].meta.name}"? This cannot be undone.`)) {
+    if (window.confirm(`Delete level "${levels[idx].meta.name}" and its stair links? Other levels are kept. The saved project will be retained as a local recovery copy.`)) {
       onDelete(idx);
     }
   }, [levels, onDelete]);

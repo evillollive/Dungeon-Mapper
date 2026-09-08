@@ -8,6 +8,7 @@ import NotesPanel from './components/NotesPanel';
 import InitiativePanel from './components/InitiativePanel';
 import IconPicker from './components/IconPicker';
 import MapHeader, { type MapHeaderHandle } from './components/MapHeader';
+import SaveHealth from './components/SaveHealth';
 import GenerateHub from './components/GenerateHub';
 import CustomThemeDialog from './components/CustomThemeDialog';
 import ShortcutsHelp from './components/ShortcutsHelp';
@@ -110,6 +111,7 @@ function App() {
   const {
     map,
     project,
+    saveState, retrySave, originalStoredData, recoverProjectData,
     activeLevelIndex,
     selectedNoteId,
     setSelectedNoteId,
@@ -582,9 +584,9 @@ function App() {
       if (target) {
         // Stamp into the existing map at the selection's offset; the rest
         // of the canvas (notes outside the rect, tokens, fog) is kept.
-        applyGeneratedRegion(result.tiles, target.x, target.y, result.notes, result.rivers);
+        if (!applyGeneratedRegion(result.tiles, target.x, target.y, result.notes, result.rivers)) return;
       } else {
-        generateMap(result.tiles, result.width, result.height, result.notes, suggestedName, result.roomShapes, result.rivers);
+        if (!generateMap(result.tiles, result.width, result.height, result.notes, suggestedName, result.roomShapes, result.rivers)) return;
       }
       setShowGenerateHub(false);
       announce('Map generated');
@@ -809,7 +811,7 @@ function App() {
       setSelectedPlacedStampId(null);
     },
     openCommandPalette: () => setShowCommandPalette(true),
-  });
+  }, !['restoring', 'restore-failed', 'replacing'].includes(saveState.phase));
 
   // ── Context values ──────────────────────────────────────────────────
   const toolContextValue = useMemo<ToolContextValue>(() => ({
@@ -983,6 +985,12 @@ function App() {
       zoomInCanvas, zoomOutCanvas, zoomResetCanvas, fitCanvasToScreen,
       handleUndo, handleRedo]);
 
+  if (saveState.phase === 'restoring' || saveState.phase === 'restore-failed') {
+    return <div className="app">
+      <SaveHealth state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
+    </div>;
+  }
+
   return (
     <ToolContext.Provider value={toolContextValue}>
     <MapContext.Provider value={mapContextValue}>
@@ -990,6 +998,8 @@ function App() {
     <ActionContext.Provider value={actionContextValue}>
     <div className="app">
       <a className="skip-link" href="#dm-canvas-area">Skip to map canvas</a>
+      <SaveHealth state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
+      <div className="editor-workspace" inert={saveState.phase === 'replacing'}>
       <MapHeader
         ref={headerRef}
         map={map}
@@ -1532,7 +1542,7 @@ function App() {
           onCancel={handleCancelGenerateMap}
           onGenerate={handleGenerateMap}
           onLoadProject={loaded => {
-            loadProjectData(loaded);
+            if (!loadProjectData(loaded)) return;
             setShowGenerateHub(false);
             announce('Sample map loaded');
           }}
@@ -1587,6 +1597,7 @@ function App() {
         onClose={() => setShowCommandPalette(false)}
         commands={commandPaletteItems}
       />
+      </div>
     </div>
     </ActionContext.Provider>
     </ViewContext.Provider>

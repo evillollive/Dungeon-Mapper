@@ -33,7 +33,7 @@ function isModalOpen(): boolean {
  * @returns The active `KeyBinding[]` so the help overlay can render the
  *   same list the listener is using.
  */
-export function useGlobalShortcuts(actions: ShortcutActions): KeyBinding[] {
+export function useGlobalShortcuts(actions: ShortcutActions, enabled = true): KeyBinding[] {
   // Keep a ref to the latest actions so binding callbacks invoked from the
   // `keydown` handler always see the freshest closure without rebuilding
   // the binding list (and therefore the listener) on every render. The
@@ -93,6 +93,7 @@ export function useGlobalShortcuts(actions: ShortcutActions): KeyBinding[] {
   }, []);
 
   useEffect(() => {
+    if (!enabled) return;
     const handler = (e: KeyboardEvent) => {
       const editable = isEditableTarget(e.target);
       const modal = isModalOpen();
@@ -109,7 +110,7 @@ export function useGlobalShortcuts(actions: ShortcutActions): KeyBinding[] {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [bindings]);
+  }, [bindings, enabled]);
 
   return bindings;
 }

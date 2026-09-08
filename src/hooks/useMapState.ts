@@ -1,9 +1,9 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useSyncExternalStore, useEffect } from 'react';
 import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, SceneTemplate, StampDef, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment, River, RoomShape } from '../types/map';
-import { createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
-import { saveProject } from '../utils/storage';
+import { createFogGrid, floodFill } from '../utils/mapUtils';
+import { SaveCoordinator } from '../utils/saveCoordinator';
 import { reThemeNotes } from '../utils/reThemeNotes';
-import { clearVisibleMapContent, createDefaultProject, nextIdAfter, replaceGeneratedMapContent, updateActiveLevel } from './mapStateUtils';
+import { clearVisibleMapContent, createDefaultProject, nextIdAfter, replaceGeneratedMapContent, resizeMapContent, updateActiveLevel } from './mapStateUtils';
 import { useMapHistory } from './useMapHistory';
 import { useMapClipboard } from './useMapClipboard';
 import { useLevelManagement } from './useLevelManagement';
@@ -58,11 +58,21 @@ export function useMapState() {
   const nextRoomShapeIdRef = useRef(1);
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
 
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [coordinator] = useState(() => new SaveCoordinator());
+  const saveState = useSyncExternalStore(coordinator.subscribe, coordinator.getSnapshot);
+  useEffect(() => {
+    if (!['saving', 'replacing', 'failed', 'conflict'].includes(saveState.phase)) return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeLeaving);
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
+  }, [saveState.phase]);
 
   const map = project.levels[activeLevelIndex] ?? project.levels[0];
 
-  function syncIdsToLevel(level: DungeonMap) {
+  const syncIdsToLevel = useCallback((level: DungeonMap) => {
     setNextNoteId(nextIdAfter(level.notes));
     nextTokenIdRef.current = nextIdAfter(level.tokens);
     nextStrokeIdRef.current = nextIdAfter(level.annotations);
@@ -73,9 +83,9 @@ export function useMapState() {
     nextPathIdRef.current = nextIdAfter(level.pathSegments);
     nextRiverIdRef.current = nextIdAfter(level.rivers);
     nextRoomShapeIdRef.current = nextIdAfter(level.roomShapes);
-  }
+  }, []);
 
-  function resetIds() {
+  const resetIds = useCallback(() => {
     setNextNoteId(1);
     nextTokenIdRef.current = 1;
     nextStrokeIdRef.current = 1;
@@ -87,14 +97,9 @@ export function useMapState() {
     nextRiverIdRef.current = 1;
     nextRoomShapeIdRef.current = 1;
     setSelectedNoteId(null);
-  }
-
-  const debouncedSave = useCallback((proj: DungeonProject) => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      saveProject(proj).catch(() => {});
-    }, 500);
   }, []);
+
+  const debouncedSave = coordinator.schedule;
 
   // ── Sub-hooks ─────────────────────────────────────────────────────────
 
@@ -105,8 +110,9 @@ export function useMapState() {
     setProject, setActiveLevelIndex, debouncedSave,
     history.historyRef, history.setCanUndo, history.setCanRedo,
     syncIdsToLevel, resetIds, setSelectedNoteId,
+    coordinator,
   );
-  const { loadMapData, loadProjectData, newMap } = persistence;
+  const { loadMapData, loadProjectData, newMap, prepareReplacement } = persistence;
 
   const clipboardHook = useMapClipboard(
     map, setProject, debouncedSave, activeLevelIndex,
@@ -119,6 +125,7 @@ export function useMapState() {
     history.historyRef, history.getHistory,
     history.setCanUndo, history.setCanRedo,
     syncIdsToLevel, setSelectedNoteId,
+    project.levels.length, prepareReplacement,
   );
   const {
     switchLevel, addLevel, renameLevel, deleteLevel,
@@ -184,42 +191,19 @@ export function useMapState() {
   }, [debouncedSave, activeLevelIndex]);
 
   const resizeMap = useCallback((width: number, height: number) => {
+    if (width === map.meta.width && height === map.meta.height) return;
+    if (!prepareReplacement('Resize level')) return;
     setProject(prev => {
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => {
-        const newTiles: Tile[][] = Array.from({ length: height }, (_, y) =>
-          Array.from({ length: width }, (_, x) =>
-            m.tiles[y]?.[x] ?? { type: 'empty' as TileType }
-          )
-        );
-        return {
-          ...m,
-          meta: { ...m.meta, width, height },
-          tiles: newTiles,
-          fog: resizeFogGrid(m.fog, width, height, true),
-          tokens: (m.tokens ?? []).filter(t => {
-            const sz = Math.max(1, Math.floor(t.size ?? 1));
-            return t.x >= 0 && t.y >= 0 && t.x + sz <= width && t.y + sz <= height;
-          }),
-          initiative: (m.initiative ?? []).filter(id =>
-            (m.tokens ?? []).some(t => {
-              const sz = Math.max(1, Math.floor(t.size ?? 1));
-              return t.id === id && t.x >= 0 && t.y >= 0 && t.x + sz <= width && t.y + sz <= height;
-            })
-          ),
-          lightSources: (m.lightSources ?? []).filter(
-            ls => ls.x >= 0 && ls.x < width && ls.y >= 0 && ls.y < height,
-          ),
-          stamps: (m.stamps ?? []).filter(
-            stamp => stamp.x >= 0 && stamp.x < width && stamp.y >= 0 && stamp.y < height,
-          ),
-        };
-      });
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, m => resizeMapContent(m, width, height));
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [debouncedSave, activeLevelIndex, map.meta.width, map.meta.height, prepareReplacement]);
 
   const clearMap = useCallback(() => {
+    if (!prepareReplacement('Clear level')) return;
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
@@ -230,9 +214,10 @@ export function useMapState() {
     });
     resetIds();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [debouncedSave, activeLevelIndex, prepareReplacement]);
 
   const generateMap = useCallback((tiles: Tile[][], width: number, height: number, notes: MapNote[] = [], name?: string, roomShapes?: RoomShape[], rivers?: River[]) => {
+    if (!prepareReplacement('Generate level')) return false;
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
@@ -256,12 +241,18 @@ export function useMapState() {
       nextRoomShapeIdRef.current = 1;
     }
     setSelectedNoteId(null);
+    return true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [debouncedSave, activeLevelIndex, prepareReplacement]);
 
   const applyGeneratedRegion = useCallback((genTiles: Tile[][], ox: number, oy: number, genNotes: MapNote[] = [], genRivers: River[] = []) => {
     const regionH = genTiles.length;
     const regionW = genTiles[0]?.length ?? 0;
+    if (regionH === 0 || regionW === 0) {
+      window.alert('The generated region is empty. The project has not been changed.');
+      return false;
+    }
+    if (!prepareReplacement('Generate region')) return false;
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => {
@@ -304,8 +295,9 @@ export function useMapState() {
       const highestGen = nextIdAfter(genRivers) - 1;
       nextRiverIdRef.current += highestGen;
     }
+    return true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [debouncedSave, activeLevelIndex, prepareReplacement]);
 
   // ── Notes ─────────────────────────────────────────────────────────────
 
@@ -1294,6 +1286,11 @@ export function useMapState() {
   }, [debouncedSave]);
 
   const applySceneTemplate = useCallback((templateId: string, ox: number, oy: number) => {
+    if (!(project.sceneTemplates ?? []).some(template => template.id === templateId)) {
+      window.alert('That scene template is no longer available. The project has not been changed.');
+      return false;
+    }
+    if (!prepareReplacement('Apply scene template')) return false;
     setProject(prev => {
       const templates = prev.sceneTemplates ?? [];
       const template = templates.find(t => t.id === templateId);
@@ -1348,10 +1345,13 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+    return true;
+  }, [debouncedSave, activeLevelIndex, pushHistory, project.sceneTemplates, prepareReplacement]);
 
   return {
     map, project, activeLevelIndex,
+    saveState, retrySave: coordinator.retry, originalStoredData: persistence.original,
+    recoverProjectData: persistence.recoverProjectData,
     selectedNoteId, setSelectedNoteId,
     setTile, fillTiles, setTiles, getTileType,
     setMapName, resizeMap, clearMap, newMap,

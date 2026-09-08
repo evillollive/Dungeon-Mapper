@@ -323,7 +323,7 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
     }
     if (hasExistingContent && !intoSelection) {
       const ok = window.confirm(
-        'This will replace the current map. Notes and tokens will be cleared. Continue?'
+        'Replace the current level, including its notes, tokens, fog and artwork? Other levels are unchanged. The saved project will be retained as a local recovery copy.'
       );
       if (!ok) return;
     }
@@ -558,8 +558,8 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
 
       {hasExistingContent && !intoSelection && (
         <div className="generate-dialog-warning" role="alert">
-          ⚠️ This will replace the current map. Notes and tokens will be
-          cleared. (Tile / fog changes can be reverted with Undo.)
+          This replaces the current level, including notes, tokens, fog and artwork.
+          Other levels are unchanged. A saved project copy is retained in Recovery copies.
         </div>
       )}
       {intoSelection && selection && (
