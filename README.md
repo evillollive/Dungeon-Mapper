@@ -74,6 +74,7 @@ The README is intentionally a landing page. The detailed reference material is p
 | Full feature tour and tool reference | [Feature Reference](./docs/FEATURES.md) |
 | Project architecture | [Architecture](./docs/ARCHITECTURE.md) |
 | Setup, scripts, and test structure | [Development Guide](./docs/DEVELOPMENT.md) |
+| DM/player workflow and visual redesign plan | [End-user Experience Roadmap](./docs/USER-EXPERIENCE-ROADMAP.md) |
 | Roadmap and competitive analysis | [Roadmap](./docs/ROADMAP.md) |
 | Sharing and launch copy | [Sharing Guide](./docs/SHARING.md) |
 | Release notes | [Changelog](./CHANGELOG.md) |
