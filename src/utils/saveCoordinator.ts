@@ -5,6 +5,7 @@ import { checkpointCount } from './projectRepository';
 export interface SaveState {
   phase: 'restoring' | 'unsaved' | 'saving' | 'replacing' | 'saved' | 'failed' | 'conflict' | 'restore-failed';
   message?: string;
+  restorationBlocked?: boolean;
 }
 
 /** One writer per mounted editor; the repository also compares revisions atomically across tabs. */
@@ -86,17 +87,20 @@ export class SaveCoordinator {
     }
   }
   switchProject = async (id: string) => {
-    this.assertClean();
+    const fromRestoreFailure = this.state.phase === 'restore-failed' && !this.ready;
+    if (!fromRestoreFailure || this.pending || this.writing) this.assertClean();
     const prior = this.state;
     this.writing = true;
-    this.publish({ phase: 'replacing' });
+    this.publish({ phase: 'replacing', ...(fromRestoreFailure ? { restorationBlocked: true } : {}) });
     try {
       const loaded = await loadProject(id);
+      if (!loaded.project || loaded.projectId !== id) throw new Error('The selected project did not load. No replacement has been opened.');
       if (this.pending) throw new StorageConflictError('The map changed during project switching. Newer edits remain in memory; export them before reloading.');
       this.initialize(loaded.revision, loaded.project !== null, loaded.projectId, loaded.checkpointCount);
       return loaded;
     } catch (error) {
-      this.publish(error instanceof StorageConflictError ? { phase: 'conflict', message: error.message }
+      this.publish(fromRestoreFailure ? prior
+        : error instanceof StorageConflictError ? { phase: 'conflict', message: error.message }
         : this.pending
           ? { phase: 'failed', message: 'The project switch failed while newer edits arrived. Your edits remain in memory. Retry save to keep them in the original project.' }
           : prior);
@@ -115,8 +119,9 @@ export class SaveCoordinator {
     this.writing = true;
     this.publish({ phase: 'replacing' });
     try {
+      const retainedPredecessor = this.revision !== null;
       this.revision = await this.save(project, reason);
-      if (this.projectId) this.checkpoints++;
+      if (this.projectId && retainedPredecessor) this.checkpoints++;
       if (this.pending) {
         throw new StorageConflictError('The map changed while the recovery copy was saving. Your newer edits remain in memory. Export them before reloading; automatic saving is stopped.');
       }
@@ -146,8 +151,9 @@ export class SaveCoordinator {
     this.checkpoint = false;
     this.writing = true;
     try {
+      const retainedPredecessor = this.revision !== null;
       this.revision = await this.save(project, checkpoint);
-      if (checkpoint && this.projectId) this.checkpoints++;
+      if (checkpoint && this.projectId && retainedPredecessor) this.checkpoints++;
       this.publish({ phase: this.pending ? 'saving' : 'saved' });
     } catch (error) {
       clearTimeout(this.timer);

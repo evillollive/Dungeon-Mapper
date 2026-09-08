@@ -64,4 +64,16 @@ describe('recovery and project controls', () => {
     expect(screen.getByText('Open Unreadable project')).toBeDisabled();
     expect(change).not.toHaveBeenCalled();
   });
+
+  it('offers healthy choices without a placeholder project-name editor after startup failure', async () => {
+    vi.mocked(listProjects).mockResolvedValue([{ id: 'healthy', name: 'Healthy project', original: {}, updatedAt: '' }]);
+    const change = vi.fn().mockRejectedValue(new Error('Target read failed'));
+    render(<ProjectChooser name="" unavailable disabled={false} locked onRename={vi.fn()} onSwitch={change} />);
+    expect(screen.queryByRole('textbox', { name: 'Project name' })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByText('Switch project'));
+    await waitFor(() => expect(screen.getByText('Open Healthy project')).toBeEnabled());
+    fireEvent.click(screen.getByText('Open Healthy project'));
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Target read failed'));
+    expect(screen.getByText('Open Healthy project')).toBeEnabled();
+  });
 });

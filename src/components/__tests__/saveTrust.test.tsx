@@ -77,6 +77,13 @@ describe('save trust controls', () => {
     Object.defineProperty(navigator, 'onLine', { configurable: true, value: true });
   });
 
+  it('does not expose a placeholder backup while opening another project from restore failure', () => {
+    render(<SaveHealth state={{ phase: 'replacing', restorationBlocked: true }}
+      project={createDefaultProject()} onRetry={vi.fn()} onRecover={vi.fn()} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Opening project safely');
+    expect(screen.queryByRole('button', { name: 'Export backup' })).not.toBeInTheDocument();
+  });
+
   it('previews fog repair, supports cancellation, and keeps a failed commit retryable', async () => {
     const original = createDefaultProject();
     original.levels[0].fog = [Array<boolean>(8).fill(false)];

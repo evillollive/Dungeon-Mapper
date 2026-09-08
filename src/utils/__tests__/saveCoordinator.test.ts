@@ -63,6 +63,52 @@ describe('revision-aware save coordinator', () => {
     expect(writer.getSnapshot().phase).toBe('saved');
   });
 
+  it('can open a healthy project from failed startup without making the editor ready before the read completes', async () => {
+    const target = deferred<Awaited<ReturnType<typeof loadProject>>>();
+    vi.mocked(loadProject).mockReturnValueOnce(target.promise);
+    const writer = new SaveCoordinator();
+    writer.failRestore('Selected project is invalid', 'broken');
+    const switching = writer.switchProject('healthy');
+    expect(writer.getSnapshot()).toEqual({ phase: 'replacing', restorationBlocked: true });
+    expect(writer.getProjectId()).toBe('broken');
+    expect(() => writer.startProject(createDefaultProject())).toThrow();
+    target.resolve({ project: createDefaultProject(), revision: 'healthy-rev', projectId: 'healthy' });
+    await switching;
+    expect(writer.getProjectId()).toBe('healthy');
+    expect(writer.getSnapshot()).toEqual({ phase: 'saved' });
+    expect(saveProject).not.toHaveBeenCalled();
+  });
+
+  it('keeps failed startup gated when another target cannot load', async () => {
+    vi.mocked(loadProject).mockRejectedValueOnce(new Error('Target unavailable'));
+    const writer = new SaveCoordinator();
+    writer.failRestore('Original failed', 'broken');
+    const before = writer.getSnapshot();
+    await expect(writer.switchProject('missing')).rejects.toThrow('Target unavailable');
+    expect(writer.getSnapshot()).toBe(before);
+    expect(writer.getProjectId()).toBe('broken');
+    expect(saveProject).not.toHaveBeenCalled();
+  });
+
+  it.each(['save', 'replace'])('does not count a phantom checkpoint on the first %s', async firstOperation => {
+    vi.mocked(saveProject).mockResolvedValue('committed');
+    const writer = new SaveCoordinator();
+    const project = createDefaultProject();
+    writer.initialize(null, false, 'fresh');
+    if (firstOperation === 'replace') await writer.replace(project, true);
+    else {
+      writer.retainReplacement('Clear level');
+      writer.schedule(project);
+      await vi.advanceTimersByTimeAsync(500);
+    }
+    for (let count = 0; count < 20; count++) {
+      expect(writer.assertCheckpointCapacity).not.toThrow();
+      await writer.replace(project, true);
+    }
+    expect(writer.assertCheckpointCapacity).toThrow(/20 durable checkpoints/);
+    expect(saveProject).toHaveBeenCalledTimes(21);
+  });
+
   it('never labels edits saved when they arrive during a failed target load', async () => {
     const target = deferred<Awaited<ReturnType<typeof loadProject>>>();
     vi.mocked(loadProject).mockReturnValueOnce(target.promise);

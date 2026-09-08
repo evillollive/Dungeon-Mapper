@@ -43,7 +43,7 @@ export default function SaveHealth({ state, project, projectId, onRefreshCheckpo
       window.removeEventListener('offline', update);
     };
   }, []);
-  const blocked = state.phase === 'restore-failed' || state.phase === 'restoring';
+  const blocked = state.phase === 'restore-failed' || state.phase === 'restoring' || state.restorationBlocked;
   const failed = ['failed', 'conflict', 'restore-failed'].includes(state.phase);
   const showRecovery = async () => {
     try {

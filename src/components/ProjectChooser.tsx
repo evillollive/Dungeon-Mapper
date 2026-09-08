@@ -7,17 +7,20 @@ interface Props {
   name: string;
   disabled: boolean;
   locked: boolean;
+  unavailable?: boolean;
   onRename: (name: string) => void;
   onSwitch: (id: string) => Promise<void>;
 }
 
-export default function ProjectChooser({ projectId, name, disabled, locked, onRename, onSwitch }: Props) {
+export default function ProjectChooser({ projectId, name, disabled, locked, unavailable, onRename, onSwitch }: Props) {
   const [projects, setProjects] = useState<ProjectSummary[] | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   return <section className="project-chooser" aria-label="Local projects">
-    <label>Project name <input aria-label="Project name" value={name} disabled={locked}
-      onChange={event => onRename(event.target.value)} /></label>
+    {unavailable
+      ? <p>Open another saved project without changing the unavailable project or its retained sources.</p>
+      : <label>Project name <input aria-label="Project name" value={name} disabled={locked}
+        onChange={event => onRename(event.target.value)} /></label>}
     <button className="header-btn" disabled={busy} onClick={async () => {
       setBusy(true);
       try { setProjects(await listProjects()); setError(''); }

@@ -111,8 +111,9 @@ export async function listProjects(): Promise<ProjectSummary[]> {
   return new Promise((resolve, reject) => {
     const tx = db.transaction('maps', 'readonly');
     const store = tx.objectStore('maps');
-    const keys = store.getAllKeys();
-    const values = store.getAll();
+    const projectKeys = IDBKeyRange.bound('project:', 'project;', false, true);
+    const keys = store.getAllKeys(projectKeys);
+    const values = store.getAll(projectKeys);
     tx.oncomplete = () => {
       db.close();
       resolve(keys.result.flatMap<ProjectSummary>((key, index) => {
