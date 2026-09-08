@@ -996,9 +996,11 @@ function App() {
       zoomInCanvas, zoomOutCanvas, zoomResetCanvas, fitCanvasToScreen,
       handleUndo, handleRedo]);
 
-  if (saveState.phase === 'restoring' || saveState.phase === 'restore-failed') {
+  if (saveState.phase === 'restoring' || saveState.phase === 'restore-failed' || saveState.restorationBlocked) {
     return <div className="app">
       <SaveHealth key={projectId} projectId={projectId} onRefreshCheckpoints={refreshCheckpoints} state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
+      {saveState.phase !== 'restoring' && <ProjectChooser projectId={projectId} name="" unavailable locked
+        onRename={setProjectName} onSwitch={switchProject} disabled={saveState.phase !== 'restore-failed'} />}
     </div>;
   }
 

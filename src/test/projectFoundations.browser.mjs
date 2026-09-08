@@ -318,5 +318,124 @@ export async function runProjectFoundations(browser, origin = 'http://127.0.0.1:
     await page.getByText('Saved on this device', { exact: true }).waitFor();
     await page.getByText('Offline', { exact: true }).waitFor();
   });
+  await scenario('catalog enumeration excludes recovery history and legacy archives at the database boundary', async page => {
+    await page.evaluate(async () => {
+      const { saveProject, openDB } = await import('./src/utils/storage.ts');
+      const { listProjects } = await import('./src/utils/projectRepository.ts');
+      const { createDefaultProject } = await import('./src/hooks/mapStateUtils.ts');
+      await saveProject(createDefaultProject(), null, false, 'catalog');
+      const db = await openDB();
+      await new Promise(resolve => {
+        const tx = db.transaction('maps', 'readwrite');
+        const store = tx.objectStore('maps');
+        store.put(Array.from({ length: 20 }, () => ({ data: 'retained snapshot'.repeat(10000) })), 'recovery:catalog');
+        store.put({ data: 'legacy snapshot'.repeat(10000) }, 'replacement-recovery');
+        tx.oncomplete = resolve;
+      });
+      db.close();
+      const originals = { getAll: IDBObjectStore.prototype.getAll, getAllKeys: IDBObjectStore.prototype.getAllKeys };
+      const calls = [];
+      for (const method of ['getAll', 'getAllKeys']) {
+        IDBObjectStore.prototype[method] = function (range, ...rest) {
+          if (!(range instanceof IDBKeyRange) || !range.includes('project:catalog') ||
+              range.includes('recovery:catalog') || range.includes('replacement-recovery') || range.includes('autosave')) {
+            throw new Error(`${method} attempted to enumerate non-project storage`);
+          }
+          calls.push(method);
+          return originals[method].call(this, range, ...rest);
+        };
+      }
+      try {
+        const projects = await listProjects();
+        if (projects.length !== 1 || projects[0].original.localProjectId !== 'catalog' || calls.length !== 2) {
+          throw new Error('Bounded catalog read lost its source or did not use expected range reads');
+        }
+      } finally {
+        IDBObjectStore.prototype.getAll = originals.getAll;
+        IDBObjectStore.prototype.getAllKeys = originals.getAllKeys;
+      }
+    });
+  });
+  for (const kind of ['missing', 'corrupt']) {
+    await scenario(`${kind} selected project can open a healthy alternative and survives failed target loading`, async page => {
+      await page.evaluate(async kind => {
+        const { saveProject, openDB } = await import('./src/utils/storage.ts');
+        const { createDefaultProject } = await import('./src/hooks/mapStateUtils.ts');
+        const project = createDefaultProject();
+        await saveProject({ ...project, name: 'Healthy B' }, null, false, 'b');
+        await saveProject({ ...project, name: 'Healthy C' }, null, false, 'c');
+        if (kind === 'corrupt') {
+          const db = await openDB();
+          await new Promise(resolve => {
+            const tx = db.transaction('maps', 'readwrite');
+            tx.objectStore('maps').put({ schemaVersion: 999, original: 'retain A' }, 'project:a');
+            tx.oncomplete = resolve;
+          });
+          db.close();
+        }
+      }, kind);
+      await page.goto(`${origin}?project=a`);
+      await page.getByText('Could not restore your project', { exact: true }).waitFor();
+      if (await page.getByRole('textbox', { name: 'Project name', exact: true }).count()) throw new Error('Blank naming editor exposed');
+      if (await page.locator('#dm-canvas-area').count()) throw new Error('Blank map exposed after failed startup');
+      await page.getByRole('button', { name: 'Switch project', exact: true }).click();
+      await page.getByRole('button', { name: 'Open Healthy B', exact: true }).waitFor();
+      await page.evaluate(async () => {
+        const db = await (await import('./src/utils/storage.ts')).openDB();
+        await new Promise(resolve => {
+          const tx = db.transaction('maps', 'readwrite');
+          tx.objectStore('maps').delete('project:b');
+          tx.oncomplete = resolve;
+        });
+        db.close();
+      });
+      await page.getByRole('button', { name: 'Open Healthy B', exact: true }).click();
+      await page.getByText('The selected project record is missing. No blank replacement has been opened.', { exact: true }).waitFor();
+      await page.getByText('Could not restore your project', { exact: true }).waitFor();
+      if (await page.locator('#dm-canvas-area').count()) throw new Error('Failed alternate read exposed editor');
+      await page.getByRole('button', { name: 'Open Healthy C', exact: true }).click();
+      await page.getByText('Saved on this device', { exact: true }).waitFor();
+      if (await page.getByRole('textbox', { name: 'Project name', exact: true }).inputValue() !== 'Healthy C') throw new Error('Healthy target not opened');
+      const original = await page.evaluate(async () => (await import('./src/utils/storage.ts')).readRecord('project:a'));
+      if (kind === 'missing' ? original !== undefined : original?.original !== 'retain A') throw new Error('Unavailable original was overwritten');
+      if (new URL(page.url()).searchParams.get('project') !== 'c') throw new Error('Target selection not retained');
+      await page.reload();
+      await page.getByText('Saved on this device', { exact: true }).waitFor();
+    });
+  }
+  await scenario('first-save checkpoints count only real committed predecessors through the full capacity', async page => {
+    await page.evaluate(async () => {
+      const { SaveCoordinator } = await import('./src/utils/saveCoordinator.ts');
+      const { checkpointCount } = await import('./src/utils/projectRepository.ts');
+      const { createDefaultProject } = await import('./src/hooks/mapStateUtils.ts');
+      for (const firstOperation of ['save', 'replace']) {
+        const writer = new SaveCoordinator();
+        const id = `first-${firstOperation}`;
+        const project = createDefaultProject();
+        writer.initialize(null, false, id);
+        if (firstOperation === 'replace') await writer.replace(project, true);
+        else {
+          const completed = new Promise(resolve => {
+            const unsubscribe = writer.subscribe(() => {
+              if (writer.getSnapshot().phase === 'saved') { unsubscribe(); resolve(); }
+            });
+          });
+          writer.retainReplacement('Clear level');
+          writer.schedule(project);
+          await completed;
+        }
+        if (await checkpointCount(id) !== 0) throw new Error('First commit retained a nonexistent predecessor');
+        for (let count = 0; count < 20; count++) {
+          writer.assertCheckpointCapacity();
+          await writer.replace(project, true);
+        }
+        if (await checkpointCount(id) !== 20) throw new Error('Capacity paused before 20 real checkpoints');
+        let stopped = false;
+        try { writer.assertCheckpointCapacity(); } catch { stopped = true; }
+        if (!stopped) throw new Error('Capacity did not stop at 20');
+        writer.dispose();
+      }
+    });
+  });
   return results;
 }

@@ -66,7 +66,7 @@ export function useMapPersistence(
         const count = await checkpointCount(id);
         if (count >= MAX_PROJECT_CHECKPOINTS) throw new Error('Delete a checkpoint in Recovery copies before restoring this project.');
         const revision = await saveProject(ready, restoreRevision.current, reason, id);
-        coordinator.initialize(revision, true, id, count + 1);
+        coordinator.initialize(revision, true, id, count + (restoreRevision.current !== null ? 1 : 0));
       } else {
         const migrated = await recoverLegacyProject(ready, restoreRevision.current);
         coordinator.initialize(migrated.revision, true, migrated.projectId, migrated.checkpointCount);
@@ -163,6 +163,9 @@ export function useMapPersistence(
     setActiveLevelIndex(ready.activeLevelIndex);
     syncIdsToLevel(ready.levels[ready.activeLevelIndex]);
     setSelectedNoteId(null);
+    setOriginal(undefined);
+    failedProjectId.current = undefined;
+    restoreRevision.current = undefined;
   }, [coordinator, historyRef, setCanUndo, setCanRedo, setProject, setActiveLevelIndex, syncIdsToLevel, setSelectedNoteId]);
 
   return { loadMapData, loadProjectData, newMap, original, recoverProjectData, prepareReplacement, switchProject };

@@ -61,6 +61,24 @@ describe('save restoration and replacement integration', () => {
     expect(new URL(window.location.href).searchParams.get('project')).toBe('b');
   });
 
+  it.each(['missing', 'corrupt'])('opens another project after %s startup without touching the unavailable source', async kind => {
+    const original = kind === 'missing' ? undefined : { schemaVersion: 999 };
+    vi.mocked(loadProject).mockRejectedValueOnce(new RestoreError('Unavailable A', original, kind === 'missing' ? null : 'a-rev', 'a'))
+      .mockRejectedValueOnce(new Error('Target B failed'))
+      .mockResolvedValueOnce({ project: { ...createDefaultProject(), name: 'Healthy B' }, revision: 'b-rev', projectId: 'b' });
+    const { result } = renderHook(() => useMapState());
+    await waitFor(() => expect(result.current.saveState.phase).toBe('restore-failed'));
+    await act(async () => { await expect(result.current.switchProject('b')).rejects.toThrow('Target B failed'); });
+    expect(result.current.saveState.phase).toBe('restore-failed');
+    expect(result.current.originalStoredData).toEqual(original);
+    await act(async () => { await result.current.switchProject('b'); });
+    expect(result.current.project.name).toBe('Healthy B');
+    expect(result.current.projectId).toBe('b');
+    expect(result.current.originalStoredData).toBeUndefined();
+    expect(result.current.saveState.phase).toBe('saved');
+    expect(saveProject).not.toHaveBeenCalled();
+  });
+
   it('rejects a late callback from the previous project while new editor callbacks remain usable', async () => {
     vi.mocked(loadProject).mockResolvedValueOnce({ project: createDefaultProject(), revision: 'a-rev', projectId: 'a' })
       .mockResolvedValueOnce({ project: createDefaultProject(), revision: 'b-rev', projectId: 'b' });
