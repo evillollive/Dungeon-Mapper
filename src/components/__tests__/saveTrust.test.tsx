@@ -7,6 +7,7 @@ import { createDefaultProject } from '../../hooks/mapStateUtils';
 import { downloadRecoveryData } from '../../utils/storage';
 import { projectRecoveryRecords } from '../../utils/projectRepository';
 import { exportProjectJSON } from '../../utils/export';
+import { EditorFixture } from '../../test/editorActionFixture';
 
 vi.mock('../../utils/storage', () => ({
   downloadRecoveryData: vi.fn(),
@@ -32,9 +33,10 @@ describe('save trust controls', () => {
       uiScaleOptions: [1], onSetUIScale: noop, getCanvas: () => null,
       viewMode: 'gm' as const, onToggleViewMode: noop, onShowShortcuts: noop,
       onOpenExportDialog: noop, onOpenGenerateHub: noop,
-      layoutDensity: 'rail' as const, onSetLayoutDensity: noop,
+      settingsOpen: true, onCloseSettings: noop, exportOpen: false, onCloseExport: noop,
+      onSetProjectName: noop, saveLabel: 'Saved on this device',
     };
-    const { rerender } = render(<MapHeader {...props} />);
+    const { rerender } = render(<MapHeader {...props} />, { wrapper: EditorFixture });
     expect(screen.getByRole('combobox', { name: 'Map width in tiles' })).toHaveValue('40');
     expect(screen.getByRole('combobox', { name: 'Map height in tiles' })).toHaveValue('37');
     expect(noop).not.toHaveBeenCalled();

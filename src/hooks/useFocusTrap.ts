@@ -68,7 +68,8 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>() {
     return () => {
       container.removeEventListener('keydown', handleKeyDown);
       // Restore focus to the previously focused element.
-      previousFocusRef.current?.focus();
+      if (previousFocusRef.current?.isConnected) previousFocusRef.current.focus();
+      else document.getElementById('dm-canvas-area')?.focus();
     };
   }, []);
 

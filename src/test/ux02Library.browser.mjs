@@ -337,7 +337,10 @@ export async function runUx02Library(browser, origin = 'http://127.0.0.1:5192/Du
     await page.getByRole('searchbox').fill('');
     await page.getByRole('button', { name: /^(Open|Continue) QA renamed crypt$/ }).click();
     await saved(page);
+    await page.getByRole('button', { name: 'Project menu', exact: true }).click();
+    await page.getByRole('button', { name: 'Project settings', exact: true }).click();
     await page.getByRole('textbox', { name: 'Project name', exact: true }).fill('QA saved crypt');
+    await page.getByRole('button', { name: 'Close Project settings', exact: true }).click();
     await saved(page);
     await library(page);
     await card(page, 'QA saved crypt').waitFor();
@@ -621,7 +624,7 @@ export async function runUx02Library(browser, origin = 'http://127.0.0.1:5192/Du
     assert.equal(await page.getByRole('textbox', { name: 'Project name', exact: true }).count(), 0, 'Stale editor became visible while switching');
     await page.evaluate(() => window.qaReleaseLoad());
     await saved(page);
-    assert.equal(await page.getByRole('textbox', { name: 'Project name', exact: true }).inputValue(), 'QA second');
+    assert.equal(await page.locator('.project-identity strong').innerText(), 'QA second');
     return { twoTabWinner: 'QA winning title', staleEditRejected: true, delayedNativeReadId: ids[1], libraryStayedVisibleUntilCompletion: true };
   });
 
@@ -641,9 +644,12 @@ export async function runUx02Library(browser, origin = 'http://127.0.0.1:5192/Du
     }));
     assert.ok(layout.document <= layout.viewport + 1, `Horizontal overflow: ${JSON.stringify(layout)}`);
     assert.deepEqual(layout.overflowing, []);
+    await page.getByRole('button', { name: 'Continue last map', exact: true }).waitFor();
     await page.keyboard.press(tabKey);
     const firstTab = await page.evaluate(() => document.activeElement?.textContent);
-    assert.equal(firstTab, 'Create map');
+    assert.equal(firstTab, 'Continue last map');
+    await page.keyboard.press(tabKey);
+    assert.equal(await page.evaluate(() => document.activeElement?.textContent), 'Create map');
     await page.getByRole('searchbox').focus();
     await page.keyboard.type('mobile crypt');
     assert.equal(await page.getByRole('article').count(), 1);

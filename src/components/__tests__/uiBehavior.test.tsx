@@ -7,6 +7,7 @@ import GenerateHub from '../GenerateHub';
 import NavigationRail from '../NavigationRail';
 import SelectionInspector from '../SelectionInspector';
 import { createDefaultMap } from '../../hooks/mapStateUtils';
+import { EditorFixture } from '../../test/editorActionFixture';
 
 const { exportHighResPNG } = vi.hoisted(() => ({
   exportHighResPNG: vi.fn(),
@@ -29,6 +30,7 @@ type NavigationRailPropsForTest = React.ComponentProps<typeof NavigationRail>;
 function railProps(overrides: Partial<NavigationRailPropsForTest> = {}): NavigationRailPropsForTest {
   const noop = () => {};
   return {
+    activePanel: 'build',
     activeTool: 'paint',
     activeTile: 'floor',
     themeId: 'dungeon',
@@ -84,6 +86,8 @@ function railProps(overrides: Partial<NavigationRailPropsForTest> = {}): Navigat
     onSetPathWidth: noop,
     onClearWalls: noop,
     onClearPaths: noop,
+    riverColor: '#00f', riverWidth: 1, riverType: 'water',
+    onSetRiverColor: noop, onSetRiverWidth: noop, onSetRiverType: noop, onClearRivers: noop,
     onOpenSceneTemplates: noop,
     ...overrides,
   };
@@ -149,17 +153,19 @@ describe('NavigationRail behavior', () => {
     window.localStorage.clear();
   });
 
-  it('switches contextual panels and opens Generate Hub', () => {
-    const onOpenGenerateMap = vi.fn();
-    render(<NavigationRail {...railProps({ onOpenGenerateMap })} />);
+  it('dispatches destinations through the shared registry and renders the controlled panel', () => {
+    const onAction = vi.fn();
+    const { rerender } = render(<EditorFixture onAction={onAction}><NavigationRail {...railProps()} /></EditorFixture>);
 
     expect(screen.getByText('Draw panel')).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('tab', { name: /Tactical mode/i }));
+    fireEvent.click(screen.getByRole('button', { name: 'Fog & sight' }));
+    expect(onAction).toHaveBeenCalledWith('panel.tactical');
+    rerender(<EditorFixture onAction={onAction}><NavigationRail {...railProps({ activePanel: 'tactical' })} /></EditorFixture>);
     expect(screen.getByText('Tactical panel')).toBeInTheDocument();
-    expect(window.localStorage.getItem('dungeon-mapper:rail-mode')).toBe('tactical');
-
-    fireEvent.click(screen.getByRole('button', { name: /Open Generate Hub/i }));
-    expect(onOpenGenerateMap).toHaveBeenCalled();
+    expect(screen.queryByText('Draw panel')).not.toBeInTheDocument();
+    rerender(<EditorFixture onAction={onAction}><NavigationRail {...railProps()} /></EditorFixture>);
+    fireEvent.click(screen.getByRole('button', { name: 'Generate' }));
+    expect(onAction).toHaveBeenCalledWith('file.generate');
   });
 });
 

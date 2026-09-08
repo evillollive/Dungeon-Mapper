@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { DungeonProject } from '../types/map';
 import type { SaveState } from '../utils/saveCoordinator';
 import { downloadRecoveryData, type RecoveryRecord } from '../utils/storage';
@@ -6,6 +6,8 @@ import { projectRecoveryRecords } from '../utils/projectRepository';
 import RecoveryManager from './RecoveryManager';
 import { exportProjectJSON, importProjectJSON } from '../utils/export';
 import { previewFogRepair, type FogRepairPreview } from '../utils/projectSchema';
+import { SAVE_PHASE_LABELS } from '../utils/saveStatus';
+import { useOfflineStatus } from '../hooks/useOfflineStatus';
 
 interface Props {
   projectId?: string;
@@ -17,32 +19,13 @@ interface Props {
   onRecover: (project: DungeonProject, reason?: 'Fog repair') => Promise<void>;
 }
 
-const LABELS: Record<SaveState['phase'], string> = {
-  restoring: 'Restoring device storage',
-  unsaved: 'Not saved yet',
-  saving: 'Saving',
-  replacing: 'Opening project safely',
-  saved: 'Saved on this device',
-  failed: 'Save failed',
-  conflict: 'Save conflict',
-  'restore-failed': 'Could not restore your project',
-};
-
 export default function SaveHealth({ state, project, projectId, onRefreshCheckpoints, onRetry, original, onRecover }: Props) {
-  const [offline, setOffline] = useState(!navigator.onLine);
+  const offline = useOfflineStatus();
+  const recoveryButton = useRef<HTMLButtonElement>(null);
   const [records, setRecords] = useState<RecoveryRecord[] | null>(null);
   const [error, setError] = useState('');
   const [recovering, setRecovering] = useState(false);
   const [repair, setRepair] = useState<(FogRepairPreview & { original: unknown }) | null>(null);
-  useEffect(() => {
-    const update = () => setOffline(!navigator.onLine);
-    window.addEventListener('online', update);
-    window.addEventListener('offline', update);
-    return () => {
-      window.removeEventListener('online', update);
-      window.removeEventListener('offline', update);
-    };
-  }, []);
   const blocked = state.phase === 'restore-failed' || state.phase === 'restoring' || state.restorationBlocked;
   const failed = ['failed', 'conflict', 'restore-failed'].includes(state.phase);
   const showRecovery = async () => {
@@ -57,7 +40,7 @@ export default function SaveHealth({ state, project, projectId, onRefreshCheckpo
   return (
     <section className={`save-health${failed ? ' save-health-error' : ''}`} aria-label="Device save and recovery">
       <div className="save-health-summary">
-        <strong role="status" aria-live="polite">{LABELS[state.phase]}</strong>
+        <strong role="status" aria-live="polite">{SAVE_PHASE_LABELS[state.phase]}</strong>
         {offline && <span>Offline</span>}
         {!blocked && <button type="button" className="header-btn" onClick={() => {
           try {
@@ -79,7 +62,7 @@ export default function SaveHealth({ state, project, projectId, onRefreshCheckpo
             }
           }}>Review fog repair</button>}
         {state.phase === 'restore-failed' && <button type="button" className="header-btn" onClick={() => window.location.reload()}>Retry restore</button>}
-        {state.phase !== 'restoring' && <button type="button" className="header-btn" onClick={() => { void showRecovery(); }}>Recovery copies</button>}
+        {state.phase !== 'restoring' && <button ref={recoveryButton} type="button" className="header-btn" onClick={() => { void showRecovery(); }}>Recovery copies</button>}
       </div>
       {failed && <p role="alert">{state.message} {blocked ? 'The original record has not been replaced.' : 'Your current work is still in memory. Keep this tab open or export a backup.'}</p>}
       {state.phase !== 'restoring' && <small>Backups include DM-only content. Device saves and local recovery copies are not external backups. Undo is memory-only.</small>}
@@ -158,7 +141,7 @@ export default function SaveHealth({ state, project, projectId, onRefreshCheckpo
               }
             }} />
           </label>
-          <button className="header-btn" type="button" onClick={() => setRecords(null)}>Close recovery copies</button>
+          <button className="header-btn" type="button" onClick={() => { setRecords(null); recoveryButton.current?.focus(); }}>Close recovery copies</button>
         </div>
       )}
     </section>

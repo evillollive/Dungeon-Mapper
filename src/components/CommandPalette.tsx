@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 
 /** A single entry in the command palette. */
 export interface CommandItem {
@@ -11,6 +12,8 @@ export interface CommandItem {
   shortcut?: string;
   /** Callback executed when the user selects this command. */
   action: () => void;
+  enabled?: boolean;
+  unavailableReason?: string;
 }
 
 interface CommandPaletteProps {
@@ -50,6 +53,7 @@ const CommandPaletteContents: React.FC<Omit<CommandPaletteProps, 'open'>> = ({ o
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useFocusTrap<HTMLDivElement>();
   const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -84,6 +88,7 @@ const CommandPaletteContents: React.FC<Omit<CommandPaletteProps, 'open'>> = ({ o
   }, [activeIndex]);
 
   const runCommand = useCallback((item: CommandItem) => {
+    if (item.enabled === false) return;
     onClose();
     // Execute after the palette unmounts so any focus management in the
     // action callback doesn't race with the palette's own cleanup.
@@ -113,6 +118,7 @@ const CommandPaletteContents: React.FC<Omit<CommandPaletteProps, 'open'>> = ({ o
 
   return (
     <div
+      ref={dialogRef}
       className="command-palette-overlay"
       onClick={onClose}
       role="presentation"
@@ -124,6 +130,7 @@ const CommandPaletteContents: React.FC<Omit<CommandPaletteProps, 'open'>> = ({ o
         aria-label="Command palette"
         onClick={e => e.stopPropagation()}
       >
+        <button type="button" className="palette-close" onClick={onClose}>Close commands</button>
         <input
           ref={inputRef}
           className="command-palette-input"
@@ -157,12 +164,15 @@ const CommandPaletteContents: React.FC<Omit<CommandPaletteProps, 'open'>> = ({ o
               className={`command-palette-item${i === activeIndex ? ' selected' : ''}`}
               role="option"
               aria-selected={i === activeIndex}
+              aria-disabled={item.enabled === false}
               onPointerDown={e => e.preventDefault()}
               onClick={() => runCommand(item)}
               onPointerEnter={() => setSelectedIndex(i)}
             >
               <span className="command-palette-category">{item.category}</span>
-              <span className="command-palette-label">{item.label}</span>
+              <span className="command-palette-label">{item.label}
+                {item.unavailableReason && <small>{item.unavailableReason}</small>}
+              </span>
               {item.shortcut && (
                 <kbd className="command-palette-shortcut">{item.shortcut}</kbd>
               )}

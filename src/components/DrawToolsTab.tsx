@@ -8,6 +8,7 @@ import { ART_STYLE_PRESET_DESCRIPTIONS } from '../utils/artStylePresets';
 import StampPicker from './StampPicker';
 
 interface DrawToolsTabProps {
+  section?: 'build' | 'decorate' | 'look';
   activeTool: ToolType;
   activeTile: TileType;
   themeId: string;
@@ -131,6 +132,7 @@ function TilePreview({
 }
 
 const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
+  section = 'build',
   activeTool, activeTile, themeId, customThemes, onSetTool, onSetTile,
   onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
   onOpenCustomThemeBuilder,
@@ -165,9 +167,15 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
 
   return (
     <>
-      <div className="toolbar-section">
+      {section === 'build' && <>
+      <label className="active-material">Material
+        <select aria-label="Active material" value={activeTile} onChange={event => onSetTile(event.target.value as TileType)}>
+          {paletteTiles.map(tile => <option key={tile} value={tile}>{tileLabel(tile)}</option>)}
+        </select>
+      </label>
+      <div className="toolbar-section build-tool-grid">
         <div className="toolbar-label">TOOLS</div>
-        {TOOLS.map(tool => (
+        {TOOLS.filter(tool => tool.id !== 'note').map(tool => (
           <button
             key={tool.id}
             type="button"
@@ -178,7 +186,6 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
             aria-pressed={activeTool === tool.id}
             aria-keyshortcuts={tool.shortcut}
           >
-            <span className="tool-icon" aria-hidden="true">{tool.icon}</span>
             <span className="tool-name">{tool.label}</span>
             <span className="tool-shortcut" aria-hidden="true">[{tool.shortcut}]</span>
           </button>
@@ -384,7 +391,8 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
         );
       })()}
 
-      <div className="toolbar-section">
+      </>}
+      {section === 'look' && <div className="toolbar-section">
         <div className="toolbar-label">THEME</div>
         <label
           className="tool-btn"
@@ -428,9 +436,9 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
             style={{ margin: 0 }}
           />
         </label>
-      </div>
+      </div>}
 
-      <div className="toolbar-section">
+      {section === 'build' && <div className="toolbar-section">
         <div className="toolbar-label">TILES</div>
         <div className="tile-palette">
           {paletteTiles.map(tileType => (
@@ -448,9 +456,10 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
             </button>
           ))}
         </div>
-      </div>
+      </div>}
 
       {/* Art Style Preset picker */}
+      {section === 'look' && <>
       <div className="toolbar-section">
         <div className="toolbar-label">ART STYLE</div>
         <label className="tool-btn" style={{ cursor: 'pointer' }} title="Choose a curated art style preset that configures all visual layers at once">
@@ -864,7 +873,8 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
         )}
       </div>
 
-      <StampPicker
+      </>}
+      {section === 'decorate' && <StampPicker
         activeTool={activeTool}
         selectedStampId={selectedStampId}
         themeId={themeId}
@@ -874,7 +884,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
         customStamps={customStamps}
         onSaveCustomStamp={onSaveCustomStamp}
         onDeleteCustomStamp={onDeleteCustomStamp}
-      />
+      />}
     </>
   );
 };
