@@ -1341,7 +1341,7 @@
   gap: 8px;
   background: rgba(255, 255, 255, 0.92);
   color: #2a2620;
-  font-family: 'Courier New', monospace;
+  font-family: inherit;
   font-size: var(--fs-11);
   padding: 3px 8px;
   border: 1px solid #8a7f66;
@@ -2048,7 +2048,7 @@
   background: #f4f1ea;
   border: 1px solid #8a7f66;
   border-radius: 3px;
-  font-family: 'Courier New', monospace;
+  font-family: inherit;
   font-size: var(--fs-11);
   color: #2a2620;
   white-space: nowrap;
@@ -2318,7 +2318,7 @@
   right: 0;
   z-index: 900;
   pointer-events: none;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: inherit;
 }
 .mobile-toolbar-root * { pointer-events: auto; }
 
@@ -2667,7 +2667,7 @@
   right: 54px;
   white-space: nowrap;
   font-size: 11px;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: inherit;
   background: #2a2620;
   color: #fff;
   padding: 2px 8px;
@@ -2835,7 +2835,7 @@
 .command-palette-shortcut {
   color: #7a7f9a;
   font-size: 0.7rem;
-  font-family: 'Courier New', monospace;
+  font-family: inherit;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 3px;

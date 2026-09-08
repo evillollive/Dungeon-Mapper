@@ -142,6 +142,7 @@ describe('save restoration and replacement integration', () => {
     await act(async () => {
       await expect(result.current.recoverProjectData(recovered)).rejects.toThrow('Quota exceeded');
     });
+
     expect(result.current.saveState.phase).toBe('restore-failed');
     expect(result.current.originalStoredData).toEqual(raw);
     expect(result.current.project.name).not.toBe('Recovered campaign');
@@ -149,6 +150,41 @@ describe('save restoration and replacement integration', () => {
     expect(recoverLegacyProject).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Recovered campaign' }), 'original');
     expect(result.current.saveState.phase).toBe('saved');
     expect(result.current.project.name).toBe('Recovered campaign');
+  });
+
+  it('blocks library creation while failed-startup recovery is committing so pending saves cannot change identity', async () => {
+    const raw = { schemaVersion: 999, future: 'retain' };
+    vi.mocked(loadProject).mockRejectedValue(new RestoreError('Unsupported schema', raw, 'future-revision', 'a'));
+    vi.mocked(checkpointCount).mockResolvedValue(0);
+    let finish!: (revision: string) => void;
+    vi.mocked(saveProject).mockReturnValueOnce(new Promise(resolve => { finish = resolve; }));
+    const { result } = renderHook(() => useMapState());
+    await waitFor(() => expect(result.current.saveState.phase).toBe('restore-failed'));
+    const recovered = { ...createDefaultProject(), name: 'Recovered A' };
+    let recovering!: Promise<void>;
+    await act(async () => { recovering = result.current.recoverProjectData(recovered); });
+    expect(result.current.saveState).toEqual({ phase: 'replacing', restorationBlocked: true });
+    act(() => { expect(result.current.loadProjectData({ ...createDefaultProject(), name: 'Independent B' })).toBe(false); });
+    await act(async () => { finish('repaired-a-rev'); await recovering; });
+    expect(result.current.projectId).toBe('a');
+    expect(result.current.project.name).toBe('Recovered A');
+    expect(saveProject).toHaveBeenCalledOnce();
+    expect(saveProject).toHaveBeenCalledWith(expect.objectContaining({ name: 'Recovered A' }), 'future-revision', true, 'a');
+  });
+
+  it('can create an independent library project after failed startup without overwriting the source', async () => {
+    const raw = { schemaVersion: 999, future: 'retain' };
+    vi.mocked(loadProject).mockRejectedValue(new RestoreError('Unsupported schema', raw, 'future-revision', 'broken'));
+    const { result } = renderHook(() => useMapState());
+    await waitFor(() => expect(result.current.saveState.phase).toBe('restore-failed'));
+    vi.useFakeTimers();
+    act(() => { expect(result.current.loadProjectData({ ...createDefaultProject(), name: 'Independent' })).toBe(true); });
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    const call = vi.mocked(saveProject).mock.calls.at(-1)!;
+    expect(call[0].name).toBe('Independent');
+    expect(call[1]).toBeNull();
+    expect(call[3]).not.toBe('broken');
+    expect(result.current.originalStoredData).toEqual(raw);
   });
 
   it('does not open a repaired-file replacement before its transaction commits', async () => {

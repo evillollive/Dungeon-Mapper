@@ -1,5 +1,5 @@
 import type { DungeonProject } from '../types/map';
-import { loadProject, MAX_PROJECT_CHECKPOINTS, saveProject, StorageConflictError, type CheckpointReason } from './storage';
+import { loadProject, MAX_PROJECT_CHECKPOINTS, saveProject, StorageConflictError, type CheckpointReason, type LoadedProject } from './storage';
 import { checkpointCount } from './projectRepository';
 
 export interface SaveState {
@@ -73,7 +73,8 @@ export class SaveCoordinator {
       : saveProject(project, this.revision, checkpoint);
   }
   startProject = (project: DungeonProject) => {
-    this.assertClean();
+    if (this.state.phase === 'restore-failed' && !this.pending && !this.writing) this.ready = true;
+    else this.assertClean();
     this.projectId = crypto.randomUUID();
     this.generation++;
     this.revision = null;
@@ -86,6 +87,15 @@ export class SaveCoordinator {
       throw new Error('Save your current project before switching or restoring. Export current work before reloading if there is a conflict.');
     }
   }
+  forgetDeletedProject = (id: string) => {
+    if (this.projectId !== id) return;
+    if (this.pending || this.writing) {
+      this.publish({ phase: 'conflict', message: 'This project was deleted while edits were pending. Export the in-memory backup before reloading; automatic saving is stopped.' });
+      return;
+    }
+    this.initialize(null, false, crypto.randomUUID());
+    this.publish({ phase: 'unsaved', message: 'The local project was deleted. The former content is only in memory and remains downloadable until you open or create another project.' });
+  };
   switchProject = async (id: string) => {
     const fromRestoreFailure = this.state.phase === 'restore-failed' && !this.ready;
     if (!fromRestoreFailure || this.pending || this.writing) this.assertClean();
@@ -104,6 +114,27 @@ export class SaveCoordinator {
         : this.pending
           ? { phase: 'failed', message: 'The project switch failed while newer edits arrived. Your edits remain in memory. Retry save to keep them in the original project.' }
           : prior);
+      throw error;
+    } finally {
+      this.writing = false;
+    }
+  };
+  recoverFailedProject = async (recover: () => Promise<LoadedProject>) => {
+    if (this.state.phase !== 'restore-failed' || this.pending || this.writing) {
+      throw new Error('Another project action is in progress. Wait before restoring the failed source.');
+    }
+    const prior = this.state;
+    const generation = this.generation;
+    this.writing = true;
+    this.publish({ phase: 'replacing', restorationBlocked: true });
+    try {
+      const loaded = await recover();
+      if (this.generation !== generation || this.pending) {
+        throw new StorageConflictError('The project changed during recovery. Newer in-memory work is retained; export it before reloading.');
+      }
+      this.initialize(loaded.revision, true, loaded.projectId, loaded.checkpointCount);
+    } catch (error) {
+      this.publish(error instanceof StorageConflictError ? { phase: 'conflict', message: error.message } : prior);
       throw error;
     } finally {
       this.writing = false;

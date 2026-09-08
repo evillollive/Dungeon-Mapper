@@ -39,7 +39,7 @@ html, body, #root {
 body {
   background: #f4f1ea;
   color: #2a2620;
-  font-family: 'Courier New', Courier, monospace;
+  font-family: 'Avenir Next', Avenir, sans-serif;
   font-size: var(--fs-13);
 }
 
@@ -64,5 +64,5 @@ button {
 }
 
 input, select, textarea {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: inherit;
 }

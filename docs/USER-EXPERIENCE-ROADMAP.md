@@ -8,6 +8,8 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
+**Latest delivery:** UX-01 project/recovery foundations are qualified. UX-02 now implements the production local library and four guided creation paths, with native and production browser evidence documented in [its handoff](./UX-02-HANDOFF.md). UX-00 participant research remains deferred with zero participants; UX-09 acceptance is still required.
+
 ## 1. Product direction
 
 Dungeon Mapper should help a DM **prepare a beautiful, readable encounter, run it without exposing secrets, and pick up next time without losing work**. A player should immediately understand **where they are, what they can see, and what they can do**.
@@ -678,7 +680,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | --- | --- | --- |
 | UX-00 | Prototype accepted; research deferred | [Owner-approved closeout and dependency exception](./UX-00-HANDOFF.md); no participant acceptance claimed |
 | UX-01 | Foundations merged in #159; browser/storage candidate qualified, Ready with minor follow-ups | [98-pass qualification, provenance and limitations](./UX-01-QUALIFICATION.md); [repository/recovery handoff](./UX-01-HANDOFF.md). Focus-return follow-up and later device/release gates remain; UX-00 research is deferred with zero participants; UX-09 gates are not waived |
-| UX-02 | Not started | Local library and creation |
+| UX-02 | Implemented and browser-qualified | [Production library, creation, migration contract, and actual evidence](./UX-02-HANDOFF.md): 519 unit/component tests, 33 native library scenario-engine passes, three-engine production creation and stopped-origin offline journeys. UX-00 research remains deferred; UX-09 acceptance is not claimed |
 | UX-03 | Not started | Shell, actions, design tokens |
 | UX-04 | Not started | Editing and device parity |
 | UX-05 | Not started | Visibility and player projection |

@@ -1,0 +1,74 @@
+.project-library {
+  --library-bg: #100d19;
+  --library-panel: #1e1930;
+  --library-text: #f6f3ff;
+  --library-muted: #c4bdd7;
+  background: var(--library-bg);
+  color: var(--library-text);
+  font-family: "Avenir Next", Avenir, sans-serif;
+  overflow: auto;
+  flex: 1;
+  padding: clamp(18px, 4vw, 60px);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.project-library button, .project-library input, .project-library summary, .library-file {
+  font: inherit;
+  min-height: 44px;
+  border: 1px solid #817696;
+  border-radius: 7px;
+  padding: 9px 14px;
+  color: var(--library-text);
+  background: #272344;
+}
+.project-library button:hover:not(:disabled), .project-library summary:hover { background: #34294f; }
+.project-library button:disabled, .library-file.disabled { opacity: .55; cursor: not-allowed; }
+.project-library :focus-visible { outline: 3px solid #8dbbff; outline-offset: 3px; }
+.project-library h1 { font-size: clamp(40px, 6vw, 76px); letter-spacing: -.04em; line-height: 1.15; margin: 8px 0 18px; }
+.project-library h2 { font-size: 23px; overflow-wrap: anywhere; }
+.library-masthead, .library-intro, .library-filters { display: flex; justify-content: space-between; gap: 24px; align-items: center; }
+.library-masthead { color: #b9a0ff; font-weight: 700; border-bottom: 1px solid #817696; padding-bottom: 20px; font-size: 13px; letter-spacing: .08em; }
+.library-intro { padding: 40px 0; }
+.library-intro > div:first-child { max-width: 700px; }
+.library-eyebrow { color: #b9a0ff; font-size: 13px; font-weight: 700; letter-spacing: .12em; }
+.library-muted { color: var(--library-muted); font-size: 14px; margin: 8px 0; }
+.library-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.library-continue { display: grid; gap: 5px; width: 100%; }
+.library-continue span { color: #c4bdd7; overflow-wrap: anywhere; }
+.project-library .library-primary { background: #ff9569; color: #201018; font-weight: 700; border-color: #ff9569; }
+.project-library .library-primary:hover:not(:disabled) { background: #ffb593; }
+.library-file { position: relative; overflow: hidden; display: inline-flex; align-items: center; cursor: pointer; }
+.library-file input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+.library-file:focus-within { outline: 3px solid #8dbbff; outline-offset: 3px; }
+.library-filters { padding: 22px 0; border-top: 1px solid #817696; }
+.project-library label { display: grid; gap: 5px; }
+.library-filters > label { flex: 1; max-width: 520px; }
+.project-library input { width: 100%; min-width: 0; }
+.project-library input::placeholder { color: #c4bdd7; }
+.project-library [aria-pressed="true"] { background: #34294f; border-color: #8dbbff; }
+.library-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 315px), 1fr)); gap: 24px; margin-top: 20px; }
+.library-card { background: var(--library-panel); border: 1px solid #817696; border-radius: 12px; overflow: hidden; min-width: 0; }
+.library-thumbnail { height: 210px; background: #09070d; display: grid; place-items: center; padding: 10px; overflow: auto; }
+.library-thumbnail img { max-width: 100%; max-height: 190px; object-fit: contain; }
+.library-thumbnail figure { text-align: center; }
+.library-thumbnail figure img { max-height: 155px; }
+.library-thumbnail figcaption { font-size: 12px; color: #c4bdd7; }
+.library-thumbnail small { display: block; }
+.library-card-body { padding: 22px; }
+.project-library details { margin-top: 18px; }
+.project-library summary { cursor: pointer; }
+.project-library details .library-actions { margin-top: 12px; }
+.project-library form { margin-top: 16px; display: grid; gap: 12px; }
+.library-empty, .library-import { margin: 24px 0; background: #1e1930; border: 1px solid #817696; border-radius: 12px; padding: 28px; }
+.library-import button { margin: 12px 12px 0 0; }
+.library-error { background: #42232c; color: #ffadad; padding: 16px; border: 1px solid #ffadad; border-radius: 7px; }
+.project-library .library-danger { color: #ffadad; }
+@media (max-width: 700px) {
+  .library-intro, .library-filters { flex-direction: column; align-items: stretch; }
+  .library-masthead { align-items: flex-start; flex-wrap: wrap; }
+  .library-intro { padding: 28px 0; }
+}
+@media (forced-colors: active) {
+  .project-library button, .library-card, .project-library input { border-color: ButtonText; }
+  .project-library [aria-pressed="true"] { outline: 2px solid Highlight; }
+}

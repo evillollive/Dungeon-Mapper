@@ -10,6 +10,8 @@ import IconPicker from './components/IconPicker';
 import MapHeader, { type MapHeaderHandle } from './components/MapHeader';
 import SaveHealth from './components/SaveHealth';
 import ProjectChooser from './components/ProjectChooser';
+import ProjectLibrary from './components/ProjectLibrary';
+import CreateProjectDialog from './components/CreateProjectDialog';
 import GenerateHub from './components/GenerateHub';
 import CustomThemeDialog from './components/CustomThemeDialog';
 import ShortcutsHelp from './components/ShortcutsHelp';
@@ -18,6 +20,9 @@ import SceneTemplateDialog from './components/SceneTemplateDialog';
 import SelectionInspector from './components/SelectionInspector';
 import CommandPalette, { type CommandItem } from './components/CommandPalette';
 import type { GeneratedMap } from './utils/generators';
+import { createDefaultMap } from './hooks/mapStateUtils';
+import { createFogGrid } from './utils/mapUtils';
+import { createProjectFromTemplate } from './utils/projectCreation';
 import { useMapState, getClipboard } from './hooks/useMapState';
 import { useDrawingTool } from './hooks/useDrawingTool';
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
@@ -27,7 +32,7 @@ import { computeFOV } from './utils/fov';
 import { computePlayerFOV, mergeExplored } from './utils/dynamicFog';
 import { computeLightVisible } from './utils/lightSources';
 import { buildThemeList, getThemeWithCustom } from './utils/customThemes';
-import { ALL_TILE_TYPES, isBuiltInTileType, type ToolType, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape, type LightSourcePreset, type RiverType, LIGHT_SOURCE_PRESETS } from './types/map';
+import { ALL_TILE_TYPES, isBuiltInTileType, type DungeonProject, type ToolType, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape, type LightSourcePreset, type RiverType, LIGHT_SOURCE_PRESETS } from './types/map';
 import LevelTabs from './components/LevelTabs';
 import { ToolContext, type ToolContextValue } from './contexts/ToolContext';
 import { MapContext, type MapContextValue } from './contexts/MapContext';
@@ -113,6 +118,7 @@ function App() {
     map,
     project,
     saveState, retrySave, originalStoredData, recoverProjectData, projectId, switchProject, setProjectName, refreshCheckpoints, projectGeneration,
+    forgetDeletedProject,
     activeLevelIndex,
     selectedNoteId,
     setSelectedNoteId,
@@ -235,6 +241,18 @@ function App() {
   );
   const [gmShowFog, setGmShowFog] = useState<boolean>(loadInitialGmShowFog);
   const [showGenerateHub, setShowGenerateHub] = useState<boolean>(false);
+  const [showLibrary, setShowLibrary] = useState(() => {
+    const params = new URL(window.location.href).searchParams;
+    return !params.has('project') || params.get('view') === 'library';
+  });
+  const [showCreateProject, setShowCreateProject] = useState(false);
+  const setLibraryView = useCallback((visible: boolean) => {
+    setShowLibrary(visible);
+    const url = new URL(window.location.href);
+    if (visible) url.searchParams.set('view', 'library');
+    else url.searchParams.delete('view');
+    window.history.replaceState(null, '', url);
+  }, []);
   const [showCustomThemeDialog, setShowCustomThemeDialog] = useState<boolean>(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState<boolean>(false);
   const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
@@ -443,7 +461,7 @@ function App() {
   // Light sources also contribute to explored so lit areas stay dimmed
   // after a light source is removed.
   useEffect(() => {
-    if (!dynamicFogEnabled) return;
+    if (!dynamicFogEnabled || showLibrary || showCreateProject) return;
     const w = map.meta.width;
     const h = map.meta.height;
     const currentExplored = map.explored ?? Array.from({ length: h }, () => Array<boolean>(w).fill(false));
@@ -460,7 +478,7 @@ function App() {
       setExplored(merged);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerVisible, lightVisible, dynamicFogEnabled]);
+  }, [playerVisible, lightVisible, dynamicFogEnabled, showLibrary, showCreateProject]);
 
   const handleToggleDynamicFog = useCallback(() => {
     setDynamicFogEnabled(!dynamicFogEnabled);
@@ -597,12 +615,18 @@ function App() {
         // of the canvas (notes outside the rect, tokens, fog) is kept.
         if (!applyGeneratedRegion(result.tiles, target.x, target.y, result.notes, result.rivers)) return;
       } else {
-        if (!generateMap(result.tiles, result.width, result.height, result.notes, suggestedName, result.roomShapes, result.rivers)) return;
+        if (!loadProjectData({
+          name: suggestedName, activeLevelIndex: 0, stairLinks: [],
+          customThemes: project.customThemes, customStamps: project.customStamps, sceneTemplates: project.sceneTemplates,
+          levels: [{ ...createDefaultMap(suggestedName), tiles: result.tiles, notes: result.notes,
+            roomShapes: result.roomShapes, rivers: result.rivers, fog: createFogGrid(result.width, result.height, true),
+            meta: { name: suggestedName, width: result.width, height: result.height, tileSize: 20, theme: themeId } }],
+        })) return;
       }
       setShowGenerateHub(false);
       announce('Map generated');
     },
-    [generateMap, applyGeneratedRegion, announce]
+    [loadProjectData, project.customThemes, project.customStamps, project.sceneTemplates, themeId, applyGeneratedRegion, announce]
   );
 
   const handleSetTheme = useCallback((next: string, preserveExisting?: boolean) => {
@@ -753,6 +777,14 @@ function App() {
   const zoomOutCanvas = useCallback(() => canvasRef.current?.zoomOut(), []);
   const zoomResetCanvas = useCallback(() => canvasRef.current?.zoomReset(), []);
   const fitCanvasToScreen = useCallback(() => canvasRef.current?.fitToScreen(), []);
+  useEffect(() => {
+    if (showLibrary) return;
+    const frame = requestAnimationFrame(() => {
+      canvasRef.current?.fitToScreen();
+      document.getElementById('dm-canvas-area')?.focus();
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [showLibrary, projectGeneration]);
 
   // Centralised global keyboard shortcuts. The hook owns one keydown
   // listener and dispatches to the wired actions; the registry it returns
@@ -822,7 +854,7 @@ function App() {
       setSelectedPlacedStampId(null);
     },
     openCommandPalette: () => setShowCommandPalette(true),
-  }, !['restoring', 'restore-failed', 'replacing'].includes(saveState.phase));
+  }, !showLibrary && !showCreateProject && !['restoring', 'restore-failed', 'replacing'].includes(saveState.phase));
 
   // ── Context values ──────────────────────────────────────────────────
   const toolContextValue = useMemo<ToolContextValue>(() => ({
@@ -996,11 +1028,41 @@ function App() {
       zoomInCanvas, zoomOutCanvas, zoomResetCanvas, fitCanvasToScreen,
       handleUndo, handleRedo]);
 
+  const createProject = (loaded: DungeonProject) => {
+    if (!loadProjectData(loaded)) return false;
+    if (viewMode === 'player') switchViewMode();
+    setShowCreateProject(false);
+    setLibraryView(false);
+    return true;
+  };
+
+  if (showLibrary && saveState.phase !== 'restoring' && !saveState.restorationBlocked) {
+    return <div className="app">
+      <SaveHealth key={projectId} projectId={projectId} onRefreshCheckpoints={refreshCheckpoints} state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
+      <ProjectLibrary projectId={projectId} disabled={!['saved', 'unsaved', 'restore-failed'].includes(saveState.phase)}
+        onOpen={async id => { await switchProject(id); setLibraryView(false); }}
+        onChangedActive={switchProject}
+        onDeleted={id => {
+          forgetDeletedProject(id);
+          if (id === projectId) {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('project');
+            window.history.replaceState(null, '', url);
+          }
+        }}
+        onCreate={() => setShowCreateProject(true)}
+        onImport={createProject} />
+      {showCreateProject && <CreateProjectDialog sourceProject={project} onCancel={() => setShowCreateProject(false)}
+        onCreate={createProject} />}
+    </div>;
+  }
+
   if (saveState.phase === 'restoring' || saveState.phase === 'restore-failed' || saveState.restorationBlocked) {
     return <div className="app">
       <SaveHealth key={projectId} projectId={projectId} onRefreshCheckpoints={refreshCheckpoints} state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
       {saveState.phase !== 'restoring' && <ProjectChooser projectId={projectId} name="" unavailable locked
         onRename={setProjectName} onSwitch={switchProject} disabled={saveState.phase !== 'restore-failed'} />}
+      {saveState.phase === 'restore-failed' && <button onClick={() => setLibraryView(true)}>Your maps</button>}
     </div>;
   }
 
@@ -1012,6 +1074,7 @@ function App() {
     <div className="app">
       <a className="skip-link" href="#dm-canvas-area">Skip to map canvas</a>
       <SaveHealth key={projectId} projectId={projectId} onRefreshCheckpoints={refreshCheckpoints} state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
+      <button className="header-btn" onClick={() => setLibraryView(true)}>Your maps</button>
       <ProjectChooser projectId={projectId} name={project.name} onRename={setProjectName}
         onSwitch={switchProject} disabled={!['saved', 'unsaved'].includes(saveState.phase)} locked={saveState.phase === 'replacing'} />
       <div className="editor-workspace" inert={saveState.phase === 'replacing'}>
@@ -1023,8 +1086,8 @@ function App() {
         onResize={resizeMap}
         onSetTileSize={setTileSize}
         onClear={clearMap}
-        onNew={newMap}
-        onLoadProject={loadProjectData}
+        onNew={() => setShowCreateProject(true)}
+        onLoadProject={createProject}
         onExportSVG={handleExportSVG}
         onUndo={handleUndo}
         onRedo={handleRedo}
@@ -1346,7 +1409,7 @@ function App() {
             )}
           </nav>
         )}
-        <main id="dm-canvas-area" className="canvas-area" aria-label="Map canvas area">
+        <main id="dm-canvas-area" className="canvas-area" aria-label="Map canvas area" tabIndex={-1}>
           <MapCanvas key={projectGeneration}
             ref={canvasRef}
             map={map}
@@ -1563,6 +1626,8 @@ function App() {
           }}
         />
       )}
+      {showCreateProject && <CreateProjectDialog sourceProject={project} onCancel={() => setShowCreateProject(false)}
+        onCreate={createProject} />}
       {showCustomThemeDialog && viewMode === 'gm' && (
         <CustomThemeDialog
           customThemes={customThemes}
@@ -1599,6 +1664,13 @@ function App() {
           onDelete={deleteSceneTemplate}
           onRename={renameSceneTemplate}
           onApply={applySceneTemplate}
+          onCreateProject={id => {
+            try { return createProject(createProjectFromTemplate(project, id)); }
+            catch (error) {
+              window.alert(error instanceof Error ? error.message : 'The template could not create a project.');
+              return false;
+            }
+          }}
           onClose={() => setShowSceneTemplateDialog(false)}
         />
       )}

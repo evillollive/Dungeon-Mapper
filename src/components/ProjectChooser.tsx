@@ -31,7 +31,7 @@ export default function ProjectChooser({ projectId, name, disabled, locked, unav
     {projects !== null && <div className="project-choices">
       <p>New, imported, and sample projects are separate device copies. Switching clears memory undo, not saved projects.</p>
       {projects.length === 0 && <p>No committed projects yet.</p>}
-      {projects.map(item => <div className="project-choice" key={item.id}>
+      {projects.filter(item => item.status === 'active').map(item => <div className="project-choice" key={item.id}>
         <strong>{item.name || 'Untitled project'}</strong>
         <small>{item.id === projectId ? 'Current project' : item.id} {item.updatedAt && ` | ${new Date(item.updatedAt).toLocaleString()}`}</small>
         {item.diagnostic && <p role="alert">{item.diagnostic} Source retained. Download includes private content.</p>}

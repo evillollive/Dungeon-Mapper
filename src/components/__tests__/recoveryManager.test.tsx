@@ -56,7 +56,7 @@ describe('recovery and project controls', () => {
   });
 
   it('shows invalid-project diagnostics and download without opening a blank project', async () => {
-    vi.mocked(listProjects).mockResolvedValue([{ id: 'bad', name: 'Unreadable project', diagnostic: 'Future schema', original: {}, updatedAt: '' }]);
+    vi.mocked(listProjects).mockResolvedValue([{ id: 'bad', name: 'Unreadable project', diagnostic: 'Future schema', original: {}, updatedAt: '', status: 'active', tags: [], lastOpenedAt: '' }]);
     const change = vi.fn();
     render(<ProjectChooser name="Current project" disabled={false} locked={false} onRename={vi.fn()} onSwitch={change} />);
     fireEvent.click(screen.getByText('Switch project'));
@@ -66,7 +66,7 @@ describe('recovery and project controls', () => {
   });
 
   it('offers healthy choices without a placeholder project-name editor after startup failure', async () => {
-    vi.mocked(listProjects).mockResolvedValue([{ id: 'healthy', name: 'Healthy project', original: {}, updatedAt: '' }]);
+    vi.mocked(listProjects).mockResolvedValue([{ id: 'healthy', name: 'Healthy project', original: {}, updatedAt: '', status: 'active', tags: [], lastOpenedAt: '' }]);
     const change = vi.fn().mockRejectedValue(new Error('Target read failed'));
     render(<ProjectChooser name="" unavailable disabled={false} locked onRename={vi.fn()} onSwitch={change} />);
     expect(screen.queryByRole('textbox', { name: 'Project name' })).not.toBeInTheDocument();

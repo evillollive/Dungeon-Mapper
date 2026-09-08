@@ -62,15 +62,14 @@ export function useMapPersistence(
     if (coordinator.getSnapshot().phase === 'restore-failed') {
       if (restoreRevision.current === undefined) throw new Error('Retry restoring device storage before importing a recovery file.');
       const id = failedProjectId.current;
-      if (id) {
+      const expectedRevision = restoreRevision.current;
+      await coordinator.recoverFailedProject(async () => {
+        if (!id) return recoverLegacyProject(ready, expectedRevision);
         const count = await checkpointCount(id);
         if (count >= MAX_PROJECT_CHECKPOINTS) throw new Error('Delete a checkpoint in Recovery copies before restoring this project.');
-        const revision = await saveProject(ready, restoreRevision.current, reason, id);
-        coordinator.initialize(revision, true, id, count + (restoreRevision.current !== null ? 1 : 0));
-      } else {
-        const migrated = await recoverLegacyProject(ready, restoreRevision.current);
-        coordinator.initialize(migrated.revision, true, migrated.projectId, migrated.checkpointCount);
-      }
+        const revision = await saveProject(ready, expectedRevision, reason, id);
+        return { project: ready, revision, projectId: id, checkpointCount: count + (expectedRevision !== null ? 1 : 0) };
+      });
     } else {
       await coordinator.replace(ready, reason);
     }
@@ -123,7 +122,9 @@ export function useMapPersistence(
 
   const loadProjectData = useCallback((loaded: DungeonProject, reason: true | CheckpointReason = true) => {
     const proj = withProjectDefaults(decodeProject({ schemaVersion: PROJECT_SCHEMA_VERSION, project: loaded }));
-    if (!prepareReplacement(reason)) return false;
+    const independentFromFailedSource = reason === true && coordinator.getSnapshot().phase === 'restore-failed' &&
+      generation === coordinator.getGeneration();
+    if (!independentFromFailedSource && !prepareReplacement(reason)) return false;
     historyRef.current = new Map();
     setCanUndo(false);
     setCanRedo(false);
@@ -135,7 +136,7 @@ export function useMapPersistence(
     setSelectedNoteId(null);
     return true;
 
-  }, [coordinator, prepareReplacement, historyRef, setActiveLevelIndex, setCanRedo,
+  }, [coordinator, generation, prepareReplacement, historyRef, setActiveLevelIndex, setCanRedo,
     setCanUndo, setProject, setSelectedNoteId, syncIdsToLevel]);
 
   const newMap = useCallback(() => {

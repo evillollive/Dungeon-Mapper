@@ -1,0 +1,89 @@
+.creation-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: grid;
+  place-items: center;
+  padding: clamp(8px, 2vw, 28px);
+  background: rgb(5 3 10 / 88%);
+  color: #f6f3ff;
+  font: 16px/1.5 "Avenir Next", Avenir, sans-serif;
+}
+.creation-dialog {
+  width: min(1120px, 100%);
+  max-height: 94dvh;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid #817696;
+  border-radius: 14px;
+  background: #100d19;
+  box-shadow: 0 24px 90px #0009;
+  padding: clamp(18px, 3vw, 36px);
+  color-scheme: dark;
+}
+.creation-dialog *, .creation-dialog *::before, .creation-dialog *::after { box-sizing: border-box; }
+.creation-dialog button, .creation-dialog input, .creation-dialog select, .creation-dialog summary {
+  min-height: 44px;
+  min-width: 44px;
+  border: 1px solid #817696;
+  border-radius: 7px;
+  padding: 9px 12px;
+  background: #272344;
+  color: #f6f3ff;
+  font: inherit;
+}
+.creation-dialog button, .creation-dialog summary { cursor: pointer; }
+.creation-dialog button:hover:not(:disabled), .creation-dialog summary:hover { background: #34294f; }
+.creation-dialog button:disabled { opacity: .55; cursor: not-allowed; }
+.creation-dialog :focus-visible { outline: 3px solid #8dbbff; outline-offset: 3px; }
+.creation-dialog h2 { font-size: clamp(28px, 4.4vw, 48px); line-height: 1.12; letter-spacing: -.035em; margin: 8px 0 12px; }
+.creation-dialog h3 { font-size: 23px; line-height: 1.3; overflow-wrap: anywhere; }
+.creation-dialog p { margin: 8px 0; }
+.creation-dialog label { display: grid; gap: 7px; font-weight: 600; min-width: 0; }
+.creation-dialog input, .creation-dialog select { width: 100%; min-width: 0; }
+.creation-dialog input[type="range"] { padding: 0; accent-color: #8dbbff; }
+.creation-dialog input[type="file"] { white-space: normal; }
+.creation-dialog input::file-selector-button { min-height: 44px; font: inherit; cursor: pointer; }
+.creation-header, .creation-preview-heading, .creation-options-footer, .creation-preview-footer { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+.creation-header { align-items: flex-start; padding-bottom: 24px; border-bottom: 1px solid #625772; }
+.creation-header > div { min-width: 0; }
+.creation-header > button { flex: 0 0 auto; }
+.creation-eyebrow { color: #bea9ff; text-transform: uppercase; letter-spacing: .1em; font-size: 12px; font-weight: 700; }
+.creation-dialog .creation-step { font-size: 15px; color: #c4bdd7; margin: 24px 0 12px; }
+.creation-paths { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.creation-paths button { display: flex; flex-direction: column; text-align: left; gap: 8px; padding: 18px; background: #1e1930; }
+.creation-paths button[aria-pressed="true"] { background: #1d3154; border: 2px solid #8dbbff; padding: 17px; }
+.creation-paths strong { font-size: 18px; }
+.creation-paths span:last-child { font-size: 14px; color: #d3cde0; font-weight: 400; }
+.creation-path-number { color: #8dbbff; font-size: 13px; font-weight: 700; letter-spacing: .12em; }
+.creation-options { padding-top: 28px; }
+.creation-field-grid, .creation-sample { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; }
+.creation-sample { align-items: start; }
+.creation-muted, .creation-options-footer p, .creation-preview-footer p, .creation-header p:not(.creation-eyebrow) { color: #c4bdd7; }
+.creation-advanced, .creation-trace { margin-top: 24px; }
+.creation-advanced .creation-field-grid { margin-top: 18px; }
+.creation-advanced p, .creation-trace p { color: #c4bdd7; font-size: 14px; }
+.creation-trace label:last-child { margin-top: 18px; }
+.creation-options-footer, .creation-preview-footer { margin-top: 26px; padding-top: 20px; border-top: 1px solid #625772; }
+.creation-options-footer p, .creation-preview-footer p { font-size: 14px; max-width: 580px; }
+.creation-dialog .creation-primary { background: #ff9569; color: #201018; border-color: #ff9569; font-weight: 700; white-space: nowrap; padding-inline: 24px; }
+.creation-dialog .creation-primary:hover:not(:disabled) { background: #ffb593; }
+.creation-error, .creation-notice { padding: 12px 16px; border-left: 3px solid #ff9569; background: #29202e; }
+.creation-preview { padding-top: 24px; }
+.creation-preview > label { max-width: 500px; margin: 16px 0; }
+.creation-preview-stage { min-height: 220px; margin-top: 20px; padding: 12px; display: grid; place-items: center; background: #05040a; border: 1px solid #625772; border-radius: 8px; }
+.creation-preview-stage img { display: block; max-width: 100%; width: auto; height: auto; max-height: 58dvh; object-fit: contain; }
+.creation-preview-stage [role="alert"] { max-width: 560px; padding: 20px; }
+@media (max-width: 760px) {
+  .creation-paths { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .creation-field-grid, .creation-sample { grid-template-columns: minmax(0, 1fr); }
+  .creation-options-footer, .creation-preview-footer, .creation-preview-heading { align-items: stretch; flex-direction: column; gap: 12px; }
+  .creation-preview-stage img { max-height: none; }
+}
+@media (max-width: 420px) {
+  .creation-header { flex-direction: column; gap: 12px; }
+  .creation-header > button { align-self: flex-end; }
+  .creation-paths { grid-template-columns: minmax(0, 1fr); }
+  .creation-paths button { gap: 4px; padding: 12px; }
+  .creation-paths button[aria-pressed="true"] { padding: 11px; }
+}

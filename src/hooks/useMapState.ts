@@ -1354,6 +1354,7 @@ export function useMapState() {
     recoverProjectData: persistence.recoverProjectData,
     projectId: coordinator.getProjectId(), switchProject: persistence.switchProject, refreshCheckpoints: coordinator.refreshCheckpoints,
     projectGeneration: coordinator.getGeneration(),
+    forgetDeletedProject: coordinator.forgetDeletedProject,
     selectedNoteId, setSelectedNoteId,
     setTile, fillTiles, setTiles, getTileType,
     setMapName, resizeMap, clearMap, newMap,
