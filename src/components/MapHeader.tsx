@@ -79,7 +79,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
   }, [onClear]);
 
   const handleNew = useCallback(() => {
-    if (window.confirm('Create a new map? Unsaved changes will be lost.')) {
+    if (window.confirm('Create a new map? The saved project will be retained as a local recovery copy when the new map saves.')) {
       onNew();
     }
   }, [onNew]);
@@ -103,6 +103,8 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
   }, [getCanvas, map.meta.name]);
 
   const handleExportJSON = useCallback(() => exportProjectJSON(project), [project]);
+  const widthOptions = [...new Set([...GRID_SIZES, map.meta.width])].sort((a, b) => a - b);
+  const heightOptions = [...new Set([...GRID_SIZES, map.meta.height])].sort((a, b) => a - b);
 
   const triggerImport = useCallback(() => {
     fileInputRef.current?.click();
@@ -141,7 +143,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
           title="Map width"
           aria-label="Map width in tiles"
         >
-          {GRID_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+          {widthOptions.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
         <span className="header-label" aria-hidden="true">×</span>
         <select
@@ -154,7 +156,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
           title="Map height"
           aria-label="Map height in tiles"
         >
-          {GRID_SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+          {heightOptions.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
 
         <label className="header-label" style={{ marginLeft: 8 }}>TILE:</label>

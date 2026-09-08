@@ -1,7 +1,7 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useSyncExternalStore, useEffect } from 'react';
 import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, SceneTemplate, StampDef, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment, River, RoomShape } from '../types/map';
 import { createFogGrid, floodFill, resizeFogGrid } from '../utils/mapUtils';
-import { saveProject } from '../utils/storage';
+import { SaveCoordinator } from '../utils/saveCoordinator';
 import { reThemeNotes } from '../utils/reThemeNotes';
 import { clearVisibleMapContent, createDefaultProject, nextIdAfter, replaceGeneratedMapContent, updateActiveLevel } from './mapStateUtils';
 import { useMapHistory } from './useMapHistory';
@@ -58,11 +58,21 @@ export function useMapState() {
   const nextRoomShapeIdRef = useRef(1);
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
 
-  const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [coordinator] = useState(() => new SaveCoordinator());
+  const saveState = useSyncExternalStore(coordinator.subscribe, coordinator.getSnapshot);
+  useEffect(() => {
+    if (!['saving', 'failed', 'conflict'].includes(saveState.phase)) return;
+    const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', warnBeforeLeaving);
+    return () => window.removeEventListener('beforeunload', warnBeforeLeaving);
+  }, [saveState.phase]);
 
   const map = project.levels[activeLevelIndex] ?? project.levels[0];
 
-  function syncIdsToLevel(level: DungeonMap) {
+  const syncIdsToLevel = useCallback((level: DungeonMap) => {
     setNextNoteId(nextIdAfter(level.notes));
     nextTokenIdRef.current = nextIdAfter(level.tokens);
     nextStrokeIdRef.current = nextIdAfter(level.annotations);
@@ -73,9 +83,9 @@ export function useMapState() {
     nextPathIdRef.current = nextIdAfter(level.pathSegments);
     nextRiverIdRef.current = nextIdAfter(level.rivers);
     nextRoomShapeIdRef.current = nextIdAfter(level.roomShapes);
-  }
+  }, []);
 
-  function resetIds() {
+  const resetIds = useCallback(() => {
     setNextNoteId(1);
     nextTokenIdRef.current = 1;
     nextStrokeIdRef.current = 1;
@@ -87,14 +97,9 @@ export function useMapState() {
     nextRiverIdRef.current = 1;
     nextRoomShapeIdRef.current = 1;
     setSelectedNoteId(null);
-  }
-
-  const debouncedSave = useCallback((proj: DungeonProject) => {
-    if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => {
-      saveProject(proj).catch(() => {});
-    }, 500);
   }, []);
+
+  const debouncedSave = coordinator.schedule;
 
   // ── Sub-hooks ─────────────────────────────────────────────────────────
 
@@ -105,6 +110,7 @@ export function useMapState() {
     setProject, setActiveLevelIndex, debouncedSave,
     history.historyRef, history.setCanUndo, history.setCanRedo,
     syncIdsToLevel, resetIds, setSelectedNoteId,
+    coordinator,
   );
   const { loadMapData, loadProjectData, newMap } = persistence;
 
@@ -196,6 +202,7 @@ export function useMapState() {
           meta: { ...m.meta, width, height },
           tiles: newTiles,
           fog: resizeFogGrid(m.fog, width, height, true),
+          explored: m.explored ? resizeFogGrid(m.explored, width, height, false) : undefined,
           tokens: (m.tokens ?? []).filter(t => {
             const sz = Math.max(1, Math.floor(t.size ?? 1));
             return t.x >= 0 && t.y >= 0 && t.x + sz <= width && t.y + sz <= height;
@@ -1352,6 +1359,8 @@ export function useMapState() {
 
   return {
     map, project, activeLevelIndex,
+    saveState, retrySave: coordinator.retry, originalStoredData: persistence.original,
+    recoverProjectData: persistence.recoverProjectData,
     selectedNoteId, setSelectedNoteId,
     setTile, fillTiles, setTiles, getTileType,
     setMapName, resizeMap, clearMap, newMap,

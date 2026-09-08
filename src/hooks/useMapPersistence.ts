@@ -1,9 +1,10 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { DungeonMap, DungeonProject } from '../types/map';
-import { loadProject as loadProjectFromStorage, migrateFromLocalStorage } from '../utils/storage';
-import { wrapMapAsProject } from '../utils/storage';
+import { loadProject as loadProjectFromStorage, RestoreError, saveProject } from '../utils/storage';
 import type { LevelHistory } from './mapStateUtils';
-import { createDefaultProject, withDefaults, withProjectDefaults } from './mapStateUtils';
+import { createDefaultProject, withProjectDefaults } from './mapStateUtils';
+import { decodeProject, PROJECT_SCHEMA_VERSION } from '../utils/projectSchema';
+import type { SaveCoordinator } from '../utils/saveCoordinator';
 
 export function useMapPersistence(
   setProject: React.Dispatch<React.SetStateAction<DungeonProject>>,
@@ -15,24 +16,59 @@ export function useMapPersistence(
   syncIdsToLevel: (level: DungeonMap) => void,
   resetIds: () => void,
   setSelectedNoteId: React.Dispatch<React.SetStateAction<number | null>>,
+  coordinator: SaveCoordinator,
 ) {
+  const [original, setOriginal] = useState<unknown>();
+  const restoreRevision = useRef<string | null | undefined>(undefined);
+  const restoreRef = useRef<ReturnType<typeof loadProjectFromStorage> | null>(null);
   useEffect(() => {
-    migrateFromLocalStorage().catch(() => {});
-    loadProjectFromStorage().then(loaded => {
-      if (loaded) {
+    let cancelled = false;
+    restoreRef.current ??= loadProjectFromStorage();
+    restoreRef.current.then(({ project: loaded, revision }) => {
+      if (cancelled) return;
+      if (loaded !== null) {
         const ready = withProjectDefaults(loaded);
-        if (ready.levels.length === 0) return;
         setProject(ready);
-        const idx = Math.max(0, Math.min(ready.activeLevelIndex, ready.levels.length - 1));
+        const idx = ready.activeLevelIndex;
         setActiveLevelIndex(idx);
         syncIdsToLevel(ready.levels[idx]);
       }
-    }).catch(() => {});
+      coordinator.initialize(revision, loaded !== null);
+    }).catch((error: unknown) => {
+      if (cancelled) return;
+      if (error instanceof RestoreError) {
+        setOriginal(() => error.original);
+        restoreRevision.current = error.revision;
+      }
+      coordinator.failRestore(error instanceof Error ? error.message : 'Could not restore device storage.');
+    });
+    return () => { cancelled = true; coordinator.dispose(); };
+  }, [coordinator, setActiveLevelIndex, setProject, syncIdsToLevel]);
 
-  }, []);
+  const recoverProjectData = useCallback(async (loaded: DungeonProject) => {
+    if (restoreRevision.current === undefined) throw new Error('Retry restoring device storage before importing a recovery file.');
+    const ready = withProjectDefaults(decodeProject({ schemaVersion: PROJECT_SCHEMA_VERSION, project: loaded }));
+    const revision = await saveProject(ready, restoreRevision.current, true);
+    setProject(ready);
+    setActiveLevelIndex(ready.activeLevelIndex);
+    syncIdsToLevel(ready.levels[ready.activeLevelIndex]);
+    setOriginal(undefined);
+    coordinator.initialize(revision, true);
+  }, [coordinator, setActiveLevelIndex, setProject, syncIdsToLevel]);
+
+  const prepareReplacement = useCallback(() => {
+    const { phase } = coordinator.getSnapshot();
+    if (phase !== 'saved' && phase !== 'unsaved') {
+      window.alert('Replacement is paused until your current project is saved. Export a backup of your in-memory work before reloading if saving has failed.');
+      return false;
+    }
+    coordinator.retainReplacement();
+    return true;
+  }, [coordinator]);
 
   const loadMapData = useCallback((loaded: DungeonMap) => {
-    const proj = withProjectDefaults(wrapMapAsProject(withDefaults(loaded)));
+    const proj = withProjectDefaults(decodeProject(loaded));
+    if (!prepareReplacement()) return;
     historyRef.current = new Map();
     setCanUndo(false);
     setCanRedo(false);
@@ -42,10 +78,12 @@ export function useMapPersistence(
     syncIdsToLevel(proj.levels[0]);
     setSelectedNoteId(null);
 
-  }, [debouncedSave]);
+  }, [debouncedSave, prepareReplacement, historyRef, setActiveLevelIndex, setCanRedo,
+    setCanUndo, setProject, setSelectedNoteId, syncIdsToLevel]);
 
   const loadProjectData = useCallback((loaded: DungeonProject) => {
-    const proj = withProjectDefaults(loaded);
+    const proj = withProjectDefaults(decodeProject({ schemaVersion: PROJECT_SCHEMA_VERSION, project: loaded }));
+    if (!prepareReplacement()) return false;
     historyRef.current = new Map();
     setCanUndo(false);
     setCanRedo(false);
@@ -55,10 +93,13 @@ export function useMapPersistence(
     debouncedSave(proj);
     syncIdsToLevel(proj.levels[idx]);
     setSelectedNoteId(null);
+    return true;
 
-  }, [debouncedSave]);
+  }, [debouncedSave, prepareReplacement, historyRef, setActiveLevelIndex, setCanRedo,
+    setCanUndo, setProject, setSelectedNoteId, syncIdsToLevel]);
 
   const newMap = useCallback(() => {
+    if (!prepareReplacement()) return;
     const fresh = createDefaultProject();
     historyRef.current = new Map();
     setCanUndo(false);
@@ -68,7 +109,8 @@ export function useMapPersistence(
     debouncedSave(fresh);
     resetIds();
     setSelectedNoteId(null);
-  }, [debouncedSave]);
+  }, [debouncedSave, prepareReplacement, historyRef, resetIds, setActiveLevelIndex,
+    setCanRedo, setCanUndo, setProject, setSelectedNoteId]);
 
-  return { loadMapData, loadProjectData, newMap };
+  return { loadMapData, loadProjectData, newMap, original, recoverProjectData };
 }

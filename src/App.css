@@ -21,6 +21,35 @@
   color: #2a2620;
 }
 
+.save-health {
+  flex-shrink: 0;
+  padding: 6px 12px;
+  background: #1e1930;
+  color: #f6f3ff;
+  font: inherit;
+  font-family: 'Avenir Next', Avenir, sans-serif;
+  border-bottom: 1px solid #817696;
+  max-height: 40vh;
+  overflow: auto;
+}
+
+.save-health-summary, .save-recovery-list {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+}
+
+.save-health p { margin: 6px 0; }
+.save-health small { color: #c4bdd7; }
+.save-health-error { background: #42232c; }
+.save-health .header-btn {
+  background: #272344;
+  color: #f6f3ff;
+  border: 1px solid #817696;
+}
+.save-health .header-btn:focus-visible { outline: 2px solid #8dbbff; outline-offset: 2px; }
+
 .app-body {
   display: grid;
   /* Side panel widths scale with the same factor as the chrome font

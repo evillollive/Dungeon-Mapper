@@ -675,7 +675,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | Package | Status | Completion reference / next gate |
 | --- | --- | --- |
 | UX-00 | Prototype accepted; research deferred | [Owner-approved closeout and dependency exception](./UX-00-HANDOFF.md); no participant acceptance claimed |
-| UX-01 | Authorized next | Storage/schema/recovery; owner permits starting with UX-00 research deferred |
+| UX-01 | UX-01A implemented for review; milestone incomplete | [Bounded save-trust slice, evidence, and remaining gates](./UX-01-HANDOFF.md); UX-00 research remains deferred |
 | UX-02 | Not started | Local library and creation |
 | UX-03 | Not started | Shell, actions, design tokens |
 | UX-04 | Not started | Editing and device parity |

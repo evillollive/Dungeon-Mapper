@@ -1,5 +1,5 @@
 import type { CustomThemeDefinition, DungeonMap, DungeonProject, StampDef, ViewMode } from '../types/map';
-import { TOKEN_KIND_COLORS, isDungeonProject } from '../types/map';
+import { TOKEN_KIND_COLORS } from '../types/map';
 import type { TileTheme } from '../themes/index';
 import { getPaperTint } from '../themes/index';
 import { ICON_BY_ID } from './iconLibrary';
@@ -9,7 +9,7 @@ import { generatePaperTexture } from './paperTexture';
 import { drawEdgeBlending } from './edgeBlend';
 import { drawHandDrawn } from './handDrawn';
 import { drawLightingAtmosphere } from './lightingAtmosphere';
-import { wrapMapAsProject } from './storage';
+import { decodeProject, encodeProject } from './projectSchema';
 import { isTokenFogged } from './tokenVisibility';
 import { deriveRenderableTiles } from './derivedRenderMap';
 import { getRiverBankColor, getRiverEndpointMarker } from './riverPolish';
@@ -17,7 +17,7 @@ import { getRiverBankColor, getRiverEndpointMarker } from './riverPolish';
 const SVG_CUSTOM_TILE_FALLBACK_COLOR = '#777777';
 
 export function exportProjectJSON(project: DungeonProject): void {
-  const json = JSON.stringify(project, null, 2);
+  const json = JSON.stringify(encodeProject(project), null, 2);
   const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -28,8 +28,7 @@ export function exportProjectJSON(project: DungeonProject): void {
 }
 
 /**
- * Import a JSON file that may be either a bare `DungeonMap` (legacy) or a
- * `DungeonProject` (multi-level). Returns a `DungeonProject` in both cases.
+ * Import a versioned envelope, an unversioned project, or a legacy bare map.
  */
 export function importProjectJSON(file: File): Promise<DungeonProject> {
   return new Promise((resolve, reject) => {
@@ -37,20 +36,11 @@ export function importProjectJSON(file: File): Promise<DungeonProject> {
     reader.onload = (e) => {
       try {
         const data = JSON.parse(e.target?.result as string);
-        if (isDungeonProject(data)) {
-          resolve(data as DungeonProject);
-        } else if (
-          typeof data === 'object' && data !== null &&
-          typeof data.meta === 'object' && data.meta !== null &&
-          Array.isArray(data.cells)
-        ) {
-          // Legacy bare DungeonMap — wrap it.
-          resolve(wrapMapAsProject(data as DungeonMap));
-        } else {
-          reject(new Error('File does not contain a valid dungeon map or project'));
-        }
-      } catch {
-        reject(new Error('Invalid JSON file'));
+        resolve(decodeProject(data));
+      } catch (error) {
+        reject(error instanceof SyntaxError
+          ? new Error('Invalid JSON file. Choose a Dungeon Mapper JSON backup.')
+          : error instanceof Error ? error : new Error('Could not import this project.'));
       }
     };
     reader.onerror = () => reject(new Error('Failed to read file'));
