@@ -16,15 +16,17 @@ export class StorageConflictError extends Error {
 export class RestoreError extends Error {
   readonly original: unknown;
   readonly revision: string | null;
+  readonly projectId?: string;
 
-  constructor(message: string, original: unknown, revision: string | null) {
+  constructor(message: string, original: unknown, revision: string | null, projectId?: string) {
     super(message);
     this.original = original;
     this.revision = revision;
+    this.projectId = projectId;
   }
 }
 
-function openDB(): Promise<IDBDatabase> {
+export function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const req = indexedDB.open(DB_NAME, 1);
     let blocked = false;
@@ -51,14 +53,14 @@ export function wrapMapAsProject(map: DungeonMap): DungeonProject {
   };
 }
 
-function revisionOf(raw: unknown): string | null {
+export function revisionOf(raw: unknown): string | null {
   if (raw === undefined) return null;
   if (typeof raw === 'object' && raw !== null && 'storageRevision' in raw &&
       typeof raw.storageRevision === 'string') return raw.storageRevision;
   return `legacy:${JSON.stringify(raw)}`;
 }
 
-async function readRecord(key: string): Promise<unknown> {
+export async function readRecord(key: string): Promise<unknown> {
   const db = await openDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
@@ -71,16 +73,23 @@ async function readRecord(key: string): Promise<unknown> {
 export interface LoadedProject {
   project: DungeonProject | null;
   revision: string | null;
+  projectId?: string;
+  checkpointCount?: number;
 }
 
 export interface RecoveryRecord {
   savedAt: string;
   data: unknown;
   reason?: string;
+  id?: string;
+  projectId?: string;
+  diagnostic?: string;
 }
 
 export type CheckpointReason = 'Clear level' | 'Generate level' | 'Generate region' |
   'Delete level' | 'Resize level' | 'Apply scene template' | 'Fog repair';
+
+export const MAX_PROJECT_CHECKPOINTS = 20;
 
 function recoveryRecord(value: unknown): RecoveryRecord {
   if (typeof value !== 'object' || value === null || !('savedAt' in value) ||
@@ -90,7 +99,10 @@ function recoveryRecord(value: unknown): RecoveryRecord {
   if ('reason' in value && typeof value.reason !== 'string') {
     throw new Error('A local recovery reason is unreadable. It has not been overwritten.');
   }
-  return { savedAt: value.savedAt, data: value.data, ...('reason' in value ? { reason: value.reason as string } : {}) };
+  return { savedAt: value.savedAt, data: value.data,
+    ...('id' in value && typeof value.id === 'string' ? { id: value.id } : {}),
+    ...('projectId' in value && typeof value.projectId === 'string' ? { projectId: value.projectId } : {}),
+    ...('reason' in value ? { reason: value.reason as string } : {}) };
 }
 
 function recoveryList(value: unknown): RecoveryRecord[] {
@@ -103,6 +115,7 @@ export async function saveProject(
   project: DungeonProject,
   expectedRevision: string | null,
   checkpoint: boolean | CheckpointReason = false,
+  projectId?: string,
 ): Promise<string> {
   const encoded = encodeProject(project);
   const storageRevision = crypto.randomUUID();
@@ -111,7 +124,8 @@ export async function saveProject(
     const tx = db.transaction(STORE_NAME, 'readwrite');
     const store = tx.objectStore(STORE_NAME);
     let failure: Error | null = null;
-    const current = store.get(AUTOSAVE_KEY);
+    const key = projectId ? `project:${projectId}` : AUTOSAVE_KEY;
+    const current = store.get(key);
     current.onsuccess = () => {
       try {
         if (revisionOf(current.result) !== expectedRevision) {
@@ -120,16 +134,21 @@ export async function saveProject(
           return;
         }
         if (current.result !== undefined) {
-          const previous: RecoveryRecord = { savedAt: new Date().toISOString(), data: current.result };
-          store.put(previous, 'previous-save');
+          const previous: RecoveryRecord = { savedAt: new Date().toISOString(), data: current.result,
+            ...(projectId ? { id: crypto.randomUUID(), projectId } : {}) };
+          store.put(previous, projectId ? `previous:${projectId}` : 'previous-save');
           if (checkpoint) {
-            const recovery = store.get(RECOVERY_KEY);
+            const recoveryKey = projectId ? `recovery:${projectId}` : RECOVERY_KEY;
+            const recovery = store.get(recoveryKey);
             recovery.onsuccess = () => {
               try {
                 const records = recoveryList(recovery.result);
-                store.put([...records.slice(-4), {
-                  ...previous, reason: typeof checkpoint === 'string' ? checkpoint : 'Project replacement',
-                }], RECOVERY_KEY);
+                if (projectId && records.length >= MAX_PROJECT_CHECKPOINTS) {
+                  throw new Error('This project has 20 durable checkpoints. Download and explicitly delete a checkpoint in Recovery copies before retrying.');
+                }
+                store.put([...(projectId ? records : records.slice(-4)), {
+                  ...previous, reason: typeof checkpoint === 'string' ? checkpoint : projectId ? 'Recovery restore' : 'Project replacement',
+                }], recoveryKey);
               } catch (error) {
                 failure = error instanceof Error ? error : new Error('Could not retain the replacement recovery copy.');
                 tx.abort();
@@ -137,7 +156,11 @@ export async function saveProject(
             };
           }
         }
-        store.put({ ...encoded, storageRevision }, AUTOSAVE_KEY);
+        store.put({ ...encoded, storageRevision, ...(projectId ? {
+          localProjectId: projectId,
+          createdAt: current.result?.createdAt ?? new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        } : {}) }, key);
       } catch (error) {
         failure = error instanceof Error ? error : new Error('Could not write the project to device storage.');
         tx.abort();
@@ -148,7 +171,7 @@ export async function saveProject(
   });
 }
 
-export async function loadProject(): Promise<LoadedProject> {
+export async function loadLegacyProject(): Promise<LoadedProject> {
   const raw = await readRecord(AUTOSAVE_KEY);
   if (raw !== undefined) {
     try {
@@ -191,6 +214,11 @@ export function downloadRecoveryData(data: unknown, filename = 'dungeon-original
   const anchor = document.createElement('a');
   anchor.href = url;
   anchor.download = filename;
+  document.body.appendChild(anchor);
   anchor.click();
-  URL.revokeObjectURL(url);
+  anchor.remove();
+  // Allow the browser to consume the download before releasing its source.
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
+
+export { loadProject } from './projectRepository';

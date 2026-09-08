@@ -5,6 +5,13 @@ import { useMapState } from '../useMapState';
 import { createDefaultMap, createDefaultProject } from '../mapStateUtils';
 import { loadProject, saveProject, RestoreError, type CheckpointReason } from '../../utils/storage';
 import { createEmptyGrid } from '../../utils/mapUtils';
+import { recoverLegacyProject, checkpointCount } from '../../utils/projectRepository';
+
+vi.mock('../../utils/projectRepository', async importOriginal => ({
+  ...await importOriginal<typeof import('../../utils/projectRepository')>(),
+  recoverLegacyProject: vi.fn(),
+  checkpointCount: vi.fn().mockResolvedValue(0),
+}));
 
 vi.mock('../../utils/storage', async importOriginal => {
   const actual = await importOriginal<typeof import('../../utils/storage')>();
@@ -15,9 +22,75 @@ describe('save restoration and replacement integration', () => {
   beforeEach(() => {
     vi.mocked(loadProject).mockReset();
     vi.mocked(saveProject).mockReset().mockResolvedValue('saved-revision');
+    vi.mocked(recoverLegacyProject).mockReset();
+    window.history.replaceState(null, '', '/');
     vi.spyOn(window, 'alert').mockImplementation(() => {});
   });
   afterEach(() => { vi.useRealTimers(); vi.restoreAllMocks(); });
+
+  it('blocks destructive mutation at the checkpoint limit but permits ordinary editing', async () => {
+    const project = createDefaultProject();
+    project.levels[0].tiles[0][0] = { type: 'treasure' };
+    vi.mocked(loadProject).mockResolvedValue({ project, revision: 'current', projectId: 'local-a', checkpointCount: 20 });
+    const { result } = renderHook(() => useMapState());
+    await waitFor(() => expect(result.current.saveState.phase).toBe('saved'));
+    const before = result.current.project;
+    act(() => result.current.clearMap());
+    expect(result.current.project).toBe(before);
+    expect(result.current.canUndo).toBe(false);
+    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('20 durable checkpoints'));
+    vi.useFakeTimers();
+    act(() => result.current.setMapName('Ordinary edit'));
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    expect(saveProject).toHaveBeenLastCalledWith(result.current.project, 'current', false, 'local-a');
+    expect(result.current.saveState.phase).toBe('saved');
+  });
+
+  it('switches projects without saving the prior state into the target and clears memory undo', async () => {
+    const a = createDefaultProject();
+    const b = { ...createDefaultProject(), name: 'Project B' };
+    vi.mocked(loadProject).mockResolvedValueOnce({ project: a, revision: 'a-rev', projectId: 'a' })
+      .mockResolvedValueOnce({ project: b, revision: 'b-rev', projectId: 'b' });
+    const { result } = renderHook(() => useMapState());
+    await waitFor(() => expect(result.current.saveState.phase).toBe('saved'));
+    await act(async () => { await result.current.switchProject('b'); });
+    expect(result.current.project.name).toBe('Project B');
+    expect(result.current.projectId).toBe('b');
+    expect(result.current.canUndo).toBe(false);
+    expect(saveProject).not.toHaveBeenCalled();
+    expect(new URL(window.location.href).searchParams.get('project')).toBe('b');
+  });
+
+  it('rejects a late callback from the previous project while new editor callbacks remain usable', async () => {
+    vi.mocked(loadProject).mockResolvedValueOnce({ project: createDefaultProject(), revision: 'a-rev', projectId: 'a' })
+      .mockResolvedValueOnce({ project: createDefaultProject(), revision: 'b-rev', projectId: 'b' });
+    const { result } = renderHook(() => useMapState());
+    await waitFor(() => expect(result.current.saveState.phase).toBe('saved'));
+    const oldUpload = result.current.setBackgroundImage;
+    const oldClear = result.current.clearMap;
+    await act(async () => { await result.current.switchProject('b'); });
+    act(() => oldUpload({ dataUrl: 'data:image/png;base64,AAAA', offsetX: 0, offsetY: 0, scale: 1, opacity: 1 }));
+    act(() => oldClear());
+    expect(result.current.map.backgroundImage).toBeUndefined();
+    expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('project changed'));
+    vi.useFakeTimers();
+    act(() => result.current.setMapName('New project edit'));
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    expect(result.current.map.meta.name).toBe('New project edit');
+    expect(saveProject).toHaveBeenLastCalledWith(result.current.project, 'b-rev', false, 'b');
+  });
+
+  it('refreshes checkpoint capacity after explicit cleanup before another destructive action', async () => {
+    vi.mocked(loadProject).mockResolvedValue({ project: createDefaultProject(), revision: 'a-rev', projectId: 'a', checkpointCount: 20 });
+    const { result } = renderHook(() => useMapState());
+    await waitFor(() => expect(result.current.saveState.phase).toBe('saved'));
+    vi.mocked(checkpointCount).mockResolvedValueOnce(19);
+    await act(async () => { await result.current.refreshCheckpoints(); });
+    vi.useFakeTimers();
+    act(() => result.current.clearMap());
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    expect(saveProject).toHaveBeenLastCalledWith(result.current.project, 'a-rev', 'Clear level', 'a');
+  });
 
   it('restores once through StrictMode without saving the default blank project', async () => {
     const project = { ...createDefaultProject(), name: 'Original campaign' };
@@ -46,7 +119,8 @@ describe('save restoration and replacement integration', () => {
     const { result } = renderHook(() => useMapState());
     await waitFor(() => expect(result.current.saveState.phase).toBe('restore-failed'));
     const recovered = { ...createDefaultProject(), name: 'Recovered campaign' };
-    vi.mocked(saveProject).mockRejectedValueOnce(new Error('Quota exceeded'));
+    vi.mocked(recoverLegacyProject).mockRejectedValueOnce(new Error('Quota exceeded'))
+      .mockResolvedValueOnce({ project: recovered, revision: 'recovered', projectId: 'local-recovery' });
     await act(async () => {
       await expect(result.current.recoverProjectData(recovered)).rejects.toThrow('Quota exceeded');
     });
@@ -54,7 +128,7 @@ describe('save restoration and replacement integration', () => {
     expect(result.current.originalStoredData).toEqual(raw);
     expect(result.current.project.name).not.toBe('Recovered campaign');
     await act(async () => { await result.current.recoverProjectData(recovered); });
-    expect(saveProject).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Recovered campaign' }), 'original', true);
+    expect(recoverLegacyProject).toHaveBeenLastCalledWith(expect.objectContaining({ name: 'Recovered campaign' }), 'original');
     expect(result.current.saveState.phase).toBe('saved');
     expect(result.current.project.name).toBe('Recovered campaign');
   });

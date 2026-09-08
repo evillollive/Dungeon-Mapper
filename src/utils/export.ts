@@ -23,8 +23,10 @@ export function exportProjectJSON(project: DungeonProject): void {
   const a = document.createElement('a');
   a.href = url;
   a.download = `${project.name.replace(/\s+/g, '_') || 'dungeon'}.json`;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
 }
 
 /**

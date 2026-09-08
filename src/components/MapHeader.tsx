@@ -79,7 +79,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
   }, [onClear]);
 
   const handleNew = useCallback(() => {
-    if (window.confirm('Create a new map? The saved project will be retained as a local recovery copy when the new map saves.')) {
+    if (window.confirm('Create a new project? Your current saved project stays on this device. Use Switch project to reopen it.')) {
       onNew();
     }
   }, [onNew]);

@@ -727,8 +727,8 @@ const SamplesPanel: React.FC<SamplesPanelProps> = ({
       {hasExistingContent && (
         <div className="generate-dialog-warning" role="alert">
           {confirmLoadId === selected?.id
-            ? '⚠️ Click Confirm Load to replace the current project with this sample map.'
-            : '⚠️ Loading a sample map replaces the current project.'}
+            ? 'Click Confirm Load to create a separate editable project from this sample.'
+            : 'Loading a sample creates a separate project. Your current saved project is kept.'}
         </div>
       )}
 
