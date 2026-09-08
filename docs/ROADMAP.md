@@ -1,5 +1,12 @@
 # Dungeon-Mapper Competitive Analysis & Feature Roadmap
 
+> **End-user redesign plan (2026-09-07):** Use
+> [USER-EXPERIENCE-ROADMAP.md](./USER-EXPERIENCE-ROADMAP.md) as the primary execution
+> plan for DM/player workflows, navigation, local project organization, visual design,
+> art assets, and acceptance tests. Its dependency-ordered packages supersede this
+> document's older deferrals for those areas. Older competitor and art descriptions
+> below are historical context, not a fresh assessment of current capabilities.
+
 > **Last updated:** 2026-07-31
 > **Status:** Phases 1–12 are **COMPLETE**. The full implementation history for every
 > completed phase, the retrospective UI/accessibility/refactoring analyses, the recommended
@@ -227,8 +234,9 @@ Each theme implements `TileTheme.drawTile()` with Canvas 2D calls — `fillRect`
 ## Part 4: Active & Future Roadmap
 
 Phases 1–12 shipped and are archived in [archive/ROADMAP-history.md](./archive/ROADMAP-history.md).
-The items below are the only forward-looking work; most require backend infrastructure or a
-fundamentally different product scope (world-scale mapping) and are not on the active build queue.
+The items below describe the earlier expansion backlog. The
+[end-user experience roadmap](./USER-EXPERIENCE-ROADMAP.md) adds the current redesign
+proposal, including substantial local-first work that does not require a backend.
 
 **Collaboration & Sharing** *(requires backend)*
 - Shareable Map Links — cloud storage, shareable URLs, no-registration viewing
@@ -242,7 +250,7 @@ fundamentally different product scope (world-scale mapping) and are not on the a
 
 **Specialized Features**
 - Geomorphic Tile Assembly — assemble pre-drawn tile art with edge-matching constraints (inspired by Dave's Mapper)
-- Map Search & Organization — tags, folders, categories for organizing saved maps (depends on cloud storage)
+- Map Search & Organization: local project catalog, tags, and search are planned in UX-01/02 of the end-user experience roadmap. Cloud synchronization is optional later work.
 
 **Visual & Accessibility** *(deferred)*
 - Dark Mode — requires converting 336+ hardcoded color values to CSS custom properties; deferred indefinitely
