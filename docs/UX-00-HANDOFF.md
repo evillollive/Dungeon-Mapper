@@ -2,7 +2,7 @@
 
 **Date:** 2026-09-07, America/Los_Angeles. Browser captures cross into 2026-09-08 UTC.
 
-**Status:** In progress. Owner scope gates approved; coded workflow prototype and developer baseline available. No participants recruited or observed. UX-00 is not complete and does not unblock production implementation by itself.
+**Status:** Prototype work accepted; participant research deferred by the owner. No participants recruited or observed, and UX-00 usability acceptance has not passed. On 2026-09-07 the owner explicitly authorized proceeding to UX-01 despite this open research gate.
 
 **Baseline:** `01da138`, the main commit containing roadmap PR #156. The previous review used `4633065`. The walkthrough below was reproduced against the actual checkout, not inferred from that review.
 
@@ -19,6 +19,8 @@ The owner answered the five policy questions separately, then gave a visual revi
 | Project/session semantics | Keep authored projects separate from mutable session progress. | Later play starts from a checkpoint, saves separately, and copies back only through an explicit reviewed action. No session storage implemented here. |
 
 Approval of a decision is not evidence that its implementation exists.
+
+**Closeout decision, 2026-09-07:** After the palette/type revision, the owner accepted the prototype and selected "Defer research and proceed to UX-01." This is an explicit dependency exception for UX-01, not a fabricated usability result or a waiver of UX-09 release qualification. The research plan remains available below; recruitment is deferred, not completed.
 
 ## Open the prototype
 
@@ -159,8 +161,8 @@ Recruitment and observation status: **0 DMs, 0 players, no success rate, no pref
 
 The [command inventory](./UX-00-COMMAND-INVENTORY.md) maps current actions to proposed homes. This is a migration checklist, not an implemented shared action registry.
 
-Before marking UX-00 complete: recruit and run the agreed cohort or explicitly approved smaller pilot; collect uncoached mode-comprehension findings, navigation errors, and separate readability/preference data; revise prototypes and milestone scope based on actual evidence. The owner accepted the workflow direction for a pilot with the palette/type revision now implemented; final production art acceptance remains open. Do not treat policy or pilot-direction approvals as participant acceptance.
+Prototype work is closed out with owner acceptance. Research remains deferred: before claiming UX-00 usability acceptance, recruit and run the agreed cohort or explicitly approved smaller pilot; collect uncoached mode-comprehension findings, navigation errors, and separate readability/preference data; revise prototypes and milestone scope based on actual evidence. Final production art acceptance remains open. Do not treat owner approval as participant acceptance.
 
-Later work remains unchanged in scope: UX-01 storage/schema/recovery and 40 x 40 regression; UX-02 local catalog; UX-03 unified action registry; UX-04 responsive editing parity; UX-05 real audience projection; UX-06 session lifecycle/display; UX-07 map-art slice; UX-08 export/offline; UX-09 qualification. UX-10 remains deferred. No milestone beyond UX-00 was started.
+Later work remains unchanged in scope: UX-01 storage/schema/recovery and 40 x 40 regression; UX-02 local catalog; UX-03 unified action registry; UX-04 responsive editing parity; UX-05 real audience projection; UX-06 session lifecycle/display; UX-07 map-art slice; UX-08 export/offline; UX-09 qualification. UX-10 remains deferred. UX-01 is authorized next in a separate session; no production implementation is included in this PR.
 
 Rollback is removal of the isolated prototype, its evidence, and associated documentation. There is no data migration to reverse. Do not remove legacy production capabilities based on this prototype.

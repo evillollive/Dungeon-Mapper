@@ -4,7 +4,7 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status:** UX-00 in progress: owner scope decisions approved; isolated workflow prototypes and reproduced baseline available. Participant research and final visual review remain open. No production application behavior changed.
+**Status:** UX-00 prototype work accepted. Participant research is explicitly deferred by the owner, who authorized proceeding to UX-01. Usability acceptance is not claimed; release research gates remain open. No production application behavior changed by UX-00.
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
@@ -416,6 +416,8 @@ Art exploration and usability research may run alongside infrastructure work, bu
 
 **Progress, 2026-09-07:** Reproduced the browser baseline at `01da138`. The owner approved local-first scope, private legacy notes, read-only local display, and separate authored-project/session progress. The workflow direction was accepted for a pilot with a requested colorful purple/blue/red-orange/black palette and one sans-serif family, replacing the initial ivory/serif treatment. Library/Edit/Run/Player prototypes include normal, empty, and error scenarios without changing production behavior. See the [evidence, decisions, prototype instructions, and research handoff](./UX-00-HANDOFF.md) and [command migration inventory](./UX-00-COMMAND-INVENTORY.md). No participants have been observed; research and final production visual acceptance remain required.
 
+**Owner closeout, 2026-09-07:** The revised prototype is accepted. The owner explicitly chose to defer participant research and proceed to UX-01. This permits UX-01 to begin despite the open UX-00 research gate; it does not mark usability criteria passed or waive UX-09 release qualification.
+
 **Deliverables:** Reproduce the walkthrough at the session's actual commit. Inventory every existing command and assign it to the proposed navigation. Produce clickable or coded prototypes for Library, Edit, Run, and Player display, including empty/error states. Record before/after screenshots and timings with the same fixture.
 
 Resolve one decision at a time with the owner: local-first release scope; migration of legacy notes to private; read-only local player display before remote interaction; target art direction; authored-project versus session-progress semantics.
@@ -672,8 +674,8 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 
 | Package | Status | Completion reference / next gate |
 | --- | --- | --- |
-| UX-00 | In progress | [Owner decisions, reproduced baseline, and isolated prototypes](./UX-00-HANDOFF.md); participant study and final visual acceptance pending |
-| UX-01 | Not started | Storage/schema/recovery |
+| UX-00 | Prototype accepted; research deferred | [Owner-approved closeout and dependency exception](./UX-00-HANDOFF.md); no participant acceptance claimed |
+| UX-01 | Authorized next | Storage/schema/recovery; owner permits starting with UX-00 research deferred |
 | UX-02 | Not started | Local library and creation |
 | UX-03 | Not started | Shell, actions, design tokens |
 | UX-04 | Not started | Editing and device parity |
