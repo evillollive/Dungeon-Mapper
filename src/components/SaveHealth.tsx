@@ -1,11 +1,15 @@
 import { useEffect, useState } from 'react';
 import type { DungeonProject } from '../types/map';
 import type { SaveState } from '../utils/saveCoordinator';
-import { downloadRecoveryData, loadRecoveryRecords, type RecoveryRecord } from '../utils/storage';
+import { downloadRecoveryData, type RecoveryRecord } from '../utils/storage';
+import { projectRecoveryRecords } from '../utils/projectRepository';
+import RecoveryManager from './RecoveryManager';
 import { exportProjectJSON, importProjectJSON } from '../utils/export';
 import { previewFogRepair, type FogRepairPreview } from '../utils/projectSchema';
 
 interface Props {
+  projectId?: string;
+  onRefreshCheckpoints?: () => Promise<void>;
   state: SaveState;
   project: DungeonProject;
   onRetry: () => void;
@@ -17,14 +21,14 @@ const LABELS: Record<SaveState['phase'], string> = {
   restoring: 'Restoring device storage',
   unsaved: 'Not saved yet',
   saving: 'Saving',
-  replacing: 'Saving recovery copy',
+  replacing: 'Opening project safely',
   saved: 'Saved on this device',
   failed: 'Save failed',
   conflict: 'Save conflict',
   'restore-failed': 'Could not restore your project',
 };
 
-export default function SaveHealth({ state, project, onRetry, original, onRecover }: Props) {
+export default function SaveHealth({ state, project, projectId, onRefreshCheckpoints, onRetry, original, onRecover }: Props) {
   const [offline, setOffline] = useState(!navigator.onLine);
   const [records, setRecords] = useState<RecoveryRecord[] | null>(null);
   const [error, setError] = useState('');
@@ -39,11 +43,12 @@ export default function SaveHealth({ state, project, onRetry, original, onRecove
       window.removeEventListener('offline', update);
     };
   }, []);
-  const blocked = state.phase === 'restore-failed' || state.phase === 'restoring';
+  const blocked = state.phase === 'restore-failed' || state.phase === 'restoring' || state.restorationBlocked;
   const failed = ['failed', 'conflict', 'restore-failed'].includes(state.phase);
   const showRecovery = async () => {
     try {
-      setRecords(await loadRecoveryRecords());
+      setRecords(await projectRecoveryRecords(projectId));
+      await onRefreshCheckpoints?.();
       setError('');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Could not read recovery copies.');
@@ -133,15 +138,9 @@ export default function SaveHealth({ state, project, onRetry, original, onRecove
       )}
       {records !== null && (
         <div className="save-recovery-list">
-          <p>Download a copy, then import it to recover. Up to five pre-change project copies and the previous save are retained.
-            Ordinary subsequent edits do not remove the pre-change copies.</p>
-          {records.length === 0 && <p>No recovery copies are available on this device.</p>}
-          {records.map((record, index) => (
-            <button className="header-btn" type="button" key={`${record.savedAt}-${index}`}
-              onClick={() => downloadRecoveryData(record.data, `dungeon-recovery-${index + 1}.json`)}>
-              Download {record.savedAt ? `${record.reason ?? 'Recovery copy'} (${new Date(record.savedAt).toLocaleString()})` : 'original localStorage save'}
-            </button>
-          ))}
+          <RecoveryManager records={records} currentName={project.name}
+            disabled={!['saved', 'unsaved', 'restore-failed'].includes(state.phase)}
+            onRecover={onRecover} onRefresh={showRecovery} />
           <label>Review a fog repair file
             <input type="file" accept=".json,application/json" disabled={recovering} onChange={async event => {
               const file = event.target.files?.[0];

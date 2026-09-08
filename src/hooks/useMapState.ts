@@ -8,6 +8,7 @@ import { useMapHistory } from './useMapHistory';
 import { useMapClipboard } from './useMapClipboard';
 import { useLevelManagement } from './useLevelManagement';
 import { useMapPersistence } from './useMapPersistence';
+import { useProjectDispatch } from './useProjectDispatch';
 import { getPresetSettings as getPresetSettingsFn } from '../utils/artStylePresets';
 
 export { getClipboard } from './useMapClipboard';
@@ -44,7 +45,7 @@ function applyTileUpdates(
 }
 
 export function useMapState() {
-  const [project, setProject] = useState<DungeonProject>(createDefaultProject);
+  const [project, setProjectData] = useState<DungeonProject>(createDefaultProject);
   const [activeLevelIndex, setActiveLevelIndex] = useState(0);
   const [nextNoteId, setNextNoteId] = useState(1);
   const nextTokenIdRef = useRef(1);
@@ -59,6 +60,7 @@ export function useMapState() {
   const [selectedNoteId, setSelectedNoteId] = useState<number | null>(null);
 
   const [coordinator] = useState(() => new SaveCoordinator());
+  const { setProject, debouncedSave } = useProjectDispatch(coordinator, setProjectData);
   const saveState = useSyncExternalStore(coordinator.subscribe, coordinator.getSnapshot);
   useEffect(() => {
     if (!['saving', 'replacing', 'failed', 'conflict'].includes(saveState.phase)) return;
@@ -99,15 +101,13 @@ export function useMapState() {
     setSelectedNoteId(null);
   }, []);
 
-  const debouncedSave = coordinator.schedule;
-
   // ── Sub-hooks ─────────────────────────────────────────────────────────
 
   const history = useMapHistory(setProject, debouncedSave, activeLevelIndex);
   const { pushHistory, undo, redo, canUndo, canRedo } = history;
 
   const persistence = useMapPersistence(
-    setProject, setActiveLevelIndex, debouncedSave,
+    setProjectData, setActiveLevelIndex,
     history.historyRef, history.setCanUndo, history.setCanRedo,
     syncIdsToLevel, resetIds, setSelectedNoteId,
     coordinator,
@@ -1352,6 +1352,8 @@ export function useMapState() {
     map, project, activeLevelIndex,
     saveState, retrySave: coordinator.retry, originalStoredData: persistence.original,
     recoverProjectData: persistence.recoverProjectData,
+    projectId: coordinator.getProjectId(), switchProject: persistence.switchProject, refreshCheckpoints: coordinator.refreshCheckpoints,
+    projectGeneration: coordinator.getGeneration(),
     selectedNoteId, setSelectedNoteId,
     setTile, fillTiles, setTiles, getTileType,
     setMapName, resizeMap, clearMap, newMap,
