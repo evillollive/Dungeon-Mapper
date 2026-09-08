@@ -15,6 +15,22 @@ import type { ToolType } from '../types/map';
  */
 
 export type ShortcutCategory = 'Tools' | 'View' | 'File' | 'Edit' | 'Canvas' | 'Help';
+export type BindingId =
+  | 'tool.paint' | 'tool.erase' | 'tool.fill' | 'tool.note' | 'tool.line' | 'tool.rect'
+  | 'tool.roomRect' | 'tool.roomCircle' | 'tool.roomPoly' | 'tool.roomCut' | 'tool.select'
+  | 'tool.reveal' | 'tool.hide' | 'tool.fov' | 'tool.measure' | 'tool.linkStair'
+  | 'tool.wall' | 'tool.path' | 'tool.river' | 'tool.light' | 'tool.gmdraw' | 'tool.gmerase'
+  | 'tool.tokenPlayer' | 'tool.tokenNpc' | 'tool.tokenMonster' | 'tool.tokenMonsterMd'
+  | 'tool.tokenMonsterLg' | 'tool.moveToken' | 'tool.removeToken' | 'tool.marker'
+  | 'tool.removeMarker' | 'tool.removeLight' | 'tool.pdraw' | 'tool.perase' | 'tool.defog'
+  | 'view.printMode' | 'view.viewMode' | 'view.themeNext' | 'view.themePrev'
+  | 'view.tileNext' | 'view.tilePrev' | 'view.uiScaleUp' | 'view.uiScaleDown'
+  | 'view.nextLevel' | 'view.prevLevel'
+  | 'canvas.zoomIn' | 'canvas.zoomOut' | 'canvas.zoomReset' | 'canvas.fit' | 'canvas.pan'
+  | 'edit.undo' | 'edit.redo' | 'edit.copy' | 'edit.cut' | 'edit.paste'
+  | 'file.generate' | 'file.new' | 'file.open' | 'file.exportJson' | 'file.exportPng'
+  | 'file.exportSvg' | 'file.printExport' | 'help.shortcuts' | 'help.commandPalette'
+  | 'tools.rotateStampCW' | 'tools.flipStampH' | 'tools.flipStampV' | 'tools.deleteStamp';
 
 /**
  * A single keyboard shortcut. `keys` is the user-facing label rendered in
@@ -26,23 +42,10 @@ export type ShortcutCategory = 'Tools' | 'View' | 'File' | 'Edit' | 'Canvas' | '
  * browser handle e.g. `Ctrl+S` as a save-page action.
  */
 export interface KeyBinding {
-  id: string;
+  id: BindingId;
   category: ShortcutCategory;
   keys: string;
   description: string;
-  /**
-   * Whether the binding should fire when focus is currently inside an
-   * editable element (`<input>`, `<textarea>`, `<select>`,
-   * `[contenteditable]`). Default: `false`. Editing-related shortcuts
-   * like Undo/Redo and the Escape-on-modal handler set this to `true`.
-   */
-  fireInEditable?: boolean;
-  /**
-   * Whether the binding should fire while a modal dialog
-   * (`[role="dialog"][aria-modal="true"]`) is open. Default: `false`. The
-   * modal owns its own focus trap and should not race with global keys.
-   */
-  fireInModal?: boolean;
   match: (e: KeyboardEvent) => boolean;
   action: () => void;
   preventDefault?: boolean;
@@ -109,7 +112,7 @@ const isPlainKey = (e: KeyboardEvent) =>
 const isCtrlOrMeta = (e: KeyboardEvent) => e.ctrlKey || e.metaKey;
 
 export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
-  const tool = (id: string, key: string, label: string, t: ToolType): KeyBinding => ({
+  const tool = (id: BindingId, key: string, label: string, t: ToolType): KeyBinding => ({
     id,
     category: 'Tools',
     keys: key.toUpperCase(),
@@ -264,7 +267,7 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       keys: 'A',
       description: 'Place Marker — drop a shape marker (spell area, hazard zone, etc.)',
       match: e => isPlainKey(e) && !e.shiftKey && e.key.toLowerCase() === 'a',
-      action: () => { if (actions.isGmView()) actions.setActiveTool('marker'); },
+      action: () => actions.setActiveTool('marker'),
     },
     {
       id: 'tool.removeMarker',
@@ -272,7 +275,7 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       keys: 'Shift+A',
       description: 'Remove Marker — click a marker to delete it',
       match: e => isPlainKey(e) && e.shiftKey && e.key === 'A',
-      action: () => { if (actions.isGmView()) actions.setActiveTool('remove-marker'); },
+      action: () => actions.setActiveTool('remove-marker'),
     },
 
     // ── Light tools ──
@@ -282,7 +285,7 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       keys: 'Shift+I',
       description: 'Remove Light Source — click a cell containing a light to delete it',
       match: e => isPlainKey(e) && e.shiftKey && e.key === 'I',
-      action: () => { if (actions.isGmView()) actions.setActiveTool('remove-light'); },
+      action: () => actions.setActiveTool('remove-light'),
     },
 
     // ── Player tools ──
@@ -290,7 +293,7 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       id: 'tool.pdraw',
       category: 'Tools',
       keys: 'B',
-      description: 'Player Draw — freehand brush (Present mode only)',
+      description: 'Shared drawing: DM-operated brush (DM view only)',
       match: e => isPlainKey(e) && !e.shiftKey && e.key.toLowerCase() === 'b',
       action: () => { if (!actions.isGmView()) actions.setActiveTool('pdraw'); },
     },
@@ -298,7 +301,7 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       id: 'tool.perase',
       category: 'Tools',
       keys: 'Shift+B',
-      description: 'Player Erase — click a player stroke to remove it (Present mode only)',
+      description: 'Erase shared drawing: click a stroke to remove it (DM view only)',
       match: e => isPlainKey(e) && e.shiftKey && e.key === 'B',
       action: () => { if (!actions.isGmView()) actions.setActiveTool('perase'); },
     },
@@ -306,7 +309,7 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       id: 'tool.defog',
       category: 'Tools',
       keys: 'Shift+F',
-      description: 'Defog Brush — drag to wipe fog away cell-by-cell (Present mode only)',
+      description: 'Defog brush: reveal cells by dragging (DM view only)',
       match: e => isPlainKey(e) && e.shiftKey && e.key === 'F',
       action: () => { if (!actions.isGmView()) actions.setActiveTool('defog'); },
     },
@@ -324,7 +327,7 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       id: 'view.viewMode',
       category: 'View',
       keys: 'Shift+V',
-      description: 'Toggle Edit ↔ Present mode',
+      description: 'Toggle Edit / DM view',
       match: e => isPlainKey(e) && e.shiftKey && e.key.toLowerCase() === 'v',
       action: actions.toggleViewMode,
     },
@@ -430,7 +433,6 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       category: 'Edit',
       keys: 'Ctrl+Z',
       description: 'Undo (up to 50 steps)',
-      fireInEditable: false,
       match: e => isCtrlOrMeta(e) && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'z',
       action: actions.undo,
     },
@@ -547,7 +549,6 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
       category: 'Help',
       keys: 'Ctrl+K',
       description: 'Open command palette',
-      fireInEditable: true,
       match: e => isCtrlOrMeta(e) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === 'k',
       action: actions.openCommandPalette,
     },
@@ -605,4 +606,3 @@ export function buildKeyBindings(actions: ShortcutActions): KeyBinding[] {
     },
   ];
 }
-

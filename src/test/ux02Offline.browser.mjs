@@ -67,7 +67,10 @@ for (const engine of (process.env.QA_ENGINES ?? 'chromium,firefox,webkit').split
     await page.getByRole('searchbox').fill('crypt');
     await page.getByRole('button', { name: 'Open Offline crypt', exact: true }).click();
     await saved(page);
+    await page.getByRole('button', { name: 'Project menu', exact: true }).click();
+    await page.getByRole('button', { name: 'Project settings', exact: true }).click();
     await page.getByRole('textbox', { name: 'Project name', exact: true }).fill('Offline crypt revised');
+    await page.getByRole('button', { name: 'Close Project settings', exact: true }).click();
     await saved(page);
     await page.getByRole('button', { name: 'Your maps', exact: true }).click();
     await page.getByRole('article', { name: 'Offline crypt revised', exact: true }).waitFor();
@@ -83,7 +86,7 @@ for (const engine of (process.env.QA_ENGINES ?? 'chromium,firefox,webkit').split
     await page.getByRole('searchbox').fill('forest');
     await page.getByRole('button', { name: /^(Open|Continue) Offline forest$/ }).click();
     await saved(page);
-    assert.equal(await page.getByRole('textbox', { name: 'Project name', exact: true }).inputValue(), 'Offline forest');
+    assert.equal(await page.locator('.project-identity strong').innerText(), 'Offline forest');
     evidence.processReopen = true;
     evidence.status = 'passed';
   } catch (error) {

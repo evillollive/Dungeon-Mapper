@@ -2,6 +2,7 @@ import React from 'react';
 import type { ToolType, BackgroundImage } from '../types/map';
 
 interface AdvancedToolsTabProps {
+  section?: 'look' | 'levels' | 'decorate';
   activeTool: ToolType;
   onSetTool: (tool: ToolType) => void;
   // Background image
@@ -31,6 +32,7 @@ const GM_BRUSH_WIDTHS: { value: number; label: string }[] = [
 ];
 
 const AdvancedToolsTab: React.FC<AdvancedToolsTabProps> = ({
+  section = 'look',
   activeTool, onSetTool,
   backgroundImage, onImportBackgroundImage, onUpdateBackgroundImage, onClearBackgroundImage,
   stairLinkSource, stairLinkCount, onClearStairLinks,
@@ -41,7 +43,7 @@ const AdvancedToolsTab: React.FC<AdvancedToolsTabProps> = ({
 
   return (
     <>
-      <div className="toolbar-section">
+      {section === 'look' && <div className="toolbar-section">
         <div className="toolbar-label">BACKGROUND</div>
         <input
           ref={bgFileRef}
@@ -156,10 +158,10 @@ const AdvancedToolsTab: React.FC<AdvancedToolsTabProps> = ({
             </div>
           </>
         )}
-      </div>
+      </div>}
 
       {/* ── STAIR LINKS ── */}
-      <div className="toolbar-section">
+      {section === 'levels' && <div className="toolbar-section">
         <div className="toolbar-label">STAIR LINKS</div>
         <button
           type="button"
@@ -194,9 +196,10 @@ const AdvancedToolsTab: React.FC<AdvancedToolsTabProps> = ({
         <div className="toolbar-sub-label" style={{ fontSize: '0.6rem', opacity: 0.6, marginTop: 2 }}>
           {stairLinkCount} link{stairLinkCount !== 1 ? 's' : ''} total
         </div>
-      </div>
+      </div>}
 
       {/* ── GM DRAW ── */}
+      {section === 'decorate' && <>
       <div className="toolbar-section">
         <div className="toolbar-label">GM DRAW</div>
         <button
@@ -327,6 +330,7 @@ const AdvancedToolsTab: React.FC<AdvancedToolsTabProps> = ({
           <span className="tool-name">Templates</span>
         </button>
       </div>
+      </>}
     </>
   );
 };

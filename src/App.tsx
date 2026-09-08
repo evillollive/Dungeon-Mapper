@@ -1,8 +1,8 @@
 import { useRef, useCallback, useEffect, useMemo, useState } from 'react';
 import MapCanvas, { type MapCanvasHandle } from './components/MapCanvas';
-import Toolbar from './components/Toolbar';
 import NavigationRail from './components/NavigationRail';
 import PlayerToolbar from './components/PlayerToolbar';
+import DmViewUtilities from './components/DmViewUtilities';
 import MobileToolbar from './components/MobileToolbar';
 import NotesPanel from './components/NotesPanel';
 import InitiativePanel from './components/InitiativePanel';
@@ -18,7 +18,12 @@ import ShortcutsHelp from './components/ShortcutsHelp';
 import ExportDialog from './components/ExportDialog';
 import SceneTemplateDialog from './components/SceneTemplateDialog';
 import SelectionInspector from './components/SelectionInspector';
-import CommandPalette, { type CommandItem } from './components/CommandPalette';
+import CommandPalette from './components/CommandPalette';
+import { buildKeyBindings } from './hooks/keyBindings';
+import { buildEditorActions, TOOL_ACTIONS, type EditorPanel, type ExtraAction } from './utils/editorActions';
+import { EditorActionsContext } from './contexts/EditorActionsContext';
+import ActionButton from './components/ActionButton';
+import Icon from './components/Icon';
 import type { GeneratedMap } from './utils/generators';
 import { createDefaultMap } from './hooks/mapStateUtils';
 import { createFogGrid } from './utils/mapUtils';
@@ -26,6 +31,8 @@ import { createProjectFromTemplate } from './utils/projectCreation';
 import { useMapState, getClipboard } from './hooks/useMapState';
 import { useDrawingTool } from './hooks/useDrawingTool';
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
+import { useOfflineStatus } from './hooks/useOfflineStatus';
+import { SAVE_PHASE_LABELS } from './utils/saveStatus';
 import { exportMapSVG } from './utils/export';
 import { isTokenFogged } from './utils/tokenVisibility';
 import { computeFOV } from './utils/fov';
@@ -39,9 +46,10 @@ import { MapContext, type MapContextValue } from './contexts/MapContext';
 import { ViewContext, type ViewContextValue } from './contexts/ViewContext';
 import { ActionContext, type ActionContextValue } from './contexts/ActionContext';
 import './App.css';
+import './editor-shell.css';
 
 const UI_SCALE_STORAGE_KEY = 'dungeon-mapper:ui-scale';
-const UI_SCALE_OPTIONS = [0.5, 0.75, 1, 1.25, 1.5] as const;
+const UI_SCALE_OPTIONS = [0.75, 1, 1.25, 1.5, 2] as const;
 const DEFAULT_UI_SCALE = 1;
 const MIN_UI_SCALE = UI_SCALE_OPTIONS[0];
 const MAX_UI_SCALE = UI_SCALE_OPTIONS[UI_SCALE_OPTIONS.length - 1];
@@ -49,18 +57,6 @@ const MAX_UI_SCALE = UI_SCALE_OPTIONS[UI_SCALE_OPTIONS.length - 1];
 const PRESERVE_THEME_STORAGE_KEY = 'dungeon-mapper:preserve-on-theme-switch';
 const VIEW_MODE_STORAGE_KEY = 'dungeon-mapper:view-mode';
 const GM_SHOW_FOG_STORAGE_KEY = 'dungeon-mapper:gm-show-fog';
-const LAYOUT_DENSITY_STORAGE_KEY = 'dungeon-mapper:layout-density';
-
-export type LayoutDensity = 'rail' | 'tabs';
-
-function loadInitialLayoutDensity(): LayoutDensity {
-  if (typeof window === 'undefined') return 'rail';
-  try {
-    const stored = window.localStorage.getItem(LAYOUT_DENSITY_STORAGE_KEY);
-    if (stored === 'rail' || stored === 'tabs') return stored;
-  } catch { /* ignore */ }
-  return 'rail';
-}
 
 // Stable no-op handlers for the player-view notes panel — defined at module
 // scope so we don't allocate fresh callbacks on every render.
@@ -114,6 +110,7 @@ function loadInitialUIScale(): number {
 }
 
 function App() {
+  const offline = useOfflineStatus();
   const {
     map,
     project,
@@ -235,7 +232,10 @@ function App() {
   const [printMode, setPrintMode] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(loadInitialViewMode);
   const [uiScale, setUIScale] = useState<number>(loadInitialUIScale);
-  const [layoutDensity, setLayoutDensity] = useState<LayoutDensity>(loadInitialLayoutDensity);
+  const [activePanel, setActivePanel] = useState<EditorPanel>('build');
+  const [showSettings, setShowSettings] = useState(false);
+  const [showExportMenu, setShowExportMenu] = useState(false);
+  const [showSaveDetails, setShowSaveDetails] = useState(false);
   const [preserveOnThemeSwitch, setPreserveOnThemeSwitch] = useState<boolean>(
     loadInitialPreserveOnThemeSwitch
   );
@@ -319,7 +319,7 @@ function App() {
 
   // ── Responsive layout panel state ──────────────────────────────────
   // Collapsible toolbar (left) and drawer panel (right) for tablet/mobile.
-  const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
+  const [toolbarCollapsed, setToolbarCollapsed] = useState(() => window.matchMedia('(max-width: 768px)').matches);
   const [rightPanelOpen, setRightPanelOpen] = useState(false);
 
   // ── Mobile detection (≤768px) ─────────────────────────────────────
@@ -328,7 +328,10 @@ function App() {
   );
   useEffect(() => {
     const mql = window.matchMedia('(max-width: 768px)');
-    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    const handler = (e: MediaQueryListEvent) => {
+      setIsMobile(e.matches);
+      if (e.matches) setToolbarCollapsed(true);
+    };
     mql.addEventListener('change', handler);
     return () => mql.removeEventListener('change', handler);
   }, []);
@@ -529,7 +532,7 @@ function App() {
     setViewMode(prev => {
       const next: ViewMode = prev === 'gm' ? 'player' : 'gm';
       handleSetActiveTool(next === 'player' ? 'pdraw' : 'paint');
-      announce(next === 'player' ? 'Switched to Present mode' : 'Switched to Edit mode');
+      announce(next === 'player' ? 'DM view. Fog-aware local view, not a player-safe display.' : 'Switched to Edit mode');
       try {
         window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, next);
       } catch {
@@ -707,13 +710,6 @@ function App() {
     }
   }, [uiScale]);
 
-  // Persist the layout density preference.
-  useEffect(() => {
-    try {
-      window.localStorage.setItem(LAYOUT_DENSITY_STORAGE_KEY, layoutDensity);
-    } catch { /* ignore */ }
-  }, [layoutDensity]);
-
   // When a note is selected from the panel, center the map viewport on it.
   const handleSelectNote = useCallback((id: number | null) => {
     setSelectedNoteId(id);
@@ -789,7 +785,8 @@ function App() {
   // Centralised global keyboard shortcuts. The hook owns one keydown
   // listener and dispatches to the wired actions; the registry it returns
   // also feeds the in-app help overlay.
-  const shortcutBindings = useGlobalShortcuts({
+  /* eslint-disable react-hooks/refs -- These callbacks defer imperative canvas/header reads until command execution. */
+  const shortcutBindings = buildKeyBindings({
     setActiveTool: handleSetActiveTool,
     undo: handleUndo,
     redo: handleRedo,
@@ -816,9 +813,7 @@ function App() {
     cutSelection: handleCutSelection,
     pasteClipboard: handlePasteClipboard,
     toggleFov: () => {
-      if (viewMode === 'gm') {
-        handleSetActiveTool(prev => prev === 'fov' ? 'paint' : 'fov');
-      }
+      handleSetActiveTool(prev => prev === 'fov' ? (viewMode === 'gm' ? 'paint' : 'pdraw') : 'fov');
     },
     nextLevel: () => {
       if (activeLevelIndex < project.levels.length - 1) {
@@ -854,7 +849,51 @@ function App() {
       setSelectedPlacedStampId(null);
     },
     openCommandPalette: () => setShowCommandPalette(true),
-  }, !showLibrary && !showCreateProject && !['restoring', 'restore-failed', 'replacing'].includes(saveState.phase));
+  });
+  /* eslint-enable react-hooks/refs */
+
+  const openPanel = (panel: EditorPanel) => {
+    setActivePanel(panel);
+    setToolbarCollapsed(false);
+    setRightPanelOpen(['notes', 'encounter', 'info'].includes(panel));
+  };
+  const extraActions: ExtraAction[] = [
+    ...(['build', 'decorate', 'look', 'levels', 'tactical', 'notes', 'encounter', 'info'] as const).map(panel => ({
+      id: `panel.${panel}` as const, label: `Open ${panel === 'tactical' ? 'Fog & sight' : panel}`,
+      action: () => openPanel(panel),
+    })),
+    ...themeList.map(theme => ({
+      id: `theme.${theme.id}` as const, label: `Theme: ${theme.name}`,
+      action: () => handleSetTheme(theme.id, preserveOnThemeSwitch),
+    })),
+    ...(['stamp', 'move-stamp', 'remove-stamp', 'wall-erase', 'path-erase', 'river-erase'] as const).map(tool => ({
+      id: TOOL_ACTIONS[tool], label: tool.replaceAll('-', ' '), action: () => handleSetActiveTool(tool),
+    })),
+    { id: 'file.library', label: 'Your maps', action: () => setLibraryView(true) },
+    { id: 'file.samples', label: 'Open a sample', action: () => setShowCreateProject(true) },
+    { id: 'file.clear', label: 'Clear current level', action: () => {
+      if (window.confirm('Clear the current level? Other levels are unchanged. The saved project will be retained as a local recovery copy.')) clearMap();
+    } },
+    { id: 'file.recovery', label: 'Save health & recovery', action: () => setShowSaveDetails(true) },
+    { id: 'dialog.settings', label: 'Project settings', action: () => setShowSettings(true) },
+    { id: 'dialog.export', label: 'Export', action: () => setShowExportMenu(true) },
+    { id: 'dialog.templates', label: 'Scene templates', action: () => setShowSceneTemplateDialog(true) },
+    { id: 'dialog.customTheme', label: 'Custom theme builder', action: () => setShowCustomThemeDialog(true) },
+  ];
+  const editorActions = buildEditorActions(shortcutBindings, extraActions, {
+    viewMode, canUndo, canRedo, hasSelection: selection !== null, hasClipboard: getClipboard() !== null,
+    hasStamp: selectedPlacedStampId !== null && (map.stamps ?? []).some(s => s.id === selectedPlacedStampId),
+    canNextLevel: activeLevelIndex < project.levels.length - 1, canPreviousLevel: activeLevelIndex > 0,
+  });
+  const runTool = (tool: ToolType) => {
+    const command = editorActions.find(action => action.id === TOOL_ACTIONS[tool]);
+    if (!command) throw new Error(`Unregistered tool: ${tool}`);
+    command.action();
+  };
+  const hasInspection = (map.stamps ?? []).some(item => item.id === selectedPlacedStampId) ||
+    (map.tokens ?? []).some(item => item.id === selectedTokenId) || map.notes.some(item => item.id === selectedNoteId);
+  useGlobalShortcuts(editorActions, !showLibrary && !showCreateProject &&
+    !['restoring', 'restore-failed', 'replacing'].includes(saveState.phase));
 
   // ── Context values ──────────────────────────────────────────────────
   const toolContextValue = useMemo<ToolContextValue>(() => ({
@@ -939,95 +978,6 @@ function App() {
     addStairLink, removeStairLink,
   ]);
 
-  // ── Command palette entries ───────────────────────────────────────
-  const commandPaletteItems = useMemo<CommandItem[]>(() => {
-    const cmds: CommandItem[] = [];
-
-    // Tools
-    const toolEntries: Array<{ id: ToolType; label: string; shortcut?: string }> = [
-      { id: 'paint', label: 'Paint tool', shortcut: 'P' },
-      { id: 'erase', label: 'Erase tool', shortcut: 'E' },
-      { id: 'fill', label: 'Flood Fill tool', shortcut: 'F' },
-      { id: 'note', label: 'Add Note tool', shortcut: 'N' },
-      { id: 'line', label: 'Line tool', shortcut: 'L' },
-      { id: 'rect', label: 'Rectangle tool', shortcut: 'R' },
-      { id: 'room-rect', label: 'Room Rectangle tool', shortcut: 'Q' },
-      { id: 'room-circle', label: 'Room Circle tool', shortcut: 'Shift+C' },
-      { id: 'room-poly', label: 'Room Polygon tool', shortcut: 'Shift+P' },
-      { id: 'room-cut', label: 'Room Cut tool (subtractive)', shortcut: 'Shift+Q' },
-      { id: 'select', label: 'Select tool', shortcut: 'S' },
-      { id: 'reveal', label: 'Reveal Fog', shortcut: 'V' },
-      { id: 'hide', label: 'Hide Fog', shortcut: 'H' },
-      { id: 'fov', label: 'Line-of-Sight / FOV', shortcut: 'O' },
-      { id: 'measure', label: 'Measure / Distance', shortcut: 'M' },
-      { id: 'light', label: 'Light Source', shortcut: 'I' },
-      { id: 'wall', label: 'Wall drawing', shortcut: 'W' },
-      { id: 'path', label: 'Path / road drawing', shortcut: 'Shift+W' },
-      { id: 'river', label: 'River drawing', shortcut: 'U' },
-      { id: 'stamp', label: 'Place Stamp' },
-      { id: 'gmdraw', label: 'GM Draw (annotations)', shortcut: 'D' },
-      { id: 'link-stair', label: 'Link Stairs', shortcut: 'K' },
-    ];
-    for (const t of toolEntries) {
-      cmds.push({
-        id: `tool.${t.id}`,
-        label: t.label,
-        category: 'Tool',
-        shortcut: t.shortcut,
-        action: () => handleSetActiveTool(t.id),
-      });
-    }
-
-    // Themes
-    for (const theme of themeList) {
-      cmds.push({
-        id: `theme.${theme.id}`,
-        label: `Theme: ${theme.name}`,
-        category: 'Theme',
-        action: () => handleSetTheme(theme.id, preserveOnThemeSwitch),
-      });
-    }
-
-    // Dialogs / actions
-    /* eslint-disable react-hooks/refs -- Command callbacks are stored and executed after selection, not during render. */
-    cmds.push(
-      { id: 'dialog.generate', label: 'Generate Hub…', category: 'File', shortcut: 'G', action: () => setShowGenerateHub(true) },
-      { id: 'dialog.premade', label: 'Sample Maps…', category: 'File', action: () => setShowGenerateHub(true) },
-      { id: 'dialog.templates', label: 'Scene Templates…', category: 'File', action: () => setShowSceneTemplateDialog(true) },
-      { id: 'dialog.customTheme', label: 'Custom Theme Builder…', category: 'Theme', action: () => setShowCustomThemeDialog(true) },
-      { id: 'dialog.shortcuts', label: 'Keyboard Shortcuts', category: 'Help', shortcut: '?', action: () => setShowShortcutsHelp(true) },
-      { id: 'dialog.exportDialog', label: 'Print-Optimized Export…', category: 'File', shortcut: 'Ctrl+Shift+P', action: () => setShowExportDialog(true) },
-      { id: 'file.exportJson', label: 'Export JSON', category: 'File', shortcut: 'Ctrl+S', action: () => triggerExportJSON() },
-      { id: 'file.exportPng', label: 'Export PNG', category: 'File', shortcut: 'Ctrl+Shift+S', action: () => triggerExportPNG() },
-      { id: 'file.exportSvg', label: 'Export SVG', category: 'File', shortcut: 'Ctrl+Alt+S', action: handleExportSVG },
-      { id: 'file.import', label: 'Import JSON…', category: 'File', shortcut: 'Ctrl+O', action: () => triggerImport() },
-      { id: 'file.new', label: 'New Map', category: 'File', shortcut: 'Ctrl+Alt+N', action: () => triggerNewMap() },
-    );
-
-    // View toggles
-    cmds.push(
-      { id: 'view.printMode', label: 'Toggle Print / B&W Mode', category: 'View', shortcut: 'Ctrl+B', action: handleTogglePrintMode },
-      { id: 'view.presentMode', label: 'Toggle Edit ↔ Present Mode', category: 'View', shortcut: 'Shift+V', action: switchViewMode },
-      { id: 'view.zoomIn', label: 'Zoom In', category: 'Canvas', shortcut: '+', action: () => zoomInCanvas() },
-      { id: 'view.zoomOut', label: 'Zoom Out', category: 'Canvas', shortcut: '-', action: () => zoomOutCanvas() },
-      { id: 'view.zoomReset', label: 'Reset Zoom', category: 'Canvas', shortcut: '0', action: () => zoomResetCanvas() },
-      { id: 'view.fitScreen', label: 'Fit Map to Screen', category: 'Canvas', shortcut: '1', action: () => fitCanvasToScreen() },
-    );
-    /* eslint-enable react-hooks/refs */
-
-    // Edit
-    cmds.push(
-      { id: 'edit.undo', label: 'Undo', category: 'Edit', shortcut: 'Ctrl+Z', action: handleUndo },
-      { id: 'edit.redo', label: 'Redo', category: 'Edit', shortcut: 'Ctrl+Y', action: handleRedo },
-    );
-
-    return cmds;
-  }, [themeList, handleSetActiveTool, handleSetTheme, preserveOnThemeSwitch,
-      handleTogglePrintMode, switchViewMode, handleExportSVG,
-      triggerExportJSON, triggerExportPNG, triggerImport, triggerNewMap,
-      zoomInCanvas, zoomOutCanvas, zoomResetCanvas, fitCanvasToScreen,
-      handleUndo, handleRedo]);
-
   const createProject = (loaded: DungeonProject) => {
     if (!loadProjectData(loaded)) return false;
     if (viewMode === 'player') switchViewMode();
@@ -1071,12 +1021,9 @@ function App() {
     <MapContext.Provider value={mapContextValue}>
     <ViewContext.Provider value={viewContextValue}>
     <ActionContext.Provider value={actionContextValue}>
-    <div className="app">
+    <EditorActionsContext.Provider value={editorActions}>
+    <div className="app editor-shell">
       <a className="skip-link" href="#dm-canvas-area">Skip to map canvas</a>
-      <SaveHealth key={projectId} projectId={projectId} onRefreshCheckpoints={refreshCheckpoints} state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
-      <button className="header-btn" onClick={() => setLibraryView(true)}>Your maps</button>
-      <ProjectChooser projectId={projectId} name={project.name} onRename={setProjectName}
-        onSwitch={switchProject} disabled={!['saved', 'unsaved'].includes(saveState.phase)} locked={saveState.phase === 'replacing'} />
       <div className="editor-workspace" inert={saveState.phase === 'replacing'}>
       <MapHeader
         ref={headerRef}
@@ -1085,28 +1032,25 @@ function App() {
         onSetName={setMapName}
         onResize={resizeMap}
         onSetTileSize={setTileSize}
-        onClear={clearMap}
         onNew={() => setShowCreateProject(true)}
         onLoadProject={createProject}
-        onExportSVG={handleExportSVG}
-        onUndo={handleUndo}
-        onRedo={handleRedo}
-        canUndo={canUndo}
-        canRedo={canRedo}
-        printMode={printMode}
-        onTogglePrintMode={handleTogglePrintMode}
         uiScale={uiScale}
         uiScaleOptions={UI_SCALE_OPTIONS}
         onSetUIScale={setUIScale}
-        layoutDensity={layoutDensity}
-        onSetLayoutDensity={setLayoutDensity}
+        onSetProjectName={setProjectName}
+        settingsOpen={showSettings}
+        onCloseSettings={() => setShowSettings(false)}
+        exportOpen={showExportMenu}
+        onCloseExport={() => setShowExportMenu(false)}
+        saveLabel={`${SAVE_PHASE_LABELS[saveState.phase]}${offline ? ' / Offline' : ''}`}
         getCanvas={() => canvasRef.current?.getCanvas() ?? null}
         viewMode={viewMode}
-        onToggleViewMode={switchViewMode}
-        onShowShortcuts={() => setShowShortcutsHelp(true)}
-        onOpenExportDialog={() => setShowExportDialog(true)}
-        onOpenGenerateHub={handleOpenGenerateMap}
       />
+      {(showSaveDetails || ['failed', 'conflict', 'replacing'].includes(saveState.phase)) && <div className="shell-save-details">
+        <SaveHealth key={projectId} projectId={projectId} onRefreshCheckpoints={refreshCheckpoints} state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
+        {showSaveDetails && <button type="button" onClick={() => { setShowSaveDetails(false); document.querySelector<HTMLElement>('[data-action="file.recovery"]')?.focus(); }}>Close save details</button>}
+      </div>}
+      {viewMode === 'player' && <p className="mode-notice">DM view: fog-aware local controls. Not a player-safe display. Notes and exports may contain private content.</p>}
       <LevelTabs
         levels={project.levels}
         activeIndex={activeLevelIndex}
@@ -1119,39 +1063,14 @@ function App() {
         stairLinks={project.stairLinks}
       />
       <div className={`app-body${toolbarCollapsed ? ' toolbar-collapsed' : ''}${isMobile ? ' app-body--mobile' : ''}`}>
-        {isMobile ? (
+        {isMobile && (
           /* ── Mobile toolbar (≤768px) ─────────────────────────── */
           <MobileToolbar
             viewMode={viewMode}
             activeTool={activeTool}
-            activeTile={activeTile}
-            onSetTool={handleSetActiveTool}
-            drawColor={drawColor}
-            drawWidth={drawWidth}
-            onSetDrawColor={setDrawColor}
-            onSetDrawWidth={setDrawWidth}
-            gmDrawColor={gmDrawColor}
-            gmDrawWidth={gmDrawWidth}
-            onSetGmDrawColor={setGmDrawColor}
-            onSetGmDrawWidth={setGmDrawWidth}
-            measureShape={measureShape}
-            onSetMeasureShape={setMeasureShape}
-            markerShape={markerShape}
-            markerColor={markerColor}
-            markerSize={markerSize}
-            onSetMarkerShape={setMarkerShape}
-            onSetMarkerColor={setMarkerColor}
-            onSetMarkerSize={setMarkerSize}
-            onClearFog={handleClearFog}
-            onFillFog={handleResetFog}
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-            canUndo={canUndo}
-            canRedo={canRedo}
-            onOpenGenerateMap={handleOpenGenerateMap}
-            onToggleViewMode={switchViewMode}
           />
-        ) : viewMode === 'gm' ? (
+        )}
+        {viewMode === 'gm' ? (
           <nav aria-label="Edit tools" className={toolbarCollapsed ? 'nav-collapsed' : ''}>
             <button
               type="button"
@@ -1161,15 +1080,17 @@ function App() {
               aria-label={toolbarCollapsed ? 'Expand toolbar' : 'Collapse toolbar'}
               aria-expanded={!toolbarCollapsed}
             >
-              {toolbarCollapsed ? '▶' : '◀'}
+              <Icon name={toolbarCollapsed ? 'menu' : 'close'} />
+              <span>{toolbarCollapsed ? 'Tools' : 'Close tools'}</span>
             </button>
-            {!toolbarCollapsed && (layoutDensity === 'rail' ? (
+            {!toolbarCollapsed && (
             <NavigationRail
+              activePanel={activePanel}
               activeTool={activeTool}
               activeTile={activeTile}
               themeId={themeId}
               customThemes={customThemes}
-              onSetTool={handleSetActiveTool}
+              onSetTool={runTool}
               onSetTile={setActiveTile}
               onSetTheme={handleSetTheme}
               preserveOnThemeSwitch={preserveOnThemeSwitch}
@@ -1269,116 +1190,10 @@ function App() {
               onUpdateRoomShape={updateRoomShape}
               onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
             />
-            ) : (
-            <Toolbar
-              activeTool={activeTool}
-              activeTile={activeTile}
-              themeId={themeId}
-              customThemes={customThemes}
-              onSetTool={handleSetActiveTool}
-              onSetTile={setActiveTile}
-              onSetTheme={handleSetTheme}
-              preserveOnThemeSwitch={preserveOnThemeSwitch}
-              onTogglePreserveOnThemeSwitch={() => setPreserveOnThemeSwitch(p => !p)}
-              onOpenCustomThemeBuilder={() => setShowCustomThemeDialog(true)}
-              fogEnabled={fogEnabled}
-              gmShowFog={gmShowFog}
-              onToggleGmShowFog={handleToggleGmShowFogAnnounced}
-              markerShape={markerShape}
-              markerColor={markerColor}
-              markerSize={markerSize}
-              onSetMarkerShape={setMarkerShape}
-              onSetMarkerColor={setMarkerColor}
-              onSetMarkerSize={setMarkerSize}
-              onClearMarkers={clearMarkers}
-              backgroundImage={map.backgroundImage}
-              onImportBackgroundImage={setBackgroundImage}
-              onUpdateBackgroundImage={updateBackgroundImage}
-              onClearBackgroundImage={clearBackgroundImage}
-              measureShape={measureShape}
-              measureFeetPerCell={measureFeetPerCell}
-              onSetMeasureShape={setMeasureShape}
-              onSetMeasureFeetPerCell={setMeasureFeetPerCell}
-              lightPreset={lightPreset}
-              lightRadius={lightRadius}
-              lightColor={lightColor}
-              onSetLightPreset={(preset) => {
-                setLightPreset(preset);
-                const p = LIGHT_SOURCE_PRESETS.find(p => p.id === preset);
-                if (p) { setLightRadius(p.radius); setLightColor(p.color); }
-              }}
-              onSetLightRadius={setLightRadius}
-              onSetLightColor={setLightColor}
-              onClearLightSources={clearLightSources}
-              stairLinkSource={stairLinkSource}
-              stairLinkCount={project.stairLinks.length}
-              onClearStairLinks={() => {
-                // Remove all stair links for the current level.
-                for (const link of [...project.stairLinks]) {
-                  if (link.fromLevel === activeLevelIndex || link.toLevel === activeLevelIndex) {
-                    removeStairLink(
-                      link.fromLevel === activeLevelIndex ? link.fromLevel : link.toLevel,
-                      link.fromLevel === activeLevelIndex ? link.fromCell.x : link.toCell.x,
-                      link.fromLevel === activeLevelIndex ? link.fromCell.y : link.toCell.y,
-                    );
-                  }
-                }
-              }}
-              gmDrawColor={gmDrawColor}
-              gmDrawWidth={gmDrawWidth}
-              onSetGmDrawColor={setGmDrawColor}
-              onSetGmDrawWidth={setGmDrawWidth}
-              onClearGmDrawings={handleClearGmDrawings}
-              selectedStampId={selectedStampId}
-              onSelectStamp={(id: string) => { setSelectedStampId(id); }}
-              onClearStamps={clearStamps}
-              customStamps={customStamps}
-              onSaveCustomStamp={saveCustomStamp}
-              onDeleteCustomStamp={deleteCustomStamp}
-              wallColor={wallColor}
-              wallThickness={wallThickness}
-              onSetWallColor={setWallColor}
-              onSetWallThickness={setWallThickness}
-              pathColor={pathColor}
-              pathWidth={pathWidth}
-              onSetPathColor={setPathColor}
-              onSetPathWidth={setPathWidth}
-              riverColor={riverColor}
-              riverWidth={riverWidth}
-              riverType={riverType}
-              onSetRiverColor={setRiverColor}
-              onSetRiverWidth={setRiverWidth}
-              onSetRiverType={setRiverType}
-              onClearWalls={clearWallSegments}
-              onClearPaths={clearPathSegments}
-              onClearRivers={clearRivers}
-              paperTexture={map.paperTexture}
-              onSetPaperTexture={setPaperTexture}
-              onUpdatePaperTexture={updatePaperTexture}
-              onClearPaperTexture={clearPaperTexture}
-              edgeBlend={map.edgeBlend}
-              onSetEdgeBlend={setEdgeBlend}
-              onUpdateEdgeBlend={updateEdgeBlend}
-              onClearEdgeBlend={clearEdgeBlend}
-              handDrawn={map.handDrawn}
-              onSetHandDrawn={setHandDrawn}
-              onUpdateHandDrawn={updateHandDrawn}
-              onClearHandDrawn={clearHandDrawn}
-              lightingAtmosphere={map.lightingAtmosphere}
-              onSetLightingAtmosphere={setLightingAtmosphere}
-              onUpdateLightingAtmosphere={updateLightingAtmosphere}
-              onClearLightingAtmosphere={clearLightingAtmosphere}
-              artStylePreset={map.artStylePreset}
-              onApplyArtStylePreset={applyArtStylePreset}
-              roomShapes={map.roomShapes}
-              selectedRoomShapeId={selectedRoomShapeId}
-              onUpdateRoomShape={updateRoomShape}
-              onOpenSceneTemplates={() => setShowSceneTemplateDialog(true)}
-            />
-            ))}
+            )}
           </nav>
         ) : (
-          <nav aria-label="Present tools" className={toolbarCollapsed ? 'nav-collapsed' : ''}>
+          <nav aria-label="DM view tools" className={toolbarCollapsed ? 'nav-collapsed' : ''}>
             <button
               type="button"
               className="panel-toggle toolbar-toggle"
@@ -1387,12 +1202,14 @@ function App() {
               aria-label={toolbarCollapsed ? 'Expand toolbar' : 'Collapse toolbar'}
               aria-expanded={!toolbarCollapsed}
             >
-              {toolbarCollapsed ? '▶' : '◀'}
+              <Icon name={toolbarCollapsed ? 'menu' : 'close'} />
+              <span>{toolbarCollapsed ? 'Tools' : 'Close tools'}</span>
             </button>
             {!toolbarCollapsed && (
             <PlayerToolbar
+              utilities={<DmViewUtilities onSetTool={runTool} />}
               activeTool={activeTool}
-              onSetTool={handleSetActiveTool}
+              onSetTool={runTool}
               drawColor={drawColor}
               onSetDrawColor={setDrawColor}
               drawWidth={drawWidth}
@@ -1495,19 +1312,13 @@ function App() {
             announce={announce}
           />
         </main>
-        <button
-          type="button"
-          className="panel-toggle right-panel-toggle"
-          onClick={() => setRightPanelOpen(o => !o)}
-          title={rightPanelOpen ? 'Hide panels' : 'Show panels'}
-          aria-label={rightPanelOpen ? 'Hide initiative and notes panels' : 'Show initiative and notes panels'}
-          aria-expanded={rightPanelOpen}
-        >
-          {rightPanelOpen ? '▶' : '◀'}
-        </button>
-        {viewMode === 'gm' && (
-          <aside className={`right-panel right-panel-drawer${rightPanelOpen ? ' open' : ''}`} aria-label="Inspector, initiative, and notes">
-            <SelectionInspector
+        {viewMode === 'gm' && (rightPanelOpen || hasInspection) && (
+          <aside className="right-panel context-panel" aria-label="Context panel">
+            <button type="button" className="context-close" onClick={() => {
+              setRightPanelOpen(false); setSelectedPlacedStampId(null); setSelectedTokenId(null); setSelectedNoteId(null);
+              document.getElementById('dm-canvas-area')?.focus();
+            }}><Icon name="close" />Close panel</button>
+            {(activePanel === 'info' || hasInspection) && <SelectionInspector
               map={map}
               themeId={themeId}
               themeName={themeList.find(t => t.id === themeId)?.name ?? themeId}
@@ -1531,8 +1342,8 @@ function App() {
               onDeleteNote={deleteNote}
               onSelectNote={handleSelectNote}
               onRemoveLightSource={removeLightSource}
-            />
-            <InitiativePanel
+            />}
+            {activePanel === 'encounter' && <InitiativePanel
               tokens={map.tokens ?? []}
               initiative={map.initiative ?? []}
               selectedTokenId={selectedTokenId}
@@ -1541,20 +1352,21 @@ function App() {
               onReorder={reorderInitiative}
               onClear={clearInitiative}
               viewMode="gm"
-            />
-            <NotesPanel
+            />}
+            {activePanel === 'notes' && <NotesPanel
               notes={map.notes}
               selectedNoteId={selectedNoteId}
               onSelectNote={handleSelectNote}
               onUpdateNote={updateNote}
               onDeleteNote={deleteNote}
               onActivateNoteTool={() => handleSetActiveTool('note')}
-            />
+            />}
           </aside>
         )}
-        {viewMode === 'player' && (
-          <aside className={`right-panel right-panel-drawer${rightPanelOpen ? ' open' : ''}`} aria-label="Initiative and notes">
-            <InitiativePanel
+        {viewMode === 'player' && rightPanelOpen && (
+          <aside className="right-panel context-panel" aria-label="DM view information">
+            <button type="button" onClick={() => { setRightPanelOpen(false); document.getElementById('dm-canvas-area')?.focus(); }}>Close panel</button>
+            {activePanel === 'encounter' && <InitiativePanel
               // Hide tokens whose footprint touches any fogged cell from
               // the player initiative list so the panel doesn't leak the
               // existence of hidden enemies (matching MapCanvas).
@@ -1573,8 +1385,9 @@ function App() {
               onReorder={reorderInitiative}
               onClear={clearInitiative}
               viewMode="player"
-            />
-            <NotesPanel
+            />}
+            {activePanel === 'notes' && <NotesPanel
+              readOnly
               // In player mode, hide notes that sit under fog so the panel
               // doesn't leak the existence of hidden rooms. Editing/deleting
               // is also disabled by routing through no-op callbacks.
@@ -1598,10 +1411,17 @@ function App() {
               onUpdateNote={NOOP_UPDATE_NOTE}
               onDeleteNote={NOOP_DELETE_NOTE}
               onActivateNoteTool={NOOP_ACTIVATE_NOTE_TOOL}
-            />
+            />}
           </aside>
         )}
       </div>
+      <footer className="editor-statusbar">
+        <span><strong>{viewMode === 'gm' ? 'Edit' : 'DM view'}</strong> / {activeTool.replaceAll('-', ' ')}</span>
+        <span>{map.meta.width} x {map.meta.height} tiles</span>
+        <ActionButton id="edit.undo" icon="undo">Undo</ActionButton>
+        <ActionButton id="edit.redo" icon="redo">Redo</ActionButton>
+        <ActionButton id="help.shortcuts">Help</ActionButton>
+      </footer>
       <div
         className="sr-only"
         role="status"
@@ -1640,7 +1460,9 @@ function App() {
       )}
       {showShortcutsHelp && (
         <ShortcutsHelp
-          bindings={shortcutBindings}
+          bindings={shortcutBindings.map(binding => ({
+            ...binding, description: editorActions.find(action => action.id === binding.id)?.label ?? binding.description,
+          }))}
           onClose={() => setShowShortcutsHelp(false)}
         />
       )}
@@ -1682,10 +1504,11 @@ function App() {
       <CommandPalette
         open={showCommandPalette}
         onClose={() => setShowCommandPalette(false)}
-        commands={commandPaletteItems}
+        commands={editorActions}
       />
       </div>
     </div>
+    </EditorActionsContext.Provider>
     </ActionContext.Provider>
     </ViewContext.Provider>
     </MapContext.Provider>

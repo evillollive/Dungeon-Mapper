@@ -1,38 +1,30 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { CustomThemeDefinition, EdgeBlendSettings, HandDrawnSettings, LightingAtmosphereSettings, PaperTextureSettings, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset, RiverType } from '../types/map';
 import type { BackgroundImage } from '../types/map';
 import DrawToolsTab from './DrawToolsTab';
 import TacticalToolsTab from './TacticalToolsTab';
 import AdvancedToolsTab from './AdvancedToolsTab';
+import type { EditorPanel } from '../utils/editorActions';
+import ActionButton from './ActionButton';
+import LevelSettings from './LevelSettings';
 
 /* ------------------------------------------------------------------ */
 /*  Types & constants                                                  */
 /* ------------------------------------------------------------------ */
 
-export type RailMode = 'draw' | 'tactical' | 'advanced';
-
-const RAIL_ITEMS: { id: RailMode; icon: string; label: string; title: string }[] = [
-  { id: 'draw',     icon: '✏️', label: 'Draw',     title: 'Drawing tools, tile palette, and theme selection' },
-  { id: 'tactical', icon: '⚔️', label: 'Tactical', title: 'Fog, FOV, measurement, tokens, markers, and lighting' },
-  { id: 'advanced', icon: '⚙️', label: 'Advanced', title: 'Background image, stair links, and GM annotations' },
-];
-
-const RAIL_MODE_STORAGE_KEY = 'dungeon-mapper:rail-mode';
-
-function loadInitialRailMode(): RailMode {
-  if (typeof window === 'undefined') return 'draw';
-  try {
-    const stored = window.localStorage.getItem(RAIL_MODE_STORAGE_KEY);
-    if (stored === 'draw' || stored === 'tactical' || stored === 'advanced') return stored;
-  } catch { /* ignore */ }
-  return 'draw';
-}
+const PANELS = [
+  { id: 'build', label: 'Build' }, { id: 'decorate', label: 'Decorate' },
+  { id: 'look', label: 'Look' }, { id: 'levels', label: 'Levels' },
+  { id: 'tactical', label: 'Fog & sight' }, { id: 'notes', label: 'Notes' },
+  { id: 'encounter', label: 'Encounter' }, { id: 'info', label: 'Map info' },
+] as const;
 
 /* ------------------------------------------------------------------ */
 /*  Props — same as Toolbar (re-export for consumers)                  */
 /* ------------------------------------------------------------------ */
 
 interface NavigationRailProps {
+  activePanel: EditorPanel;
   activeTool: ToolType;
   activeTile: TileType;
   themeId: string;
@@ -145,58 +137,35 @@ interface NavigationRailProps {
 /* ------------------------------------------------------------------ */
 
 const NavigationRail: React.FC<NavigationRailProps> = (props) => {
-  const [activeMode, setActiveMode] = useState<RailMode>(loadInitialRailMode);
-
-  const handleSetMode = (mode: RailMode) => {
-    setActiveMode(mode);
-    try {
-      window.localStorage.setItem(RAIL_MODE_STORAGE_KEY, mode);
-    } catch { /* ignore */ }
-  };
+  const activeMode = props.activePanel;
 
   return (
     <div className="nav-rail-container">
       {/* Icon rail — narrow vertical strip */}
-      <div className="nav-rail" role="tablist" aria-label="Tool modes" aria-orientation="vertical">
-        {RAIL_ITEMS.map(item => (
-          <button
-            key={item.id}
-            type="button"
-            role="tab"
-            className={`nav-rail-btn ${activeMode === item.id ? 'active' : ''}`}
-            onClick={() => handleSetMode(item.id)}
-            title={item.title}
-            aria-label={`${item.label} mode`}
-            aria-selected={activeMode === item.id}
-            aria-controls={`rail-panel-${item.id}`}
-          >
-            <span className="nav-rail-icon" aria-hidden="true">{item.icon}</span>
-            <span className="nav-rail-label">{item.label}</span>
-          </button>
-        ))}
-        <hr className="nav-rail-sep" aria-hidden="true" />
-        <button
-          type="button"
-          className="nav-rail-btn"
-          onClick={props.onOpenGenerateMap}
-          title="Generate Hub — procedural generation and sample maps [G]"
-          aria-label="Open Generate Hub"
-          aria-keyshortcuts="G"
-        >
-          <span className="nav-rail-icon" aria-hidden="true">🗺️</span>
-          <span className="nav-rail-label">Generate</span>
-        </button>
+      <div className="nav-rail" aria-label="Editor destinations">
+        {PANELS.map(item => <ActionButton key={item.id} id={`panel.${item.id}`}
+          icon={item.id} pressed={activeMode === item.id}>{item.label}</ActionButton>)}
       </div>
 
       {/* Contextual sub-panel — swaps based on selected rail mode */}
       <div
         className="nav-rail-panel"
-        role="tabpanel"
+        role="region"
         id={`rail-panel-${activeMode}`}
-        aria-label={`${RAIL_ITEMS.find(i => i.id === activeMode)?.label ?? ''} tools`}
+        aria-label={`${PANELS.find(i => i.id === activeMode)?.label ?? ''} tools`}
       >
-        {activeMode === 'draw' && (
+        <h2>{PANELS.find(i => i.id === activeMode)?.label}</h2>
+        {activeMode === 'levels' && <LevelSettings />}
+        {['notes', 'encounter', 'info'].includes(activeMode) && <p>Details are open beside the map. Close the panel to return to the canvas.</p>}
+        {activeMode === 'build' && <div className="panel-quick-actions">
+          <ActionButton id="file.generate">Generate</ActionButton>
+          <ActionButton id="edit.copy">Copy</ActionButton>
+          <ActionButton id="edit.cut">Cut</ActionButton>
+          <ActionButton id="edit.paste">Paste</ActionButton>
+        </div>}
+        {['build', 'decorate', 'look'].includes(activeMode) && (
           <DrawToolsTab
+            section={activeMode === 'build' ? 'build' : activeMode === 'decorate' ? 'decorate' : 'look'}
             activeTool={props.activeTool}
             activeTile={props.activeTile}
             themeId={props.themeId}
@@ -253,8 +222,9 @@ const NavigationRail: React.FC<NavigationRailProps> = (props) => {
             onUpdateRoomShape={props.onUpdateRoomShape}
           />
         )}
-        {activeMode === 'tactical' && (
+        {(activeMode === 'tactical' || activeMode === 'decorate') && (
           <TacticalToolsTab
+            section={activeMode === 'decorate' ? 'decorate' : 'tactical'}
             activeTool={props.activeTool}
             onSetTool={props.onSetTool}
             fogEnabled={props.fogEnabled}
@@ -280,8 +250,9 @@ const NavigationRail: React.FC<NavigationRailProps> = (props) => {
             onClearLightSources={props.onClearLightSources}
           />
         )}
-        {activeMode === 'advanced' && (
+        {['look', 'levels', 'decorate'].includes(activeMode) && (
           <AdvancedToolsTab
+            section={activeMode === 'look' ? 'look' : activeMode === 'levels' ? 'levels' : 'decorate'}
             activeTool={props.activeTool}
             onSetTool={props.onSetTool}
             backgroundImage={props.backgroundImage}

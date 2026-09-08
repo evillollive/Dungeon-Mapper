@@ -1,0 +1,29 @@
+:root {
+  color-scheme: dark;
+  --font-ui: 'Avenir Next', Avenir, sans-serif;
+  --surface-base: #100d19;
+  --surface-panel: #1e1930;
+  --surface-raised: #272344;
+  --surface-active: #34294f;
+  --surface-canvas: #09070d;
+  --text-primary: #f6f3ff;
+  --text-secondary: #c4bdd7;
+  --accent: #b9a0ff;
+  --action-primary: #ff9569;
+  --action-ink: #201018;
+  --border: #817696;
+  --focus: #8dbbff;
+  --danger: #ffadad;
+  --surface-error: #42232c;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --radius-control: 7px;
+  --radius-panel: 12px;
+  --text-small: calc(0.875rem * var(--ui-scale, 1));
+  --text-body: calc(1rem * var(--ui-scale, 1));
+  --text-heading: calc(1.25rem * var(--ui-scale, 1));
+  --target: 44px;
+}

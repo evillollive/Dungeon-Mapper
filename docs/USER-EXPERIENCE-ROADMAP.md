@@ -8,7 +8,7 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
-**Latest delivery:** UX-01 project/recovery foundations are qualified. UX-02 now implements the production local library and four guided creation paths, with native and production browser evidence documented in [its handoff](./UX-02-HANDOFF.md). UX-00 participant research remains deferred with zero participants; UX-09 acceptance is still required.
+**Latest delivery:** UX-03 implements the production unified navigation and design foundations on UX-01 recovery and UX-02 Library/Create. The shared action registry, command migration record, semantic tokens, responsive layout evidence, and compatibility decisions are documented in [the UX-03 handoff](./UX-03-HANDOFF.md). UX-00 participant research remains deferred with zero participants; UX-09 acceptance is still required.
 
 ## 1. Product direction
 
@@ -461,6 +461,8 @@ Resolve one decision at a time with the owner: local-first release scope; migrat
 **Handoff:** Library schema/indexes, copy-versus-replace rules, and first-use browser journeys.
 
 ### UX-03: Unified navigation and design foundations
+
+**Status:** Implemented and browser-qualified on September 8, 2026. Exact-head CI remains required before merge. All 68 shortcut identities are accounted for; production command parity, layout evidence, and intentional compatibility changes are recorded in [UX-03-HANDOFF.md](./UX-03-HANDOFF.md). UX-04 object/device parity and UX-05/06 audience/session work remain separate.
 
 **Priority:** P1. **Depends on:** UX-00; integrate save/library controls after UX-01/02.
 

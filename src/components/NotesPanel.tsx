@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { MapNote } from '../types/map';
 
 interface NotesPanelProps {
+  readOnly?: boolean;
   notes: MapNote[];
   selectedNoteId: number | null;
   onSelectNote: (id: number | null) => void;
@@ -11,6 +12,7 @@ interface NotesPanelProps {
 }
 
 const NotesPanel: React.FC<NotesPanelProps> = ({
+  readOnly = false,
   notes,
   selectedNoteId,
   onSelectNote,
@@ -37,21 +39,20 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
     <div className="notes-panel">
       <div className="notes-header">
         <span className="toolbar-label">ROOM NOTES</span>
-        <button
+        {!readOnly && <button
           type="button"
           className="add-note-btn"
           onClick={onActivateNoteTool}
           title="Select Note tool then click on map"
         >
           + Add Note
-        </button>
+        </button>}
       </div>
 
       {notes.length === 0 && (
         <div className="notes-empty">
           No notes yet.<br />
-          Click "+ Add Note" then<br />
-          click on the map.
+          {!readOnly && <>Click "+ Add Note" then<br />click on the map.</>}
         </div>
       )}
 
@@ -99,7 +100,7 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
                 <div className="note-header-row">
                   <span className="note-badge">{note.id}</span>
                   <span className="note-label">{note.label}</span>
-                  <div className="note-actions">
+                  {!readOnly && <div className="note-actions">
                     <button
                       className="note-edit-btn"
                       onClick={e => { e.stopPropagation(); startEdit(note); }}
@@ -112,7 +113,7 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
                       title="Delete note"
                       aria-label={`Delete note ${note.id}: ${note.label}`}
                     >✕</button>
-                  </div>
+                  </div>}
                 </div>
                 <div className="note-coords">({note.x}, {note.y})</div>
                 {note.description && (

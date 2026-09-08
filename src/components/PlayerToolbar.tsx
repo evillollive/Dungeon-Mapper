@@ -3,14 +3,12 @@ import type { ToolType } from '../types/map';
 import TokenToolsSection from './TokenToolsSection';
 
 /**
- * The Player toolbar is intentionally a separate component (not a filtered
- * Toolbar) so it can evolve independently. It exposes only the player-safe
- * tools: a freehand drawing pen, a drawing eraser, three "place token"
- * buttons (player / NPC / monster), a move-token tool, and a remove-token
- * tool. It also surfaces the pen's color and brush width.
+ * Retains the legacy component name for the DM-operated fog-aware view.
+ * These are editing controls, not a player-safe or authenticated surface.
  */
 
 interface PlayerToolbarProps {
+  utilities?: React.ReactNode;
   activeTool: ToolType;
   onSetTool: (tool: ToolType) => void;
   drawColor: string;
@@ -53,6 +51,7 @@ const BRUSH_WIDTHS: { value: number; label: string }[] = [
 ];
 
 const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
+  utilities,
   activeTool, onSetTool,
   drawColor, onSetDrawColor,
   drawWidth, onSetDrawWidth,
@@ -61,7 +60,7 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
   dynamicFogEnabled, onToggleDynamicFog, onResetExplored,
 }) => {
   return (
-    <div className="toolbar">
+    <div className="toolbar dm-view-toolbar">
       <div className="toolbar-section">
         <div className="toolbar-label">FOG OF WAR</div>
         <label
@@ -159,6 +158,7 @@ const PlayerToolbar: React.FC<PlayerToolbarProps> = ({
             )}
           </>
         )}
+        {utilities}
       </div>
 
       <div className="toolbar-section">

@@ -2,8 +2,10 @@ import React from 'react';
 import type { ToolType, MarkerShape, MeasureShape, LightSourcePreset } from '../types/map';
 import { MARKER_SHAPES, MARKER_COLORS, MARKER_SHAPE_LABELS, MEASURE_SHAPES, MEASURE_SHAPE_LABELS, LIGHT_SOURCE_PRESETS } from '../types/map';
 import TokenToolsSection from './TokenToolsSection';
+import ActionButton from './ActionButton';
 
 interface TacticalToolsTabProps {
+  section?: 'decorate' | 'tactical' | 'dm';
   activeTool: ToolType;
   onSetTool: (tool: ToolType) => void;
   fogEnabled: boolean;
@@ -33,6 +35,7 @@ interface TacticalToolsTabProps {
 }
 
 const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
+  section = 'tactical',
   activeTool, onSetTool,
   fogEnabled, gmShowFog, onToggleGmShowFog,
   markerShape, markerColor, markerSize,
@@ -43,15 +46,17 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
 }) => {
   return (
     <>
+      {section !== 'decorate' && <>
+      {section === 'tactical' && <ActionButton id="view.viewMode">Open DM view for fog controls</ActionButton>}
       <div className="toolbar-section">
         <div className="toolbar-label">FOG OF WAR</div>
-        <label
+        {section === 'tactical' && <label
           className={`tool-btn ${gmShowFog ? 'active' : ''}`}
           style={{ cursor: 'pointer' }}
           title={
             fogEnabled
-              ? 'Show Fog (preview) — overlay a translucent grey wash on cells that are currently hidden from players. The map stays visible to you; this is an Edit-mode-only preview. Fog controls live on the Present toolbar.'
-              : 'Show Fog has no effect until fog-of-war is enabled. Switch to Present mode to enable fog and reveal/hide cells.'
+              ? 'Show Fog previews hidden cells with a translucent overlay. The map stays visible to you. Fog controls are in DM view.'
+              : 'Show Fog has no effect until fog-of-war is enabled. Switch to DM view to enable fog and reveal/hide cells.'
           }
         >
           <span className="tool-icon" aria-hidden="true">🌫</span>
@@ -64,11 +69,11 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
             aria-label="Show fog preview overlay"
             style={{ margin: 0 }}
           />
-        </label>
+        </label>}
         <button
           type="button"
           className={`tool-btn ${activeTool === 'fov' ? 'active' : ''}`}
-          onClick={() => onSetTool(activeTool === 'fov' ? 'paint' : 'fov')}
+          onClick={() => onSetTool('fov')}
           title="Line of Sight — click a cell to visualize which cells are visible from that point, with walls blocking the view. Click the same cell again to clear. [O]"
           aria-label="Line of Sight / FOV tool"
           aria-pressed={activeTool === 'fov'}
@@ -108,9 +113,6 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
               aria-pressed={measureShape === s}
               style={{ padding: 2, width: 'auto' }}
             >
-              <span aria-hidden="true" style={{ fontSize: 14 }}>
-                {s === 'ruler' ? '📏' : s === 'circle' ? '⭕' : s === 'cone' ? '🔺' : '╱'}
-              </span>
               <span className="tile-btn-label">{MEASURE_SHAPE_LABELS[s]}</span>
             </button>
           ))}
@@ -134,7 +136,12 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
         </div>
       </div>
 
-      <TokenToolsSection activeTool={activeTool} onSetTool={onSetTool} />
+      </>}
+      {section !== 'tactical' && <>
+      {section === 'decorate' && <>
+        <ActionButton id="tool.note">Add note</ActionButton>
+        <TokenToolsSection activeTool={activeTool} onSetTool={onSetTool} />
+      </>}
 
       <div className="toolbar-section">
         <div className="toolbar-label">MARKERS</div>
@@ -235,7 +242,8 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
         </div>
       </div>
 
-      <div className="toolbar-section">
+      </>}
+      {section !== 'decorate' && <div className="toolbar-section">
         <div className="toolbar-label">LIGHT</div>
         <button
           type="button"
@@ -342,6 +350,7 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
           ))}
         </div>
       </div>
+      }
     </>
   );
 };
