@@ -4,7 +4,7 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status:** Proposed implementation roadmap. No application behavior changed by this document.
+**Status:** UX-00 in progress: owner scope decisions approved; isolated workflow prototypes and reproduced baseline available. Participant research and final visual review remain open. No production application behavior changed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
@@ -249,24 +249,24 @@ Use plain labels: **Cover map**, **Reveal area**, **Player preview**, **Add priv
 
 ### Visual concept
 
-Use an understated illustrated atlas: warm ivory surfaces, charcoal ink, muted mineral colors, deliberate line weights, and beautifully composed maps. The application chrome should resemble a well-made drafting tool, not a parchment texture applied to every control.
+Use an illustrated atlas with a more playful interface: deep purple panels, blue-black map surrounds, lavender and blue accents, and warm red/orange actions. In UX-00, the owner approved the workflow direction for a pilot but rejected the initial ivory palette as too bland. Use one sans-serif family throughout the interface, with weight and italics for hierarchy. Keep accessible lettering and restrained map detail. Do not apply parchment texture to every control.
 
 The memorable feature is the map: continuous architectural silhouettes, soft material variation, and restrained shadows. Reserve bright accents for selected objects, party tokens, and actionable state.
 
-Suggested design tokens, subject to contrast measurement:
+Pilot design tokens, revised after owner feedback in UX-00. Measured examples and remaining accessibility work are recorded in the [handoff](./UX-00-HANDOFF.md):
 
 | Token | Initial direction |
 | --- | --- |
-| Canvas surround | Warm limestone `#E7E1D5`, separate from floor materials |
-| Panel surface | Ivory `#FBF8F1`, flat behind text |
-| Primary ink | Charcoal `#272923` |
-| Secondary ink | Slate `#555C56` |
-| Primary action | Deep evergreen `#28594A` |
-| Private/destructive state | Oxblood `#853F3F`, paired with text/icon |
-| Decorative accent | Antique brass `#A8864A`, not default body text |
-| Display type | Fraunces or a similarly restrained licensed serif for titles only |
-| UI type | Source Sans 3 or a similarly readable humanist sans for controls |
-| Numeric type | Tabular numerals; monospace only for seeds/coordinates |
+| Canvas surround | Blue-black `#121723`, separate from floor materials |
+| Panel surface | Deep purple `#1E1930`; raised surfaces `#272344` |
+| Primary ink | Near-white `#F6F3FF` |
+| Secondary ink | Pale lavender `#C4BDD7` |
+| Primary action | Warm orange `#FF9569` with dark `#201018` text |
+| Private/destructive state | Light red `#FFADAD`, paired with explicit text/icon |
+| Decorative accent | Lavender `#B9A0FF` and blue `#8DBBFF` |
+| Display type | Same sans-serif family as controls; bold/italic for hierarchy |
+| UI type | Avenir Next in the prototype, sans-serif platform fallbacks; choose one licensed self-hosted family for production |
+| Numeric type | Tabular numerals in the same sans-serif family |
 
 Self-host approved font files with their license notices. Use readable fallbacks, never block map rendering on font loading. Suggested colors are not a claim of WCAG compliance.
 
@@ -392,7 +392,7 @@ Private thumbnails and session data remain local by default. Analytics are not n
 
 ## 7. Dependency-ordered implementation backlog
 
-All items begin **Not started**. Each is a work package for one or more future sessions, not a promise of one-PR completion. P0 means trust or core workflow; P1 means first redesigned release; P2 means later expansion.
+The status ledger below records actual progress. Each item is a work package for one or more sessions, not a promise of one-PR completion. P0 means trust or core workflow; P1 means first redesigned release; P2 means later expansion.
 
 ```text
 UX-00 baseline and decision gates
@@ -413,6 +413,8 @@ Art exploration and usability research may run alongside infrastructure work, bu
 ### UX-00: Baseline, prototypes, and decision gates
 
 **Priority:** P0. **Depends on:** none.
+
+**Progress, 2026-09-07:** Reproduced the browser baseline at `01da138`. The owner approved local-first scope, private legacy notes, read-only local display, and separate authored-project/session progress. The workflow direction was accepted for a pilot with a requested colorful purple/blue/red-orange/black palette and one sans-serif family, replacing the initial ivory/serif treatment. Library/Edit/Run/Player prototypes include normal, empty, and error scenarios without changing production behavior. See the [evidence, decisions, prototype instructions, and research handoff](./UX-00-HANDOFF.md) and [command migration inventory](./UX-00-COMMAND-INVENTORY.md). No participants have been observed; research and final production visual acceptance remain required.
 
 **Deliverables:** Reproduce the walkthrough at the session's actual commit. Inventory every existing command and assign it to the proposed navigation. Produce clickable or coded prototypes for Library, Edit, Run, and Player display, including empty/error states. Record before/after screenshots and timings with the same fixture.
 
@@ -670,7 +672,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 
 | Package | Status | Completion reference / next gate |
 | --- | --- | --- |
-| UX-00 | Not started | Owner decisions, prototypes, participant baseline |
+| UX-00 | In progress | [Owner decisions, reproduced baseline, and isolated prototypes](./UX-00-HANDOFF.md); participant study and final visual acceptance pending |
 | UX-01 | Not started | Storage/schema/recovery |
 | UX-02 | Not started | Local library and creation |
 | UX-03 | Not started | Shell, actions, design tokens |
