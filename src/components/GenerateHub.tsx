@@ -1,6 +1,9 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { DungeonProject } from '../types/map';
+import { createDefaultMap } from '../hooks/mapStateUtils';
+import { createFogGrid } from '../utils/mapUtils';
+import { renderMapToCanvas } from '../utils/renderMap';
 import {
   GENERATOR_LIST,
   getGenerator,
@@ -241,6 +244,7 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
   const [density, setDensity] = useState<number>(1);
   const [seedText, setSeedText] = useState<string>(() => seedToString(randomSeed()));
   const [error, setError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ result: GeneratedMap; name: string; image: string; target?: { x: number; y: number; w: number; h: number } } | null>(null);
 
   // Tile mix state
   const [mixOverrides, setMixOverrides] = useState<Record<string, number>>({});
@@ -321,12 +325,6 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
       setError('Width and height must be numbers.');
       return;
     }
-    if (hasExistingContent && !intoSelection) {
-      const ok = window.confirm(
-        'Replace the current level, including its notes, tokens, fog and artwork? Other levels are unchanged. The saved project will be retained as a local recovery copy.'
-      );
-      if (!ok) return;
-    }
     const seed = parseSeed(seedText);
     try {
       const tileMix: Record<string, number> = {};
@@ -367,15 +365,30 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
         }
       }
       const suggestedName = `Generated ${generator.name}`;
-      if (intoSelection && selection) {
-        onGenerate(result, suggestedName, selection);
-      } else {
-        onGenerate(result, suggestedName);
-      }
+      const map = { ...createDefaultMap(suggestedName), tiles: result.tiles, notes: result.notes,
+        roomShapes: result.roomShapes, rivers: result.rivers,
+        fog: createFogGrid(w, h, true), meta: { name: suggestedName, width: w, height: h, tileSize: 20, theme: themeId } };
+      const image = renderMapToCanvas(map, { tileSize: Math.min(12, 480 / Math.max(w, h)), themeId }).toDataURL();
+      setPreview({ result, name: suggestedName, image, ...(intoSelection && selection ? { target: { ...selection } } : {}) });
+      setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Generation failed.');
     }
   };
+
+  if (preview) return <section aria-label="Generated map preview">
+    <h3>Preview your map</h3>
+    <img src={preview.image} alt="Generated map preview" style={{ maxWidth: '100%', maxHeight: 340, objectFit: 'contain' }}
+      onError={() => setError('Preview image unavailable. Return to options and generate again.')} />
+    <p>{preview.target ? `This changes the selected ${preview.target.w} x ${preview.target.h} region at ${preview.target.x}, ${preview.target.y}. A whole-project recovery checkpoint is retained.`
+      : 'Use this map creates a separate editable project. Your existing project is unchanged.'}</p>
+    {error && <p role="alert">{error}</p>}
+    <div className="generate-dialog-buttons">
+      <button onClick={onCancel}>Cancel</button>
+      <button onClick={() => { setPreview(null); setError(null); }}>Back to options</button>
+      <button disabled={!!error} onClick={() => onGenerate(preview.result, preview.name, preview.target)}>Use this map</button>
+    </div>
+  </section>;
 
   return (
     <>
@@ -558,8 +571,8 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
 
       {hasExistingContent && !intoSelection && (
         <div className="generate-dialog-warning" role="alert">
-          This replaces the current level, including notes, tokens, fog and artwork.
-          Other levels are unchanged. A saved project copy is retained in Recovery copies.
+          This creates a separate editable project after preview.
+          Your existing project and its recovery copies are unchanged.
         </div>
       )}
       {intoSelection && selection && (

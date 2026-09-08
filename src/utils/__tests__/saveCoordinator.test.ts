@@ -21,6 +21,32 @@ describe('revision-aware save coordinator', () => {
   beforeEach(() => { vi.useFakeTimers(); vi.mocked(saveProject).mockReset(); });
   afterEach(() => { vi.useRealTimers(); });
 
+  it('detaches a permanently deleted active project without saving a phantom replacement', async () => {
+    const writer = new SaveCoordinator();
+    writer.initialize('a-rev', true, 'a');
+    const generation = writer.getGeneration();
+    writer.forgetDeletedProject('a');
+    expect(writer.getSnapshot().phase).toBe('unsaved');
+    expect(writer.getProjectId()).not.toBe('a');
+    expect(writer.getGeneration()).toBeGreaterThan(generation);
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(saveProject).not.toHaveBeenCalled();
+    writer.startProject(createDefaultProject());
+    await vi.advanceTimersByTimeAsync(500);
+    expect(saveProject).toHaveBeenLastCalledWith(expect.anything(), null, false, writer.getProjectId());
+  });
+
+  it('retains unexpected pending work after deletion and stops automatic writes', async () => {
+    const writer = new SaveCoordinator();
+    writer.initialize('a-rev', true, 'a');
+    writer.schedule(createDefaultProject());
+    writer.forgetDeletedProject('a');
+    expect(writer.getSnapshot().phase).toBe('conflict');
+    expect(writer.getProjectId()).toBe('a');
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(saveProject).not.toHaveBeenCalled();
+  });
+
   it('keeps the old identity while switching and saves only to the selected project afterward', async () => {
     const target = deferred<Awaited<ReturnType<typeof loadProject>>>();
     vi.mocked(loadProject).mockReturnValueOnce(target.promise);

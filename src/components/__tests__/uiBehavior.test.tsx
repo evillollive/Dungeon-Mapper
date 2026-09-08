@@ -118,6 +118,7 @@ describe('CommandPalette behavior', () => {
 
 describe('GenerateHub behavior', () => {
   it('generates into a usable selection target', () => {
+    const image = vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,preview');
     const onGenerate = vi.fn();
     render(
       <GenerateHub
@@ -135,8 +136,11 @@ describe('GenerateHub behavior', () => {
     fireEvent.click(screen.getByLabelText(/Generate into selection/i));
     fireEvent.click(screen.getByRole('button', { name: 'Generate' }));
 
+    expect(onGenerate).not.toHaveBeenCalled();
+    fireEvent.click(screen.getByRole('button', { name: 'Use this map' }));
     expect(onGenerate).toHaveBeenCalled();
     expect(onGenerate.mock.calls[0][2]).toEqual({ x: 2, y: 3, w: 8, h: 8 });
+    image.mockRestore();
   });
 });
 

@@ -62,9 +62,10 @@ async function migrate(recovery?: { project: DungeonProject; expectedRevision: s
 
 export async function loadProject(projectId?: string): Promise<LoadedProject> {
   let id = projectId ?? (await migrate()).id;
+  if (!projectId && id === 'deleted') id = undefined;
   if (!id) {
     const records = await listProjects();
-    id = records[0]?.id;
+    id = records.find(record => record.status === 'active' && !record.diagnostic)?.id;
   }
   if (!id) return { project: null, revision: null, projectId: crypto.randomUUID() };
   const raw = await readRecord(`project:${id}`);
@@ -74,6 +75,7 @@ export async function loadProject(projectId?: string): Promise<LoadedProject> {
     if (!isRecord(raw) || raw.localProjectId !== id || typeof raw.storageRevision !== 'string') {
       throw new Error('Project identity or revision metadata is invalid.');
     }
+    if (libraryMetadata(raw).status !== 'active') throw new Error('This project is archived or in Trash. Restore it from Your maps before opening.');
     return { project, revision: revisionOf(raw), projectId: id, checkpointCount: await checkpointCount(id) };
   } catch (error) {
     throw new RestoreError(error instanceof Error ? error.message : 'Invalid project record.', raw, revisionOf(raw), id);
@@ -104,6 +106,20 @@ export interface ProjectSummary {
   updatedAt: string;
   diagnostic?: string;
   original: unknown;
+  status: ProjectStatus;
+  tags: string[];
+  lastOpenedAt: string;
+}
+
+export type ProjectStatus = 'active' | 'archived' | 'trash';
+
+export function libraryMetadata(raw: Record<string, unknown>): { status: ProjectStatus; tags: string[]; lastOpenedAt: string } {
+  if (raw.library === undefined) return { status: 'active', tags: [], lastOpenedAt: '' };
+  const value = raw.library;
+  if (!isRecord(value) || !['active', 'archived', 'trash'].includes(String(value.status)) ||
+      !Array.isArray(value.tags) || !value.tags.every(tag => typeof tag === 'string') ||
+      typeof value.lastOpenedAt !== 'string') throw new Error('Invalid library metadata. Download the retained source before recovery.');
+  return { status: value.status as ProjectStatus, tags: value.tags, lastOpenedAt: value.lastOpenedAt };
 }
 
 export async function listProjects(): Promise<ProjectSummary[]> {
@@ -125,14 +141,102 @@ export async function listProjects(): Promise<ProjectSummary[]> {
           if (!isRecord(raw) || raw.localProjectId !== id || typeof raw.storageRevision !== 'string') {
             throw new Error('Invalid local identity or revision metadata.');
           }
-          return [{ id, name: project.name, updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : '', original: raw }];
+          return [{ id, name: project.name, updatedAt: typeof raw.updatedAt === 'string' ? raw.updatedAt : '', original: raw, ...libraryMetadata(raw) }];
         } catch (error) {
-          return [{ id, name: 'Unreadable project', updatedAt: '', original: raw,
+          return [{ id, name: 'Unreadable project', updatedAt: '', original: raw, status: 'active', tags: [], lastOpenedAt: '',
             diagnostic: error instanceof Error ? error.message : 'Invalid project.' }];
         }
+
       }));
     };
     tx.onabort = () => { db.close(); reject(tx.error ?? new Error('Could not list projects.')); };
+  });
+}
+
+export type LibraryChange = { name: string; tags: string[] } | { status: ProjectStatus } | { delete: true };
+
+/** Catalog edits share the content CAS, so an open stale tab cannot undo a rename or resurrect Trash. */
+export async function changeLibraryProject(item: ProjectSummary, change: LibraryChange): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('maps', 'readwrite');
+    const store = tx.objectStore('maps');
+    const request = store.get(`project:${item.id}`);
+    let failure: unknown;
+    request.onsuccess = () => {
+      try {
+        const raw: unknown = request.result;
+        if (!isRecord(raw) || revisionOf(raw) !== revisionOf(item.original)) throw new StorageConflictError('This project changed in another tab. Refresh Your maps before trying again.');
+        const metadata = libraryMetadata(raw);
+        if ('delete' in change) {
+          if (metadata.status !== 'trash') throw new Error('Move the project to Trash before permanently deleting it.');
+          store.delete(`project:${item.id}`);
+          store.delete(`previous:${item.id}`);
+          store.delete(`recovery:${item.id}`);
+          const marker = store.get(MIGRATION_KEY);
+          marker.onsuccess = () => {
+            // Keep the marker so retained legacy originals are not migrated again.
+            if (marker.result === item.id) store.put('deleted', MIGRATION_KEY);
+          };
+        } else {
+          const project = decodeProject(raw);
+          if ('name' in change && !change.name.trim()) throw new Error('Give the project a name.');
+          store.put({ ...raw,
+            ...('name' in change ? encodeProject({ ...project, name: change.name.trim() }) : {}),
+            library: { ...metadata, ...('status' in change ? change : { tags: [...new Set(change.tags.map(tag => tag.trim()).filter(Boolean))] }) },
+            storageRevision: crypto.randomUUID(), updatedAt: new Date().toISOString(),
+          }, `project:${item.id}`);
+        }
+      } catch (error) { failure = error; tx.abort(); }
+    };
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onabort = () => { db.close(); reject(failure ?? tx.error ?? new Error('Library change did not commit.')); };
+  });
+}
+
+export async function recordProjectOpened(id: string): Promise<void> {
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('maps', 'readwrite');
+    const store = tx.objectStore('maps');
+    const request = store.get(`project:${id}`);
+    let failure: unknown;
+    request.onsuccess = () => {
+      try {
+        if (!isRecord(request.result)) throw new Error('The project is no longer available.');
+        const metadata = libraryMetadata(request.result);
+        if (metadata.status !== 'active') throw new Error('Restore this project from Your maps before opening.');
+        store.put({ ...request.result, library: { ...metadata, lastOpenedAt: new Date().toISOString() } }, `project:${id}`);
+      } catch (error) { failure = error; tx.abort(); }
+    };
+    tx.oncomplete = () => { db.close(); resolve(); };
+    tx.onabort = () => { db.close(); reject(failure ?? tx.error ?? new Error('Could not record recent project.')); };
+  });
+}
+
+export async function duplicateLibraryProject(item: ProjectSummary): Promise<string> {
+  const id = crypto.randomUUID();
+  const db = await openDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction('maps', 'readwrite');
+    const store = tx.objectStore('maps');
+    const request = store.get(`project:${item.id}`);
+    let failure: unknown;
+    request.onsuccess = () => {
+      try {
+        const raw: unknown = request.result;
+        if (!isRecord(raw) || revisionOf(raw) !== revisionOf(item.original)) throw new StorageConflictError('The source changed. Refresh Your maps before duplicating.');
+        const project = decodeProject(raw);
+        const metadata = libraryMetadata(raw);
+        const now = new Date().toISOString();
+        store.add({ ...encodeProject({ ...project, name: `${project.name} (copy)` }),
+          localProjectId: id, storageRevision: crypto.randomUUID(), createdAt: now, updatedAt: now,
+          library: { status: 'active', tags: metadata.tags, lastOpenedAt: now },
+        }, `project:${id}`);
+      } catch (error) { failure = error; tx.abort(); }
+    };
+    tx.oncomplete = () => { db.close(); resolve(id); };
+    tx.onabort = () => { db.close(); reject(failure ?? tx.error ?? new Error('The duplicate did not commit.')); };
   });
 }
 

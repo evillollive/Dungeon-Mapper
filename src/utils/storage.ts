@@ -133,6 +133,9 @@ export async function saveProject(
           tx.abort();
           return;
         }
+        if (current.result?.library && current.result.library.status !== 'active') {
+          throw new StorageConflictError('This project was archived or moved to Trash. Export your in-memory work, then restore it from Your maps.');
+        }
         if (current.result !== undefined) {
           const previous: RecoveryRecord = { savedAt: new Date().toISOString(), data: current.result,
             ...(projectId ? { id: crypto.randomUUID(), projectId } : {}) };
@@ -160,6 +163,7 @@ export async function saveProject(
           localProjectId: projectId,
           createdAt: current.result?.createdAt ?? new Date().toISOString(),
           updatedAt: new Date().toISOString(),
+          ...(current.result?.library ? { library: current.result.library } : {}),
         } : {}) }, key);
       } catch (error) {
         failure = error instanceof Error ? error : new Error('Could not write the project to device storage.');

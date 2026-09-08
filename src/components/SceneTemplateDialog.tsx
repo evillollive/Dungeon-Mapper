@@ -9,6 +9,7 @@ interface SceneTemplateDialogProps {
   onDelete: (templateId: string) => void;
   onRename: (templateId: string, newName: string) => void;
   onApply: (templateId: string, ox: number, oy: number) => boolean | void;
+  onCreateProject?: (templateId: string) => boolean;
   onClose: () => void;
 }
 
@@ -19,6 +20,7 @@ const SceneTemplateDialog: React.FC<SceneTemplateDialogProps> = ({
   onDelete,
   onRename,
   onApply,
+  onCreateProject,
   onClose,
 }) => {
   const [newName, setNewName] = useState('');
@@ -93,6 +95,7 @@ const SceneTemplateDialog: React.FC<SceneTemplateDialogProps> = ({
 
         {/* Template list */}
         <div className="modal-section" style={{ maxHeight: 320, overflowY: 'auto' }}>
+          <p>Start a new editable project from a template, or explicitly place it into the current map.</p>
           <div className="modal-section-label">Saved Templates ({templates.length})</div>
           {templates.length === 0 && (
             <div style={{ fontSize: '0.75rem', opacity: 0.55 }}>No templates yet.</div>
@@ -147,13 +150,15 @@ const SceneTemplateDialog: React.FC<SceneTemplateDialogProps> = ({
                 </div>
               ) : (
                 <div style={{ display: 'flex', gap: 4 }}>
+                  {onCreateProject && <button type="button" className="tool-btn"
+                    onClick={() => { if (onCreateProject(t.id)) onClose(); }}>Create project from {t.name}</button>}
                   <button
                     type="button"
                     className="tool-btn compact"
                     onClick={() => { setApplyingId(t.id); setApplyX(0); setApplyY(0); }}
                     title="Apply this template to the map at a given offset"
                     aria-label={`Apply template ${t.name}`}
-                  >📌 Apply</button>
+                  >Place in current map</button>
                   <button
                     type="button"
                     className="tool-btn compact"

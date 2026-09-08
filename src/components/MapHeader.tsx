@@ -79,9 +79,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>(({
   }, [onClear]);
 
   const handleNew = useCallback(() => {
-    if (window.confirm('Create a new project? Your current saved project stays on this device. Use Switch project to reopen it.')) {
-      onNew();
-    }
+    onNew();
   }, [onNew]);
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
