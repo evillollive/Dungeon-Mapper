@@ -151,7 +151,14 @@ export default function LevelTabs({
             onClick={() => { if (editingIndex === null) onSwitch(idx); }}
             onKeyDown={(e) => {
               if (editingIndex !== null) return;
-              if (e.key === 'Enter' || e.key === ' ') {
+              if (e.altKey && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) {
+                e.preventDefault();
+                const to = idx + (e.key === 'ArrowLeft' ? -1 : 1);
+                if (to >= 0 && to < levels.length) {
+                  onReorder(idx, to);
+                  (e.currentTarget.parentElement?.querySelectorAll('[role="tab"]')[to] as HTMLElement)?.focus();
+                }
+              } else if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
                 onSwitch(idx);
               } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {

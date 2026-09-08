@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useMemo, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
+import React, { useRef, useEffect, useLayoutEffect, useMemo, useCallback, useState, forwardRef, useImperativeHandle } from 'react';
 import type { CustomThemeDefinition, DungeonMap, StampDef, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment, River, RiverType, RoomShape } from '../types/map';
 import { TOKEN_KIND_COLORS, isBuiltInTileType } from '../types/map';
 import { getSemanticTileType, getThemeWithCustom, preloadCustomThemeImages } from '../utils/customThemes';
@@ -17,6 +17,9 @@ import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 import { bresenhamLine, pointNearPolyline, rectCells, rectOutline, snapToGridIntersection } from '../utils/canvasGeometry';
 import { polygonBoundingBox } from '../utils/roomRasterizer';
+import { useCanvasEditingDraft } from '../hooks/useCanvasDraft';
+import type { RegionSelection } from '../hooks/useEditorSelection';
+import { readEditorViewport, writeEditorViewport } from '../utils/editorViewport';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
 // evoking traditional engineering / quad-ruled graph paper regardless of theme.
@@ -123,6 +126,10 @@ function getIconPath2D(iconId: string): Path2D | null {
 }
 
 interface MapCanvasProps {
+  viewportKey?: string;
+  regionSelection?: RegionSelection | null;
+  onSelectToken?: (id: number | null) => void;
+  onSelectRiver?: (id: number | null) => void;
   map: DungeonMap;
   activeTool: ToolType;
   activeTile: TileType;
@@ -1079,7 +1086,11 @@ function drawStamp(
 }
 
 const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
-  map,
+  map: sourceMap,
+  viewportKey,
+  regionSelection,
+  onSelectToken,
+  onSelectRiver,
   activeTool,
   activeTile,
   themeId,
@@ -1094,7 +1105,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   drawWidth,
   gmDrawColor,
   gmDrawWidth,
-  onSetTile,
+  onSetTile: commitTile,
   onSetTiles,
   onFillTile,
   onAddNote,
@@ -1102,7 +1113,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   onEraseTiles,
   onSetFogCells,
   onAddToken,
-  onMoveToken,
+  onMoveToken: commitMoveToken,
   onRemoveToken,
   onAddAnnotation,
   onRemoveAnnotation,
@@ -1129,7 +1140,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   lightRadius = 4,
   lightColor = '#f97316',
   onAddStamp,
-  onMoveStamp,
+  onMoveStamp: commitMoveStamp,
   onRemoveStamp,
   selectedStampId,
   selectedPlacedStampId,
@@ -1154,13 +1165,15 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   onAddPathSegment,
   onRemovePathSegment,
   onAddRiver,
-  onUpdateRiver,
+  onUpdateRiver: commitUpdateRiver,
   onRemoveRiver,
   onAddRoomShape,
   onUpdateRoomShape,
   onRemoveRoomShape,
   onSelectRoomShape,
 }, ref) => {
+  const { map, cancel: cancelDraft, finish: finishDraft, paintCells, onSetTile, onMoveToken, onMoveStamp, onUpdateRiver } =
+    useCanvasEditingDraft(sourceMap, { commitTile, onSetTiles, commitMoveToken, commitMoveStamp, commitUpdateRiver });
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1168,13 +1181,20 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const isMouseDownRef = useRef(false);
   const isPanningRef = useRef(false);
   const lastPanPos = useRef({ x: 0, y: 0 });
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const [restoredViewport] = useState(() => readEditorViewport(viewportKey));
+  const [zoom, setZoom] = useState(restoredViewport?.zoom ?? 1);
+  const [pan, setPan] = useState(restoredViewport?.pan ?? { x: 0, y: 0 });
+  const viewportReady = useRef(restoredViewport !== null);
   const [mousePos, setMousePos] = useState<{ x: number; y: number } | null>(null);
   const [dragStart, setDragStart] = useState<{ x: number; y: number } | null>(null);
   const [dragEnd, setDragEnd] = useState<{ x: number; y: number } | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [selection, setSelection] = useState<{ x: number; y: number; w: number; h: number } | null>(null);
+  const [localSelection, setLocalSelection] = useState<RegionSelection | null>(null);
+  const selection = regionSelection === undefined ? localSelection : regionSelection;
+  const setSelection = useCallback((next: RegionSelection | null) => {
+    setLocalSelection(next);
+    onSelectionChange?.(next);
+  }, [onSelectionChange]);
   // Live freehand stroke being drawn — committed to the map on mouseup.
   const [activeStroke, setActiveStroke] = useState<{ x: number; y: number }[] | null>(null);
   const [roomEditPreview, setRoomEditPreview] = useState<RoomShape | null>(null);
@@ -1218,31 +1238,25 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   // imperative handle (defined before `handleFitToScreen` is in scope) can
   // dispatch to the latest implementation.
   const handleFitToScreenRef = useRef<(() => void) | null>(null);
+  const cancelGestureRef = useRef<() => void>(() => {});
 
   useImperativeHandle(ref, () => ({
     getCanvas: () => canvasRef.current,
     centerOnTile: (tx: number, ty: number) => {
+      cancelGestureRef.current();
       const { width, height, tileSize: ts } = map.meta;
       setPan({
         x: (width / 2 - (tx + 0.5)) * zoom * ts,
         y: (height / 2 - (ty + 0.5)) * zoom * ts,
       });
     },
-    zoomIn: () => setZoom(z => Math.min(4, z + 0.25)),
-    zoomOut: () => setZoom(z => Math.max(0.25, z - 0.25)),
-    zoomReset: () => { setZoom(1); setPan({ x: 0, y: 0 }); },
+    zoomIn: () => { cancelGestureRef.current(); setZoom(z => Math.min(4, z + 0.25)); },
+    zoomOut: () => { cancelGestureRef.current(); setZoom(z => Math.max(0.05, z - 0.25)); },
+    zoomReset: () => { cancelGestureRef.current(); setZoom(1); setPan({ x: 0, y: 0 }); },
     fitToScreen: () => handleFitToScreenRef.current?.(),
-    panBy: (dx: number, dy: number) => setPan(prev => ({ x: prev.x + dx, y: prev.y + dy })),
+    panBy: (dx: number, dy: number) => { cancelGestureRef.current(); setPan(prev => ({ x: prev.x + dx, y: prev.y + dy })); },
     focus: () => canvasRef.current?.focus(),
   }), [map.meta, zoom]);
-
-  // Forward selection changes to the parent so features outside the canvas
-  // (e.g. the Generate Map dialog's "Generate into selection" toggle) can
-  // react to the user-painted rectangle. The effect runs whenever the
-  // selection's identity changes, including when it's cleared to null.
-  useEffect(() => {
-    onSelectionChange?.(selection);
-  }, [selection, onSelectionChange]);
 
   const { meta, tiles } = map;
   const { tileSize } = meta;
@@ -2429,8 +2443,58 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const pinchStartDistRef = useRef<number | null>(null);
   /** Zoom level when pinch started. */
   const pinchStartZoomRef = useRef<number>(1);
-  /** Long-press timer for touch context actions (pan). */
-  const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingActionRef = useRef<(() => void) | null>(null);
+  const pendingSelectionRef = useRef<(() => void) | null>(null);
+  const cancelGesture = useCallback(() => {
+    cancelDraft();
+    paintCells.current.clear();
+    pendingActionRef.current = null;
+    pendingSelectionRef.current = null;
+    isMouseDownRef.current = false;
+    isPanningRef.current = false;
+    pinchStartDistRef.current = null;
+    draggingTokenRef.current = null;
+    draggingStampRef.current = null;
+    draggingRiverPointRef.current = null;
+    roomEditSessionRef.current = null;
+    lastDefogCellRef.current = null;
+    setActiveStroke(null);
+    setDefogStroke(null);
+    setRoomEditPreview(null);
+    setRoomHoverId(null);
+    setPolyVertices(previous => previous.length ? [] : previous);
+    setIsDragging(false);
+    setDragStart(null);
+    setDragEnd(null);
+  }, [cancelDraft]);
+  useLayoutEffect(() => { cancelGesture(); activePointersRef.current.clear(); }, [sourceMap, cancelGesture]);
+  useLayoutEffect(() => {
+    cancelGestureRef.current = cancelGesture;
+    cancelGesture();
+    activePointersRef.current.clear();
+    const interrupt = () => { cancelGesture(); activePointersRef.current.clear(); };
+    const escape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') interrupt();
+    };
+    window.addEventListener('keydown', escape);
+    window.addEventListener('blur', interrupt);
+    window.addEventListener('resize', interrupt);
+    window.visualViewport?.addEventListener('resize', interrupt);
+    let lastSize: { width: number; height: number } | undefined;
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(([entry]) => {
+      const next = entry.contentRect;
+      if (lastSize && (lastSize.width !== next.width || lastSize.height !== next.height)) interrupt();
+      lastSize = next;
+    });
+    if (viewportRef.current) observer?.observe(viewportRef.current);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('keydown', escape);
+      window.removeEventListener('blur', interrupt);
+      window.removeEventListener('resize', interrupt);
+      window.visualViewport?.removeEventListener('resize', interrupt);
+    };
+  }, [activeTool, activeLevelIndex, viewMode, cancelGesture]);
 
   /** Compute distance between two pointers. */
   const pointerDistance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
@@ -2461,8 +2525,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // Two-finger gesture start: pinch-to-zoom or two-finger pan.
     if (pointerCount === 2) {
       // Cancel any single-finger operation in progress.
-      isMouseDownRef.current = false;
-      if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
+      cancelGesture();
       const [p1, p2] = Array.from(activePointersRef.current.values());
       pinchStartDistRef.current = pointerDistance(p1, p2);
       pinchStartZoomRef.current = zoom;
@@ -2485,17 +2548,6 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       lastPanPos.current = { x: e.clientX, y: e.clientY };
       e.preventDefault();
       return;
-    }
-
-    // Touch: long-press starts panning (replaces right-click for touch).
-    if (e.pointerType === 'touch') {
-      if (longPressTimerRef.current) clearTimeout(longPressTimerRef.current);
-      longPressTimerRef.current = setTimeout(() => {
-        isPanningRef.current = true;
-        lastPanPos.current = { x: e.clientX, y: e.clientY };
-        isMouseDownRef.current = false;
-        longPressTimerRef.current = null;
-      }, 400);
     }
 
     isMouseDownRef.current = true;
@@ -2533,6 +2585,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       if (fc) {
         const controlHit = findRiverControlPointAt(rivers, fc.x, fc.y);
         if (controlHit) {
+          pendingSelectionRef.current = () => onSelectRiver?.(controlHit.river.id);
           draggingRiverPointRef.current = { id: controlHit.river.id, pointIndex: controlHit.index };
           return;
         }
@@ -2551,6 +2604,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       const t = findTokenAt(tokens, coords.x + 0.5, coords.y + 0.5);
       // The Move Token tool can relocate any token kind, in either view.
       if (t) {
+        pendingSelectionRef.current = () => onSelectToken?.(t.id);
         draggingTokenRef.current = {
           id: t.id,
           lastX: t.x,
@@ -2567,7 +2621,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       if (fc) {
         const s = findStampAt(stamps, fc.x, fc.y);
         if (s && !s.locked) {
-          onSelectPlacedStamp?.(s.id);
+          pendingSelectionRef.current = () => onSelectPlacedStamp?.(s.id);
           draggingStampRef.current = {
             id: s.id,
             lastX: s.x,
@@ -2594,7 +2648,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       if (coords && fc) {
         const handleHit = findRoomHandleAt(roomShapes, fc.x, fc.y, 0.35, activeMode);
         if (handleHit) {
-          onSelectRoomShape?.(handleHit.shape.id);
+          pendingSelectionRef.current = () => onSelectRoomShape?.(handleHit.shape.id);
           roomEditSessionRef.current = {
             id: handleHit.shape.id,
             mode: handleHit.handle,
@@ -2606,7 +2660,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         }
         const hit = findRoomShapeAt(roomShapes, fc.x, fc.y, activeMode);
         if (hit) {
-          onSelectRoomShape?.(hit.id);
+          pendingSelectionRef.current = () => onSelectRoomShape?.(hit.id);
           roomEditSessionRef.current = {
             id: hit.id,
             mode: 'move',
@@ -2629,15 +2683,31 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       }
     } else if (activeTool === 'select') {
       if (coords) {
+        const fc = getFractionalCoords(e);
+        if (!isPlayerView && fc) {
+          const token = findTokenAt(tokens, fc.x, fc.y);
+          const note = notes.find(n => n.x === coords.x && n.y === coords.y);
+          const stamp = findStampAt(stamps, fc.x, fc.y);
+          const river = findRiverAt(rivers, fc.x, fc.y);
+          const room = findRoomShapeAt(roomShapes, fc.x, fc.y);
+          if (token) { onSelectToken?.(token.id); return; }
+          if (note) { onSelectNote(note.id); return; }
+          if (stamp) { onSelectPlacedStamp?.(stamp.id); return; }
+          if (river) { onSelectRiver?.(river.id); return; }
+          if (room) { onSelectRoomShape?.(room.id); return; }
+        }
         setDragStart(coords);
         setDragEnd(coords);
         setIsDragging(true);
-        setSelection({ x: coords.x, y: coords.y, w: 1, h: 1 });
       }
     } else {
-      handleCanvasAction(e);
+      if (activeTool === 'paint' || activeTool === 'erase') handleCanvasAction(e);
+      else {
+        const point = { clientX: e.clientX, clientY: e.clientY };
+        pendingActionRef.current = () => handleCanvasAction(point);
+      }
     }
-  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens, stamps, roomShapes, rivers, zoom, onSelectPlacedStamp]);
+  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens, notes, stamps, roomShapes, rivers, zoom, onSelectPlacedStamp, onSelectRoomShape, onSelectToken, onSelectNote, onSelectRiver, cancelGesture]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     // Polygon tool: double-click closes the polygon and creates the shape.
@@ -2650,6 +2720,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         y: bb.y,
         width: Math.max(1, bb.width),
         height: Math.max(1, bb.height),
+        fillTile: activeTile,
       });
       setPolyVertices([]);
       return;
@@ -2661,11 +2732,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     if (tile === 'stairs-up' || tile === 'stairs-down') {
       onStairNavigate?.(coords.x, coords.y);
     }
-  }, [getTileCoords, tiles, onStairNavigate, activeTool, isPlayerView, polyVertices, onAddRoomShape]);
+  }, [getTileCoords, tiles, onStairNavigate, activeTool, isPlayerView, polyVertices, onAddRoomShape, activeTile]);
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const prev = activePointersRef.current.get(e.pointerId);
-    activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (prev) activePointersRef.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
     // Mark multi-finger gesture as "moved" if any pointer moves > 15px.
     if (prev && !gestureMovedRef.current) {
@@ -2690,22 +2761,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       if (pinchStartDistRef.current !== null) {
         const dist = pointerDistance(p1, p2);
         const scale = dist / pinchStartDistRef.current;
-        const newZoom = Math.max(0.25, Math.min(4, pinchStartZoomRef.current * scale));
+        const newZoom = Math.max(0.05, Math.min(4, pinchStartZoomRef.current * scale));
         setZoom(newZoom);
       }
       return;
-    }
-
-    // Cancel long-press if finger moved significantly.
-    if (longPressTimerRef.current && e.pointerType === 'touch') {
-      const start = activePointersRef.current.get(e.pointerId);
-      if (start) {
-        const moved = Math.hypot(e.clientX - start.x, e.clientY - start.y);
-        if (moved > 10) {
-          clearTimeout(longPressTimerRef.current);
-          longPressTimerRef.current = null;
-        }
-      }
     }
 
     if (isPanningRef.current) {
@@ -2898,24 +2957,16 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       setDragEnd(coords);
     } else if (activeTool === 'select' && isDragging && coords && dragStart) {
       setDragEnd(coords);
-      setSelection({
-        x: Math.min(dragStart.x, coords.x),
-        y: Math.min(dragStart.y, coords.y),
-        w: Math.abs(coords.x - dragStart.x) + 1,
-        h: Math.abs(coords.y - dragStart.y) + 1,
-      });
     } else if (activeTool === 'paint' || activeTool === 'erase') {
       handleCanvasAction(e);
     }
   }, [activeTool, isDragging, dragStart, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, roomShapes, rivers, meta.width, meta.height, onMoveToken, onMoveStamp, onUpdateRiver, zoom]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!activePointersRef.current.has(e.pointerId)) return;
     const canvas = canvasRef.current;
-    if (canvas) canvas.releasePointerCapture(e.pointerId);
+    if (canvas?.hasPointerCapture(e.pointerId)) canvas.releasePointerCapture(e.pointerId);
     activePointersRef.current.delete(e.pointerId);
-
-    // Clear long-press timer.
-    if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
 
     // If all fingers lifted, reset multi-touch state and check for gesture.
     if (activePointersRef.current.size === 0) {
@@ -2923,8 +2974,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       // Detect multi-finger tap gestures: quick (< 300ms), minimal movement.
       const elapsed = Date.now() - gestureStartTimeRef.current;
       if (!gestureMovedRef.current && elapsed < GESTURE_TAP_TIMEOUT_MS) {
-        if (gestureMaxPointersRef.current === 2 && onUndo) { onUndo(); return; }
-        if (gestureMaxPointersRef.current === 3 && onRedo) { onRedo(); return; }
+        if (gestureMaxPointersRef.current === 2 && onUndo) { cancelGesture(); onUndo(); return; }
+        if (gestureMaxPointersRef.current === 3 && onRedo) { cancelGesture(); onRedo(); return; }
       }
     }
     // If returning from 2 fingers to 1, don't start a draw operation.
@@ -2934,6 +2985,13 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
 
     isPanningRef.current = false;
+    if (!isMouseDownRef.current) { cancelGesture(); return; }
+    finishDraft();
+    paintCells.current.clear();
+    pendingActionRef.current?.();
+    pendingActionRef.current = null;
+    pendingSelectionRef.current?.();
+    pendingSelectionRef.current = null;
 
     if (!isPlayerView && isRoomTool(activeTool)) {
       // Polygon tool: accumulate vertices on click, don't use drag logic.
@@ -2946,7 +3004,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       }
 
       const edit = roomEditSessionRef.current;
-      if (edit && roomEditPreview) {
+      if (edit && roomEditPreview && (
+        edit.startShape.x !== roomEditPreview.x || edit.startShape.y !== roomEditPreview.y ||
+        edit.startShape.width !== roomEditPreview.width || edit.startShape.height !== roomEditPreview.height
+      )) {
         onUpdateRoomShape?.(edit.id, {
           x: roomEditPreview.x,
           y: roomEditPreview.y,
@@ -2955,8 +3016,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         });
         roomEditSessionRef.current = null;
         setRoomEditPreview(null);
-      } else if (isMouseDownRef.current && isDragging && dragStart && dragEnd) {
+      } else if (!edit && isMouseDownRef.current && isDragging && dragStart && dragEnd) {
         const shape = normalizeRectRoomShape(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
+        shape.fillTile = activeTile;
         if (activeTool === 'room-cut') {
           shape.mode = 'subtractive';
         } else if (activeTool === 'room-circle') {
@@ -2964,6 +3026,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         }
         onAddRoomShape?.(shape);
       }
+      roomEditSessionRef.current = null;
+      setRoomEditPreview(null);
       isMouseDownRef.current = false;
       setIsDragging(false);
       setDragStart(null);
@@ -3072,65 +3136,20 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setIsDragging(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, roomEditPreview, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType, onAddWallSegment, onAddPathSegment, onAddRiver, onAddRoomShape, onUpdateRoomShape]);
+  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, roomEditPreview, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType, onAddWallSegment, onAddPathSegment, onAddRiver, onAddRoomShape, onUpdateRoomShape, cancelGesture, finishDraft, setSelection]);
 
   const handlePointerLeave = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e.currentTarget.hasPointerCapture(e.pointerId)) return;
+    if (isMouseDownRef.current) cancelGesture();
     activePointersRef.current.delete(e.pointerId);
-    if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
-    // Only fully reset if all pointers are gone.
-    if (activePointersRef.current.size > 0) return;
-    pinchStartDistRef.current = null;
-    isMouseDownRef.current = false;
-    isPanningRef.current = false;
     setMousePos(null);
-    if (activeStroke) setActiveStroke(null);
-    // Commit any in-progress defog brush so the player doesn't lose work
-    // if their cursor briefly leaves the canvas while dragging.
-    if (defogStroke && defogStroke.length > 0) {
-      onSetFogCells(defogStroke, false);
-      setDefogStroke(null);
-      lastDefogCellRef.current = null;
-    }
-    if (draggingTokenRef.current) draggingTokenRef.current = null;
-    if (draggingStampRef.current) draggingStampRef.current = null;
-    if (draggingRiverPointRef.current) draggingRiverPointRef.current = null;
-    roomEditSessionRef.current = null;
-    setRoomEditPreview(null);
-    setRoomHoverId(null);
-    setPolyVertices([]);
-    if (isDragging) {
-      setIsDragging(false);
-      setDragStart(null);
-      setDragEnd(null);
-    }
-  }, [isDragging, activeStroke, defogStroke, onSetFogCells]);
+  }, [cancelGesture]);
 
   /** Handle interrupted gestures (e.g. system dialog steals focus). */
-  const handlePointerCancel = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    activePointersRef.current.delete(e.pointerId);
-    if (longPressTimerRef.current) { clearTimeout(longPressTimerRef.current); longPressTimerRef.current = null; }
-    pinchStartDistRef.current = null;
-    isMouseDownRef.current = false;
-    isPanningRef.current = false;
-    if (activeStroke) setActiveStroke(null);
-    if (defogStroke && defogStroke.length > 0) {
-      onSetFogCells(defogStroke, false);
-      setDefogStroke(null);
-      lastDefogCellRef.current = null;
-    }
-    if (draggingTokenRef.current) draggingTokenRef.current = null;
-    if (draggingStampRef.current) draggingStampRef.current = null;
-    if (draggingRiverPointRef.current) draggingRiverPointRef.current = null;
-    roomEditSessionRef.current = null;
-    setRoomEditPreview(null);
-    setRoomHoverId(null);
-    setPolyVertices([]);
-    if (isDragging) {
-      setIsDragging(false);
-      setDragStart(null);
-      setDragEnd(null);
-    }
-  }, [isDragging, activeStroke, defogStroke, onSetFogCells]);
+  const handlePointerCancel = useCallback(() => {
+    cancelGesture();
+    activePointersRef.current.clear();
+  }, [cancelGesture]);
 
   const handleContextMenu = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     e.preventDefault();
@@ -3142,7 +3161,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       if (hit.river.controlPoints.length <= 1) {
         onRemoveRiver?.(hit.river.id);
       } else {
-        onUpdateRiver?.(hit.river.id, {
+        commitUpdateRiver?.(hit.river.id, {
           controlPoints: hit.river.controlPoints.filter((_, i) => i !== hit.index),
         });
       }
@@ -3159,14 +3178,13 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
     onRemoveRoomShape?.(hit.id);
     announce?.('Room shape removed');
-  }, [activeTool, isPlayerView, getFractionalCoords, rivers, roomShapes, onRemoveRiver, onUpdateRiver, onRemoveRoomShape, announce]);
+  }, [activeTool, isPlayerView, getFractionalCoords, rivers, roomShapes, onRemoveRiver, commitUpdateRiver, onRemoveRoomShape, announce]);
 
   const handleWheel = useCallback((e: React.WheelEvent) => {
-    // Shift (or Caps Lock) + wheel pans the map. Unmodified wheel is ignored
-    // so accidental scrolls don't interfere with the canvas.
     const capsOn = typeof e.getModifierState === 'function' && e.getModifierState('CapsLock');
     if (!e.shiftKey && !capsOn) return;
     e.preventDefault();
+    cancelGestureRef.current();
     // Pan: browsers typically swap deltaY into deltaX when Shift is held,
     // so deltaX already carries the vertical scroll value. We use both
     // deltas directly — deltaX for horizontal panning, deltaY for vertical.
@@ -3179,6 +3197,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   const handleMinimapClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = minimapRef.current;
     if (!canvas) return;
+    cancelGestureRef.current();
     const rect = canvas.getBoundingClientRect();
     const mTile = Math.max(1, Math.min(Math.floor(MINIMAP_MAX_W / meta.width), Math.floor(MINIMAP_MAX_H / meta.height)));
     const tileX = (e.clientX - rect.left) / mTile;
@@ -3189,6 +3208,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   }, [meta, zoom, tileSize]);
 
   const handleFitToScreen = useCallback(() => {
+    cancelGestureRef.current();
     const viewport = viewportRef.current;
     if (!viewport) return;
     const mapW = meta.width * tileSize;
@@ -3207,7 +3227,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     const availH = Math.max(1, viewport.clientHeight - controlsH - padding * 2);
     const fit = Math.min(availW / mapW, availH / mapH);
     // Clamp to the same range as the +/- buttons so the value stays valid.
-    const clamped = Math.max(0.25, Math.min(4, fit));
+    const clamped = Math.max(0.05, Math.min(4, fit));
     setZoom(clamped);
     setPan({ x: 0, y: -controlsH / 2 });
   }, [meta.width, meta.height, tileSize]);
@@ -3217,6 +3237,17 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   useEffect(() => {
     handleFitToScreenRef.current = handleFitToScreen;
   }, [handleFitToScreen]);
+  useEffect(() => {
+    if (!viewportKey || viewportReady.current) return;
+    const frame = requestAnimationFrame(() => {
+      handleFitToScreen();
+      viewportReady.current = true;
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [viewportKey, handleFitToScreen]);
+  useEffect(() => {
+    if (viewportKey && viewportReady.current) writeEditorViewport(viewportKey, { zoom, pan });
+  }, [viewportKey, zoom, pan]);
 
   const cursorStyle = activeTool === 'fill' ? 'cell'
     : activeTool === 'note' ? 'copy'
@@ -3251,16 +3282,13 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     : 'crosshair';
 
   const handleCanvasKeyDown = useCallback((e: React.KeyboardEvent<HTMLCanvasElement>) => {
-    // Escape cancels in-progress polygon.
     if (e.key === 'Escape' && polyVertices.length > 0) {
       e.preventDefault();
       setPolyVertices([]);
       return;
     }
-    // Arrow keys pan the viewport while the canvas itself has focus.
-    // Holding Shift increases the step. Other keys bubble so the global
-    // shortcut handler can pick them up.
     const step = e.shiftKey ? 64 : 16;
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) cancelGestureRef.current();
     if (e.key === 'ArrowLeft')      { e.preventDefault(); setPan(p => ({ x: p.x + step, y: p.y })); }
     else if (e.key === 'ArrowRight'){ e.preventDefault(); setPan(p => ({ x: p.x - step, y: p.y })); }
     else if (e.key === 'ArrowUp')   { e.preventDefault(); setPan(p => ({ x: p.x, y: p.y + step })); }
@@ -3315,6 +3343,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
             onPointerUp={handlePointerUp}
             onPointerLeave={handlePointerLeave}
             onPointerCancel={handlePointerCancel}
+            onLostPointerCapture={event => {
+              if (activePointersRef.current.has(event.pointerId)) handlePointerCancel();
+            }}
             onContextMenu={handleContextMenu}
             onWheel={handleWheel}
             onKeyDown={handleCanvasKeyDown}
@@ -3322,10 +3353,17 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         </div>
       </div>
       <div className="zoom-controls" role="group" aria-label="Map zoom controls" title="Hold Shift + scroll to pan around the map">
-        <button type="button" onClick={() => setZoom(z => Math.min(4, z + 0.25))} aria-label="Zoom in" aria-keyshortcuts="+">+</button>
+        {activeTool === 'room-poly' && <button type="button" disabled={polyVertices.length < 3} onClick={() => {
+          const bounds = polygonBoundingBox(polyVertices);
+          onAddRoomShape?.({ shapeType: 'polygon', vertices: polyVertices, ...bounds,
+            width: Math.max(1, bounds.width), height: Math.max(1, bounds.height), fillTile: activeTile });
+          setPolyVertices([]);
+        }}>Finish polygon</button>}
+        <button type="button" onClick={handlePointerCancel}>Cancel gesture</button>
+        <button type="button" onClick={() => { handlePointerCancel(); setZoom(z => Math.min(4, z + 0.25)); }} aria-label="Zoom in" aria-keyshortcuts="+">+</button>
         <span aria-live="polite" aria-atomic="true">{Math.round(zoom * 100)}%</span>
-        <button type="button" onClick={() => setZoom(z => Math.max(0.25, z - 0.25))} aria-label="Zoom out" aria-keyshortcuts="-">-</button>
-        <button type="button" onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }} aria-label="Reset zoom to 100%" aria-keyshortcuts="0">Reset</button>
+        <button type="button" onClick={() => { handlePointerCancel(); setZoom(z => Math.max(0.05, z - 0.25)); }} aria-label="Zoom out" aria-keyshortcuts="-">-</button>
+        <button type="button" onClick={() => { handlePointerCancel(); setZoom(1); setPan({ x: 0, y: 0 }); }} aria-label="Reset zoom to 100%" aria-keyshortcuts="0">Reset</button>
         <button type="button" onClick={handleFitToScreen} title="Fit map to screen" aria-label="Fit map to screen" aria-keyshortcuts="1">Fit</button>
         <span className="zoom-hint" aria-hidden="true">⇧+wheel: pan</span>
       </div>

@@ -1,13 +1,15 @@
 import React from 'react';
-import type { ArtStylePresetId, ColorGradingMode, CustomThemeDefinition, EdgeBlendSettings, EdgeBlendStyle, EdgeMergeMode, HandDrawnSettings, HandDrawnStyle, LightingAtmosphereSettings, PaperTexturePattern, PaperTextureSettings, RiverType, RoomEdge, StampDef, ToolType, TileType } from '../types/map';
+import type { ArtStylePresetId, ColorGradingMode, CustomThemeDefinition, EdgeBlendSettings, EdgeBlendStyle, HandDrawnSettings, HandDrawnStyle, LightingAtmosphereSettings, PaperTexturePattern, PaperTextureSettings, RiverType, StampDef, ToolType, TileType } from '../types/map';
 import { ALL_TILE_TYPES, TILE_LABELS, DEFAULT_PAPER_TEXTURE, DEFAULT_EDGE_BLEND, DEFAULT_HAND_DRAWN, DEFAULT_LIGHTING_ATMOSPHERE, ART_STYLE_PRESET_IDS, ART_STYLE_PRESET_LABELS, RIVER_TYPES, RIVER_TYPE_LABELS, isBuiltInTileType } from '../types/map';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { buildThemeList, getCustomTileLabel, getThemeWithCustom } from '../utils/customThemes';
 import { getPaperTint } from '../themes';
 import { ART_STYLE_PRESET_DESCRIPTIONS } from '../utils/artStylePresets';
 import StampPicker from './StampPicker';
+import { useAssetFavorites } from '../hooks/useAssetFavorites';
 
 interface DrawToolsTabProps {
+  objectControls?: React.ReactNode;
   section?: 'build' | 'decorate' | 'look';
   activeTool: ToolType;
   activeTile: TileType;
@@ -132,6 +134,7 @@ function TilePreview({
 }
 
 const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
+  objectControls,
   section = 'build',
   activeTool, activeTile, themeId, customThemes, onSetTool, onSetTile,
   onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
@@ -147,8 +150,10 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   handDrawn, onSetHandDrawn, onUpdateHandDrawn, onClearHandDrawn,
   lightingAtmosphere, onSetLightingAtmosphere, onUpdateLightingAtmosphere, onClearLightingAtmosphere,
   artStylePreset, onApplyArtStylePreset,
-  roomShapes, selectedRoomShapeId, onUpdateRoomShape,
 }) => {
+  const [materialQuery, setMaterialQuery] = React.useState('');
+  const [favoritesOnly, setFavoritesOnly] = React.useState(false);
+  const { favorites, toggle, error } = useAssetFavorites('materials');
   const theme = getThemeWithCustom(themeId, customThemes);
   const themeList = React.useMemo(() => buildThemeList(customThemes), [customThemes]);
   const tileLabels = React.useMemo(() => {
@@ -167,12 +172,24 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
 
   return (
     <>
+      {section === 'decorate' && objectControls}
       {section === 'build' && <>
+      <div className="focused-tool-material">
+      <label className="active-material">Tool
+        <select aria-label="Active building tool" value={TOOLS.some(t => t.id === activeTool) ? activeTool : ''} onChange={e => onSetTool(e.target.value as ToolType)}>
+          <option value="" disabled>Choose a building tool</option>
+          {TOOLS.filter(t => t.id !== 'note').map(t => <option key={t.id} value={t.id}>{t.label} ({t.shortcut})</option>)}
+        </select>
+      </label>
       <label className="active-material">Material
         <select aria-label="Active material" value={activeTile} onChange={event => onSetTile(event.target.value as TileType)}>
           {paletteTiles.map(tile => <option key={tile} value={tile}>{tileLabel(tile)}</option>)}
         </select>
       </label>
+      </div>
+      {objectControls}
+      <details className="tool-discovery">
+      <summary>All building tools and shortcuts</summary>
       <div className="toolbar-section build-tool-grid">
         <div className="toolbar-label">TOOLS</div>
         {TOOLS.filter(tool => tool.id !== 'note').map(tool => (
@@ -191,6 +208,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
           </button>
         ))}
       </div>
+      </details>
 
       {/* Wall & Path tool settings — shown when wall/path tool is active */}
       {(activeTool === 'wall' || activeTool === 'wall-erase') && (
@@ -348,49 +366,6 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
         </div>
       )}
 
-      {/* Room shape edge override controls — shown when room tool active and a shape is selected */}
-      {(activeTool === 'room-rect' || activeTool === 'room-circle' || activeTool === 'room-poly' || activeTool === 'room-cut') && selectedRoomShapeId != null && (() => {
-        const selectedShape = roomShapes?.find(s => s.id === selectedRoomShapeId);
-        if (!selectedShape) return null;
-        const getMode = (edge: RoomEdge): EdgeMergeMode => {
-          const ov = selectedShape.edgeMergeOverrides?.find(o => o.edge === edge);
-          return ov?.mode ?? 'auto';
-        };
-        const setEdgeMode = (edge: RoomEdge, mode: EdgeMergeMode) => {
-          const existing = (selectedShape.edgeMergeOverrides ?? []).filter(o => o.edge !== edge);
-          const next = mode === 'auto' ? existing : [...existing, { edge, mode }];
-          onUpdateRoomShape?.(selectedRoomShapeId, { edgeMergeOverrides: next.length ? next : undefined });
-        };
-        const edges: { edge: RoomEdge; label: string }[] = [
-          { edge: 'n', label: 'North' },
-          { edge: 'e', label: 'East' },
-          { edge: 's', label: 'South' },
-          { edge: 'w', label: 'West' },
-        ];
-        return (
-          <div className="toolbar-section">
-            <div className="toolbar-label">EDGE OVERRIDES — Room #{selectedRoomShapeId}</div>
-            {edges.map(({ edge, label }) => (
-              <label key={edge} className="tool-btn" style={{ cursor: 'pointer' }}>
-                <span className="tool-icon" aria-hidden="true">🧭</span>
-                <span className="tool-name">{label}</span>
-                <select
-                  className="grid-select"
-                  value={getMode(edge)}
-                  onChange={e => setEdgeMode(edge, e.target.value as EdgeMergeMode)}
-                  title={`${label} edge merge mode`}
-                >
-                  <option value="auto">Auto (dissolve)</option>
-                  <option value="wall">Wall (keep)</option>
-                  <option value="door">Door</option>
-                  <option value="arch">Archway</option>
-                </select>
-              </label>
-            ))}
-          </div>
-        );
-      })()}
-
       </>}
       {section === 'look' && <div className="toolbar-section">
         <div className="toolbar-label">THEME</div>
@@ -440,10 +415,14 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
 
       {section === 'build' && <div className="toolbar-section">
         <div className="toolbar-label">TILES</div>
+        <label className="asset-search">Search materials<input type="search" value={materialQuery} onChange={e => setMaterialQuery(e.target.value)} /></label>
+        <button type="button" className="tool-btn" aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly(!favoritesOnly)}>Favorite materials only</button>
+        {error && <p role="status">{error}</p>}
         <div className="tile-palette">
-          {paletteTiles.map(tileType => (
+          {paletteTiles.filter(tile => tileLabel(tile).toLowerCase().includes(materialQuery.trim().toLowerCase()) &&
+            (!favoritesOnly || favorites.includes(tile))).map(tileType => (
+            <div className="asset-card" key={tileType}>
             <button
-              key={tileType}
               type="button"
               className={`tile-btn ${activeTile === tileType ? 'active' : ''}`}
               onClick={() => onSetTile(tileType)}
@@ -454,6 +433,9 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
               <TilePreview type={tileType} size={22} themeId={themeId} customThemes={customThemes} />
               <span className="tile-btn-label">{tileLabel(tileType)}</span>
             </button>
+            <button type="button" className="asset-favorite" aria-label={`Favorite ${tileLabel(tileType)} material`} aria-pressed={favorites.includes(tileType)}
+              onClick={() => toggle(tileType)}>{favorites.includes(tileType) ? 'Favorited' : 'Favorite'}</button>
+            </div>
           ))}
         </div>
       </div>}

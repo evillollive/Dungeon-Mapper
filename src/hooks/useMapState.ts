@@ -10,39 +10,9 @@ import { useLevelManagement } from './useLevelManagement';
 import { useMapPersistence } from './useMapPersistence';
 import { useProjectDispatch } from './useProjectDispatch';
 import { getPresetSettings as getPresetSettingsFn } from '../utils/artStylePresets';
+import { applyTileUpdates } from '../utils/tileEditing';
 
 export { getClipboard } from './useMapClipboard';
-
-type TileUpdate = { x: number; y: number; type: TileType };
-
-function applyTileUpdates(
-  tiles: Tile[][],
-  updates: readonly TileUpdate[],
-  width: number,
-  height: number,
-): Tile[][] | null {
-  let nextTiles: Tile[][] | null = null;
-
-  const copyRow = (y: number): Tile[] => {
-    if (!nextTiles) nextTiles = tiles.slice();
-    if (nextTiles[y] === tiles[y]) nextTiles[y] = tiles[y].slice();
-    return nextTiles[y];
-  };
-
-  for (const { x, y, type } of updates) {
-    if (y < 0 || y >= height || x < 0 || x >= width) continue;
-    const current = (nextTiles ?? tiles)[y]?.[x];
-    if (!current) continue;
-    if (current.type === type && current.theme === undefined) continue;
-
-    const row = copyRow(y);
-    const next: Tile = { ...current, type };
-    delete next.theme;
-    row[x] = next;
-  }
-
-  return nextTiles;
-}
 
 export function useMapState() {
   const [project, setProjectData] = useState<DungeonProject>(createDefaultProject);
@@ -118,7 +88,7 @@ export function useMapState() {
     map, setProject, debouncedSave, activeLevelIndex,
     pushHistory, setNextNoteId,
   );
-  const { copySelection, cutSelection, pasteClipboard } = clipboardHook;
+  const { copySelection, cutSelection, pasteClipboard, moveRegion } = clipboardHook;
 
   const levelMgmt = useLevelManagement(
     setProject, debouncedSave, activeLevelIndex, setActiveLevelIndex,
@@ -314,17 +284,23 @@ export function useMapState() {
       return updated;
     });
     setNextNoteId(id => id + 1);
+    return nextNoteId;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nextNoteId, debouncedSave, activeLevelIndex]);
 
-  const updateNote = useCallback((id: number, label: string, description: string) => {
+  const updateNote = useCallback((id: number, label: string, description: string, position?: { x: number; y: number }) => {
     setProject(prev => {
       const prevMap = prev.levels[activeLevelIndex];
       const existing = prevMap.notes.find(n => n.id === id);
-      if (!existing || (existing.label === label && existing.description === description)) return prev;
+      if (!existing || (existing.label === label && existing.description === description &&
+        (!position || (existing.x === position.x && existing.y === position.y)))) return prev;
+      if (position && (!Number.isInteger(position.x) || !Number.isInteger(position.y) ||
+        position.x < 0 || position.y < 0 || position.x >= prevMap.meta.width || position.y >= prevMap.meta.height)) return prev;
       pushHistory(prevMap, activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m, notes: m.notes.map(n => n.id === id ? { ...n, label, description } : n),
+        ...m, notes: m.notes.map(n => n.id === id ? { ...n, label, description, ...position } : n),
+        tiles: position ? m.tiles.map((row, y) => row.map((tile, x) => x === position.x && y === position.y
+          ? { ...tile, noteId: id } : tile.noteId === id ? { ...tile, noteId: undefined } : tile)) : m.tiles,
       }));
       debouncedSave(updated);
       return updated;
@@ -500,15 +476,16 @@ export function useMapState() {
 
   // ── Tokens ────────────────────────────────────────────────────────────
 
-  const addToken = useCallback((kind: TokenKind, x: number, y: number, label?: string, size?: number): number | null => {
+  const addToken = useCallback((kind: TokenKind, x: number, y: number, label?: string, size?: number, icon?: string): number | null => {
     const newId = nextTokenIdRef.current;
     let placed = false;
     setProject(prev => {
       const prevMap = prev.levels[activeLevelIndex];
       const sz = Math.max(1, Math.floor(size ?? 1));
       if (x < 0 || y < 0 || x + sz > prevMap.meta.width || y + sz > prevMap.meta.height) return prev;
+      pushHistory(prevMap, activeLevelIndex);
       placed = true;
-      const token: Token = { id: newId, x, y, kind, label: label ?? `${kind[0].toUpperCase()}${newId}`, ...(sz > 1 ? { size: sz } : {}) };
+      const token: Token = { id: newId, x, y, kind, label: label ?? `${kind[0].toUpperCase()}${newId}`, ...(sz > 1 ? { size: sz } : {}), ...(icon ? { icon } : {}) };
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m, tokens: [...(m.tokens ?? []), token], initiative: [...(m.initiative ?? []), newId],
       }));
@@ -530,6 +507,7 @@ export function useMapState() {
       const cx = Math.min(Math.max(0, x), w - sz);
       const cy = Math.min(Math.max(0, y), h - sz);
       if (cx === existing.x && cy === existing.y) return prev;
+      pushHistory(prevMap, activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m, tokens: (m.tokens ?? []).map(t => t.id === id ? { ...t, x: cx, y: cy } : t),
       }));
@@ -540,6 +518,8 @@ export function useMapState() {
 
   const removeToken = useCallback((id: number) => {
     setProject(prev => {
+      if (!prev.levels[activeLevelIndex].tokens?.some(t => t.id === id)) return prev;
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m, tokens: (m.tokens ?? []).filter(t => t.id !== id), initiative: (m.initiative ?? []).filter(tid => tid !== id),
       }));
@@ -550,6 +530,9 @@ export function useMapState() {
 
   const updateToken = useCallback((id: number, patch: Partial<Omit<Token, 'id'>>) => {
     setProject(prev => {
+      const token = prev.levels[activeLevelIndex].tokens?.find(t => t.id === id);
+      if (!token || JSON.stringify(token) === JSON.stringify({ ...token, ...patch })) return prev;
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m, tokens: (m.tokens ?? []).map(t => t.id === id ? { ...t, ...patch } : t),
       }));
@@ -587,6 +570,7 @@ export function useMapState() {
     const newId = nextStrokeIdRef.current;
     nextStrokeIdRef.current = newId + 1;
     setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m, annotations: [...(m.annotations ?? []), { ...stroke, id: newId }],
       }));
@@ -597,6 +581,7 @@ export function useMapState() {
 
   const removeAnnotation = useCallback((id: number) => {
     setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m, annotations: (m.annotations ?? []).filter(a => a.id !== id),
       }));
@@ -607,6 +592,7 @@ export function useMapState() {
 
   const clearAnnotations = useCallback((kind?: 'player' | 'gm') => {
     setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m, annotations: kind ? (m.annotations ?? []).filter(a => a.kind !== kind) : [],
       }));
@@ -625,6 +611,7 @@ export function useMapState() {
       if (x < 0 || y < 0 || x >= prevMap.meta.width || y >= prevMap.meta.height) return prev;
       placed = true;
       const marker: ShapeMarker = { id: newId, x, y, shape, color, size: Math.max(1, Math.floor(size)) };
+      pushHistory(prevMap, activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m, markers: [...(m.markers ?? []), marker],
       }));
@@ -637,6 +624,7 @@ export function useMapState() {
 
   const removeMarker = useCallback((id: number) => {
     setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m, markers: (m.markers ?? []).filter(mk => mk.id !== id),
       }));
@@ -648,6 +636,7 @@ export function useMapState() {
   const clearMarkers = useCallback(() => {
     setProject(prev => {
       if ((prev.levels[activeLevelIndex].markers ?? []).length === 0) return prev;
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, markers: [] }));
       debouncedSave(updated);
       return updated;
@@ -664,6 +653,7 @@ export function useMapState() {
       if (x < 0 || y < 0 || x >= prevMap.meta.width || y >= prevMap.meta.height) return prev;
       placed = true;
       const ls: LightSource = { id: newId, x, y, radius, color, label };
+      pushHistory(prevMap, activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m, lightSources: [...(m.lightSources ?? []), ls],
       }));
@@ -676,6 +666,7 @@ export function useMapState() {
 
   const removeLightSource = useCallback((id: number) => {
     setProject(prev => {
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m, lightSources: (m.lightSources ?? []).filter(ls => ls.id !== id),
       }));
@@ -687,6 +678,7 @@ export function useMapState() {
   const clearLightSources = useCallback(() => {
     setProject(prev => {
       if ((prev.levels[activeLevelIndex].lightSources ?? []).length === 0) return prev;
+      pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, lightSources: [] }));
       debouncedSave(updated);
       return updated;
@@ -1368,7 +1360,7 @@ export function useMapState() {
     addToken, moveToken, removeToken, updateToken,
     reorderInitiative, clearInitiative,
     addAnnotation, removeAnnotation, clearAnnotations,
-    copySelection, cutSelection, pasteClipboard,
+    copySelection, cutSelection, pasteClipboard, moveRegion,
     addMarker, removeMarker, clearMarkers,
     setBackgroundImage, clearBackgroundImage, updateBackgroundImage,
     setPaperTexture, clearPaperTexture, updatePaperTexture,
