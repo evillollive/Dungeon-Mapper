@@ -9,7 +9,10 @@ export function useCanvasDraft(source: DungeonMap) {
   const draft = useRef<DungeonMap | null>(null);
   const commits = useRef(new Map<string, () => void>());
   const stage = useCallback((key: string, update: (map: DungeonMap) => DungeonMap, commit: () => void) => {
-    draft.current = update(draft.current ?? source);
+    const current = draft.current ?? source;
+    const next = update(current);
+    if (next === current) return;
+    draft.current = next;
     commits.current.set(key, commit);
     setPreview(draft.current);
   }, [source]);
@@ -19,10 +22,10 @@ export function useCanvasDraft(source: DungeonMap) {
     setPreview(null);
   }, []);
   const finish = useCallback(() => {
-    const pending = JSON.stringify(draft.current) === JSON.stringify(source) ? [] : [...commits.current.values()];
+    const pending = [...commits.current.values()];
     cancel();
     pending.forEach(commit => commit());
-  }, [cancel, source]);
+  }, [cancel]);
   return { map: preview ?? source, stage, cancel, finish };
 }
 
