@@ -39,7 +39,7 @@ jobs:
       matrix:
         engine: [chromium, firefox, webkit]
     env:
-      QA_OUTPUT: ${{ runner.temp }}/qualification
+      QA_OUTPUT: ${{ github.workspace }}/.qualification
       QA_ENGINES: ${{ matrix.engine }}
     steps:
       - uses: actions/checkout@v5
