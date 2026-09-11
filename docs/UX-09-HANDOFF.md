@@ -71,7 +71,7 @@ device qualification on their own.
 
 ## Critical keyboard workflows milestone
 
-Second bounded milestone, 2026-09-11, based on `b3a7e94`. It adds the fifth
+Second bounded milestone, 2026-09-11, based on `b3a7e94`, merged in #172. It adds the fifth
 journey to the existing required browser jobs without introducing a dependency,
 weakening a gate or changing project/session schemas.
 
@@ -135,6 +135,14 @@ GitHub CI remains the landing gate; local macOS results do not establish Linux,
 physical-device or assistive-technology acceptance.
 
 ## Remaining release gates
+
+Subsequent housekeeping removes 68 of the original 73 hook warnings and
+19 dependency-rule suppressions from map-state, level-management and history
+hooks. The current lint allowance is five warnings, confined to `App.tsx` and
+`MapCanvas.tsx`. History helpers now have stable identities; editing callbacks
+declare current dependencies while preserving per-level undo and stale-project
+callback rejection. The counts above describe the earlier milestone evidence,
+not the current warning baseline.
 
 UX-09 remains **in progress**. These automated journeys cover parts of roadmap
 section 8, not the entire nine-journey/seven-fixture acceptance matrix.
