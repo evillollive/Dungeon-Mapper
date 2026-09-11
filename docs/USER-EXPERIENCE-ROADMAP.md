@@ -8,7 +8,7 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
-**Latest implementation:** Following merged materials #168, UX-07 adds eight original top-down furnishings and The Keeper's Hall reference room. See the [individual pieces and room preview](./media/ux07-furnishings/first-preview.png) and [output contact sheet](./media/ux07-furnishings/contact-sheet.png). Prior sample artwork and stamp IDs remain unchanged. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
+**Latest implementation:** Following merged materials #168, UX-07 adds eight original top-down furnishings and The Keeper's Hall reference room. Owner feedback requested richer, higher-contrast furnishing colors; see the [revised palette beside the original](./media/ux07-furnishings/color-review.png) and [output contact sheet](./media/ux07-furnishings/contact-sheet.png). Prior sample artwork and stamp IDs remain unchanged. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
 
 ## 1. Product direction
 
@@ -684,6 +684,19 @@ table, chair, bed, shelf, crate, barrel, altar and rubble before token work.
 #168 merged at `2da403f` after its approved head passed CI. This furnishing
 slice is implemented but still awaits its own owner visual approval.
 
+**Color feedback, September 11, 2026:** The owner liked the forms but found
+the initial palette too desaturated for easy reading. The draft v1 sources
+now use warmer wood, emerald upholstery, blue bedding, violet altar cloth,
+cooler stone facets and darker outlines. Only SVG color values changed:
+paths, stroke widths, scale, shadows, floor colors and print geometry are
+unchanged. Source fingerprints and current output images were refreshed.
+The original `first-preview.png` remains as historical evidence. The
+[color comparison](./media/ux07-furnishings/color-review.png) is the current
+review surface. The revised colors still await owner confirmation.
+Opaque outline colors are guarded at a minimum 4.5:1 contrast against the
+sampled flagstone, wood and earth fill variants; this is a palette-level
+regression guard, not a certification of composited pixels or accessibility.
+
 Open **The Keeper's Hall** from samples, or use **Dungeon Folio v1 >
 Decorate > Theme** to find the eight named Folio stamps. They are additional
 versioned assets, not replacements for the existing catalog. The reference
@@ -723,7 +736,7 @@ Targeted coverage includes source fingerprints, restricted source parsing,
 custom overrides, missing versions, shadow direction/deduplication,
 monochrome paths, cache bounds and conservative fog exclusion.
 
-The eight SVG sources total 5,006 bytes, 1,398 bytes gzip, bundled into the
+The revised SVG sources total 5,006 bytes, 1,375 bytes gzip, bundled into the
 existing application chunks with no network asset requests or new dependencies.
 The current 128 x 128 render probe with the reference placements measured
 16.8 ms cold, 16.2 ms warm median and 19.1 ms warm maximum over ten warm
@@ -903,7 +916,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; Chromium qualified; cross-browser follow-up open | [Publication, projection, discovery, evidence and limitations](./UX-05-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; production Chromium two-window qualified | [Session lifecycle, isolated persistence, display protocol and evidence](./UX-06-HANDOFF.md); Firefox/WebKit and later release gates remain |
-| UX-07 | Foundation and materials merged in #167/#168; eight-piece furnishing reference awaiting visual approval | [Furnishing pieces and room](./media/ux07-furnishings/first-preview.png); token sets and remaining art packages are still open |
+| UX-07 | Foundation and materials merged in #167/#168; richer furnishing palette awaiting visual approval | [Revised furnishing colors](./media/ux07-furnishings/color-review.png); token sets and remaining art packages are still open |
 | UX-08 | Not started | Export and production offline |
 | UX-09 | Not started | Release qualification |
 | UX-10 | Deferred | Explicit approval of remote scope |

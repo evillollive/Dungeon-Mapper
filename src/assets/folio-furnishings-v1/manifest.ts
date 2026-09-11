@@ -1,14 +1,14 @@
 import { FOLIO_FURNISHINGS } from './catalog';
 
 const SOURCE_HASHES: Record<string, string> = {
-  'table.svg': '46b6fd38f9642192a2c65081cc0ef600e167ae731cc6f4598536765ae0697dd7',
-  'chair.svg': '0f95e0fc18e45930f2d460279e6f3aae2b25c44ca452a49288821889c4c1371c',
-  'bed.svg': 'a5fe1a9e29f5482ebfc9b5df7186e36f58d2c18be6c0ac05f783345c9231e3b0',
-  'shelf.svg': '49d68a30e161b1f0a42167eb3234a90df215829824e3353a79b44763c56620ec',
-  'crate.svg': 'c7186dc48ce140884fc956f469a5d1d7c04fc9fe3c35e31f5da999ef7b8d50ba',
-  'barrel.svg': '5243557ecd9a3168a1cd25d77d8c6eeb3c23ce199ed9fbe3c34e751f61360b3c',
-  'altar.svg': 'e883417ef08220a558c07ac3f119e1417d0baedf8ead7e31e2093b63d0b89d22',
-  'rubble.svg': '2fcaa1c1bc0d651fb13a4214ac3380c13c5120f1290f3f07025bd4be5f5d0f09',
+  'table.svg': 'd7e4c1b38ab2dc98415b62b7b53053b39bc7a0a36dd9bb0428a05cc2900de683',
+  'chair.svg': '353ebed51aa8d496c72d9e927fb3b7465baa934c1787e034615b8ebeaec474e7',
+  'bed.svg': '14afd55dc14d4d2f6588aa127f0755e59ed6e462fe77d93e9f279edc8afcc008',
+  'shelf.svg': '1d6ce9bae4dfb71e621188dcd6c72bee9270c334b867be3ddec0bbcaf8eb250b',
+  'crate.svg': '8ee833b9910d3c1da5b5aebbdc8ce71a8854be962ef009d57f830a652d9d1835',
+  'barrel.svg': '46d07b45cfaf64da42db53c0af79b4c5e811e1c13e5b32b5e3994fdef4460b98',
+  'altar.svg': 'b931e20be2c50e0d71295c66257b59323436fd871cb6ac3b260df0e74bc72956',
+  'rubble.svg': '2933077e5e67c2e4c56b30355b707ff1df413dddaa7d64bd59fa32d66eb8915e',
 };
 
 export const FOLIO_FURNISHING_MANIFEST = {

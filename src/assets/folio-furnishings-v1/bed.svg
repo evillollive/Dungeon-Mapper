@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <path d="M18 8H46V56H18Z" fill="#927d5d" stroke="#384239" stroke-width="1.4"/>
-  <path d="M21 13H43V51H21Z" fill="#c6b99b" stroke="#8c816c" stroke-width="0.7"/>
-  <path d="M23 15Q32 13 41 15V24Q32 26 23 24Z" fill="#dfd3b6" stroke="#9f957e" stroke-width="0.7"/>
-  <path d="M21 27Q30 29 43 27V51H21Z" fill="#77878d" stroke="#485b60" stroke-width="0.8"/>
-  <path d="M21 29H43V33H21Z" fill="#9aaba9"/>
-  <path d="M25 36Q24 42 26 48M39 36Q40 42 38 48M24 49H40" stroke="#a7b3ae" stroke-width="0.65"/>
-  <path d="M18 10H46M18 54H46" stroke="#c0a880" stroke-width="1"/>
+  <path d="M18 8H46V56H18Z" fill="#85471f" stroke="#202a32" stroke-width="1.4"/>
+  <path d="M21 13H43V51H21Z" fill="#edca86" stroke="#82622d" stroke-width="0.7"/>
+  <path d="M23 15Q32 13 41 15V24Q32 26 23 24Z" fill="#fff0ca" stroke="#a37f48" stroke-width="0.7"/>
+  <path d="M21 27Q30 29 43 27V51H21Z" fill="#246eaa" stroke="#143b5f" stroke-width="0.8"/>
+  <path d="M21 29H43V33H21Z" fill="#72b8e6"/>
+  <path d="M25 36Q24 42 26 48M39 36Q40 42 38 48M24 49H40" stroke="#aeebff" stroke-width="0.65"/>
+  <path d="M18 10H46M18 54H46" stroke="#e8b768" stroke-width="1"/>
 </svg>

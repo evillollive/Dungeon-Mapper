@@ -13,7 +13,10 @@ import { projectForAudience } from '../audienceProjection';
 import { _drawStampShadows_test } from '../lightingAtmosphere';
 import { useMapState } from '../../hooks/useMapState';
 import StampPicker from '../../components/StampPicker';
-import type { StampDef } from '../../types/map';
+import { FLOOR_MATERIAL_IDS, type StampDef } from '../../types/map';
+import { folioShapes } from '../../themes/folio-v1/art';
+import { floorMaterialShapes } from '../../themes/folio-v1/materials';
+import { contrastRatio, parseHexColor } from '../accessibility';
 
 beforeEach(() => {
   clearFolioStampPathCache();
@@ -41,7 +44,7 @@ describe('Folio furnishing kit', () => {
     for (const invalid of [
       source.replace('</svg>', '<script>alert(1)</script></svg>'),
       source.replace('<path ', '<path onclick="alert(1)" '),
-      source.replace('#977e5b', 'url(https://example.test/a.svg)'),
+      source.replace(FOLIO_FURNISHINGS[0].paths![0].fill!, 'url(https://example.test/a.svg)'),
       source.replace('stroke-width="1.4"', 'stroke-width="NaN"'),
       source.replace('viewBox="0 0 64 64"', 'viewBox="0 0 0 0"'),
     ]) expect(() => parseBundledFolioSvg(invalid)).toThrow();
@@ -60,6 +63,21 @@ describe('Folio furnishing kit', () => {
     const project = buildFolioFurnishingReference();
     project.levels[0].stamps![0].stampId = id;
     expect(decodeProject(encodeProject(project)).levels[0].stamps![0].stampId).toBe(id);
+  });
+
+  it('keeps opaque furnishing outlines distinct from every Folio floor color variant', () => {
+    const backgrounds = [
+      ...Array.from({ length: 32 }, (_, x) => folioShapes('floor', x, 7, 32)[0]),
+      ...FLOOR_MATERIAL_IDS.flatMap(id =>
+        Array.from({ length: 32 }, (_, x) => floorMaterialShapes(id, x, 7, 32)![0])),
+    ];
+    for (const furnishing of FOLIO_FURNISHINGS) {
+      const outline = parseHexColor(furnishing.paths![0].stroke!)!;
+      for (const background of backgrounds) {
+        if (background.kind !== 'rect') throw new Error('Expected a floor background rectangle.');
+        expect(contrastRatio(outline, parseHexColor(background.fill)!)).toBeGreaterThanOrEqual(4.5);
+      }
+    }
   });
 
   it('caches paths independently of object position, rotation, print colors and scale', () => {

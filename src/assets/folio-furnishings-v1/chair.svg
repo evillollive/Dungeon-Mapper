@@ -1,8 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <path d="M18 14H46Q48 14 48 16V47Q48 50 45 50H19Q16 50 16 47V16Q16 14 18 14Z" fill="#917853" stroke="#384239" stroke-width="1.4"/>
-  <path d="M18 16H46V22H18Z" fill="#b39a71" stroke="#6d654f" stroke-width="0.7"/>
-  <path d="M21 25H43V44Q43 46 41 46H23Q21 46 21 44Z" fill="#829080" stroke="#47574b" stroke-width="0.9"/>
-  <path d="M24 28H40V42H24Z" stroke="#a3ae98" stroke-width="0.65"/>
-  <path d="M18 26V43M46 26V43" stroke="#c0a67d" stroke-width="1"/>
-  <path d="M20 19H44" stroke="#887454" stroke-width="0.65"/>
+  <path d="M18 14H46Q48 14 48 16V47Q48 50 45 50H19Q16 50 16 47V16Q16 14 18 14Z" fill="#945921" stroke="#202a32" stroke-width="1.4"/>
+  <path d="M18 16H46V22H18Z" fill="#d89c49" stroke="#683b20" stroke-width="0.7"/>
+  <path d="M21 25H43V44Q43 46 41 46H23Q21 46 21 44Z" fill="#217a63" stroke="#143d35" stroke-width="0.9"/>
+  <path d="M24 28H40V42H24Z" stroke="#7be0b3" stroke-width="0.65"/>
+  <path d="M18 26V43M46 26V43" stroke="#f1c47a" stroke-width="1"/>
+  <path d="M20 19H44" stroke="#875027" stroke-width="0.65"/>
 </svg>
