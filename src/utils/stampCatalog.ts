@@ -1,5 +1,5 @@
 /**
- * Built-in stamp catalog — 226 SVG stamps (70 universal + 156 per-theme).
+ * Built-in SVG stamp catalog, including versioned Folio furnishings.
  * Organized by category: furniture, dungeon-dressing, nature, structures, markers.
  * Per-theme stamps are tagged with themeId and filtered via StampPicker.
  *
@@ -8,6 +8,7 @@
  * render with depth, shading, and variable line weight.
  */
 import type { StampDef } from '../types/map';
+import { FOLIO_FURNISHINGS, isUnavailableFolioFurnishing, UNAVAILABLE_FOLIO_FURNISHING } from '../assets/folio-furnishings-v1/catalog';
 
 export const BUILT_IN_STAMPS: StampDef[] = [
   // ── Furniture ─────────────────────────────────────────────────────────────
@@ -2441,6 +2442,8 @@ export const BUILT_IN_STAMPS: StampDef[] = [
 
 ];
 
+BUILT_IN_STAMPS.push(...FOLIO_FURNISHINGS);
+
 /** All stamp categories with display labels. */
 export const STAMP_CATEGORY_LABELS: Record<string, string> = {
   'all': 'All',
@@ -2457,5 +2460,6 @@ const BUILT_IN_STAMPS_BY_ID = new Map(BUILT_IN_STAMPS.map(stamp => [stamp.id, st
 
 /** Lookup a stamp definition by id. Returns undefined if not found. */
 export function getStampDef(stampId: string, customStamps: readonly StampDef[] = []): StampDef | undefined {
-  return customStamps.find(s => s.id === stampId) ?? BUILT_IN_STAMPS_BY_ID.get(stampId);
+  return customStamps.find(s => s.id === stampId) ?? BUILT_IN_STAMPS_BY_ID.get(stampId) ??
+    (isUnavailableFolioFurnishing(stampId) ? UNAVAILABLE_FOLIO_FURNISHING : undefined);
 }

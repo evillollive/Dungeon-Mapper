@@ -20,6 +20,7 @@ interface DrawToolsTabProps {
   activeFloorMaterial?: FloorMaterialId;
   onSetFloorMaterial?: (material: FloorMaterialId | undefined) => void;
   unavailableFloorMaterials?: boolean;
+  unavailableFolioFurnishings?: boolean;
   themeId: string;
   customThemes: readonly CustomThemeDefinition[];
   onSetTool: (tool: ToolType) => void;
@@ -144,7 +145,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   objectControls,
   section = 'build',
   activeTool, activeTile, themeId, customThemes, onSetTool, onSetTile,
-  activeFloorMaterial, onSetFloorMaterial, unavailableFloorMaterials,
+  activeFloorMaterial, onSetFloorMaterial, unavailableFloorMaterials, unavailableFolioFurnishings,
   onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
   onOpenCustomThemeBuilder,
   selectedStampId, onSelectStamp, onClearStamps,
@@ -890,6 +891,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
 
       </>}
       {section === 'decorate' && <StampPicker
+        unavailableFolioFurnishings={unavailableFolioFurnishings}
         activeTool={activeTool}
         selectedStampId={selectedStampId}
         themeId={themeId}

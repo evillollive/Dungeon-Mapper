@@ -7,8 +7,10 @@
  * Disabled in print mode by default.
  */
 
-import type { CustomThemeDefinition, LightingAtmosphereSettings, PlacedStamp, Tile, TileType } from '../types/map';
+import type { CustomThemeDefinition, LightingAtmosphereSettings, PlacedStamp, StampDef, Tile, TileType } from '../types/map';
 import { getSemanticTileType } from './customThemes';
+import { getStampDef } from './stampCatalog';
+import { getFolioFurnishing } from '../assets/folio-furnishings-v1/catalog';
 
 // ── Ambient Occlusion ────────────────────────────────────────────────────
 
@@ -104,6 +106,7 @@ function drawStampShadows(
   tileSize: number,
   shadowOpacity: number,
   shadowOffset: number,
+  customStamps: readonly StampDef[] = [],
 ): void {
   if (shadowOpacity <= 0 || stamps.length === 0) return;
 
@@ -113,6 +116,7 @@ function drawStampShadows(
   ctx.globalCompositeOperation = 'multiply';
 
   for (const stamp of stamps) {
+    if (getFolioFurnishing(getStampDef(stamp.stampId, customStamps))) continue;
     const scale = stamp.scale || 1;
     const drawSize = tileSize * scale;
     const cx = (stamp.x + 0.5) * tileSize + offset;
@@ -188,6 +192,7 @@ export function drawLightingAtmosphere(
   settings: LightingAtmosphereSettings,
   stamps: readonly PlacedStamp[],
   customThemes: readonly CustomThemeDefinition[],
+  customStamps: readonly StampDef[] = [],
 ): void {
   if (!settings.enabled) return;
 
@@ -205,6 +210,7 @@ export function drawLightingAtmosphere(
   drawStampShadows(
     ctx, stamps, tileSize,
     settings.stampShadowOpacity, settings.stampShadowOffset,
+    customStamps,
   );
 
   // 3. Color grading

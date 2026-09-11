@@ -14,6 +14,8 @@ import { useTileEditing } from './useTileEditing';
 import type { NoteEditFields } from '../types/map';
 import { useAudienceEditing } from './useAudienceEditing';
 import { clearDerivedDiscovery } from '../utils/secretDiscovery';
+import { getStampDef } from '../utils/stampCatalog';
+import { getFolioFurnishing } from '../assets/folio-furnishings-v1/catalog';
 
 export { getClipboard } from './useMapClipboard';
 
@@ -667,7 +669,7 @@ export function useMapState() {
         x,
         y,
         rotation: options.rotation ?? 0,
-        scale: Math.max(0.01, options.scale ?? 1),
+        scale: Math.max(0.01, options.scale ?? getFolioFurnishing(getStampDef(trimmedStampId, prev.customStamps))?.defaultScale ?? 1),
         flipX: options.flipX ?? false,
         flipY: options.flipY ?? false,
         opacity: Math.min(1, Math.max(0, options.opacity ?? 1)),

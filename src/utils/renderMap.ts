@@ -14,6 +14,7 @@ import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from './tokenVisibility';
 import { ICON_BY_ID } from './iconLibrary';
 import { getStampDef } from './stampCatalog';
+import { drawFolioStampShadow, stampPath, stampPaths } from './folioFurnishingRender';
 import { getSemanticTileType, getThemeWithCustom } from './customThemes';
 import { getCachedPaperTexture } from './paperTexture';
 import { drawEdgeBlending } from './edgeBlend';
@@ -246,7 +247,7 @@ function renderMapDataToCanvas(
 
   // Lighting & atmosphere — AO, stamp shadows, color grading. Disabled in print mode.
   if (!printMode && includeLighting && map.lightingAtmosphere?.enabled) {
-    drawLightingAtmosphere(ctx, tiles, width, height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes);
+    drawLightingAtmosphere(ctx, tiles, width, height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes, opts.customStamps);
   }
 
   // Notes
@@ -361,7 +362,7 @@ function renderMapDataToCanvas(
 
   // Stamps
   for (const stamp of map.stamps ?? []) {
-    renderStamp(ctx, stamp, tileSize, opts.customStamps);
+    renderStamp(ctx, stamp, tileSize, opts.customStamps, printMode);
   }
 
   // Tokens
@@ -607,9 +608,12 @@ function renderStamp(
   stamp: PlacedStamp,
   tileSize: number,
   customStamps?: readonly StampDef[],
+  printMode = false,
 ) {
   const def = getStampDef(stamp.stampId, customStamps);
   if (!def) return;
+  const renderedPaths = stampPaths(def, printMode);
+  drawFolioStampShadow(ctx, def, stamp, tileSize, printMode);
 
   const cx = (stamp.x + 0.5) * tileSize;
   const cy = (stamp.y + 0.5) * tileSize;
@@ -631,9 +635,9 @@ function renderStamp(
   ctx.translate(-drawSize / 2, -drawSize / 2);
   ctx.scale(svgScale, svgScale);
 
-  if (def.paths && def.paths.length > 0) {
-    for (const p of def.paths) {
-      const path2d = new Path2D(p.path);
+  if (renderedPaths && renderedPaths.length > 0) {
+    for (const p of renderedPaths) {
+      const path2d = stampPath(def, p.path);
       if (p.fill) { ctx.fillStyle = p.fill; ctx.fill(path2d); }
       if (p.stroke) { ctx.strokeStyle = p.stroke; ctx.lineWidth = p.strokeWidth ?? 1; ctx.stroke(path2d); }
     }

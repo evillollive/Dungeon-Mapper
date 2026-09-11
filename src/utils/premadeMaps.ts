@@ -16,6 +16,7 @@ import { generateRiversForMap, getGeneratedRiverType } from './generators/riverG
 import { makeRng, seedFromString } from './generators/random';
 import { buildFolioReference, FOLIO_REFERENCE_ID, FOLIO_REFERENCE_NAME, buildFolioMaterialsReference, FOLIO_MATERIALS_REFERENCE_ID, FOLIO_MATERIALS_REFERENCE_NAME } from './folioReference';
 import { FOLIO_THEME_ID } from '../themes/folio-v1/art';
+import { buildFolioFurnishingReference, FOLIO_FURNISHING_REFERENCE_ID, FOLIO_FURNISHING_REFERENCE_NAME } from './folioFurnishingReference';
 
 export interface PremadeMapSummary {
   id: string;
@@ -1271,11 +1272,21 @@ export const PREMADE_MAP_SUMMARIES: PremadeMapSummary[] = [...PREMADE_MAP_SPECS.
   sizeLabel: '32 x 32',
   levelCount: 1,
   description: 'Worn wood in the warden quarters, an earthen storeroom and quiet flagstone. Three paintable floor finishes with unchanged movement and sight rules.',
+}, {
+  id: FOLIO_FURNISHING_REFERENCE_ID,
+  name: FOLIO_FURNISHING_REFERENCE_NAME,
+  themeId: FOLIO_THEME_ID,
+  themeLabel: 'Dungeon Folio v1',
+  archetype: 'Furnishing reference',
+  sizeLabel: '16 x 16',
+  levelCount: 1,
+  description: 'A furnished keeper hall with eight original top-down props, shared table seating, sleeping quarters and stores. Review scale, rotation and restrained shadows.',
 }];
 
 export function buildPremadeProject(id: string): DungeonProject {
   if (id === FOLIO_REFERENCE_ID) return buildFolioReference();
   if (id === FOLIO_MATERIALS_REFERENCE_ID) return buildFolioMaterialsReference();
+  if (id === FOLIO_FURNISHING_REFERENCE_ID) return buildFolioFurnishingReference();
   const spec = PREMADE_MAP_SPECS.find(item => item.id === id);
   if (!spec) throw new Error(`Unknown premade map: ${id}`);
 
