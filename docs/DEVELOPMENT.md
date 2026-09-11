@@ -74,3 +74,58 @@ The controlled update changes service-worker bytes without changing the app
 bundle. It is an activation and data-continuity test, not a cross-schema upgrade
 test. Historical UX-01 scenario scripts remain baseline-specific; use the
 current UX-08 runner for export and update behavior.
+
+## Blocking production browser journeys (UX-09)
+
+The locked `playwright` package also provides `playwright/test`; no external SDK,
+Python environment, or additional test package is required. The production
+journeys now run through `playwright.config.mjs`:
+
+```bash
+npx playwright install chromium firefox webkit
+QA_OUTPUT=/absolute/path/to/qualification npm run test:browser
+# One engine or journey while developing:
+QA_OUTPUT=/absolute/path/to/qualification npm run test:browser -- --project=webkit --grep=publication
+```
+
+The four journeys cover guided creation and Library continuity, editor
+navigation/focus/layout, player publication/preview, and session recovery with a
+real second window. Each test owns fresh browser storage, and the runner closes
+its pages and contexts on success, failure, or timeout. These use production
+assets under `/Dungeon-Mapper/`, not a development-only fixture route.
+`ux02Creation.browser.mjs`, `ux03Shell.browser.mjs`, `ux05Audience.browser.mjs`
+and `ux06Session.browser.mjs` now export Page-based journeys instead of being
+standalone scripts or function expressions for external evaluation.
+
+`QA_OUTPUT` is required. The runner replaces only its `browser-results` and
+`browser-report` subdirectories there; keep separate directories for evidence
+you want to retain across runs. The JSON report is `browser-report.json`.
+Failed journeys retain a Playwright trace, screenshot and error context.
+Results include browser version, engine, source revision when supplied through
+`QA_SOURCE_SHA` (or CI's `GITHUB_SHA`), and browser errors from every page,
+including player windows. HTML reports never open automatically.
+
+The strict-port preview server defaults to port 5309 (`QA_PORT` overrides it);
+an existing server is not reused. Tests run serially, with no retries, a
+three-minute test timeout and a twenty-minute suite timeout. `test.only` and
+empty test selection fail. `--grep` and `--project` are local selectors; CI
+always runs all four journeys for each engine.
+
+After building once, `npm run test:browser:run` and `npm run test:ux08:run`
+reuse `dist`. Only the latter uses `QA_ENGINES` and defaults to port 5308.
+The UX-08 runner owns its server so it can stop the sole origin and control
+worker updates. Do not run both suites concurrently on the same custom port.
+
+CI runs all four journeys plus UX-08 for Chromium, Firefox and WebKit, with
+independent engine jobs, no fail-fast cancellation and fourteen-day artifacts.
+The aggregate **Browser qualification** check fails when any engine fails,
+is skipped or is cancelled. **Build and test** also treats lint errors as
+blocking. The existing 73 `react-hooks/exhaustive-deps` warnings remain visible
+and are capped with `--max-warnings 73`; lower that ceiling as debt is removed,
+never increase it to hide new warnings. This is a count ceiling, not per-warning
+identity tracking. Existing debt is confined to `App.tsx`, `MapCanvas.tsx`,
+`useLevelManagement.ts` and `useMapState.ts`.
+
+See [UX-09 qualification status](./UX-09-HANDOFF.md) for actual coverage and
+remaining human/device/performance gates. Passing these jobs is not an
+accessibility conformance or full-release certification.

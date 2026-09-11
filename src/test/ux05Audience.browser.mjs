@@ -1,7 +1,5 @@
-// Callable Playwright journey. Load as an async function with the Playwright
-// browser_run_code tool, or evaluate the file and call it with an isolated Page.
-// Uses only the Page API so it also works without a project-local SDK.
-(async (page) => {
+// The runner owns the isolated context and captures failure traces.
+export default async function audience(page) {
   const assert = (condition, message) => { if (!condition) throw new Error(message); };
   page.setDefaultTimeout(15000);
   const origin = `${page.url().split('/Dungeon-Mapper/')[0]}/Dungeon-Mapper/`;
@@ -107,4 +105,4 @@
     svgFilename: svg.suggestedFilename(), pngFilename: png.suggestedFilename(),
     passed: ['native import/save/reload', 'publication', 'discovery undo', 'DOM/accessibility sentinels',
       'counts', 'editor unmounted', 'shortcut isolation', 'responsive preview', 'player downloads'] };
-})
+}

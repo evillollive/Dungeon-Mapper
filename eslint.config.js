@@ -8,6 +8,21 @@ import { defineConfig, globalIgnores } from 'eslint/config'
 export default defineConfig([
   globalIgnores(['dist']),
   {
+    files: [
+      'playwright.config.mjs',
+      'src/test/ux09.spec.mjs',
+      'src/test/ux02Creation.browser.mjs',
+      'src/test/ux03Shell.browser.mjs',
+      'src/test/ux05Audience.browser.mjs',
+      'src/test/ux06Session.browser.mjs',
+      'src/test/ux08.browser.mjs',
+    ],
+    extends: [js.configs.recommended],
+    languageOptions: {
+      globals: { ...globals.node, ...globals.browser },
+    },
+  },
+  {
     files: ['**/*.{ts,tsx}'],
     ignores: ['src/test/**', 'src/**/*.test.{ts,tsx}'],
     extends: [
