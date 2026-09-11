@@ -896,6 +896,15 @@ function App() {
     { id: 'dialog.export', label: 'Export', action: () => setShowExportMenu(true) },
     { id: 'dialog.audience', label: 'Audience & secrets', action: () => setShowAudienceSettings(true) },
     { id: 'view.playerPreview', label: 'Preview as player', action: () => setShowPlayerPreview(true) },
+    { id: 'session.prepare', label: 'Prepare session', action: () => {
+      if (!projectId || saveState.phase !== 'saved') {
+        window.alert('Save this project before preparing a session.');
+        return;
+      }
+      const url = new URL(window.location.href);
+      url.search = new URLSearchParams({ prepare: projectId }).toString();
+      window.location.assign(url);
+    } },
     { id: 'file.playerPng', label: 'Player PNG (published content)', action: () => {
       void exportHighResPNG(map, { dpi: map.meta.tileSize, pagePresetId: 'none', themeId, printMode,
         viewMode: 'player', customThemes, customStamps }).catch(error => {
@@ -912,6 +921,7 @@ function App() {
     viewMode, canUndo, canRedo, hasSelection: selection !== null, hasClipboard: getClipboard() !== null,
     hasStamp: selectedPlacedStampId !== null && (map.stamps ?? []).some(s => s.id === selectedPlacedStampId),
     canNextLevel: activeLevelIndex < project.levels.length - 1, canPreviousLevel: activeLevelIndex > 0,
+    canPrepareSession: saveState.phase === 'saved' && !!projectId,
   });
   const runTool = (tool: ToolType) => {
     const command = editorActions.find(action => action.id === TOOL_ACTIONS[tool]);
