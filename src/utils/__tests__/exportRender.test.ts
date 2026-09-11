@@ -56,8 +56,8 @@ describe('export and render helpers', () => {
     const map = smallMap();
     map.dynamicFogEnabled = true;
     map.notes = [
-      { id: 1, x: 1, y: 1, label: 'Explored', description: '' },
-      { id: 2, x: 2, y: 2, label: 'Hidden', description: '' },
+      { id: 1, x: 1, y: 1, label: 'Explored', description: '', published: true, publicLabel: 'Explored' },
+      { id: 2, x: 2, y: 2, label: 'Hidden', description: '', published: true, publicLabel: 'Hidden' },
     ];
     map.fog![1][1] = true;
     map.fog![2][2] = true;

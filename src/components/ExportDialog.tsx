@@ -33,6 +33,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
   const [exportView, setExportView] = useState<ViewMode>(viewMode);
   const [showScaleBar, setShowScaleBar] = useState<boolean>(feetPerCell > 0);
   const [exporting, setExporting] = useState(false);
+  const [error, setError] = useState('');
 
   // Close on Escape.
   useEffect(() => {
@@ -62,6 +63,7 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
 
   const handleExport = useCallback(async () => {
     setExporting(true);
+    setError('');
     try {
       const opts: HighResExportOptions = {
         dpi,
@@ -74,6 +76,8 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
         customStamps,
       };
       await exportHighResPNG(map, opts);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Export failed. The project is unchanged.');
     } finally {
       setExporting(false);
     }
@@ -132,9 +136,13 @@ const ExportDialog: React.FC<ExportDialogProps> = ({
             onChange={e => setExportView(e.target.value as ViewMode)}
           >
             <option value="gm">GM (full map)</option>
-            <option value="player">Player (fog hides content)</option>
+            <option value="player">Player (published content and fog)</option>
           </select>
         </label>
+        <p>{exportView === 'player'
+          ? 'Uses Player preview visibility. Private note text, hidden objects and undiscovered secrets are excluded.'
+          : 'Includes DM-only content. Do not share this output with players.'}</p>
+        {error && <p role="alert">{error}</p>}
 
         {/* Print mode toggle */}
         <label className="generate-dialog-row generate-dialog-checkbox">

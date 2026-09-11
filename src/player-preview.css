@@ -1,0 +1,29 @@
+.player-preview-host { height: 100dvh; overflow: auto; background: var(--surface-base); color: var(--text-primary); }
+.player-preview-host > .preview-host-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 20px; border-bottom: 1px solid var(--border); }
+.preview-host-controls p { flex: 1; font-size: var(--text-small); color: var(--text-secondary); }
+.player-preview-host button { min-height: 44px; padding: 10px 14px; border: 1px solid var(--border); border-radius: var(--radius-control); background: var(--surface-raised); color: var(--text-primary); font: inherit; }
+.player-preview-host button:hover { background: var(--surface-active); }
+.player-preview-host button:focus-visible, .player-map-scroll:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+.player-preview { padding: 20px; }
+.player-preview-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 20px; flex-wrap: wrap; }
+.player-eyebrow { color: var(--accent); font-size: var(--text-small); letter-spacing: .08em; margin-bottom: 8px; }
+.player-preview h1 { font-size: 1.6rem; overflow-wrap: anywhere; }
+.player-zoom { display: flex; flex-wrap: wrap; gap: 8px; }
+.player-preview-layout { display: grid; grid-template-columns: minmax(0, 1fr) 260px; align-items: start; gap: 20px; }
+.player-map-scroll { max-height: 75dvh; overflow: auto; background: var(--surface-canvas); border: 1px solid var(--border); border-radius: var(--radius-control); }
+.player-map-scroll canvas { display: block; margin: 0 auto; }
+.player-legend { padding: 16px; background: var(--surface-panel); border: 1px solid var(--border); border-radius: var(--radius-control); overflow-wrap: anywhere; }
+.player-legend section + section { margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
+.player-legend h2 { color: var(--accent); font-size: 1.1rem; margin: 12px 0; }
+.player-legend h3 { font-size: 1rem; margin: 12px 0 6px; }
+.player-legend p { white-space: pre-wrap; }
+.player-legend ul, .player-legend ol { padding-left: 24px; }
+.player-minimap { display: block; width: 160px; max-width: 100%; height: auto; margin: 0 auto; }
+.audience-settings form { display: grid; gap: 12px; }
+.audience-settings > button { justify-content: flex-start; }
+.audience-settings input[type="checkbox"] { width: auto; margin-right: 8px; }
+@media (max-width: 768px) {
+  .player-preview { padding: 12px; }
+  .player-preview-layout { grid-template-columns: minmax(0, 1fr); }
+  .player-map-scroll { max-height: 60dvh; }
+}

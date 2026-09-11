@@ -11,6 +11,9 @@ import { useMapPersistence } from './useMapPersistence';
 import { useProjectDispatch } from './useProjectDispatch';
 import { getPresetSettings as getPresetSettingsFn } from '../utils/artStylePresets';
 import { applyTileUpdates } from '../utils/tileEditing';
+import type { NoteEditFields } from '../types/map';
+import { useAudienceEditing } from './useAudienceEditing';
+import { clearDerivedDiscovery } from '../utils/secretDiscovery';
 
 export { getClipboard } from './useMapClipboard';
 
@@ -75,6 +78,7 @@ export function useMapState() {
 
   const history = useMapHistory(setProject, debouncedSave, activeLevelIndex);
   const { pushHistory, undo, redo, canUndo, canRedo } = history;
+  const { setPublicName, setSecretDiscovered } = useAudienceEditing(setProject, debouncedSave, activeLevelIndex, pushHistory);
 
   const persistence = useMapPersistence(
     setProjectData, setActiveLevelIndex,
@@ -288,12 +292,14 @@ export function useMapState() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nextNoteId, debouncedSave, activeLevelIndex]);
 
-  const updateNote = useCallback((id: number, label: string, description: string, position?: { x: number; y: number }) => {
+  const updateNote = useCallback((id: number, label: string, description: string, position?: NoteEditFields) => {
     setProject(prev => {
       const prevMap = prev.levels[activeLevelIndex];
       const existing = prevMap.notes.find(n => n.id === id);
       if (!existing || (existing.label === label && existing.description === description &&
-        (!position || (existing.x === position.x && existing.y === position.y)))) return prev;
+        (!position || (existing.x === position.x && existing.y === position.y &&
+          existing.published === position.published && existing.publicLabel === position.publicLabel &&
+          existing.publicDescription === position.publicDescription)))) return prev;
       if (position && (!Number.isInteger(position.x) || !Number.isInteger(position.y) ||
         position.x < 0 || position.y < 0 || position.x >= prevMap.meta.width || position.y >= prevMap.meta.height)) return prev;
       pushHistory(prevMap, activeLevelIndex);
@@ -1162,7 +1168,7 @@ export function useMapState() {
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m, roomShapes: [...(m.roomShapes ?? []), { ...shape, id: newId }],
+        ...m, tiles: clearDerivedDiscovery(m.tiles), roomShapes: [...(m.roomShapes ?? []), { ...shape, id: newId }],
       }));
       debouncedSave(updated);
       return updated;
@@ -1174,7 +1180,7 @@ export function useMapState() {
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m, roomShapes: (m.roomShapes ?? []).map(s =>
+        ...m, tiles: clearDerivedDiscovery(m.tiles), roomShapes: (m.roomShapes ?? []).map(s =>
           s.id === id ? { ...s, ...changes } : s
         ),
       }));
@@ -1187,7 +1193,7 @@ export function useMapState() {
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m, roomShapes: (m.roomShapes ?? []).filter(s => s.id !== id),
+        ...m, tiles: clearDerivedDiscovery(m.tiles), roomShapes: (m.roomShapes ?? []).filter(s => s.id !== id),
       }));
       debouncedSave(updated);
       return updated;
@@ -1198,7 +1204,7 @@ export function useMapState() {
     setProject(prev => {
       pushHistory(prev.levels[activeLevelIndex], activeLevelIndex);
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m, roomShapes: [],
+        ...m, tiles: clearDerivedDiscovery(m.tiles), roomShapes: [],
       }));
       debouncedSave(updated);
       return updated;
@@ -1349,7 +1355,7 @@ export function useMapState() {
     forgetDeletedProject: coordinator.forgetDeletedProject,
     selectedNoteId, setSelectedNoteId,
     setTile, fillTiles, setTiles, getTileType,
-    setMapName, resizeMap, clearMap, newMap,
+    setMapName, setPublicName, setSecretDiscovered, resizeMap, clearMap, newMap,
     loadMapData, loadProjectData,
     generateMap, applyGeneratedRegion,
     addNote, updateNote, deleteNote,

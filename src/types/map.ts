@@ -34,6 +34,10 @@ export interface CustomThemeDefinition {
 
 export interface Tile {
   type: TileType;
+  /** Discovery is separate from fog and applies only to this tile's secret. */
+  discovered?: boolean;
+  /** Binds discovery to derived geometry without copying it into base tiles. */
+  discoveredType?: TileType;
   noteId?: number;
   /** Direction of river/water flow in degrees, when produced by the river layer. */
   flowDirection?: number;
@@ -64,6 +68,10 @@ export interface MapNote {
   y: number;
   label: string;
   description: string;
+  /** DM label/description remain private, even when this note is published. */
+  published?: boolean;
+  publicLabel?: string;
+  publicDescription?: string;
   /**
    * Internal classification used by the procedural generators so the UI /
    * future logic can tell whether a note represents an actual room (a
@@ -81,16 +89,22 @@ export interface MapNote {
 
 export interface MapMeta {
   name: string;
+  /** Only this explicitly authored title is used in player outputs. */
+  publicName?: string;
   width: number;
   height: number;
   tileSize: number;
   theme?: string;
 }
 
+export type NoteEditFields = Pick<MapNote, 'x' | 'y' | 'published' | 'publicLabel' | 'publicDescription'>;
+
 export type TokenKind = 'player' | 'npc' | 'monster';
 
 export interface Token {
   id: number;
+  hidden?: boolean;
+  hideFromInitiative?: boolean;
   /** Tile-aligned X coordinate of the token's top-left cell. */
   x: number;
   /** Tile-aligned Y coordinate of the token's top-left cell. */
@@ -201,6 +215,7 @@ export interface StampDef {
 
 export interface PlacedStamp {
   id: number;
+  hidden?: boolean;
   stampId: string;
   /** Tile-aligned X coordinate of the stamp center. */
   x: number;

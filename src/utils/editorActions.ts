@@ -6,7 +6,8 @@ export type ActionId = BindingId | `panel.${EditorPanel}` | `theme.${string}`
   | 'tool.stamp' | 'tool.move-stamp' | 'tool.remove-stamp'
   | 'tool.wall-erase' | 'tool.path-erase' | 'tool.river-erase'
   | 'file.library' | 'file.samples' | 'file.clear' | 'file.recovery'
-  | 'dialog.settings' | 'dialog.templates' | 'dialog.customTheme' | 'dialog.export';
+  | 'dialog.settings' | 'dialog.templates' | 'dialog.customTheme' | 'dialog.export'
+  | 'dialog.audience' | 'view.playerPreview' | 'file.playerPng' | 'file.playerSvg';
 
 export const TOOL_ACTIONS: Record<ToolType, ActionId> = {
   paint: 'tool.paint', erase: 'tool.erase', fill: 'tool.fill', note: 'tool.note',
@@ -38,12 +39,14 @@ export function actionMode(id: ActionId): 'gm' | 'player' | 'both' {
   if (id.startsWith('tools.') || id.startsWith('theme.') ||
       ['view.themeNext', 'view.themePrev', 'view.tileNext', 'view.tilePrev',
         'edit.copy', 'edit.cut', 'edit.paste', 'file.generate', 'file.clear',
-        'dialog.templates', 'dialog.customTheme', 'panel.build', 'panel.decorate', 'panel.look',
+        'dialog.templates', 'dialog.customTheme', 'dialog.audience', 'panel.build', 'panel.decorate', 'panel.look',
         'panel.info', 'panel.levels'].includes(id)) return 'gm';
   return 'both';
 }
 
 export function actionDestination(id: ActionId): string {
+  if (id === 'dialog.audience' || id === 'view.playerPreview') return 'Audience';
+  if (id === 'file.playerPng' || id === 'file.playerSvg') return 'Export';
   if (id.startsWith('panel.')) return id.slice(6);
   if (id.startsWith('theme.') || id.includes('theme') || id === 'view.printMode' || id === 'dialog.customTheme') return 'Look';
   if (id.startsWith('canvas.')) return 'Canvas zoom';
@@ -87,8 +90,8 @@ const LABELS: Partial<Record<ActionId, string>> = {
   'file.new': 'Create map',
   'file.open': 'Import project JSON',
   'file.exportJson': 'Export editable backup (includes DM content)',
-  'file.exportPng': 'Export current canvas PNG',
-  'file.exportSvg': 'Export current level SVG',
+  'file.exportPng': 'DM canvas PNG (includes editor overlays)',
+  'file.exportSvg': 'DM level SVG (includes private content)',
   'file.printExport': 'Print / high-resolution PNG',
   'file.generate': 'Advanced generator',
   'tool.pdraw': 'Shared drawing (DM operated)',

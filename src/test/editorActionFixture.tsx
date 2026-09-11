@@ -29,7 +29,7 @@ export function shortcutFixture(onCall: (name: string, ...args: unknown[]) => vo
 export const panelIds: EditorPanel[] = ['build', 'decorate', 'look', 'levels', 'tactical', 'notes', 'encounter', 'info'];
 export const extraIds: ActionId[] = [
   'file.library', 'file.samples', 'file.clear', 'file.recovery', 'dialog.settings',
-  'dialog.templates', 'dialog.customTheme', 'dialog.export',
+  'dialog.templates', 'dialog.customTheme', 'dialog.export', 'dialog.audience', 'view.playerPreview', 'file.playerPng', 'file.playerSvg',
   ...panelIds.map(panel => `panel.${panel}` as const),
 ];
 export function EditorFixture({ children, onAction = () => {} }: PropsWithChildren<{ onAction?: (id: ActionId) => void }>) {

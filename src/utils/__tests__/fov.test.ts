@@ -46,6 +46,30 @@ describe('isOpaque', () => {
 });
 
 describe('computeFOV', () => {
+  it('cannot see outside an enclosed room in any octant', () => {
+    const grid = buildGrid([
+      '........',
+      '.####...',
+      '.#..#...',
+      '.#..#...',
+      '.####...',
+      '........',
+      '........',
+      '........',
+    ]);
+    for (const [ox, oy] of [[2, 2], [3, 2], [2, 3], [3, 3]]) {
+      const fov = computeFOV(grid, ox, oy);
+      for (const key of fov) {
+        const [x, y] = key.split(',').map(Number);
+        expect(x, `origin ${ox},${oy}: ${key}`).toBeGreaterThanOrEqual(1);
+        expect(x, `origin ${ox},${oy}: ${key}`).toBeLessThanOrEqual(4);
+        expect(y, `origin ${ox},${oy}: ${key}`).toBeGreaterThanOrEqual(1);
+        expect(y, `origin ${ox},${oy}: ${key}`).toBeLessThanOrEqual(4);
+      }
+      expect(fov.has('2,2')).toBe(true);
+      expect(fov.has('3,3')).toBe(true);
+    }
+  });
   it('origin is always visible', () => {
     const grid = buildGrid(['...', '...', '...']);
     const fov = computeFOV(grid, 1, 1);

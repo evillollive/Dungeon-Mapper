@@ -4,11 +4,11 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status:** UX-00 prototype work accepted. Participant research is explicitly deferred by the owner, who authorized proceeding to UX-01. Usability acceptance is not claimed; release research gates remain open. No production application behavior changed by UX-00.
+**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-04 are merged. UX-05 implementation and Chromium qualification are recorded below; cross-browser follow-up and release research gates remain open. No participant usability acceptance is claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
-**Latest delivery:** UX-04 implements focused editing and browser-qualified device parity on merged UX-03 #162. Unified selection, gesture history/cancellation, searchable favorites, responsive sheets and retained viewport behavior are documented in [the UX-04 handoff](./UX-04-HANDOFF.md). The [UX-03 handoff](./UX-03-HANDOFF.md) retains the action registry and design foundation contract. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
+**Latest implementation:** UX-05 adds explicit note publication, secret discovery, hidden entities, a serializable player projection, read-only player preview, and player PNG/SVG output on merged UX-04 #163. See [the UX-05 handoff](./UX-05-HANDOFF.md) for the visibility policy, compatibility, Chromium evidence, and open follow-ups. The existing DM view remains a trusted authoring surface, not the player preview. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
 
 ## 1. Product direction
 
@@ -494,6 +494,8 @@ Resolve one decision at a time with the owner: local-first release scope; migrat
 
 ### UX-05: Audience-safe content and player preview
 
+**Status:** Implemented with Chromium production qualification on September 10, 2026. Firefox/WebKit reruns remain open because the external browser SDK could not be restored through the available package registries. Exact-head CI and PR review remain landing gates. [UX-05-HANDOFF.md](./UX-05-HANDOFF.md) documents the surface policy and conservative rendering limitations.
+
 **Priority:** P0. **Depends on:** UX-01 and UX-03.
 
 **Deliverables:** Explicit note publication/private text, discovery state for secrets, audience projection, and read-only player components. Replace misleading no-op mutation affordances. Apply the contract across canvas, minimap, initiative, notes, accessibility text, previews, and exports.
@@ -686,8 +688,8 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-01 | Foundations merged in #159; browser/storage candidate qualified, Ready with minor follow-ups | [98-pass qualification, provenance and limitations](./UX-01-QUALIFICATION.md); [repository/recovery handoff](./UX-01-HANDOFF.md). Focus-return follow-up and later device/release gates remain; UX-00 research is deferred with zero participants; UX-09 gates are not waived |
 | UX-02 | Implemented and browser-qualified | [Production library, creation, migration contract, and actual evidence](./UX-02-HANDOFF.md): 519 unit/component tests, 33 native library scenario-engine passes, three-engine production creation and stopped-origin offline journeys. UX-00 research remains deferred; UX-09 acceptance is not claimed |
 | UX-03 | Merged in #162 | [Production shell, action migration and design tokens](./UX-03-HANDOFF.md) |
-| UX-04 | Implemented and browser-qualified | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); exact-head CI/Agent Merge and later physical-device/research gates remain |
-| UX-05 | Not started | Visibility and player projection |
+| UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
+| UX-05 | Implemented; Chromium qualified; cross-browser follow-up open | [Publication, projection, discovery, evidence and limitations](./UX-05-HANDOFF.md); PR/CI landing and later release gates remain |
 | UX-06 | Not started | Session lifecycle and local display |
 | UX-07 | Not started | Art vertical slice and pack pipeline |
 | UX-08 | Not started | Export and production offline |
