@@ -6,7 +6,7 @@ import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from '../utils/tokenVisibility';
 import { ICON_BY_ID } from '../utils/iconLibrary';
-import { getStampDef } from '../utils/stampCatalog';
+import { drawPlacedStamp } from './canvasStamps';
 import { getCachedPaperTexture } from '../utils/paperTexture';
 import { drawEdgeBlending } from '../utils/edgeBlend';
 import { drawHandDrawn } from '../utils/handDrawn';
@@ -984,107 +984,6 @@ function drawRoomShapeOverlay(
   ctx.restore();
 }
 
-/** Render a placed stamp on the canvas. The stamp is drawn as an SVG path
- * scaled to fit a 1-tile cell (times scale factor), respecting rotation,
- * flip, and opacity. */
-function drawStamp(
-  ctx: CanvasRenderingContext2D,
-  stamp: PlacedStamp,
-  tileSize: number,
-  isSelected: boolean = false,
-  customStampImages?: Map<string, HTMLImageElement>,
-  customStamps?: readonly StampDef[],
-) {
-  const def = getStampDef(stamp.stampId, customStamps);
-  if (!def) return;
-
-  const cx = (stamp.x + 0.5) * tileSize;
-  const cy = (stamp.y + 0.5) * tileSize;
-  const scale = stamp.scale || 1;
-  const drawSize = tileSize * scale;
-
-  ctx.save();
-  ctx.globalAlpha = stamp.opacity ?? 1;
-  ctx.translate(cx, cy);
-
-  if (stamp.rotation) {
-    ctx.rotate((stamp.rotation * Math.PI) / 180);
-  }
-  if (stamp.flipX) ctx.scale(-1, 1);
-  if (stamp.flipY) ctx.scale(1, -1);
-
-  // Parse viewBox to get SVG coordinate system dimensions.
-  const vb = def.viewBox.split(/\s+/).map(Number);
-  const vbW = vb[2] || 512;
-  const vbH = vb[3] || 512;
-  const svgScale = drawSize / Math.max(vbW, vbH);
-
-  ctx.translate(-drawSize / 2, -drawSize / 2);
-  ctx.scale(svgScale, svgScale);
-
-  // Render multi-path, single-path, or image.
-  if (def.imageDataUrl) {
-    const img = customStampImages?.get(stamp.stampId);
-    if (img) {
-      const vb = def.viewBox.split(/\s+/).map(Number);
-      const vbW = vb[2] || 512;
-      const vbH = vb[3] || 512;
-      ctx.drawImage(img, 0, 0, vbW, vbH);
-    }
-  } else if (def.paths && def.paths.length > 0) {
-    for (const p of def.paths) {
-      const path2d = new Path2D(p.path);
-      if (p.fill) {
-        ctx.fillStyle = p.fill;
-        ctx.fill(path2d);
-      }
-      if (p.stroke) {
-        ctx.strokeStyle = p.stroke;
-        ctx.lineWidth = p.strokeWidth ?? 1;
-        ctx.stroke(path2d);
-      }
-    }
-  } else if (def.svgPath) {
-    const path2d = new Path2D(def.svgPath);
-    ctx.fillStyle = '#4a4a4a';
-    ctx.fill(path2d);
-    ctx.strokeStyle = '#1a1a1a';
-    ctx.lineWidth = Math.max(1, 2 / svgScale);
-    ctx.stroke(path2d);
-  }
-
-  ctx.restore();
-
-  // Selection highlight ring.
-  if (isSelected) {
-    ctx.save();
-    ctx.strokeStyle = '#ffd400';
-    ctx.lineWidth = Math.max(2, tileSize * 0.08);
-    ctx.setLineDash([4, 3]);
-    const halfDraw = drawSize / 2 + 2;
-    ctx.strokeRect(cx - halfDraw, cy - halfDraw, halfDraw * 2, halfDraw * 2);
-    ctx.restore();
-  }
-
-  // Lock indicator badge.
-  if (stamp.locked) {
-    ctx.save();
-    const badgeSize = Math.max(10, tileSize * 0.25);
-    const bx = cx + drawSize / 2 - badgeSize * 0.4;
-    const by = cy - drawSize / 2 - badgeSize * 0.1;
-    ctx.fillStyle = 'rgba(0,0,0,0.6)';
-    ctx.beginPath();
-    ctx.arc(bx, by, badgeSize * 0.5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = '#ffd400';
-    ctx.font = `bold ${badgeSize * 0.7}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('🔒', bx, by);
-    ctx.restore();
-  }
-}
-
 const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   map: sourceMap,
   viewportKey,
@@ -1465,7 +1364,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // Lighting & atmosphere — ambient occlusion, stamp shadows, and color
     // grading rendered after hand-drawn overlay. Disabled in print mode.
     if (!printMode && map.lightingAtmosphere?.enabled) {
-      drawLightingAtmosphere(ctx, renderTiles, meta.width, meta.height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes);
+      drawLightingAtmosphere(ctx, renderTiles, meta.width, meta.height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes, customStamps);
     }
 
     // Light source glow halos — rendered right after the grid lines so the
@@ -1591,7 +1490,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // appear as map furniture/dressing beneath the tactical token layer.
     if (stamps.length > 0) {
       for (const stamp of stamps) {
-        drawStamp(ctx, stamp, tileSize, stamp.id === selectedPlacedStampId, customStampImagesRef.current, customStamps);
+        drawPlacedStamp(ctx, stamp, tileSize, stamp.id === selectedPlacedStampId, customStampImagesRef.current, customStamps, printMode);
       }
     }
 

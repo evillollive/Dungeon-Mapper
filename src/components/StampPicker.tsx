@@ -2,6 +2,7 @@ import React, { useState, useMemo, useCallback, useRef } from 'react';
 import type { ToolType, StampCategory, StampDef } from '../types/map';
 import { BUILT_IN_STAMPS, STAMP_CATEGORY_LABELS } from '../utils/stampCatalog';
 import { useAssetFavorites } from '../hooks/useAssetFavorites';
+import { FOLIO_THEME_ID } from '../themes/folio-v1/art';
 
 interface StampPickerProps {
   activeTool: ToolType;
@@ -11,6 +12,7 @@ interface StampPickerProps {
   onSetTool: (tool: ToolType) => void;
   onSelectStamp: (stampId: string) => void;
   onClearStamps: () => void;
+  unavailableFolioFurnishings?: boolean;
   // Custom stamps
   customStamps?: readonly StampDef[];
   onSaveCustomStamp?: (stamp: StampDef) => void;
@@ -28,6 +30,7 @@ const FILTER_CATEGORIES: FilterCategory[] = ['all', 'theme', 'furniture', 'dunge
 
 const StampPicker: React.FC<StampPickerProps> = ({
   activeTool, selectedStampId, themeId, onSetTool, onSelectStamp, onClearStamps,
+  unavailableFolioFurnishings,
   customStamps = [], onSaveCustomStamp, onDeleteCustomStamp,
 }) => {
   const [filterCategory, setFilterCategory] = useState<FilterCategory>('all');
@@ -75,6 +78,13 @@ const StampPicker: React.FC<StampPickerProps> = ({
   return (
     <div className="toolbar-section">
       <div className="toolbar-label">STAMPS</div>
+      {themeId === FOLIO_THEME_ID && <p className="folio-pack-preview">
+        Dungeon Folio furnishings v1. Choose Theme to see the eight-piece set.
+        Sizes start in a common cell scale; each placed object remains adjustable.
+      </p>}
+      {unavailableFolioFurnishings && <p role="status">
+        A saved Folio furnishing is unavailable. A placeholder is shown; its saved ID is retained.
+      </p>}
       <label className="asset-search">Search stamps<input type="search" value={query} onChange={e => setQuery(e.target.value)} /></label>
       <button type="button" className="tool-btn" aria-pressed={favoritesOnly} onClick={() => setFavoritesOnly(!favoritesOnly)}>Favorite stamps only</button>
       {error && <p role="status">{error}</p>}
@@ -168,7 +178,7 @@ const StampPicker: React.FC<StampPickerProps> = ({
                       key={i}
                       d={p.path}
                       fill={p.fill ?? 'none'}
-                      stroke={p.stroke ?? 'currentColor'}
+                      stroke={p.stroke ?? 'none'}
                       strokeWidth={p.strokeWidth ?? 20}
                     />
                   ))}

@@ -32,6 +32,7 @@ interface NavigationRailProps {
   activeFloorMaterial?: FloorMaterialId;
   onSetFloorMaterial?: (material: FloorMaterialId | undefined) => void;
   unavailableFloorMaterials?: boolean;
+  unavailableFolioFurnishings?: boolean;
   themeId: string;
   customThemes?: readonly CustomThemeDefinition[];
   onSetTool: (tool: ToolType) => void;
@@ -177,6 +178,7 @@ const NavigationRail: React.FC<NavigationRailProps> = (props) => {
             activeFloorMaterial={props.activeFloorMaterial}
             onSetFloorMaterial={props.onSetFloorMaterial}
             unavailableFloorMaterials={props.unavailableFloorMaterials}
+            unavailableFolioFurnishings={props.unavailableFolioFurnishings}
             themeId={props.themeId}
             customThemes={props.customThemes ?? []}
             onSetTool={props.onSetTool}

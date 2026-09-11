@@ -1,32 +1,35 @@
 // Development-only render contact sheet. Run with a Page on the Vite base path.
 // Production workflow coverage is in ux07Art.browser.mjs.
-export default async function runArtRenderReview(page, { materials = false } = {}) {
-  const mediaPath = materials ? 'docs/media/ux07-materials' : 'docs/media/ux07';
+export default async function runArtRenderReview(page, { materials = false, furnishings = false } = {}) {
+  const mediaPath = furnishings ? 'docs/media/ux07-furnishings' : materials ? 'docs/media/ux07-materials' : 'docs/media/ux07';
   const context = await page.context().browser().newContext({ viewport: { width: 1120, height: 1320 } });
   try {
     const tab = await context.newPage();
     await tab.goto(`${page.url().split('/Dungeon-Mapper/')[0]}/Dungeon-Mapper/`);
     await tab.waitForLoadState('networkidle');
-    const measurements = await tab.evaluate(async materials => {
+    const measurements = await tab.evaluate(async ({ materials, furnishings }) => {
       const { buildFolioReference, buildFolioMaterialsReference } = await import('/Dungeon-Mapper/src/utils/folioReference.ts');
+      const { buildFolioFurnishingReference } = await import('/Dungeon-Mapper/src/utils/folioFurnishingReference.ts');
       const { renderMapToCanvas } = await import('/Dungeon-Mapper/src/utils/renderMap.ts');
       const { exportMapSVG } = await import('/Dungeon-Mapper/src/utils/export.ts');
       const { getTheme } = await import('/Dungeon-Mapper/src/themes/index.ts');
       const { folioCacheSize, clearFolioCache } = await import('/Dungeon-Mapper/src/themes/folio-v1/art.ts');
       const { floorMaterialCacheSize, clearFloorMaterialCache } = await import('/Dungeon-Mapper/src/themes/folio-v1/materials.ts');
-      const map = (materials ? buildFolioMaterialsReference() : buildFolioReference()).levels[0];
+      const map = (furnishings ? buildFolioFurnishingReference() : materials ? buildFolioMaterialsReference() : buildFolioReference()).levels[0];
       const theme = getTheme(map.meta.theme);
       const images = [];
       const render = (name, source, opts = {}) => {
-        const canvas = renderMapToCanvas(source, { themeId: source.meta.theme, tileSize: 16, ...opts });
+        const canvas = renderMapToCanvas(source, { themeId: source.meta.theme, tileSize: furnishings ? 32 : 16, ...opts });
         images.push({ name, url: canvas.toDataURL() });
       };
-      if (materials) {
+      if (furnishings) {
+        render('Before / floor plan', { ...map, stamps: [] });
+      } else if (materials) {
         render('Before / approved flagstone', { ...map, tiles: map.tiles.map(row => row.map(tile => ({ ...tile, floorMaterial: undefined }))) });
       } else {
         render('Before / original Dungeon', { ...map, meta: { ...map.meta, theme: 'dungeon' } });
       }
-      render(materials ? 'After / wood, earth and flagstone' : 'After / Dungeon Folio v1', map);
+      render(furnishings ? 'After / eight-piece furnishing kit' : materials ? 'After / wood, earth and flagstone' : 'After / Dungeon Folio v1', map);
       render('Player / projected geography', map, { viewMode: 'player' });
       render('Print / semantic monochrome', map, { printMode: true });
       const nativeCreate = URL.createObjectURL;
@@ -75,8 +78,10 @@ export default async function runArtRenderReview(page, { materials = false } = {
       style.textContent = 'html,body{height:auto!important;overflow:visible!important}body{margin:0;background:#171e21;color:#eee7ce;font:16px sans-serif;padding:24px}h1{margin:0 0 8px}p{margin:0 0 20px;color:#b6baa9}.sheets{display:grid;grid-template-columns:1fr 1fr;gap:20px}figure{margin:0}figcaption{margin:0 0 8px}img{width:100%;display:block}#zooms{display:none}#zooms figure{margin:20px 0}#zooms img{width:auto;max-width:none}';
       document.head.append(style);
       document.body.replaceChildren();
-      const title = document.createElement('h1'); title.textContent = materials ? "The Warden's Rest / floor materials v1" : 'The Quiet Cistern / Dungeon Folio v1';
-      const subtitle = document.createElement('p'); subtitle.textContent = materials
+      const title = document.createElement('h1'); title.textContent = furnishings ? "The Keeper's Hall / furnishings v1" : materials ? "The Warden's Rest / floor materials v1" : 'The Quiet Cistern / Dungeon Folio v1';
+      const subtitle = document.createElement('p'); subtitle.textContent = furnishings
+        ? 'Top-down furniture, centered placement and consistent cast shadows. Furnishing review pending.'
+        : materials
         ? 'Worn boards, soft earth, quiet flagstone. Identical movement and sight rules. Material review pending.'
         : 'Same geometry. Quiet floors, continuous walls, explicit player publication. Art reference.';
       document.body.append(title, subtitle);
@@ -93,7 +98,7 @@ export default async function runArtRenderReview(page, { materials = false } = {
       zooms.forEach(({ zoom, url }) => zoomSheet.append(figure({ name: zoom, url })));
       document.body.append(zoomSheet);
       return { coldRenderMs: cold, warmMedianMs: timings[5], warmMaxMs: timings.at(-1), cacheEntries: folioCacheSize(), floorCacheEntries: floorMaterialCacheSize(), dimensions: '128 x 128', tileSize: 16 };
-    }, materials);
+    }, { materials, furnishings });
     await tab.screenshot({ path: `${mediaPath}/contact-sheet.png`, fullPage: true });
     await tab.evaluate(() => {
       document.querySelector('.sheets').style.display = 'none';

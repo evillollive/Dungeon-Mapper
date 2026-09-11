@@ -4,6 +4,8 @@ import type { TileTheme } from '../themes/index';
 import { getPaperTint } from '../themes/index';
 import { ICON_BY_ID } from './iconLibrary';
 import { getStampDef } from './stampCatalog';
+import { folioStampShadowSVG } from './folioFurnishingRender';
+import { getFolioFurnishing } from '../assets/folio-furnishings-v1/catalog';
 import { renderMapToCanvas } from './renderMap';
 import { generatePaperTexture } from './paperTexture';
 import { drawEdgeBlending } from './edgeBlend';
@@ -210,7 +212,7 @@ export function exportMapSVG(
     laCanvas.width = svgW;
     laCanvas.height = svgH;
     const laCtx = laCanvas.getContext('2d')!;
-    drawLightingAtmosphere(laCtx, tiles, width, height, tileSize, map.lightingAtmosphere, map.stamps ?? [], []);
+    drawLightingAtmosphere(laCtx, tiles, width, height, tileSize, map.lightingAtmosphere, map.stamps ?? [], opts.customThemes ?? [], opts.customStamps);
     const laDataUrl = laCanvas.toDataURL('image/png');
     svg += `<image xlink:href="${escapeXML(laDataUrl)}" x="0" y="0" width="${svgW}" height="${svgH}"/>`;
   }
@@ -335,6 +337,7 @@ export function exportMapSVG(
   for (const stamp of map.stamps ?? []) {
     const def = getStampDef(stamp.stampId, opts.customStamps ?? []);
     if (!def) continue;
+    svg += folioStampShadowSVG(def, stamp, tileSize);
     const cx = (stamp.x + 0.5) * tileSize;
     const cy = (stamp.y + 0.5) * tileSize;
     const scale = stamp.scale || 1;
@@ -357,11 +360,18 @@ export function exportMapSVG(
       if (!href) continue;
       svg += `<g transform="${transformAttr}"${opacity}><image href="${href}" width="${vbW}" height="${vbH}"/></g>`;
     } else if (def.paths && def.paths.length > 0) {
-      svg += `<g transform="${transformAttr}"${opacity}>`;
+      // Match Canvas opacity for each fill/stroke operation, including their overlap.
+      const folio = getFolioFurnishing(def);
+      svg += `<g transform="${transformAttr}"${folio ? '' : opacity}>`;
       for (const p of def.paths) {
         const fill = p.fill ? ` fill="${sanitizeColor(p.fill, '#4a4a4a')}"` : ' fill="none"';
         const stroke = p.stroke ? ` stroke="${sanitizeColor(p.stroke, '#1a1a1a')}" stroke-width="${p.strokeWidth ?? 1}"` : '';
-        svg += `<path d="${escapeXML(p.path)}"${fill}${stroke}/>`;
+        if (folio) {
+          if (p.fill) svg += `<path d="${escapeXML(p.path)}"${fill}${opacity}/>`;
+          if (p.stroke) svg += `<path d="${escapeXML(p.path)}" fill="none"${stroke}${opacity}/>`;
+        } else {
+          svg += `<path d="${escapeXML(p.path)}"${fill}${stroke}/>`;
+        }
       }
       svg += `</g>`;
     } else if (def.svgPath) {

@@ -4,11 +4,11 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's owner-approved dungeon foundation is merged in #167. The next wood/earth floor milestone is implemented for visual review; the full package remains incomplete. Cross-browser follow-up and release research gates remain open. No participant usability acceptance is claimed.
+**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's dungeon foundation and approved wood/earth materials are merged in #167 and #168. The eight-piece furnishing reference is implemented for visual review; the full package remains incomplete. Cross-browser follow-up and release research gates remain open. No participant usability acceptance is claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
-**Latest implementation:** Following the approved dungeon foundation in #167, UX-07 adds paintable worn-wood and earth finishes and The Warden's Rest reference sample. See the [materials comparison](./media/ux07-materials/contact-sheet.png) and scoped record below. The Quiet Cistern and original flagstone artwork remain unchanged. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
+**Latest implementation:** Following merged materials #168, UX-07 adds eight original top-down furnishings and The Keeper's Hall reference room. See the [individual pieces and room preview](./media/ux07-furnishings/first-preview.png) and [output contact sheet](./media/ux07-furnishings/contact-sheet.png). Prior sample artwork and stamp IDs remain unchanged. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
 
 ## 1. Product direction
 
@@ -677,6 +677,67 @@ and leaves original evidence files untouched. Both use isolated browser
 contexts. Local qualification used an already-installed Playwright SDK and
 Chrome; no browser package or lockfile change is part of this milestone.
 
+**Third bounded milestone, September 11, 2026: eight-piece furnishing reference**
+
+The owner approved the materials, then authorized landing #168 and building
+table, chair, bed, shelf, crate, barrel, altar and rubble before token work.
+#168 merged at `2da403f` after its approved head passed CI. This furnishing
+slice is implemented but still awaits its own owner visual approval.
+
+Open **The Keeper's Hall** from samples, or use **Dungeon Folio v1 >
+Decorate > Theme** to find the eight named Folio stamps. They are additional
+versioned assets, not replacements for the existing catalog. The reference
+is a 16 x 16 room with sleeping quarters, table seating and supplies.
+Its sixteen placements include all eight types, rotated/flipped examples,
+a private crate and a private note. Stamps remain decoration, not collision,
+movement or sight rules.
+
+The authoritative, editable `.svg` sources live in
+`src/assets/folio-furnishings-v1/`, with an AGPL notice and per-source SHA-256
+fingerprints. A deliberately restricted, path-only source reader is for
+these bundled files only, not a new user-upload admission mechanism.
+All assets use a centered 64-unit frame representing one cell at scale 1.
+Authored default scales are saved when placing a new object; explicit
+scales, legacy defaults and custom definitions overriding a built-in ID
+remain supported.
+
+Cast shadows are offset southeast in map space before rotation and flips,
+keeping a common northwest light direction. Atmosphere does not add a second
+generic shadow to these props. Print uses derived monochrome paths without
+cast shadows. SVG matches Canvas fill/stroke opacity operations, including
+overlap at partial opacity. New path caching is version-scoped and bounded
+to 128 entries; position, rotation and scale do not generate new paths.
+Unknown Folio furnishing versions retain their saved IDs, show a placeholder,
+and surface a warning in Decorate instead of disappearing.
+
+Evidence: [pieces and first room preview](./media/ux07-furnishings/first-preview.png),
+[Canvas/player/SVG/print comparison](./media/ux07-furnishings/contact-sheet.png),
+[render scales](./media/ux07-furnishings/zoom-sheet.png),
+[production editor](./media/ux07-furnishings/editor.png),
+[player](./media/ux07-furnishings/player.png), and
+[phone player viewport](./media/ux07-furnishings/player-phone.png).
+The production Chrome 152.0.7977.83 journey exercised palette selection,
+placement at the authored default scale, rotation, both flips, scale,
+partial opacity, undo/redo, reload, editable backup and player SVG.
+Targeted coverage includes source fingerprints, restricted source parsing,
+custom overrides, missing versions, shadow direction/deduplication,
+monochrome paths, cache bounds and conservative fog exclusion.
+
+The eight SVG sources total 5,006 bytes, 1,398 bytes gzip, bundled into the
+existing application chunks with no network asset requests or new dependencies.
+The current 128 x 128 render probe with the reference placements measured
+16.8 ms cold, 16.2 ms warm median and 19.1 ms warm maximum over ten warm
+samples. This is not a dense-prop stress test or release performance claim.
+`src/test/ux07Furnishings.browser.mjs` is the Page-based production journey;
+the shared render helper accepts `{ furnishings: true }`.
+The canvas stamp helper was extracted into `components/canvasStamps.ts`
+to preserve the existing module-size guardrail, not relax it.
+
+The larger furnishing catalog, token silhouettes, additional settings,
+physical print/touch/screen-reader review and cross-browser qualification
+remain outside this slice. Owner approval of the earlier floors does not
+approve these new furnishing designs.
+
 **Deliverables:** ART-01 through ART-04, ART-06 through ART-08 for the initial release, plus asset manifest/provenance, pack/version selection, previews, deterministic variants, caching, and fallbacks. ART-05/09 extend after the dungeon slice is approved.
 
 **Implementation anchors:** `src/themes/*`, existing art utilities/catalogs, `artStylePresets.ts`, `MapCanvas.tsx`, `renderMap.ts`, `export.ts`, new versioned asset directories.
@@ -842,7 +903,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; Chromium qualified; cross-browser follow-up open | [Publication, projection, discovery, evidence and limitations](./UX-05-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; production Chromium two-window qualified | [Session lifecycle, isolated persistence, display protocol and evidence](./UX-06-HANDOFF.md); Firefox/WebKit and later release gates remain |
-| UX-07 | Foundation merged in #167; wood/earth appearance approved for landing in #168 | [Materials and outputs](./media/ux07-materials/contact-sheet.png); eight-piece furnishings are next, with a separate visual review. Token sets and remaining art packages are still open |
+| UX-07 | Foundation and materials merged in #167/#168; eight-piece furnishing reference awaiting visual approval | [Furnishing pieces and room](./media/ux07-furnishings/first-preview.png); token sets and remaining art packages are still open |
 | UX-08 | Not started | Export and production offline |
 | UX-09 | Not started | Release qualification |
 | UX-10 | Deferred | Explicit approval of remote scope |

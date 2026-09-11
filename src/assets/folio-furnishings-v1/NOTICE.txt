@@ -1,0 +1,20 @@
+Dungeon Folio furnishings 1.0.0
+Copyright (C) 2026 Dungeon Mapper contributors
+SPDX-License-Identifier: AGPL-3.0-or-later
+
+Eight original top-down SVG furnishings authored for Dungeon Mapper with
+GitHub Copilot assistance: table, chair, bed, shelf, crate, barrel, altar,
+and rubble. No third-party artwork, fonts or textures are included.
+
+The .svg files are editable, authoritative path-only sources. catalog.ts
+admits this deliberately restricted format and derives monochrome paths.
+manifest.ts records stable IDs, source fingerprints and nominal sizing.
+
+All artwork uses a centered 64-unit square frame. A scale of 1 is one
+map cell; default scales vary by object, and are saved on placement.
+Frames and shadows are decorative, not collision or line-of-sight rules.
+Cast shadows use a common map-space southeast offset and are suppressed
+in print. Existing stamps and previously saved IDs are not replaced.
+
+Distributed under the GNU Affero General Public License, version 3 or
+later. See the repository LICENSE for terms and warranty disclaimer.
