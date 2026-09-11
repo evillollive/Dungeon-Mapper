@@ -40,6 +40,32 @@ describe('canvas gesture commit boundaries', () => {
     HTMLCanvasElement.prototype.hasPointerCapture = () => true;
   });
   afterEach(() => { vi.restoreAllMocks(); vi.unstubAllGlobals(); });
+  it('updates cursor coordinates without repainting map art', () => {
+    const p = { ...props(), customThemes: [], customStamps: [] };
+    const context = vi.spyOn(HTMLCanvasElement.prototype, 'getContext');
+    render(<MapCanvas {...p} />);
+    const canvas = screen.getByRole('application');
+    const initialDraws = context.mock.calls.length;
+    pointer(canvas, 'pointermove', 2, 3);
+    expect(screen.getByText('X:2 Y:3')).toBeInTheDocument();
+    expect(context).toHaveBeenCalledTimes(initialDraws);
+    pointer(canvas, 'pointermove', 4, 5);
+    expect(screen.getByText('X:4 Y:5')).toBeInTheDocument();
+    expect(context).toHaveBeenCalledTimes(initialDraws);
+  });
+  it.each(['marker', 'light', 'select', 'room-poly'] as const)('retains live %s cursor previews', activeTool => {
+    const p = { ...props(), customThemes: [], customStamps: [] };
+    const context = vi.spyOn(HTMLCanvasElement.prototype, 'getContext');
+    render(<MapCanvas {...p} activeTool={activeTool} hasClipboard clipboardSize={{ w: 2, h: 2 }} />);
+    const canvas = screen.getByRole('application');
+    if (activeTool === 'room-poly') {
+      pointer(canvas, 'pointerdown', 1, 1);
+      pointer(canvas, 'pointerup', 1, 1);
+    }
+    const initialDraws = context.mock.calls.length;
+    pointer(canvas, 'pointermove', 2, 3);
+    expect(context.mock.calls.length).toBeGreaterThan(initialDraws);
+  });
   it.each(['mouse', 'touch', 'pen'])('groups a %s paint stroke and interpolates skipped cells', type => {
     const p = props();
     render(<MapCanvas {...p} />);

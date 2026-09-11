@@ -142,6 +142,9 @@ worker updates. Do not run both suites concurrently on the same custom port.
 
 CI runs all five journeys plus UX-08 for Chromium, Firefox and WebKit, with
 independent engine jobs, no fail-fast cancellation and fourteen-day artifacts.
+It also runs the F05 diagnostic and its delayed-draw probe regression described
+below. Their behavior assertions block CI, but their latency values do not
+certify a release or impose machine-dependent timing thresholds.
 The aggregate **Browser qualification** check fails when any engine fails,
 is skipped or is cancelled. The active default-branch ruleset requires that
 aggregate and **Build and test**, both strict/up-to-date. **Build and test** also treats lint errors as
@@ -158,3 +161,60 @@ generation changes, so callbacks retained from a previous project are rejected.
 See [UX-09 qualification status](./UX-09-HANDOFF.md) for actual coverage and
 remaining human/device/performance gates. Passing these jobs is not an
 accessibility conformance or full-release certification.
+
+## Dense-map performance diagnostics (F05)
+
+`src/test/denseMapFixture.mjs` builds a deterministic 128 x 128 dungeon with
+100 tokens (eight party sight sources), 200 versioned Folio furnishings,
+100 notes, sixteen room shapes, a river, wall/path vectors, twelve lights,
+dynamic fog, and classic paper/blending/atmosphere effects. It is imported
+through the real production Library, not a hidden application fixture route.
+
+```bash
+QA_OUTPUT=/absolute/path/to/f05 npm run test:browser -- --grep=F05
+# Reuse dist, restrict to Chromium, and apply a labeled CPU stress probe:
+QA_CPU_THROTTLE=4 QA_OUTPUT=/absolute/path/to/f05-throttled \
+  npm run test:browser:run -- --project=chromium --grep=F05
+```
+
+The same strict-port server, dependency lock, failure artifacts and three-minute
+per-test limit apply. `QA_CPU_THROTTLE` accepts 1 through 20, defaults to 1,
+and rejects non-Chromium diagnostic runs when greater than 1. CPU throttling
+does not reproduce a slower GPU, memory pressure, thermal behavior or a real
+mobile device. An incomplete stress run is a failure, not a shortened pass.
+
+Each diagnostic performs three warm reloads with isolated initial storage,
+1440 x 900 viewport and DPR 1. Each reload samples 24 hovers, 24 paint-drag
+updates, twelve token-drag updates, 24 keyboard pans, and separate paint/token
+start or commit events. It checks coordinate feedback, imported density/art,
+persisted edits and single-action undo before accepting the run.
+
+Timing begins at a trusted browser event's timestamp. Painting and token edits
+must reach the existing main-canvas render (backing-width assignment), finish
+its synchronous drawing stack, and reach two subsequent animation frames.
+Hover and pan use the frame opportunity without requiring a map redraw.
+The separate probe regression deliberately delays drawing by 100 ms to ensure
+an earlier animation frame cannot prematurely end an edit measurement.
+This is an event-to-render/frame **proxy**, not physical input-to-paint or INP.
+Browser scheduling and headless frame cadence differ between engines.
+
+Warm loading runs from navigation start through visible editor controls,
+saved-state readiness and a frame opportunity. It includes browser-driver
+assertion overhead, so it is a conservative diagnostic, not an isolated
+shell-ready performance mark. Cold load, offline load and the roadmap's agreed
+reference-device loading gate are not established by this measurement.
+
+`f05-results.json` retains every sample, nearest-rank median/p95/max, queue
+delay, drawing times, supported long-task observations, navigation/resource
+entries, browser/OS/CPU/RAM, DPR, throttle rate, source revision, dirty-worktree
+flag and completion status. Incomplete runs keep their completed repetitions
+and the runner's failure evidence; missing repetitions are never treated as
+zero-latency samples. Chromium's first repetition additionally produces
+`f05-chromium-trace.json` and `f05-chromium.cpuprofile`, and is explicitly
+marked profiled. Compare profiled and unprofiled runs separately. Timelines
+contain the `f05:` input/frame marks. Later repetitions do not use CDP profiling.
+
+There are deliberately no 100 ms/2-second CI assertions before representative
+hardware and measurement methodology are agreed. Do not lower the roadmap
+targets or interpret a green diagnostic as performance acceptance.
+See [actual local results and remaining bottleneck](./UX-09-HANDOFF.md#dense-map-diagnostic-milestone).
