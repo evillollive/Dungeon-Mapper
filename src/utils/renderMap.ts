@@ -25,6 +25,7 @@ import type { TileDrawContext } from '../themes';
 import { deriveRenderableTiles } from './derivedRenderMap';
 import { drawRiverBanks, drawRiverEndpointMarkers } from './riverPolish';
 import { projectForAudience, type PlayerProjection } from './audienceProjection';
+import { assertExportSurface, MAX_TEXTURE_SIDE } from './exportPlan';
 
 // Screen-mode canvas styling (mirrored from MapCanvas.tsx).
 const SCREEN_BG = '#f4f1e4';
@@ -86,6 +87,9 @@ function drawFogFeather(
 }
 
 export interface RenderMapOptions {
+  /** Pixel-space viewport. Geometry remains in global map coordinates across pages. */
+  region?: { x: number; y: number; width: number; height: number };
+  images?: ReadonlyMap<string, HTMLImageElement>;
   /** Pixels per tile cell. At 300 DPI with 1 inch = 1 cell this is 300. */
   tileSize: number;
   /** Theme id to use for tile colors. */
@@ -147,7 +151,7 @@ export function renderMapToCanvas(
 
 export function renderPlayerProjection(
   projection: PlayerProjection,
-  opts: Pick<RenderMapOptions, 'tileSize' | 'printMode' | 'feetPerCell' | 'includeTexture' | 'includeEdgeBlend' | 'includeHandDrawn' | 'includeLighting'>,
+  opts: Omit<RenderMapOptions, 'themeId' | 'viewMode' | 'customThemes' | 'customStamps'>,
 ): HTMLCanvasElement {
   return renderMapDataToCanvas(projection.map, {
     ...opts, viewMode: 'player', themeId: projection.map.meta.theme ?? 'dungeon',
@@ -160,7 +164,7 @@ function renderMapDataToCanvas(
   opts: RenderMapOptions,
 ): HTMLCanvasElement {
   const { tileSize, themeId, printMode = false, viewMode = 'gm', feetPerCell = 0, customThemes = [], includeTexture = true, includeEdgeBlend = true, includeHandDrawn = true, includeLighting = true } = opts;
-  const theme = getThemeWithCustom(themeId, customThemes);
+  const theme = getThemeWithCustom(themeId, customThemes, opts.images);
   const { width, height } = map.meta;
   const isPlayerView = viewMode === 'player';
   const fogActive = map.fogEnabled ?? false;
@@ -169,24 +173,47 @@ function renderMapDataToCanvas(
 
   const canvasW = width * tileSize;
   const canvasH = height * tileSize;
+  const region = opts.region ?? { x: 0, y: 0, width: Math.round(canvasW), height: Math.round(canvasH) };
+  assertExportSurface(region.width, region.height);
+  if (!Number.isFinite(tileSize) || tileSize <= 0 || !Number.isFinite(region.x) || !Number.isFinite(region.y)) {
+    throw new Error('Invalid export viewport.');
+  }
 
   const canvas = document.createElement('canvas');
-  canvas.width = canvasW;
-  canvas.height = canvasH;
-  const ctx = canvas.getContext('2d')!;
+  canvas.width = region.width;
+  canvas.height = region.height;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas rendering is unavailable. Try another browser.');
+  ctx.translate(-region.x, -region.y);
+  ctx.beginPath();
+  ctx.rect(0, 0, canvasW, canvasH);
+  ctx.clip();
 
   // Background
   ctx.fillStyle = printMode ? PRINT_BG : SCREEN_BG;
   ctx.fillRect(0, 0, canvasW, canvasH);
 
+  const background = map.backgroundImage;
+  const backgroundImage = background && opts.images?.get(background.dataUrl);
+  if (background && backgroundImage) {
+    ctx.save();
+    ctx.globalAlpha = background.opacity;
+    ctx.drawImage(backgroundImage, background.offsetX * tileSize, background.offsetY * tileSize,
+      backgroundImage.naturalWidth * background.scale * tileSize / map.meta.tileSize,
+      backgroundImage.naturalHeight * background.scale * tileSize / map.meta.tileSize);
+    ctx.restore();
+  }
+
   // Paper texture layer — rendered behind tiles, disabled in print mode
   if (!printMode && includeTexture && map.paperTexture?.enabled) {
     const tint = map.paperTexture.tintOverride ?? getPaperTint(themeId);
-    const texCanvas = getCachedPaperTexture(canvasW, canvasH, map.paperTexture, tint);
+    const scale = Math.min(1, MAX_TEXTURE_SIDE / Math.max(canvasW, canvasH));
+    const texCanvas = getCachedPaperTexture(Math.max(1, Math.round(canvasW * scale)),
+      Math.max(1, Math.round(canvasH * scale)), map.paperTexture, tint);
     if (texCanvas) {
       ctx.save();
       ctx.globalAlpha = map.paperTexture.opacity;
-      ctx.drawImage(texCanvas, 0, 0);
+      ctx.drawImage(texCanvas, 0, 0, canvasW, canvasH);
       ctx.restore();
     }
   }
@@ -200,14 +227,14 @@ function renderMapDataToCanvas(
   };
 
   // Tiles
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
+  for (let y = Math.max(0, Math.floor(region.y / tileSize) - 1); y < Math.min(height, Math.ceil((region.y + region.height) / tileSize) + 1); y++) {
+    for (let x = Math.max(0, Math.floor(region.x / tileSize) - 1); x < Math.min(width, Math.ceil((region.x + region.width) / tileSize) + 1); x++) {
       const tile = tiles[y]?.[x];
       if (!tile) continue;
       if (printMode) {
         drawPrintTile(ctx, getSemanticTileType(tile.type, customThemes), x, y, tileSize);
       } else if (tile.type !== 'empty') {
-        const tileTheme = tile.theme ? getThemeWithCustom(tile.theme, customThemes) : theme;
+        const tileTheme = tile.theme ? getThemeWithCustom(tile.theme, customThemes, opts.images) : theme;
         tileTheme.drawTile(ctx, tile.type, x, y, tileSize, tileDrawContext);
         if (isBuiltInTileType(tile.type) && !tileTheme.includesTileGlyphs) {
           drawTileOverlay(ctx, tile.type, x, y, tileSize, tileTheme.tileColors[tile.type]);
@@ -362,7 +389,7 @@ function renderMapDataToCanvas(
 
   // Stamps
   for (const stamp of map.stamps ?? []) {
-    renderStamp(ctx, stamp, tileSize, opts.customStamps, printMode);
+    renderStamp(ctx, stamp, tileSize, opts.customStamps, printMode, opts.images);
   }
 
   // Tokens
@@ -609,9 +636,16 @@ function renderStamp(
   tileSize: number,
   customStamps?: readonly StampDef[],
   printMode = false,
+  images?: ReadonlyMap<string, HTMLImageElement>,
 ) {
   const def = getStampDef(stamp.stampId, customStamps);
-  if (!def) return;
+  if (!def) {
+    ctx.save();
+    ctx.strokeStyle = '#777777';
+    ctx.strokeRect(stamp.x * tileSize, stamp.y * tileSize, tileSize, tileSize);
+    ctx.restore();
+    return;
+  }
   const renderedPaths = stampPaths(def, printMode);
   drawFolioStampShadow(ctx, def, stamp, tileSize, printMode);
 
@@ -635,7 +669,10 @@ function renderStamp(
   ctx.translate(-drawSize / 2, -drawSize / 2);
   ctx.scale(svgScale, svgScale);
 
-  if (renderedPaths && renderedPaths.length > 0) {
+  const image = def.imageDataUrl && images?.get(def.imageDataUrl);
+  if (image) {
+    ctx.drawImage(image, 0, 0, vbW, vbH);
+  } else if (renderedPaths && renderedPaths.length > 0) {
     for (const p of renderedPaths) {
       const path2d = stampPath(def, p.path);
       if (p.fill) { ctx.fillStyle = p.fill; ctx.fill(path2d); }
@@ -648,6 +685,10 @@ function renderStamp(
     ctx.strokeStyle = '#1a1a1a';
     ctx.lineWidth = Math.max(1, 2 / svgScale);
     ctx.stroke(path2d);
+  } else if (def.imageDataUrl) {
+    ctx.strokeStyle = '#777777';
+    ctx.lineWidth = 2 / svgScale;
+    ctx.strokeRect(0, 0, vbW, vbH);
   }
   ctx.restore();
 }

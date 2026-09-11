@@ -1,0 +1,7 @@
+.offline-status { position: relative; flex-shrink: 0; border: 1px solid var(--border, #777); border-radius: 7px; background: var(--surface-panel, #e7e8df); color: var(--text-primary, #303b30); font: 12px/1.4 "Avenir Next", Avenir, sans-serif; }
+.offline-status summary { min-height: 44px; padding: 13px; cursor: pointer; }
+.offline-status > div { position: absolute; top: 100%; right: 0; z-index: 1000; width: min(320px, calc(100vw - 32px)); display: grid; gap: 12px; padding: 16px; border: 1px solid var(--border, #777); border-radius: 7px; background: var(--surface-panel, #e7e8df); box-shadow: 0 3px 16px #0004; }
+.offline-status button { min-height: 44px; padding: 6px 12px; border: 1px solid #6d7866; border-radius: 5px; background: #fffdf7; color: #303b30; font: inherit; cursor: pointer; }
+.offline-status button:focus-visible { outline: 3px solid #315b75; outline-offset: 2px; }
+.offline-status p { flex-basis: 100%; margin: 2px 0; text-align: center; }
+@media (max-width: 767px) { .offline-status > div { position: fixed; top: 72px; left: 16px; right: auto; } }

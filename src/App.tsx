@@ -15,7 +15,8 @@ import CreateProjectDialog from './components/CreateProjectDialog';
 import GenerateHub from './components/GenerateHub';
 import CustomThemeDialog from './components/CustomThemeDialog';
 import ShortcutsHelp from './components/ShortcutsHelp';
-import ExportDialog from './components/ExportDialog';
+import ExportDialog, { type ExportChoice } from './components/ExportDialog';
+import { registerUpdateGuard } from './utils/appUpdate';
 import SceneTemplateDialog from './components/SceneTemplateDialog';
 import SelectionInspector from './components/SelectionInspector';
 import EditingObjects from './components/EditingObjects';
@@ -39,7 +40,6 @@ import { useEditorSelection, type RegionSelection } from './hooks/useEditorSelec
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
 import { useOfflineStatus } from './hooks/useOfflineStatus';
 import { SAVE_PHASE_LABELS } from './utils/saveStatus';
-import { exportMapSVG, exportHighResPNG } from './utils/export';
 import { projectForAudience } from './utils/audienceProjection';
 import { deriveRenderableTiles } from './utils/derivedRenderMap';
 import { isTokenFogged } from './utils/tokenVisibility';
@@ -125,7 +125,7 @@ function App() {
   const {
     map,
     project,
-    saveState, retrySave, originalStoredData, recoverProjectData, projectId, switchProject, setProjectName, refreshCheckpoints, projectGeneration,
+    saveState, retrySave, updateBlocker, originalStoredData, recoverProjectData, projectId, switchProject, setProjectName, refreshCheckpoints, projectGeneration,
     forgetDeletedProject,
     activeLevelIndex,
     setTile,
@@ -254,7 +254,6 @@ function App() {
   const [uiScale, setUIScale] = useState<number>(loadInitialUIScale);
   const [activePanel, setActivePanel] = useState<EditorPanel>('build');
   const [showSettings, setShowSettings] = useState(false);
-  const [showExportMenu, setShowExportMenu] = useState(false);
   const [showSaveDetails, setShowSaveDetails] = useState(false);
   const [preserveOnThemeSwitch, setPreserveOnThemeSwitch] = useState<boolean>(
     loadInitialPreserveOnThemeSwitch
@@ -275,7 +274,9 @@ function App() {
   }, []);
   const [showCustomThemeDialog, setShowCustomThemeDialog] = useState<boolean>(false);
   const [showShortcutsHelp, setShowShortcutsHelp] = useState<boolean>(false);
-  const [showExportDialog, setShowExportDialog] = useState<boolean>(false);
+  const [exportChoice, setExportChoice] = useState<ExportChoice | null>(null);
+  useEffect(() => registerUpdateGuard(() => exportChoice
+    ? 'Close the export dialog before updating.' : updateBlocker()), [exportChoice, updateBlocker]);
   const [showSceneTemplateDialog, setShowSceneTemplateDialog] = useState<boolean>(false);
   const [showCommandPalette, setShowCommandPalette] = useState<boolean>(false);
   const { selection: inspected, select: selectObject } = useEditorSelection(`${projectGeneration}:${activeLevelIndex}:${viewMode}`, map);
@@ -749,10 +750,7 @@ function App() {
     setTiles(tiles.map(t => ({ ...t, type: 'empty' as const })));
   }, [setTiles]);
 
-  const handleExportSVG = useCallback(() => {
-    const theme = getThemeWithCustom(themeId, customThemes);
-    exportMapSVG(map, theme, id => getThemeWithCustom(id, customThemes), { viewMode: 'gm', customThemes, customStamps });
-  }, [map, themeId, customThemes, customStamps]);
+  const handleExportSVG = useCallback(() => setExportChoice('image-svg'), []);
 
   // Auto-clear the polite live-region message a second after announcing
   // it, so the same string can be announced again on the next action.
@@ -791,8 +789,8 @@ function App() {
 
   const triggerNewMap = useCallback(() => headerRef.current?.triggerNew(), []);
   const triggerImport = useCallback(() => headerRef.current?.triggerImport(), []);
-  const triggerExportJSON = useCallback(() => headerRef.current?.triggerExportJSON(), []);
-  const triggerExportPNG = useCallback(() => headerRef.current?.triggerExportPNG(), []);
+  const triggerExportJSON = useCallback(() => setExportChoice('backup'), []);
+  const triggerExportPNG = useCallback(() => setExportChoice('image'), []);
   const zoomInCanvas = useCallback(() => canvasRef.current?.zoomIn(), []);
   const zoomOutCanvas = useCallback(() => canvasRef.current?.zoomOut(), []);
   const zoomResetCanvas = useCallback(() => canvasRef.current?.zoomReset(), []);
@@ -822,7 +820,7 @@ function App() {
     triggerExportJSON,
     triggerExportPNG,
     triggerExportSVG: handleExportSVG,
-    openExportDialog: () => setShowExportDialog(true),
+    openExportDialog: () => setExportChoice('print'),
     cycleTheme,
     cycleActiveTile,
     zoomIn: zoomInCanvas,
@@ -899,7 +897,7 @@ function App() {
     } },
     { id: 'file.recovery', label: 'Save health & recovery', action: () => setShowSaveDetails(true) },
     { id: 'dialog.settings', label: 'Project settings', action: () => setShowSettings(true) },
-    { id: 'dialog.export', label: 'Export', action: () => setShowExportMenu(true) },
+    { id: 'dialog.export', label: 'Export', action: () => setExportChoice('share') },
     { id: 'dialog.audience', label: 'Audience & secrets', action: () => setShowAudienceSettings(true) },
     { id: 'view.playerPreview', label: 'Preview as player', action: () => setShowPlayerPreview(true) },
     { id: 'session.prepare', label: 'Prepare session', action: () => {
@@ -911,15 +909,8 @@ function App() {
       url.search = new URLSearchParams({ prepare: projectId }).toString();
       window.location.assign(url);
     } },
-    { id: 'file.playerPng', label: 'Player PNG (published content)', action: () => {
-      void exportHighResPNG(map, { dpi: map.meta.tileSize, pagePresetId: 'none', themeId, printMode,
-        viewMode: 'player', customThemes, customStamps }).catch(error => {
-        window.alert(error instanceof Error ? error.message : 'Player PNG export failed. The project is unchanged.');
-      });
-    } },
-    { id: 'file.playerSvg', label: 'Player SVG (published content)', action: () => {
-      exportMapSVG(map, getThemeWithCustom(themeId, customThemes), undefined, { viewMode: 'player', customThemes, customStamps });
-    } },
+    { id: 'file.playerPng', label: 'Player PNG (published content)', action: () => setExportChoice('share') },
+    { id: 'file.playerSvg', label: 'Player SVG (published content)', action: () => setExportChoice('share-svg') },
     { id: 'dialog.templates', label: 'Scene templates', action: () => setShowSceneTemplateDialog(true) },
     { id: 'dialog.customTheme', label: 'Custom theme builder', action: () => setShowCustomThemeDialog(true) },
   ];
@@ -1096,10 +1087,7 @@ function App() {
         onSetProjectName={setProjectName}
         settingsOpen={showSettings}
         onCloseSettings={() => setShowSettings(false)}
-        exportOpen={showExportMenu}
-        onCloseExport={() => setShowExportMenu(false)}
         saveLabel={`${SAVE_PHASE_LABELS[saveState.phase]}${offline ? ' / Offline' : ''}`}
-        getCanvas={() => canvasRef.current?.getCanvas() ?? null}
         viewMode={viewMode}
       />
       {(showSaveDetails || ['failed', 'conflict', 'replacing'].includes(saveState.phase)) && <div className="shell-save-details">
@@ -1563,15 +1551,18 @@ function App() {
           onClose={() => setShowShortcutsHelp(false)}
         />
       )}
-      {showExportDialog && (
+      {exportChoice && (
         <ExportDialog
+          key={exportChoice}
+          project={project}
+          initialChoice={exportChoice}
           map={map}
           themeId={themeId}
           customThemes={customThemes}
           customStamps={customStamps}
           printMode={printMode}
           viewMode={viewMode}
-          onClose={() => setShowExportDialog(false)}
+          onClose={() => setExportChoice(null)}
           feetPerCell={measureFeetPerCell}
         />
       )}

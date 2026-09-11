@@ -48,7 +48,7 @@ describe('ExportDialog', () => {
         onClose={onClose}
       />
     );
-    expect(screen.getByText(/Print-Optimized Export/)).toBeInTheDocument();
+    expect(screen.getByRole('dialog', { name: 'Export' })).toBeInTheDocument();
   });
 
   it('calls onClose when cancel button clicked', () => {

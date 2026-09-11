@@ -90,15 +90,18 @@
   await page.getByRole('button', { name: 'Close player preview' }).click();
   await page.setViewportSize({ width: 1440, height: 900 });
   await action('dialog.export').click();
+  const exportDialog = page.getByRole('dialog', { name: 'Export', exact: true });
+  await exportDialog.getByLabel('Format', { exact: true }).selectOption('svg');
   const svgDownload = page.waitForEvent('download');
-  await action('file.playerSvg').click();
+  await exportDialog.getByRole('button', { name: 'Export SVG', exact: true }).click();
   const svg = await svgDownload;
   assert(svg.suggestedFilename() === 'The_Watchtower.svg', 'Private filename in player SVG');
-  await action('dialog.export').click();
+  await exportDialog.getByLabel('Format', { exact: true }).selectOption('png');
   const pngDownload = page.waitForEvent('download');
-  await action('file.playerPng').click();
+  await exportDialog.getByRole('button', { name: 'Export PNG', exact: true }).click();
   const png = await pngDownload;
-  assert(png.suggestedFilename() === 'The_Watchtower_20dpi.png', 'Private filename in player PNG');
+  assert(png.suggestedFilename() === 'The_Watchtower_64dpi.png', 'Private filename in player PNG');
+  await exportDialog.getByRole('button', { name: 'Close Export', exact: true }).click();
   await action('view.playerPreview').click();
   return { browser: page.context().browser().version(), editorUrl, layouts, snapshot: initial,
     svgFilename: svg.suggestedFilename(), pngFilename: png.suggestedFilename(),

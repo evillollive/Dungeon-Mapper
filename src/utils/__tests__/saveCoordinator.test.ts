@@ -21,6 +21,27 @@ describe('revision-aware save coordinator', () => {
   beforeEach(() => { vi.useFakeTimers(); vi.mocked(saveProject).mockReset(); });
   afterEach(() => { vi.useRealTimers(); });
 
+  it('allows updates only after all pending writes commit, never on a failed save', async () => {
+    const writer = new SaveCoordinator();
+    expect(writer.updateBlocker()).not.toBeNull();
+    writer.initialize('old', true, 'project');
+    expect(writer.updateBlocker()).toBeNull();
+    const saving = deferred<string>();
+    vi.mocked(saveProject).mockReturnValueOnce(saving.promise);
+    writer.schedule(createDefaultProject());
+    expect(writer.updateBlocker()).not.toBeNull();
+    await vi.advanceTimersByTimeAsync(500);
+    expect(writer.updateBlocker()).not.toBeNull();
+    saving.resolve('new');
+    await vi.advanceTimersByTimeAsync(1);
+    expect(writer.updateBlocker()).toBeNull();
+    vi.mocked(saveProject).mockRejectedValueOnce(new Error('Disk full'));
+    writer.schedule(createDefaultProject());
+    await vi.advanceTimersByTimeAsync(500);
+    expect(writer.getSnapshot().phase).toBe('failed');
+    expect(writer.updateBlocker()).not.toBeNull();
+  });
+
   it('detaches a permanently deleted active project without saving a phantom replacement', async () => {
     const writer = new SaveCoordinator();
     writer.initialize('a-rev', true, 'a');

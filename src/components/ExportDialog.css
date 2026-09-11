@@ -1,0 +1,39 @@
+.export-backdrop { position: fixed; inset: 0; z-index: 2000; display: grid; place-items: center; padding: clamp(8px, 2vw, 28px); background: #171714cf; }
+.export-dialog { width: min(1120px, 100%); max-height: 94dvh; overflow: auto; overscroll-behavior: contain; padding: clamp(16px, 3vw, 32px); background: var(--surface, #f4f1ea); color: var(--text, #282925); border: 1px solid #77786b; border-radius: 12px; box-shadow: 0 24px 80px #0005; font: 16px/1.5 "Avenir Next", Avenir, sans-serif; color-scheme: light; }
+.export-dialog * { box-sizing: border-box; }
+.export-dialog button, .export-dialog input, .export-dialog select { min-height: 44px; min-width: 44px; padding: 9px 12px; border: 1px solid #77786b; border-radius: 6px; background: #fffdf7; color: #282925; font: inherit; }
+.export-dialog button { cursor: pointer; }
+.export-dialog button:hover:not(:disabled) { background: #e9eddf; }
+.export-dialog button:disabled { opacity: .6; cursor: not-allowed; }
+.export-dialog :focus-visible { outline: 3px solid #315b75; outline-offset: 3px; }
+.export-heading, .export-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+.export-heading { align-items: flex-start; padding-bottom: 20px; border-bottom: 1px solid #b3b2a4; }
+.export-dialog h2 { font: 600 clamp(32px, 5vw, 48px)/1.1 Georgia, serif; margin: 8px 0; }
+.export-dialog h3 { font: 600 21px/1.3 Georgia, serif; margin: 12px 0; }
+.export-dialog p { margin: 8px 0 14px; }
+.export-eyebrow { color: #4e624a; font-size: 11px; font-weight: 800; letter-spacing: .13em; }
+.export-intents { border: 0; padding: 0; margin: 22px 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.export-intents legend { padding: 0 0 12px; font-weight: 600; }
+.export-intents button { text-align: left; display: flex; flex-direction: column; gap: 6px; padding: 16px; }
+.export-intents button > span:last-child { font-size: 13px; color: #53574e; }
+.export-intents button[aria-pressed="true"] { border: 2px solid #405b40; padding: 15px; background: #e5ecdd; }
+.export-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
+.export-fields { border: 0; padding: 0; margin: 20px 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.export-fields legend { font-weight: 700; padding: 0 0 12px; }
+.export-dialog label { display: grid; gap: 6px; font-size: 14px; }
+.export-dialog select, .export-dialog input { width: 100%; min-width: 0; }
+.export-dialog .export-check { display: flex; align-items: center; grid-column: 1 / -1; gap: 10px; }
+.export-check input { width: 22px; min-width: 22px; accent-color: #405b40; }
+.export-warning, .export-audience { border-left: 3px solid #936222; padding: 12px 16px; background: #f3e7cd; }
+.export-audience { border-color: #405b40; background: #e5ecdd; }
+.export-summary, .export-backup { border-top: 1px solid #b3b2a4; padding-top: 12px; font-size: 14px; }
+.export-preview { background: #e9e5db; padding: 18px; border: 1px solid #b3b2a4; border-radius: 8px; min-width: 0; }
+.export-preview-stage { display: grid; place-items: center; min-height: 240px; background: #d8d5ca; padding: 10px; margin-bottom: 16px; }
+.export-preview-stage canvas, .export-preview-stage img { display: block; max-width: 100%; max-height: 54dvh; width: auto; height: auto; object-fit: contain; box-shadow: 0 3px 12px #0003; }
+.export-preview p { font-size: 13px; }
+.export-footer { margin-top: 24px; padding-top: 20px; border-top: 1px solid #b3b2a4; justify-content: flex-end; flex-wrap: wrap; }
+.export-dialog .export-primary { background: #314b36; color: #fffdf7; font-weight: 700; border-color: #314b36; }
+.export-dialog .export-primary:hover:not(:disabled) { background: #213c26; }
+@media (max-width: 760px) { .export-intents { grid-template-columns: repeat(2, minmax(0, 1fr)); } .export-layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 420px) { .export-intents, .export-fields { grid-template-columns: minmax(0, 1fr); } .export-heading { gap: 10px; } .export-footer { align-items: stretch; flex-direction: column; } }
+@media (forced-colors: active) { .export-intents button[aria-pressed="true"] { outline: 3px solid Highlight; } .export-warning, .export-audience { border: 1px solid CanvasText; } }

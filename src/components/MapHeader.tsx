@@ -1,12 +1,13 @@
 import { forwardRef, useRef, useImperativeHandle, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { DungeonMap, DungeonProject } from '../types/map';
-import { exportProjectJSON, importProjectJSON, exportMapPNG } from '../utils/export';
+import { importProjectJSON } from '../utils/export';
 import type { ActionId } from '../utils/editorActions';
 import { useEditorAction } from '../contexts/EditorActionsContext';
 import ActionButton from './ActionButton';
 import Icon from './Icon';
 import ShellDialog from './ShellDialog';
+import OfflineStatus from './OfflineStatus';
 
 interface MapHeaderProps {
   map: DungeonMap;
@@ -20,20 +21,15 @@ interface MapHeaderProps {
   uiScale: number;
   uiScaleOptions: readonly number[];
   onSetUIScale: (scale: number) => void;
-  getCanvas: () => HTMLCanvasElement | null;
   viewMode: 'gm' | 'player';
   saveLabel: string;
   settingsOpen: boolean;
   onCloseSettings: () => void;
-  exportOpen: boolean;
-  onCloseExport: () => void;
 }
 
 export interface MapHeaderHandle {
   triggerNew: () => void;
   triggerImport: () => void;
-  triggerExportJSON: () => void;
-  triggerExportPNG: () => void;
 }
 
 function MenuAction({ id, onClose }: { id: ActionId; onClose: () => void }) {
@@ -62,13 +58,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>((props, ref) => {
   useImperativeHandle(ref, () => ({
     triggerNew: props.onNew,
     triggerImport: () => fileInput.current?.click(),
-    triggerExportJSON: () => exportProjectJSON(project),
-    triggerExportPNG: () => {
-      const canvas = props.getCanvas();
-      if (!canvas) { setError('Canvas unavailable. Reopen the map before exporting.'); return; }
-      exportMapPNG(canvas, map.meta.name);
-    },
-  }), [props.onNew, props.getCanvas, project, map.meta.name]);
+  }), [props.onNew]);
   const sizes = (value: number) => [...new Set([8, 16, 24, 32, 48, 64, 96, 128, value])].sort((a, b) => a - b);
   return <>
     <header className="shell-header">
@@ -77,6 +67,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>((props, ref) => {
         <strong>{project.name}</strong><small>{map.meta.name}</small>
       </button>
       <ActionButton id="file.recovery"><span role="status">{props.saveLabel}</span></ActionButton>
+      <OfflineStatus />
       <ActionButton id="view.viewMode" icon="look">{props.viewMode === 'gm' ? 'Edit' : 'DM view'}</ActionButton>
       <ActionButton id="view.playerPreview" icon="look">Player preview</ActionButton>
       <ActionButton id="session.prepare">Prepare session</ActionButton>
@@ -100,14 +91,6 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>((props, ref) => {
       'panel.notes', 'panel.encounter', 'panel.info', 'dialog.templates', 'dialog.audience', 'view.playerPreview',
       'dialog.settings', 'file.recovery', 'help.shortcuts', 'help.commandPalette',
     ]} />}
-    {props.exportOpen && <ActionMenu title="Export" onClose={props.onCloseExport} ids={[
-      'file.playerPng', 'file.playerSvg', 'file.exportJson', 'file.exportPng', 'file.exportSvg', 'file.printExport', 'view.printMode',
-    ]}>
-      <p>Player PNG and SVG use the same publication and fog policy as Player preview.
-        Editable backups and DM exports include private content.</p>
-      <p>Player artwork can contain secrets embedded in imported images. Review it before sharing.</p>
-      <p>Image resolution is separate from map dimensions, canvas zoom, and interface text size.</p>
-    </ActionMenu>}
     {props.settingsOpen && <ShellDialog title="Project settings" onClose={props.onCloseSettings}>
       <div className="settings-fields">
         <label>Project name<input value={project.name} onChange={event => props.onSetProjectName(event.target.value)} /></label>

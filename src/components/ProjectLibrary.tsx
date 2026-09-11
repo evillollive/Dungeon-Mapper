@@ -6,6 +6,7 @@ import { downloadRecoveryData } from '../utils/storage';
 import { exportProjectJSON, importProjectJSON } from '../utils/export';
 import { renderMapToCanvas } from '../utils/renderMap';
 import './ProjectLibrary.css';
+import OfflineStatus from './OfflineStatus';
 
 export function ProjectThumbnail({ item }: { item: ProjectSummary }) {
   const [attempt, setAttempt] = useState(0);
@@ -97,6 +98,7 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
   const locked = busy || disabled || reading;
   return <main className="project-library">
     <header className="library-masthead"><span>DUNGEON MAPPER / LOCAL COLLECTION</span>
+      <OfflineStatus blocked={locked} />
       <button disabled={locked} onClick={() => void run(refresh)}>Refresh library</button></header>
     <section className="library-intro">
       <div><p className="library-eyebrow">NEXT ADVENTURE, SAME TABLE</p><h1 ref={heading} tabIndex={-1}>Your maps</h1>

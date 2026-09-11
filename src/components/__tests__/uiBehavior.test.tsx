@@ -227,15 +227,17 @@ describe('ExportDialog behavior', () => {
         themeId="dungeon"
         printMode={false}
         viewMode="gm"
+        initialChoice="print"
         feetPerCell={5}
         onClose={vi.fn()}
       />,
     );
 
     fireEvent.change(screen.getByLabelText(/Resolution/i), { target: { value: '150' } });
-    fireEvent.change(screen.getByLabelText(/View Mode/i), { target: { value: 'player' } });
-    fireEvent.click(screen.getByLabelText(/Black & White/i));
-    fireEvent.click(screen.getByRole('button', { name: /Export PNG/i }));
+    fireEvent.change(screen.getByLabelText('Audience'), { target: { value: 'player' } });
+    fireEvent.click(screen.getByLabelText(/Ink-friendly/i));
+    fireEvent.click(screen.getByLabelText(/Scale bar/i));
+    fireEvent.click(screen.getByRole('button', { name: 'Download page 1' }));
 
     await waitFor(() => expect(exportHighResPNG).toHaveBeenCalled());
     expect(exportHighResPNG.mock.calls[0][1]).toMatchObject({

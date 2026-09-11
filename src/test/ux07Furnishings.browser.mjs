@@ -1,4 +1,5 @@
 // Page-based production journey. Uses a disposable browser context and native UI.
+import { downloadExportText } from './exportJourney.mjs';
 export default async function runFurnishingJourney(page) {
   const assert = (condition, message) => { if (!condition) throw new Error(message); };
   const base = `${page.url().split('/Dungeon-Mapper/')[0]}/Dungeon-Mapper/`;
@@ -21,16 +22,7 @@ export default async function runFurnishingJourney(page) {
     const bounds = await canvas.boundingBox();
     await canvas.click({ position: { x: 4.5 * bounds.width / 16, y: 10.5 * bounds.height / 16 } });
     await saved();
-    const downloadText = async label => {
-      await tab.getByRole('button', { name: 'Export', exact: true }).click();
-      const [download] = await Promise.all([
-        tab.waitForEvent('download'), tab.getByRole('button', { name: label }).click(),
-      ]);
-      let text = '';
-      for await (const chunk of await download.createReadStream()) text += chunk.toString();
-      return text;
-    };
-    const backup = async () => JSON.parse(await downloadText('Export editable backup (includes DM content)')).project;
+    const backup = async () => JSON.parse(await downloadExportText(tab, 'backup')).project;
     const placed = (await backup()).levels[0].stamps.at(-1);
     assert(placed.stampId === 'folio-furnishings-v1-bed' && placed.scale === 1.75, 'Default scale or placement failed');
     await tab.getByLabel('Inspect object').selectOption(`stamp:${placed.id}`);
@@ -54,7 +46,7 @@ export default async function runFurnishingJourney(page) {
     await tab.getByRole('button', { name: 'Decorate', exact: true }).click();
     await tab.getByRole('tab', { name: /Show.*Theme stamps/ }).click();
     await tab.screenshot({ path: 'docs/media/ux07-furnishings/editor.png' });
-    const svg = await downloadText('Player SVG (published content)');
+    const svg = await downloadExportText(tab, 'svg');
     assert(!svg.includes('missing ledger') && svg.includes('opacity="0.65"'), 'SVG privacy or opacity failed');
     await tab.getByRole('button', { name: 'Player preview', exact: true }).click();
     assert(!(await tab.locator('body').innerText()).includes('Supply cache'), 'Private note reached the player');

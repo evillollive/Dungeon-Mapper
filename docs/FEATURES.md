@@ -41,7 +41,7 @@ If you want the full tour in one place, this is it. Dungeon Mapper starts fast, 
 - **Room notes** - numbered annotations placed on the map with labels and descriptions; in Present view, notes that sit under fog are hidden from the side panel
 - **Auto-save** - map state persisted to IndexedDB on every change (migrates legacy localStorage data automatically)
 - **Line-of-Sight / FOV** - click any cell to visualize which cells are visible from that point, with walls blocking the view; click the same cell again to clear (`O` shortcut)
-- **Export / Import** - JSON round-trip, PNG canvas export, SVG vector export, and a print-optimized high-DPI PNG export dialog with page tiling and optional scale bar
+- **Export / Import** - one intent-first dialog for private project backups, player-safe PNG/SVG images, bounded print pages and grid-aligned images for other tools
 - **Adjustable UI scale** - header **UI** dropdown rescales chrome text and controls (50%, 75%, 100%, 125%, 150%) and remembers your choice across sessions
 - **Preserve-tiles toggle** - when enabled (toolbar **🎨 Preserve**), switching themes keeps already-painted tiles in their original style so you can mix terrain styles from multiple themes on a single map
 - **Art style presets** - 5 built-in visual presets (Classic, Hand-Drawn, Painted, Minimal, Print) that configure all four art layers in one click; tweak individual layers to create a Custom style (see [Art System](#art-system) below)
@@ -50,7 +50,7 @@ If you want the full tour in one place, this is it. Dungeon Mapper starts fast, 
 - **Hand-drawn mode** - 3 rendering styles (sketchy, pencil, ink) that add wobbly grid lines, cross-hatch shading, and bold boundary strokes for a hand-crafted look
 - **Lighting & atmosphere** - ambient occlusion in wall corners, drop-shadows under stamps, and day/night/dusk color grading for mood and depth
 - **Mobile & tablet support** - responsive layout with 4 breakpoints, dedicated mobile bottom toolbar, touch gestures (pinch-to-zoom, two-finger pan, long-press pan), and gesture shortcuts (two-finger tap = undo, three-finger tap = redo)
-- **Progressive Web App** - installable on desktop and mobile with full offline support via service worker caching
+- **Progressive Web App** - installable app with visible offline cache readiness and explicit, save-aware updates
 
 ## Preset Modes
 
@@ -526,17 +526,28 @@ Your work is auto-saved constantly, which is great for peace of mind, but file e
 
 ### Export
 
-- **↓ JSON** - writes the full project (all levels, tiles, notes, tokens, stair links, grid size, theme, name, custom theme data, and other metadata) to a `.json` file. This is the only format that round-trips back into the editor.
-- **↓ PNG** - saves a rasterized snapshot of the current canvas as a `.png` image. Great for sharing or printing, but it can't be re-imported.
-- **↓ SVG** - saves a vector rendering of the map as an `.svg` file, with each tile and numbered note drawn as scalable shapes. Like PNG, this is for sharing/printing only - it can't be re-imported.
-- **🖨 Print Export** (`Ctrl+Shift+P`) - opens a dialog for high-resolution, print-ready PNG output at 1 inch per tile. Options include:
- - **Resolution (DPI)** - choose the output DPI (300 DPI recommended).
- - **Page Size** - select a page preset to split large maps into printable page tiles.
- - **View Mode** - export as Edit (full map) or Present (fog hides content).
- - **Black & White** - toggle print mode for monochrome output.
- - The dialog shows the computed output dimensions and page count before exporting.
+Open **Export** and choose the purpose. Existing file shortcuts open the same dialog with the matching purpose selected.
 
-If **🖨 Print** mode is active, PNG/SVG exports use the high-contrast black-and-white renderer.
+| Purpose | Output and scope |
+| --- | --- |
+| Share with players | PNG or SVG of the current level using Player preview publication and fog rules, with a public filename and audience preview. |
+| Back up project | Editable JSON of every level and project asset. Includes DM-only content. Separate session records and device checkpoint history are not included. |
+| Print for the table | Current-level PNG pages with DM/player audience, 72/150/300 DPI, physical grid scale, Letter/A4, configurable margins and overlap, page preview, and optional scale bar. Download one page or all pages with progress and cancellation. |
+| Use in another map tool | Current-level PNG/SVG with grid dimensions and pixels per cell shown. No claim of native VTT integration. |
+
+PNG uses a dedicated export renderer, never the editor canvas or selection handles.
+Single images are limited to 16 megapixels and 8192 pixels per side. Larger maps
+must use lower resolution or tiled printing. Pages are rendered directly rather
+than cropped from an enormous full-map canvas. PNG files carry physical DPI
+metadata; print at **100% / actual size**, not fit to page. Browser permission
+may be required for multiple downloads.
+
+Ink-friendly PNG styling simplifies map geometry and Folio furnishings; token
+colors and embedded artwork can remain colored. SVG retains the map's color
+art treatment. Missing or undecodable optional artwork is explained in the
+preview and uses a base color or placeholder. External images are not fetched.
+Review embedded images for secrets before sharing. Cancelling or failing an
+export does not change the project; already completed downloads remain.
 
 ### Import
 
@@ -584,6 +595,9 @@ On smaller screens, the toolbar changes shape so the app stays usable with thumb
 If you want Dungeon Mapper to behave more like an installed tool than a browser tab, the PWA support is there for that. Install it, keep it offline, and treat it like part of your regular session kit.
 
 - **Install prompt** - browsers offer an "Add to Home Screen" or "Install" option for the app.
-- **Offline support** - all assets are cached by a service worker (Workbox) for full offline use.
+- **Offline readiness** - open **Offline & updates** in the Library or editor. Wait for **App and built-in art cached** while online. All bundled art is included; no third-party fonts or remote images are needed. Browser storage eviction can remove caches or projects, so retain JSON backups.
+- **App updates** - updates wait without automatically reloading. **Update saved workspace** requires a saved project, closed dialogs, and no other Dungeon Mapper windows or player displays. Save/end a live session and return to the editor first. Failed, conflicted or pending saves block reload.
 - **Standalone mode** - runs without browser chrome when installed, with proper safe-area handling for notched devices.
 
+See [UX-08 export and offline contract](./UX-08-HANDOFF.md) for browser limits,
+production qualification and the update policy.

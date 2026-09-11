@@ -99,9 +99,11 @@ for (const engine of (process.env.QA_ENGINES ?? 'chromium,firefox,webkit').split
     await page.getByRole('button', { name: 'Close save details', exact: true }).click();
     await command('panel.build').click();
     await command('dialog.export').click();
+    await page.getByRole('button', { name: /Back up project/ }).click();
     const download = page.waitForEvent('download');
-    await page.getByRole('button', { name: /Export editable backup/ }).click();
+    await page.getByRole('button', { name: 'Download private backup', exact: true }).click();
     assert((await download).suggestedFilename().endsWith('.json'));
+    await page.getByRole('button', { name: 'Close Export', exact: true }).click();
     await page.setViewportSize({ width: 768, height: 1024 });
     await page.getByRole('button', { name: 'Fit map to screen', exact: true }).click();
     await capture('tablet');

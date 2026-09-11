@@ -1,4 +1,5 @@
 // Import in a Playwright-capable runner and pass a Page on the production base URL.
+import { downloadExportText } from './exportJourney.mjs';
 export default async function runMaterialJourney(page) {
   const assert = (condition, message) => { if (!condition) throw new Error(message); };
   const base = `${page.url().split('/Dungeon-Mapper/')[0]}/Dungeon-Mapper/`;
@@ -14,18 +15,7 @@ export default async function runMaterialJourney(page) {
     const saved = () => tab.getByText('Saved on this device', { exact: true }).waitFor();
     await saved();
     await tab.getByRole('button', { name: 'Build', exact: true }).click();
-    const downloadText = async label => {
-      await tab.getByRole('button', { name: 'Export', exact: true }).click();
-      const [download] = await Promise.all([
-        tab.waitForEvent('download'),
-        tab.getByRole('button', { name: label }).click(),
-      ]);
-      const stream = await download.createReadStream();
-      let text = '';
-      for await (const chunk of stream) text += chunk.toString();
-      return text;
-    };
-    const backup = async () => JSON.parse(await downloadText('Export editable backup (includes DM content)')).project;
+    const backup = async () => JSON.parse(await downloadExportText(tab, 'backup')).project;
     const clickCell = async (x, y) => {
       const canvas = tab.locator('canvas[role="application"]');
       const bounds = await canvas.boundingBox();
@@ -68,7 +58,7 @@ export default async function runMaterialJourney(page) {
     await clickCell(6, 13);
     const trapped = (await backup()).levels[0].tiles[13][6];
     assert(trapped.type === 'trap' && trapped.floorMaterial === 'folio-earth-v1', 'Trap lost its existing floor substrate');
-    const svg = await downloadText('Player SVG (published content)');
+    const svg = await downloadExportText(tab, 'svg');
     assert(svg.includes('<polyline') && !svg.includes('#813f35') && !svg.includes('Cistern sentinel'), 'Player SVG exposed a secret');
     await tab.getByRole('button', { name: 'Player preview', exact: true }).click();
     assert(!(await tab.locator('body').innerText()).includes('The secret door'), 'Player text disclosed private notes');
