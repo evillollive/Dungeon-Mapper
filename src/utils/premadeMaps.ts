@@ -14,6 +14,8 @@ import { createFogGrid } from './mapUtils';
 import { getGenerator, type GenerateContext } from './generators';
 import { generateRiversForMap, getGeneratedRiverType } from './generators/riverGenerator';
 import { makeRng, seedFromString } from './generators/random';
+import { buildFolioReference, FOLIO_REFERENCE_ID, FOLIO_REFERENCE_NAME } from './folioReference';
+import { FOLIO_THEME_ID } from '../themes/folio-v1/art';
 
 export interface PremadeMapSummary {
   id: string;
@@ -1242,7 +1244,7 @@ function buildLevel(spec: LevelSpec): DungeonMap {
   };
 }
 
-export const PREMADE_MAP_SUMMARIES: PremadeMapSummary[] = PREMADE_MAP_SPECS.map(spec => ({
+export const PREMADE_MAP_SUMMARIES: PremadeMapSummary[] = [...PREMADE_MAP_SPECS.map(spec => ({
   id: spec.id,
   name: spec.name,
   themeId: spec.themeId,
@@ -1251,9 +1253,19 @@ export const PREMADE_MAP_SUMMARIES: PremadeMapSummary[] = PREMADE_MAP_SPECS.map(
   sizeLabel: spec.levels.map(level => `${level.width}×${level.height}`).join(' + '),
   levelCount: spec.levels.length,
   description: spec.description,
-}));
+})), {
+  id: FOLIO_REFERENCE_ID,
+  name: FOLIO_REFERENCE_NAME,
+  themeId: FOLIO_THEME_ID,
+  themeLabel: 'Dungeon Folio v1',
+  archetype: 'Art reference',
+  sizeLabel: '32 x 32',
+  levelCount: 1,
+  description: 'A quiet stone cistern with connected walls, muted water and a sealed treasury. Opt-in dungeon art reference, ready for visual review.',
+}];
 
 export function buildPremadeProject(id: string): DungeonProject {
+  if (id === FOLIO_REFERENCE_ID) return buildFolioReference();
   const spec = PREMADE_MAP_SPECS.find(item => item.id === id);
   if (!spec) throw new Error(`Unknown premade map: ${id}`);
 
