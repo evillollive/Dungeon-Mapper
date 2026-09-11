@@ -4,7 +4,7 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's first dungeon art slice is implemented for owner review, not accepted as the full package. Cross-browser follow-up and release research gates remain open. No participant usability acceptance is claimed.
+**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's first dungeon art slice received owner visual approval on September 11, 2026; the full package remains incomplete. Cross-browser follow-up and release research gates remain open. No participant usability acceptance is claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
@@ -532,7 +532,14 @@ Resolve one decision at a time with the owner: local-first release scope; migrat
 slice first, with visual approval before expanding the artwork. Implemented
 the opt-in **Dungeon Folio v1** theme and **The Quiet Cistern** sample.
 This is a partial ART-02/reference and pack-contract slice, not completion of
-ART-01 through ART-08. Owner art approval is pending.
+ART-01 through ART-08.
+
+**Owner visual approval, September 11, 2026:** The owner reviewed the shared
+contact sheet and approved the dungeon art direction ("Looks good"). This clears
+the reference-slice visual gate for expanding UX-07. It does not approve a merge,
+complete the remaining art packages, or waive cross-browser, device, accessibility
+or release acceptance. The original evidence images retain their pre-approval
+captions; this dated decision supersedes those pending-approval labels.
 
 Open **Your maps > Open a sample > The Quiet Cistern**, or choose
 **Look > Theme > Dungeon Folio v1** on an existing map. The sample uses the
@@ -759,7 +766,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; Chromium qualified; cross-browser follow-up open | [Publication, projection, discovery, evidence and limitations](./UX-05-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; production Chromium two-window qualified | [Session lifecycle, isolated persistence, display protocol and evidence](./UX-06-HANDOFF.md); Firefox/WebKit and later release gates remain |
-| UX-07 | First dungeon slice implemented; owner visual review pending | [Reference and output contact sheet](./media/ux07/contact-sheet.png); versioned tile kit and sample only. Remaining art packages and full acceptance are open |
+| UX-07 | First dungeon slice implemented; owner visual approval recorded September 11, 2026 | [Reference and output contact sheet](./media/ux07/contact-sheet.png); versioned tile kit and sample approved for further art expansion. Remaining art packages and full acceptance are open |
 | UX-08 | Not started | Export and production offline |
 | UX-09 | Not started | Release qualification |
 | UX-10 | Deferred | Explicit approval of remote scope |
