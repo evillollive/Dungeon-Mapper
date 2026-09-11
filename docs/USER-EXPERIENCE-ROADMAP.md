@@ -4,7 +4,7 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's dungeon foundation and approved wood/earth materials are merged in #167 and #168. The eight-piece furnishing reference is implemented for visual review; the full package remains incomplete. Cross-browser follow-up and release research gates remain open. No participant usability acceptance is claimed.
+**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's dungeon foundation and approved wood/earth materials are merged in #167 and #168. The eight-piece furnishing reference and richer palette are approved in #169; the full package remains incomplete. Cross-browser follow-up and release research gates remain open. No participant usability acceptance is claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
@@ -682,7 +682,7 @@ Chrome; no browser package or lockfile change is part of this milestone.
 The owner approved the materials, then authorized landing #168 and building
 table, chair, bed, shelf, crate, barrel, altar and rubble before token work.
 #168 merged at `2da403f` after its approved head passed CI. This furnishing
-slice is implemented but still awaits its own owner visual approval.
+slice is implemented and received owner visual approval on September 11, 2026.
 
 **Color feedback, September 11, 2026:** The owner liked the forms but found
 the initial palette too desaturated for easy reading. The draft v1 sources
@@ -692,10 +692,18 @@ paths, stroke widths, scale, shadows, floor colors and print geometry are
 unchanged. Source fingerprints and current output images were refreshed.
 The original `first-preview.png` remains as historical evidence. The
 [color comparison](./media/ux07-furnishings/color-review.png) is the current
-review surface. The revised colors still await owner confirmation.
+review surface. The owner subsequently approved the revised palette.
 Opaque outline colors are guarded at a minimum 4.5:1 contrast against the
 sampled flagstone, wood and earth fill variants; this is a palette-level
 regression guard, not a certification of composited pixels or accessibility.
+
+**Owner closeout, September 11, 2026:** The owner accepted the richer palette
+("Really nice, quite beautiful"), then explicitly authorized recording approval,
+final code review and merge of #169. Final read-only review of `86cd054` found
+no significant issues. This completes visual acceptance of the eight-piece
+reference slice only; it does not complete the larger furnishing catalog,
+token artwork or the remaining UX-07/release gates. This dated approval
+supersedes pending-review captions in the earlier evidence images.
 
 Open **The Keeper's Hall** from samples, or use **Dungeon Folio v1 >
 Decorate > Theme** to find the eight named Folio stamps. They are additional
@@ -916,7 +924,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; Chromium qualified; cross-browser follow-up open | [Publication, projection, discovery, evidence and limitations](./UX-05-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; production Chromium two-window qualified | [Session lifecycle, isolated persistence, display protocol and evidence](./UX-06-HANDOFF.md); Firefox/WebKit and later release gates remain |
-| UX-07 | Foundation and materials merged in #167/#168; richer furnishing palette awaiting visual approval | [Revised furnishing colors](./media/ux07-furnishings/color-review.png); token sets and remaining art packages are still open |
+| UX-07 | Foundation and materials merged in #167/#168; eight-piece furnishing slice and richer palette approved in #169 | [Approved furnishing colors](./media/ux07-furnishings/color-review.png); token sets, larger furnishing catalog and remaining art packages are still open |
 | UX-08 | Not started | Export and production offline |
 | UX-09 | Not started | Release qualification |
 | UX-10 | Deferred | Explicit approval of remote scope |
