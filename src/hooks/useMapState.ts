@@ -1308,7 +1308,7 @@ export function useMapState() {
 
   return {
     map, project, activeLevelIndex,
-    saveState, retrySave: coordinator.retry, originalStoredData: persistence.original,
+    saveState, retrySave: coordinator.retry, updateBlocker: coordinator.updateBlocker, originalStoredData: persistence.original,
     recoverProjectData: persistence.recoverProjectData,
     projectId: coordinator.getProjectId(), switchProject: persistence.switchProject, refreshCheckpoints: coordinator.refreshCheckpoints,
     projectGeneration: coordinator.getGeneration(),

@@ -65,9 +65,10 @@ export function buildThemeList(customThemes: readonly CustomThemeDefinition[] = 
 export function getThemeWithCustom(
   id: string,
   customThemes: readonly CustomThemeDefinition[] = [],
+  images?: ReadonlyMap<string, HTMLImageElement>,
 ): TileTheme {
   const custom = findCustomTheme(id, customThemes);
-  return custom ? createCustomTileTheme(custom, customThemes) : getTheme(id);
+  return custom ? createCustomTileTheme(custom, customThemes, images) : getTheme(id);
 }
 
 export function preloadCustomThemeImages(
@@ -89,6 +90,7 @@ export function preloadCustomThemeImages(
 export function createCustomTileTheme(
   definition: CustomThemeDefinition,
   customThemes: readonly CustomThemeDefinition[] = [],
+  images?: ReadonlyMap<string, HTMLImageElement>,
 ): TileTheme {
   const base = getTheme(definition.baseThemeId);
   const tileColors: TileTheme['tileColors'] = { ...base.tileColors };
@@ -132,7 +134,7 @@ export function createCustomTileTheme(
       ctx.fillRect(px, py, size, size);
 
       if (tile?.imageDataUrl) {
-        const img = getCustomImage(tile.imageDataUrl);
+        const img = images ? images.get(tile.imageDataUrl) : getCustomImage(tile.imageDataUrl);
         if (img?.complete && img.naturalWidth > 0) {
           ctx.drawImage(img, px, py, size, size);
         }

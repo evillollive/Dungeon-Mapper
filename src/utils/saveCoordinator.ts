@@ -23,6 +23,8 @@ export class SaveCoordinator {
   private state: SaveState = { phase: 'restoring' };
 
   getSnapshot = () => this.state;
+  updateBlocker = () => this.ready && !this.pending && !this.writing && this.state.phase === 'saved'
+    ? null : 'Wait until this project is saved before updating. If saving failed or conflicted, export a backup and resolve it first.';
   subscribe = (listener: () => void) => {
     this.listeners.add(listener);
     return () => { this.listeners.delete(listener); };

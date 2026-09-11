@@ -48,3 +48,29 @@ The project uses [Vitest](https://vitest.dev/) with [React Testing Library](http
 | UI behavior | `src/components/__tests__/uiBehavior.test.tsx` | Generate Hub, Command Palette, Navigation Rail, Selection Inspector, ExportDialog interactions |
 
 Shared mock context providers live in `src/test/testHelpers.tsx` - use `TestProviders` to wrap components that depend on `ToolContext`, `MapContext`, `ViewContext`, or `ActionContext`.
+
+## Production export and offline qualification
+
+Playwright is a locked development dependency. Install its browser engines once,
+then run the UX-08 production journey with artifacts outside the repository:
+
+```bash
+npx playwright install chromium firefox webkit
+QA_OUTPUT=/absolute/path/to/artifacts npm run test:ux08
+```
+
+`QA_ENGINES=chromium` selects one engine; the default runs all three sequentially.
+`QA_PORT` defaults to 5308. The runner owns a strict-port Vite preview server,
+disposable browser contexts, real file downloads and server shutdown.
+It runs against `/Dungeon-Mapper/`, checks PNG dimensions and physical metadata,
+pixel-identical page overlaps, missing/corrupt artwork fallbacks, audience policy,
+cancellation, a bounded 128 x 128 / 300 DPI page, update blocking and offline
+reload/edit/save/reopen/export. The sole origin is stopped for every engine;
+Chromium and Firefox also use protocol offline emulation. WebKit's protocol
+offline switch can itself reject service-worker navigation, so its qualification
+uses the stopped-origin check instead.
+
+The controlled update changes service-worker bytes without changing the app
+bundle. It is an activation and data-continuity test, not a cross-schema upgrade
+test. Historical UX-01 scenario scripts remain baseline-specific; use the
+current UX-08 runner for export and update behavior.

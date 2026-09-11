@@ -6,7 +6,7 @@ import { ICON_BY_ID } from './iconLibrary';
 import { getStampDef } from './stampCatalog';
 import { folioStampShadowSVG } from './folioFurnishingRender';
 import { getFolioFurnishing } from '../assets/folio-furnishings-v1/catalog';
-import { renderMapToCanvas } from './renderMap';
+import { renderMapToCanvas, renderPlayerProjection } from './renderMap';
 import { generatePaperTexture } from './paperTexture';
 import { drawEdgeBlending } from './edgeBlend';
 import { drawHandDrawn } from './handDrawn';
@@ -16,7 +16,11 @@ import { isTokenFogged } from './tokenVisibility';
 import { deriveRenderableTiles } from './derivedRenderMap';
 import { getRiverBankColor, getRiverEndpointMarker } from './riverPolish';
 import { projectForAudience } from './audienceProjection';
-import { getSemanticTileType, getThemeWithCustom } from './customThemes';
+import { findCustomTile, getSemanticTileType, getThemeWithCustom } from './customThemes';
+import { assertExportSurface, planExport, MAX_TEXTURE_SIDE, type ExportPlanOptions } from './exportPlan';
+import { withPNGResolution } from './pngResolution';
+import { loadExportAssets } from './exportAssets';
+export { PAGE_PRESETS, DPI_OPTIONS } from './exportPlan';
 
 const SVG_CUSTOM_TILE_FALLBACK_COLOR = '#777777';
 
@@ -83,12 +87,12 @@ export function exportMapPNG(canvas: HTMLCanvasElement, name: string, printFrien
  * included. In `'player'` mode, fogged cells are painted solid black so
  * the export doubles as a "player handout". Defaults to GM rendering.
  */
-export function exportMapSVG(
+export function buildMapSVG(
   map: DungeonMap,
   theme: TileTheme,
   resolveTheme?: (id: string) => TileTheme,
-  opts: { viewMode?: ViewMode; customThemes?: readonly CustomThemeDefinition[]; customStamps?: readonly StampDef[]; includeTexture?: boolean; includeEdgeBlend?: boolean; includeHandDrawn?: boolean; includeLighting?: boolean } = {}
-): void {
+  opts: { viewMode?: ViewMode; customThemes?: readonly CustomThemeDefinition[]; customStamps?: readonly StampDef[]; includeTexture?: boolean; includeEdgeBlend?: boolean; includeHandDrawn?: boolean; includeLighting?: boolean; images?: ReadonlyMap<string, HTMLImageElement> } = {}
+): string {
   const viewMode: ViewMode = opts.viewMode ?? 'gm';
   if (viewMode === 'player') {
     const projection = projectForAudience(map, opts.customThemes, opts.customStamps);
@@ -105,7 +109,7 @@ export function exportMapSVG(
   const fogActive = (map.fogEnabled ?? false);
   const fog = map.fog;
   const dynamicFogActive = (map.dynamicFogEnabled ?? false) && fogActive;
-  const { width, height, tileSize, name } = map.meta;
+  const { width, height, tileSize } = map.meta;
   const tiles = deriveRenderableTiles(map);
   const tileDrawContext = {
     getFloorMaterial: (x: number, y: number) => tiles[y]?.[x]?.floorMaterial,
@@ -116,6 +120,7 @@ export function exportMapSVG(
   };
   const svgW = width * tileSize;
   const svgH = height * tileSize;
+  assertExportSurface(svgW, svgH);
 
   const isFogged = (x: number, y: number) => fogActive && !!fog?.[y]?.[x];
   const isExplored = (x: number, y: number) => dynamicFogActive && !!map.explored?.[y]?.[x];
@@ -124,7 +129,8 @@ export function exportMapSVG(
   svg += `<rect width="${svgW}" height="${svgH}" fill="${theme.tileColors['empty']}"/>`;
 
   // Background image layer (behind tiles).
-  if (map.backgroundImage) {
+  if (map.backgroundImage && (!opts.images || opts.images.has(map.backgroundImage.dataUrl)) &&
+      /^data:image\/(?:png|jpe?g|webp|svg\+xml);base64,[a-z0-9+/]+=*$/i.test(map.backgroundImage.dataUrl)) {
     const bg = map.backgroundImage;
     const imgX = bg.offsetX * tileSize;
     const imgY = bg.offsetY * tileSize;
@@ -139,7 +145,9 @@ export function exportMapSVG(
   // Paper texture layer (behind tiles, after background image).
   if (includeTexture && map.paperTexture?.enabled) {
     const tint = map.paperTexture.tintOverride ?? getPaperTint(theme.id);
-    const texCanvas = generatePaperTexture(svgW, svgH, map.paperTexture, tint);
+    const scale = Math.min(1, MAX_TEXTURE_SIDE / Math.max(svgW, svgH));
+    const texCanvas = generatePaperTexture(Math.max(1, Math.round(svgW * scale)),
+      Math.max(1, Math.round(svgH * scale)), map.paperTexture, tint);
     const texDataUrl = texCanvas.toDataURL('image/png');
     svg += `<image xlink:href="${escapeXML(texDataUrl)}" x="0" y="0" width="${svgW}" height="${svgH}" opacity="${map.paperTexture.opacity}"/>`;
   }
@@ -160,6 +168,9 @@ export function exportMapSVG(
       }
       const fill = sanitizeColor(tileTheme.tileColors[tile.type], SVG_CUSTOM_TILE_FALLBACK_COLOR);
       svg += `<rect x="${x * tileSize}" y="${y * tileSize}" width="${tileSize}" height="${tileSize}" fill="${fill}" stroke="#2d3561" stroke-width="0.5"/>`;
+      const imageUrl = findCustomTile(tile.type, opts.customThemes)?.imageDataUrl;
+      const href = imageUrl && (!opts.images || opts.images.has(imageUrl)) && sanitizeImageDataUrl(imageUrl);
+      if (href) svg += `<image href="${href}" x="${x * tileSize}" y="${y * tileSize}" width="${tileSize}" height="${tileSize}"/>`;
     }
   }
 
@@ -336,7 +347,10 @@ export function exportMapSVG(
   // Stamps: rendered as SVG paths with transforms.
   for (const stamp of map.stamps ?? []) {
     const def = getStampDef(stamp.stampId, opts.customStamps ?? []);
-    if (!def) continue;
+    if (!def) {
+      svg += `<rect x="${stamp.x * tileSize}" y="${stamp.y * tileSize}" width="${tileSize}" height="${tileSize}" fill="none" stroke="#777777"/>`;
+      continue;
+    }
     svg += folioStampShadowSVG(def, stamp, tileSize);
     const cx = (stamp.x + 0.5) * tileSize;
     const cy = (stamp.y + 0.5) * tileSize;
@@ -356,9 +370,9 @@ export function exportMapSVG(
     const opacity = (stamp.opacity ?? 1) < 1 ? ` opacity="${stamp.opacity}"` : '';
     const transformAttr = escapeXML(transforms.join(' '));
     if (def.imageDataUrl) {
-      const href = sanitizeImageDataUrl(def.imageDataUrl);
-      if (!href) continue;
-      svg += `<g transform="${transformAttr}"${opacity}><image href="${href}" width="${vbW}" height="${vbH}"/></g>`;
+      const href = (!opts.images || opts.images.has(def.imageDataUrl)) && sanitizeImageDataUrl(def.imageDataUrl);
+      svg += href ? `<g transform="${transformAttr}"${opacity}><image href="${href}" width="${vbW}" height="${vbH}"/></g>`
+        : `<g transform="${transformAttr}"${opacity}><rect width="${vbW}" height="${vbH}" fill="none" stroke="#777777" stroke-width="${2 / svgScale}"/></g>`;
     } else if (def.paths && def.paths.length > 0) {
       // Match Canvas opacity for each fill/stroke operation, including their overlap.
       const folio = getFolioFurnishing(def);
@@ -441,13 +455,25 @@ export function exportMapSVG(
 
   svg += `</svg>`;
 
-  const blob = new Blob([svg], { type: 'image/svg+xml' });
+  return svg;
+}
+
+export function exportMapSVG(...args: Parameters<typeof buildMapSVG>): void {
+  const svg = buildMapSVG(...args);
+  const [map, , , opts] = args;
+  const name = opts?.viewMode === 'player' ? map.meta.publicName?.trim() || 'Player map' : map.meta.name;
+  downloadBlob(new Blob([svg], { type: 'image/svg+xml' }), `${name.replace(/\s+/g, '_') || 'dungeon'}.svg`);
+}
+
+export function downloadBlob(blob: Blob, fileName: string, lifetime = 60_000): void {
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `${name.replace(/\s+/g, '_') || 'dungeon'}.svg`;
+  a.download = fileName;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), lifetime);
 }
 
 /** Escape characters that have special meaning inside an SVG/XML text node. */
@@ -494,24 +520,7 @@ function sanitizeImageDataUrl(value: string): string | null {
  * Standard page sizes in inches.  Width and height are the printable
  * area (≈ 0.5″ margin on each side subtracted from the physical sheet).
  */
-export interface PagePreset {
-  id: string;
-  label: string;
-  /** Printable width in inches. */
-  width: number;
-  /** Printable height in inches. */
-  height: number;
-}
-
-export const PAGE_PRESETS: PagePreset[] = [
-  { id: 'none',   label: 'Full Map (no tiling)', width: 0, height: 0 },
-  { id: 'letter', label: 'US Letter (7.5 × 10″)', width: 7.5, height: 10 },
-  { id: 'a4',     label: 'A4 (7.27 × 10.69″)',    width: 7.27, height: 10.69 },
-];
-
-export const DPI_OPTIONS = [72, 150, 300] as const;
-
-export interface HighResExportOptions {
+export interface HighResExportOptions extends ExportPlanOptions {
   /** Dots per inch — each tile = 1 inch, so dpi also = tile size in px. */
   dpi: number;
   /** Page preset id.  'none' = single full-map image. */
@@ -532,6 +541,11 @@ export interface HighResExportOptions {
   includeEdgeBlend?: boolean;
   /** Whether to include lighting & atmosphere in export. Defaults to true. */
   includeLighting?: boolean;
+  signal?: AbortSignal;
+  onProgress?: (completed: number, total: number) => void;
+  onWarnings?: (warnings: string[]) => void;
+  /** Zero-based page selection. Omit to download every page. */
+  pageIndex?: number;
 }
 
 /**
@@ -545,73 +559,61 @@ export async function exportHighResPNG(
   map: DungeonMap,
   opts: HighResExportOptions,
 ): Promise<void> {
-  const tileSize = opts.dpi;            // 1 cell = 1 inch at this dpi
-  const fullCanvas = renderMapToCanvas(map, {
-    tileSize,
-    themeId: opts.themeId,
-    printMode: opts.printMode,
-    viewMode: opts.viewMode,
-    feetPerCell: opts.feetPerCell,
-    customThemes: opts.customThemes,
-    customStamps: opts.customStamps,
-    includeTexture: opts.includeTexture,
-    includeEdgeBlend: opts.includeEdgeBlend,
-    includeLighting: opts.includeLighting,
-  });
+  const plan = planExport(map.meta.width, map.meta.height, opts);
+  if (opts.pageIndex !== undefined && (!Number.isInteger(opts.pageIndex) || opts.pageIndex < 0 || opts.pageIndex >= plan.pages)) {
+    throw new Error('Choose a page within the export plan.');
+  }
+  opts.signal?.throwIfAborted();
+  // Project once before loading assets or allocating any render surface.
+  const projection = opts.viewMode === 'player' ? projectForAudience(map, opts.customThemes, opts.customStamps) : null;
+  const source = projection?.map ?? map;
+  const customThemes = projection?.customThemes ?? opts.customThemes;
+  const customStamps = projection?.customStamps ?? opts.customStamps;
+  const assets = await loadExportAssets(source, customThemes, customStamps, opts.signal);
+  opts.onWarnings?.(assets.warnings);
 
   const name = opts.viewMode === 'player' ? map.meta.publicName?.trim() || 'Player map' : map.meta.name;
   const baseName = name.replace(/\s+/g, '_') || 'dungeon';
 
-  const preset = PAGE_PRESETS.find(p => p.id === opts.pagePresetId) ?? PAGE_PRESETS[0];
-
-  if (preset.id === 'none' || preset.width === 0) {
-    // Single full-map download.
-    await downloadCanvasAsPNG(fullCanvas, `${baseName}_${opts.dpi}dpi.png`);
-    return;
-  }
-
-  // Tiled page export.
-  const pageW = Math.round(preset.width * opts.dpi);
-  const pageH = Math.round(preset.height * opts.dpi);
-  const cols = Math.ceil(fullCanvas.width / pageW);
-  const rows = Math.ceil(fullCanvas.height / pageH);
-
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      const sx = c * pageW;
-      const sy = r * pageH;
-      const sw = Math.min(pageW, fullCanvas.width - sx);
-      const sh = Math.min(pageH, fullCanvas.height - sy);
-      const page = document.createElement('canvas');
-      page.width = pageW;
-      page.height = pageH;
-      const pctx = page.getContext('2d')!;
-      // Fill with white so partial pages have a clean background (paper is white).
-      pctx.fillStyle = '#ffffff';
-      pctx.fillRect(0, 0, pageW, pageH);
-      pctx.drawImage(fullCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
-      const fileName = rows === 1 && cols === 1
-        ? `${baseName}_${opts.dpi}dpi.png`
-        : `${baseName}_${opts.dpi}dpi_page_${r + 1}-${c + 1}.png`;
-      await downloadCanvasAsPNG(page, fileName);
-      // Small delay between downloads so the browser doesn't block them.
-      if (rows * cols > 1) await new Promise(res => setTimeout(res, 250));
+  const indices = opts.pageIndex === undefined ? Array.from({ length: plan.pages }, (_, i) => i) : [opts.pageIndex];
+  opts.onProgress?.(0, indices.length);
+  for (const [completed, index] of indices.entries()) {
+    await new Promise(resolve => setTimeout(resolve, 0));
+    opts.signal?.throwIfAborted();
+    const row = Math.floor(index / plan.columns);
+    const column = index % plan.columns;
+    const region = { x: column * plan.stepX, y: row * plan.stepY, width: plan.contentWidth, height: plan.contentHeight };
+    const renderOptions = { ...opts, customThemes, customStamps,
+      themeId: source.meta.theme ?? opts.themeId, tileSize: plan.tileSize, region, images: assets.images };
+    const rendered = projection ? renderPlayerProjection(projection, renderOptions) : renderMapToCanvas(source, renderOptions);
+    const page = document.createElement('canvas');
+    page.width = plan.pageWidth;
+    page.height = plan.pageHeight;
+    try {
+      const ctx = page.getContext('2d');
+      if (!ctx) throw new Error('Canvas rendering is unavailable.');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, page.width, page.height);
+      ctx.drawImage(rendered, plan.margin, plan.margin);
+      rendered.width = rendered.height = 0;
+      const suffix = plan.pages > 1 ? `_page_${row + 1}-${column + 1}` : '';
+      await downloadCanvasAsPNG(page, `${baseName}_${opts.dpi}dpi${suffix}.png`, opts.dpi, opts.signal);
+    } finally {
+      rendered.width = rendered.height = page.width = page.height = 0;
     }
+    opts.onProgress?.(completed + 1, indices.length);
   }
 }
 
 /** Convert a canvas to a PNG blob and trigger a download. */
-function downloadCanvasAsPNG(canvas: HTMLCanvasElement, fileName: string): Promise<void> {
-  return new Promise<void>((resolve, reject) => {
+async function downloadCanvasAsPNG(canvas: HTMLCanvasElement, fileName: string, dpi: number, signal?: AbortSignal): Promise<void> {
+  const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (!blob) { reject(new Error('PNG rendering failed. Try a lower resolution; the project is unchanged.')); return; }
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = fileName;
-      a.click();
-      URL.revokeObjectURL(url);
-      resolve();
+      resolve(blob);
     }, 'image/png');
   });
+  const printable = await withPNGResolution(blob, dpi);
+  signal?.throwIfAborted();
+  downloadBlob(printable, fileName, 1000);
 }

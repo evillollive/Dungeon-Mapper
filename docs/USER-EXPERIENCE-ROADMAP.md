@@ -8,7 +8,7 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
-**Latest implementation:** Following merged materials #168, UX-07 adds eight original top-down furnishings and The Keeper's Hall reference room. Owner feedback requested richer, higher-contrast furnishing colors; see the [revised palette beside the original](./media/ux07-furnishings/color-review.png) and [output contact sheet](./media/ux07-furnishings/contact-sheet.png). Prior sample artwork and stamp IDs remain unchanged. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
+**Latest implementation:** UX-08 adds intent-first export, bounded print pages, physical scale metadata, optional-art fallbacks, offline cache readiness and explicit save-aware updates. Production Chromium, Firefox and WebKit journeys passed; see the [export/offline contract and qualification limits](./UX-08-HANDOFF.md). This proceeds using the approved UX-07 foundation and eight-piece furnishing slice without claiming the remaining art package complete. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
 
 ## 1. Product direction
 
@@ -773,6 +773,15 @@ approve these new furnishing designs.
 
 **Priority:** P0/P1. **Depends on:** UX-01, UX-05, UX-07.
 
+**Implementation, 2026-09-11:** Implemented and production-browser qualified,
+pending merge. One dialog covers private full-project backup, player sharing,
+print planning and grid-aligned tool images. Page-sized rendering replaces the
+unbounded full-map print allocation. Adjacent overlaps match pixel-for-pixel,
+and PNG files carry physical DPI metadata. Offline readiness checks actual cache
+entries; updates wait for explicit action, a clean save and other app windows to
+close. See [UX-08 handoff](./UX-08-HANDOFF.md) for the export contract, measured
+limits, three-engine evidence, update policy and still-open release gates.
+
 **Deliverables:** One intent-first export dialog, private/public warnings and previews, bounded high-resolution export, print page planning, production base-path fixes if reproduced, offline pack readiness, and save-aware update/reload behavior.
 
 **Implementation anchors:** `ExportDialog.tsx`, `MapHeader.tsx`, `src/utils/export.ts`, `renderMap.ts`, `vite.config.ts`, `index.html`, `public/`.
@@ -925,7 +934,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-05 | Merged in #165; Chromium qualified; cross-browser follow-up open | [Publication, projection, discovery, evidence and limitations](./UX-05-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; production Chromium two-window qualified | [Session lifecycle, isolated persistence, display protocol and evidence](./UX-06-HANDOFF.md); Firefox/WebKit and later release gates remain |
 | UX-07 | Foundation and materials merged in #167/#168; eight-piece furnishing slice and richer palette approved in #169 | [Approved furnishing colors](./media/ux07-furnishings/color-review.png); token sets, larger furnishing catalog and remaining art packages are still open |
-| UX-08 | Not started | Export and production offline |
+| UX-08 | Implemented and production-browser qualified; pending merge | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | Not started | Release qualification |
 | UX-10 | Deferred | Explicit approval of remote scope |
 
