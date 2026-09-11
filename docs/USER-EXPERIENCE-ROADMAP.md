@@ -608,8 +608,11 @@ The owner authorized landing the approved foundation and proceeding with
 materials before furnishings. #167 was reviewed and merged at `1e66164`.
 This milestone adds **Worn wood** and **Earth**, four deterministic variants
 each, plus **The Warden's Rest**, an independent 32 x 32 material reference.
-The new material appearance awaits owner visual approval; the earlier
-approval applies to the foundation, not these new surfaces.
+The owner approved the restrained material appearance and authorized landing
+#168 on September 11, 2026, then proceeding to an eight-piece furnishing
+reference. This approval does not cover the forthcoming furnishing artwork
+or waive the remaining release gates. The saved material screenshots retain
+their pre-approval captions.
 
 Choose **Look > Dungeon Folio v1**, then **Build > Material > Floor**.
 The adjacent **Floor finish** buttons select Flagstone, Worn wood or Earth.
@@ -839,7 +842,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; Chromium qualified; cross-browser follow-up open | [Publication, projection, discovery, evidence and limitations](./UX-05-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; production Chromium two-window qualified | [Session lifecycle, isolated persistence, display protocol and evidence](./UX-06-HANDOFF.md); Firefox/WebKit and later release gates remain |
-| UX-07 | Approved foundation merged in #167; wood/earth milestone awaiting visual approval | [New materials and outputs](./media/ux07-materials/contact-sheet.png); furnishing/token sets and remaining art packages are still open |
+| UX-07 | Foundation merged in #167; wood/earth appearance approved for landing in #168 | [Materials and outputs](./media/ux07-materials/contact-sheet.png); eight-piece furnishings are next, with a separate visual review. Token sets and remaining art packages are still open |
 | UX-08 | Not started | Export and production offline |
 | UX-09 | Not started | Release qualification |
 | UX-10 | Deferred | Explicit approval of remote scope |
