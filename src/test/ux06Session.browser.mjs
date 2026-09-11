@@ -1,12 +1,9 @@
-// Callable Page-only production journey. Uses native browser IndexedDB and two
-// windows in one context. No SDK dependency is added to the application.
-(async (page) => {
+// Uses the runner's context so popups share isolation, error capture and traces.
+export default async function session(page) {
   const assert = (condition, message) => { if (!condition) throw new Error(message); };
   page.setDefaultTimeout(15000);
   const base = `${page.url().split('/Dungeon-Mapper/')[0]}/Dungeon-Mapper/`;
-  const context = await page.context().browser().newContext();
-  page = await context.newPage();
-  page.setDefaultTimeout(15000);
+  const context = page.context();
   const sentinel = 'PRIVATE_SENTINEL_UX06';
   const installObserver = () => {
     window.__ux06Packets = [];
@@ -247,6 +244,5 @@
       'popup blocked and preview fallback', 'DOM/accessibility/transport sentinels', 'no player storage writer',
       'checkpoint restore/history reset', 'storage failure/download/retry', 'concurrent session CAS conflict',
       'save/resume/discard', 'source byte isolation', 'responsive layouts'] };
-  await context.close();
   return result;
-})
+}

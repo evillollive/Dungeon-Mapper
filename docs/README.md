@@ -5,6 +5,7 @@
 | [Feature Reference](./FEATURES.md) | Full tool, feature, shortcut, export, mobile, PWA, and accessibility reference preserved from the original README. |
 | [Architecture](./ARCHITECTURE.md) | High-level React/Vite app structure, state flow, rendering, persistence, and test strategy. |
 | [Development Guide](./DEVELOPMENT.md) | Local setup, npm scripts, validation commands, and test-suite organization. |
+| [UX-09 Qualification](./UX-09-HANDOFF.md) | Automated browser/CI gates, current journey coverage, rollout policy and remaining release acceptance. |
 | [End-user Experience Roadmap](./USER-EXPERIENCE-ROADMAP.md) | Primary execution plan for the DM/player workflow redesign, local library, visual layout, art assets, infrastructure, and acceptance tests. |
 | [Roadmap](./ROADMAP.md) | Current feature inventory, competitor reference, forward-looking roadmap, and design decisions. |
 | [Roadmap Archive](./archive/ROADMAP-history.md) | Historical record: full implementation detail for completed Phases 1–12, retrospective analyses, priority ordering, and the dated changes log. |

@@ -4,11 +4,19 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's dungeon foundation and approved wood/earth materials are merged in #167 and #168. The eight-piece furnishing reference and richer palette are approved in #169; the full package remains incomplete. Cross-browser follow-up and release research gates remain open. No participant usability acceptance is claimed.
+**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's dungeon foundation and approved wood/earth materials are merged in #167 and #168. The eight-piece furnishing reference and richer palette are approved in #169; the full package remains incomplete. UX-08 is merged in #170. UX-09's first automated browser/CI milestone is implemented; full release qualification remains open. No participant usability acceptance is claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
 **Latest implementation:** UX-08 adds intent-first export, bounded print pages, physical scale metadata, optional-art fallbacks, offline cache readiness and explicit save-aware updates. Production Chromium, Firefox and WebKit journeys passed; see the [export/offline contract and qualification limits](./UX-08-HANDOFF.md). This proceeds using the approved UX-07 foundation and eight-piece furnishing slice without claiming the remaining art package complete. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
+
+**UX-09 automated follow-up, 2026-09-11:** The owner chose a bounded browser
+regression and blocking-CI milestone. Existing creation, shell, publication and
+two-window session journeys now run in the locked Playwright runner on all three
+engines, alongside UX-08. This closes the recorded UX-05/06 desktop-engine
+follow-up for these journeys, not their human/device gates. The new error gate
+caught and prompted a fix for WebKit player-preview resize feedback.
+See [UX-09 scope, results and remaining gates](./UX-09-HANDOFF.md).
 
 ## 1. Product direction
 
@@ -773,8 +781,8 @@ approve these new furnishing designs.
 
 **Priority:** P0/P1. **Depends on:** UX-01, UX-05, UX-07.
 
-**Implementation, 2026-09-11:** Implemented and production-browser qualified,
-pending merge. One dialog covers private full-project backup, player sharing,
+**Implementation, 2026-09-11:** Merged in #170 and production-browser qualified.
+One dialog covers private full-project backup, player sharing,
 print planning and grid-aligned tool images. Page-sized rendering replaces the
 unbounded full-map print allocation. Adjacent overlaps match pixel-for-pixel,
 and PNG files carry physical DPI metadata. Offline readiness checks actual cache
@@ -795,6 +803,16 @@ limits, three-engine evidence, update policy and still-open release gates.
 ### UX-09: Accessibility, performance, and release qualification
 
 **Priority:** P0/P1. **Depends on:** UX-01 through UX-08.
+
+**First bounded milestone, 2026-09-11:** Automated browser journeys and blocking
+CI implemented, pending landing. The owner explicitly selected this work before
+finishing the remaining art catalog. Chromium, Firefox and WebKit cover creation,
+shell focus/layout, publication and local two-window session recovery, plus the
+existing export/offline journey. Lint errors are blocking; 73 existing hook
+warnings are documented and count-capped rather than hidden. A reproduced WebKit
+resize-observer loop in player preview is fixed with lifecycle regressions.
+[UX-09 handoff](./UX-09-HANDOFF.md) records the exact scope and remaining gates.
+This is not approval to mark the full UX-09 package complete.
 
 **Deliverables:** Completed acceptance matrix, human task study, keyboard/screen-reader pass, browser regression coverage, measured performance report, updated feature/help docs, and blocking CI for agreed gates.
 
@@ -931,11 +949,11 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-02 | Implemented and browser-qualified | [Production library, creation, migration contract, and actual evidence](./UX-02-HANDOFF.md): 519 unit/component tests, 33 native library scenario-engine passes, three-engine production creation and stopped-origin offline journeys. UX-00 research remains deferred; UX-09 acceptance is not claimed |
 | UX-03 | Merged in #162 | [Production shell, action migration and design tokens](./UX-03-HANDOFF.md) |
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
-| UX-05 | Merged in #165; Chromium qualified; cross-browser follow-up open | [Publication, projection, discovery, evidence and limitations](./UX-05-HANDOFF.md); later release gates remain |
-| UX-06 | Merged in #166; production Chromium two-window qualified | [Session lifecycle, isolated persistence, display protocol and evidence](./UX-06-HANDOFF.md); Firefox/WebKit and later release gates remain |
+| UX-05 | Merged in #165; current production journey passes Chromium, Firefox and WebKit in UX-09 | [Original policy and evidence](./UX-05-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
+| UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-07 | Foundation and materials merged in #167/#168; eight-piece furnishing slice and richer palette approved in #169 | [Approved furnishing colors](./media/ux07-furnishings/color-review.png); token sets, larger furnishing catalog and remaining art packages are still open |
-| UX-08 | Implemented and production-browser qualified; pending merge | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
-| UX-09 | Not started | Release qualification |
+| UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
+| UX-09 | In progress; automated browser/CI milestone implemented, pending landing | [Journey coverage, lint baseline, CI contract and remaining release gates](./UX-09-HANDOFF.md) |
 | UX-10 | Deferred | Explicit approval of remote scope |
 
 ## 10. Relationship to the previous roadmap

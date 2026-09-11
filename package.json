@@ -6,11 +6,14 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 73",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:ux08": "npm run build && node src/test/ux08.browser.mjs"
+    "test:ux08": "npm run build && node src/test/ux08.browser.mjs",
+    "test:browser": "npm run build && playwright test",
+    "test:browser:run": "playwright test",
+    "test:ux08:run": "node src/test/ux08.browser.mjs"
   },
   "dependencies": {
     "react": "^19.2.5",

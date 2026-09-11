@@ -12,13 +12,20 @@ export default function PlayerPreview({ projection }: { projection: PlayerProjec
   useEffect(() => {
     const viewport = canvas.current?.parentElement;
     if (!viewport) return;
+    let frame = 0;
+    let lastDisplayWidth = -1;
+    let lastTileSize = -1;
     const draw = () => {
+      frame = 0;
       const aspect = map.meta.width / map.meta.height;
       const displayWidth = Math.min(viewport.clientWidth, window.innerHeight * 0.6 * aspect) * zoom;
       // Bound the backing surface while rendering at display resolution rather
       // than enlarging a low-resolution source canvas for small maps.
       const tileSize = Math.max(1, Math.min(Math.ceil(displayWidth * Math.min(2, window.devicePixelRatio || 1) / map.meta.width),
         Math.floor(4096 / Math.max(map.meta.width, map.meta.height))));
+      if (displayWidth === lastDisplayWidth && tileSize === lastTileSize) return;
+      lastDisplayWidth = displayWidth;
+      lastTileSize = tileSize;
       const rendered = renderPlayerProjection(projection, { tileSize });
       for (const [target, thumbnail] of [[canvas.current, false], [minimap.current, true]] as const) {
         if (!target) continue;
@@ -28,11 +35,20 @@ export default function PlayerPreview({ projection }: { projection: PlayerProjec
         target.getContext('2d')?.drawImage(rendered, 0, 0, target.width, target.height);
       }
     };
+    // Canvas sizing can resize its parent. Paint outside observer delivery and
+    // ignore unchanged dimensions rather than feeding that resize back into it.
+    const scheduleDraw = () => {
+      if (!frame) frame = requestAnimationFrame(draw);
+    };
     draw();
-    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(draw);
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(scheduleDraw);
     observer?.observe(viewport);
-    window.addEventListener('resize', draw);
-    return () => { observer?.disconnect(); window.removeEventListener('resize', draw); };
+    window.addEventListener('resize', scheduleDraw);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener('resize', scheduleDraw);
+      cancelAnimationFrame(frame);
+    };
   }, [projection, map.meta.width, map.meta.height, zoom]);
   return <main className="player-preview" aria-label="Player content">
     <header className="player-preview-heading">
