@@ -82,75 +82,77 @@ test('F05 probe waits for delayed canvas drawing', async ({ page }) => {
   assert(sample.postDrawFrameMs >= 0);
 });
 
-test('F05 dense-map local performance diagnostics', async ({ page, context, baseURL }, info) => {
-  assert(throttle === 1 || info.project.name === 'chromium', 'CPU throttling requires --project=chromium.');
-  test.setTimeout(180_000);
-  const errors = [];
-  page.on('pageerror', error => errors.push(error.message));
-  const result = {
-    fixture: 'F05 v1',
-    source: process.env.QA_SOURCE_SHA ?? process.env.GITHUB_SHA ?? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
-    workingTreeDirty: execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim() !== '',
-    engine: info.project.name, browserVersion: context.browser().version(),
-    host: { cpu: cpus()[0]?.model, memoryBytes: totalmem(), platform: process.platform, osRelease: release() },
-    viewport: { width: 1440, height: 900 }, cpuThrottle: throttle,
-    acceptance: 'Diagnostic only. Reference-device and mobile acceptance remain open.',
-    method: 'Trusted event timestamp through completed main-canvas drawing, when required, then two animation frames. Rendering opportunity proxy, not physical input-to-paint or INP. Warm loading includes browser-driver readiness checks and a frame opportunity.',
-    runs: [],
-  };
-  let cdp;
-  let tracing = false;
-  let completed = false;
-  if (info.project.name === 'chromium') {
-    cdp = await context.newCDPSession(page);
-    await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle });
-  }
-  await page.addInitScript(installMeasurements);
-  const saved = () => expect(page.getByRole('status').filter({ hasText: 'Saved on this device' })).toBeVisible();
-  const readMap = () => page.evaluate(() => new Promise((resolve, reject) => {
-    const request = indexedDB.open('dungeon-mapper', 1);
-    request.onerror = () => reject(request.error);
-    request.onsuccess = () => {
-      const db = request.result;
-      const tx = db.transaction('maps', 'readonly');
-      const read = tx.objectStore('maps').get(`project:${new URL(location.href).searchParams.get('project')}`);
-      tx.oncomplete = () => { db.close(); resolve(read.result.project.levels[0]); };
-      tx.onabort = () => { db.close(); reject(tx.error); };
+for (const repetition of [1, 2, 3]) {
+  test(`F05 dense-map local performance diagnostics repetition ${repetition}`, async ({ page, context, baseURL }, info) => {
+    assert(throttle === 1 || info.project.name === 'chromium', 'CPU throttling requires --project=chromium.');
+    test.setTimeout(180_000);
+    const errors = [];
+    page.on('pageerror', error => errors.push(error.message));
+    const result = {
+      fixture: 'F05 v1',
+      repetition, totalRepetitions: 3,
+      source: process.env.QA_SOURCE_SHA ?? process.env.GITHUB_SHA ?? execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+      workingTreeDirty: execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim() !== '',
+      engine: info.project.name, browserVersion: context.browser().version(),
+      host: { cpu: cpus()[0]?.model, memoryBytes: totalmem(), platform: process.platform, osRelease: release() },
+      viewport: { width: 1440, height: 900 }, cpuThrottle: throttle,
+      acceptance: 'Diagnostic only. Reference-device and mobile acceptance remain open.',
+      method: 'Trusted event timestamp through completed main-canvas drawing, when required, then two animation frames. Rendering opportunity proxy, not physical input-to-paint or INP. Warm loading includes browser-driver readiness checks and a frame opportunity.',
+      runs: [],
     };
-  }));
-  const measure = async (label, type, action) => {
-    const count = await page.evaluate(({ label, type }) => {
-      if (window.__f05.active || window.__f05.pending) throw new Error('Overlapping F05 measurements');
-      window.__f05.pending = { label, type, requiresDraw: label.startsWith('paint-') || label.startsWith('token-') };
-      return window.__f05.samples.length;
-    }, { label, type });
-    await action();
-    await page.waitForFunction(count => window.__f05.samples.length > count, count);
-  };
-  const frame = () => page.evaluate(() => new Promise(resolve =>
-    requestAnimationFrame(() => requestAnimationFrame(resolve))));
-  try {
-    await page.goto(baseURL);
-    await page.waitForLoadState('networkidle');
-    await page.getByLabel('Import project', { exact: true }).setInputFiles({
-      name: 'f05.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(denseMapFixture())),
-    });
-    await page.getByRole('button', { name: 'Import as new project', exact: true }).click();
-    await saved();
-    const imported = await readMap();
-    assert.equal(imported.tokens.length, 100);
-    assert.equal(imported.stamps.length, 200);
-    assert.equal(imported.notes.length, 100);
-    assert.equal(imported.dynamicFogEnabled, true);
-    assert.equal(imported.paperTexture.enabled, true);
-    assert.equal(imported.edgeBlend.enabled, true);
-    assert.equal(imported.lightingAtmosphere.enabled, true);
-    assert.deepEqual(imported.roomShapes, denseMapFixture().levels[0].roomShapes);
-    assert.deepEqual(imported.rivers, denseMapFixture().levels[0].rivers);
-    await expect(page.locator('#map-canvas-summary')).toContainText('128 by 128');
-    await page.getByRole('button', { name: 'Fit map to screen', exact: true }).click();
-    // Import and art-cache population are setup, not warm-loading measurements.
-    for (let run = 0; run < 3; run++) {
+    let cdp;
+    let tracing = false;
+    let completed = false;
+    if (info.project.name === 'chromium') {
+      cdp = await context.newCDPSession(page);
+      await cdp.send('Emulation.setCPUThrottlingRate', { rate: throttle });
+    }
+    await page.addInitScript(installMeasurements);
+    const saved = () => expect(page.getByRole('status').filter({ hasText: 'Saved on this device' })).toBeVisible();
+    const readMap = () => page.evaluate(() => new Promise((resolve, reject) => {
+      const request = indexedDB.open('dungeon-mapper', 1);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result;
+        const tx = db.transaction('maps', 'readonly');
+        const read = tx.objectStore('maps').get(`project:${new URL(location.href).searchParams.get('project')}`);
+        tx.oncomplete = () => { db.close(); resolve(read.result.project.levels[0]); };
+        tx.onabort = () => { db.close(); reject(tx.error); };
+      };
+    }));
+    const measure = async (label, type, action) => {
+      const count = await page.evaluate(({ label, type }) => {
+        if (window.__f05.active || window.__f05.pending) throw new Error('Overlapping F05 measurements');
+        window.__f05.pending = { label, type, requiresDraw: label.startsWith('paint-') || label.startsWith('token-') };
+        return window.__f05.samples.length;
+      }, { label, type });
+      await action();
+      await page.waitForFunction(count => window.__f05.samples.length > count, count);
+    };
+    const frame = () => page.evaluate(() => new Promise(resolve =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    try {
+      await page.goto(baseURL);
+      await page.waitForLoadState('networkidle');
+      await page.getByLabel('Import project', { exact: true }).setInputFiles({
+        name: 'f05.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(denseMapFixture())),
+      });
+      await page.getByRole('button', { name: 'Import as new project', exact: true }).click();
+      await saved();
+      const imported = await readMap();
+      assert.equal(imported.tokens.length, 100);
+      assert.equal(imported.stamps.length, 200);
+      assert.equal(imported.notes.length, 100);
+      assert.equal(imported.dynamicFogEnabled, true);
+      assert.equal(imported.paperTexture.enabled, true);
+      assert.equal(imported.edgeBlend.enabled, true);
+      assert.equal(imported.lightingAtmosphere.enabled, true);
+      assert.deepEqual(imported.roomShapes, denseMapFixture().levels[0].roomShapes);
+      assert.deepEqual(imported.rivers, denseMapFixture().levels[0].rivers);
+      await expect(page.locator('#map-canvas-summary')).toContainText('128 by 128');
+      await page.getByRole('button', { name: 'Fit map to screen', exact: true }).click();
+      // Each repetition owns fresh storage and its own existing test timeout.
+      // Import and art-cache population are setup, not warm-loading measurements.
       await page.reload({ waitUntil: 'domcontentloaded' });
       await expect(page.getByRole('application')).toBeVisible();
       await saved();
@@ -173,7 +175,7 @@ test('F05 dense-map local performance diagnostics', async ({ page, context, base
       await page.getByLabel('Active building tool').selectOption('paint');
       await page.getByLabel('Active material', { exact: true }).selectOption('water');
       await frame();
-      if (cdp && run === 0) {
+      if (cdp && repetition === 1) {
         await cdp.send('Profiler.enable');
         await cdp.send('Profiler.start');
         await cdp.send('Tracing.start', { categories: 'devtools.timeline,blink.user_timing',
@@ -224,7 +226,7 @@ test('F05 dense-map local performance diagnostics', async ({ page, context, base
       for (const label of ['hover', 'paint-start', 'paint-drag', 'paint-commit', 'token-drag', 'token-commit', 'pan']) {
         samples.push({ label, ...summarizeSamples(recorded.samples.filter(sample => sample.label === label).map(sample => sample.durationMs)) });
       }
-      result.runs.push({ run: run + 1, profiled: !!cdp && run === 0, warmLoad, samples, rawEvents: recorded.samples, draws: recorded.draws,
+      result.runs.push({ run: repetition, profiled: !!cdp && repetition === 1, warmLoad, samples, rawEvents: recorded.samples, draws: recorded.draws,
         longTasks: recorded.longTasks, longTaskSupport: await page.evaluate(() => PerformanceObserver.supportedEntryTypes.includes('longtask')) });
       if (tracing) {
         const { profile } = await cdp.send('Profiler.stop');
@@ -243,17 +245,17 @@ test('F05 dense-map local performance diagnostics', async ({ page, context, base
         await cdp.send('IO.close', { handle: stream });
         await writeFile(info.outputPath('f05-chromium-trace.json'), Buffer.concat(chunks));
       }
+      await page.screenshot({ path: info.outputPath('f05-editor.png') });
+      assert.deepEqual(errors, []);
+      completed = true;
+    } finally {
+      if (tracing) await cdp.send('Tracing.end');
+      result.errors = errors;
+      result.outcome = completed ? 'completed' : 'incomplete-or-failed';
+      result.expectedRuns = 1;
+      result.completedRuns = result.runs.length;
+      await info.attach('f05-results', { body: JSON.stringify(result, null, 2), contentType: 'application/json' });
+      await writeFile(info.outputPath('f05-results.json'), JSON.stringify(result, null, 2));
     }
-    await page.screenshot({ path: info.outputPath('f05-editor.png') });
-    assert.deepEqual(errors, []);
-    completed = true;
-  } finally {
-    if (tracing) await cdp.send('Tracing.end');
-    result.errors = errors;
-    result.outcome = completed ? 'completed' : 'incomplete-or-failed';
-    result.expectedRuns = 3;
-    result.completedRuns = result.runs.length;
-    await info.attach('f05-results', { body: JSON.stringify(result, null, 2), contentType: 'application/json' });
-    await writeFile(info.outputPath('f05-results.json'), JSON.stringify(result, null, 2));
-  }
-});
+  });
+}

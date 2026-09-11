@@ -183,11 +183,18 @@ and rejects non-Chromium diagnostic runs when greater than 1. CPU throttling
 does not reproduce a slower GPU, memory pressure, thermal behavior or a real
 mobile device. An incomplete stress run is a failure, not a shortened pass.
 
-Each diagnostic performs three warm reloads with isolated initial storage,
-1440 x 900 viewport and DPR 1. Each reload samples 24 hovers, 24 paint-drag
-updates, twelve token-drag updates, 24 keyboard pans, and separate paint/token
-start or commit events. It checks coordinate feedback, imported density/art,
-persisted edits and single-action undo before accepting the run.
+The diagnostic registers three independent repetition tests, each with fresh
+browser storage, a full fixture import and one warm reload at 1440 x 900 and
+DPR 1. Each repetition retains its own existing three-minute test timeout;
+the suite still has the existing twenty-minute limit and one worker. This
+avoids making three repetitions share a single journey timeout on slower
+hosts. No sample counts or behavior assertions are reduced.
+
+Each repetition samples 24 hovers, 24 paint-drag updates, twelve token-drag
+updates, 24 keyboard pans, and separate paint/token start or commit events.
+It checks coordinate feedback, imported density/art, persisted edits and
+single-action undo before accepting the run. Together with the delayed-draw
+probe, F05 now contributes four tests per engine to the required browser jobs.
 
 Timing begins at a trusted browser event's timestamp. Painting and token edits
 must reach the existing main-canvas render (backing-width assignment), finish
@@ -207,9 +214,11 @@ reference-device loading gate are not established by this measurement.
 `f05-results.json` retains every sample, nearest-rank median/p95/max, queue
 delay, drawing times, supported long-task observations, navigation/resource
 entries, browser/OS/CPU/RAM, DPR, throttle rate, source revision, dirty-worktree
-flag and completion status. Incomplete runs keep their completed repetitions
-and the runner's failure evidence; missing repetitions are never treated as
-zero-latency samples. Chromium's first repetition additionally produces
+flag and completion status. Each test writes its own artifact directory and
+report, identified by `repetition` and `totalRepetitions: 3`; `expectedRuns: 1`
+describes that test only. All three repetition tests must complete for a full
+diagnostic result. Failed repetitions retain failure evidence and an incomplete
+report, never a zero-latency sample. Chromium's first repetition additionally produces
 `f05-chromium-trace.json` and `f05-chromium.cpuprofile`, and is explicitly
 marked profiled. Compare profiled and unprofiled runs separately. Timelines
 contain the `f05:` input/frame marks. Later repetitions do not use CDP profiling.

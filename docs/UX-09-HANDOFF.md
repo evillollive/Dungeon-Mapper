@@ -195,14 +195,14 @@ first repetition was 16.8 ms. Do not turn these into a physical latency,
 refresh-rate or representative-device claim. The painting bottleneck is
 still present even on this high-end host.
 
-The finalized three-engine run completed all six diagnostic/probe cases.
+The initial candidate at `5241fe0` completed all six diagnostic/probe cases.
 Local evidence is in this session's `files/f05-final` directory. Earlier
 `f05-baseline`, `f05-profile` and `f05-candidate` evidence is retained separately;
 do not mix their different probe revisions into one benchmark population.
 Reproduction commands, sample semantics and artifact names are in
 [the development guide](./DEVELOPMENT.md#dense-map-performance-diagnostics-f05).
 
-The finalized 4x CPU-throttled Chromium stress run **failed its existing
+That candidate's 4x CPU-throttled Chromium stress run **failed its existing
 180-second limit** during the third repetition. Its first two completed
 repetitions recorded paint-drag p95 of 1139.5/1117.2 ms, token-drag p95 of
 1174.8/1109.3 ms, hover p95 of 11.7/10.8 ms, and warm-ready times of
@@ -212,6 +212,40 @@ retains the explicit incomplete result, two completed repetitions, CPU profile,
 timeline and timeout trace. The earlier frame-only throttled run also timed
 out; its misleading paint-drag timings are superseded, not improvement evidence.
 No timeout, sample count, assertion or roadmap threshold was relaxed.
+
+### CI follow-up: independent repetitions
+
+The required Linux WebKit job for `5241fe0` then exposed the same workload
+partitioning problem without artificial throttling. On its AMD EPYC 7763
+runner, the first complete repetition reported paint-drag p95 of 2447 ms,
+token-drag p95 of 2456 ms and warm-ready time of 4.70 seconds. The test timed
+out during painting in repetition two because all three repetitions shared
+one 180-second journey budget. The five existing workflow journeys and the
+delayed-draw probe passed; this was not an assertion failure in those flows.
+
+Each repetition is now an independent test with fresh browser storage, the
+same full F05 import, one warm reload, and all of its original samples and
+assertions. Each retains the runner's three-minute per-test limit; the
+twenty-minute suite limit, serial execution, zero retries and blocking CI
+remain unchanged. The complete diagnostic still requires all three repetitions
+plus the delayed-draw probe. Individual reports identify the repetition and
+the required total of three, and keep failures explicit. This changes workload
+isolation, not the recorded per-action latency or a release acceptance target.
+
+The earlier local and failed-CI evidence remains historical; do not relabel it
+as a successful run of the independently isolated harness. Source revision,
+test name and repetition metadata distinguish the two arrangements.
+Linux's multi-second edits reinforce the still-open renderer bottleneck and
+the owner's decision not to qualify performance using the high-end Mac.
+
+The independent-repetition candidate completed the delayed-draw probe and
+all three repetitions locally with 4x Chromium CPU throttling. Each repetition
+took about 1.1 minutes, within its unchanged limit; the complete run took
+3.3 minutes. Every original sample and persistence/undo assertion was retained.
+Paint-drag p95 remained 1100.9-1112.8 ms and token-drag p95 1081.9-1126.4 ms.
+This is successful collection of slow results, not a renderer improvement.
+Artifacts are in `files/f05-ci-fix-stress`; the new head's Linux CI remains
+the landing gate.
 
 ### Next bounded performance work
 
