@@ -86,16 +86,82 @@ describe('save restoration and replacement integration', () => {
     await waitFor(() => expect(result.current.saveState.phase).toBe('saved'));
     const oldUpload = result.current.setBackgroundImage;
     const oldClear = result.current.clearMap;
+    const oldAddRiver = result.current.addRiver;
+    const oldAddLevel = result.current.addLevel;
     await act(async () => { await result.current.switchProject('b'); });
     act(() => oldUpload({ dataUrl: 'data:image/png;base64,AAAA', offsetX: 0, offsetY: 0, scale: 1, opacity: 1 }));
     act(() => oldClear());
+    act(() => oldAddRiver({ controlPoints: [{ x: 1, y: 1 }], width: 1, flowDirection: 0, type: 'water' }));
+    act(() => oldAddLevel('Stale level'));
     expect(result.current.map.backgroundImage).toBeUndefined();
+    expect(result.current.map.rivers ?? []).toEqual([]);
+    expect(result.current.project.levels).toHaveLength(1);
+    expect(result.current.canUndo).toBe(false);
     expect(window.alert).toHaveBeenCalledWith(expect.stringContaining('project changed'));
     vi.useFakeTimers();
     act(() => result.current.setMapName('New project edit'));
     await act(async () => { await vi.advanceTimersByTimeAsync(500); });
     expect(result.current.map.meta.name).toBe('New project edit');
     expect(saveProject).toHaveBeenLastCalledWith(result.current.project, 'b-rev', false, 'b');
+  });
+
+  it('keeps map and level actions stable across selection, history and save updates', async () => {
+    vi.mocked(loadProject).mockResolvedValue({ project: createDefaultProject(), revision: 'a-rev', projectId: 'a' });
+    const { result } = renderHook(() => useMapState());
+    await waitFor(() => expect(result.current.saveState.phase).toBe('saved'));
+    const actionNames = [
+      'setTile', 'setTiles', 'fillTiles', 'addToken', 'moveToken', 'updateNote',
+      'addStamp', 'addRiver', 'updateRiver', 'addRoomShape', 'setPublicName',
+      'undo', 'redo', 'switchLevel', 'addLevel', 'duplicateLevel', 'reorderLevels',
+    ] as const;
+    const original = result.current;
+    const expectStableActions = () => {
+      for (const name of actionNames) expect(result.current[name], name).toBe(original[name]);
+    };
+    act(() => result.current.setSelectedNoteId(99));
+    expectStableActions();
+    vi.useFakeTimers();
+    act(() => result.current.setTile(1, 1, 'floor'));
+    expect(result.current.canUndo).toBe(true);
+    expectStableActions();
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    expect(result.current.saveState.phase).toBe('saved');
+    expectStableActions();
+  });
+
+  it('preserves note IDs and per-level undo through duplication, reorder and deletion', async () => {
+    const project = createDefaultProject();
+    project.levels = [createDefaultMap('First'), createDefaultMap('Second')];
+    project.levels[1].notes = [{ id: 7, x: 0, y: 0, label: 'Existing', description: '' }];
+    project.stairLinks = [{ fromLevel: 0, fromCell: { x: 3, y: 3 }, toLevel: 1, toCell: { x: 4, y: 4 } }];
+    vi.mocked(loadProject).mockResolvedValue({ project, revision: 'a-rev', projectId: 'a' });
+    const { result } = renderHook(() => useMapState());
+    await waitFor(() => expect(result.current.saveState.phase).toBe('saved'));
+    vi.useFakeTimers();
+    act(() => { expect(result.current.addNote(1, 1)).toBe(1); });
+    act(() => result.current.switchLevel(1));
+    act(() => { expect(result.current.addNote(2, 2)).toBe(8); });
+    act(() => result.current.duplicateLevel(0));
+    expect(result.current.map.meta.name).toBe('First (copy)');
+    expect(result.current.project.stairLinks[0].toLevel).toBe(2);
+    act(() => { expect(result.current.addNote(2, 2)).toBe(2); });
+    act(() => result.current.reorderLevels(2, 0));
+    expect(result.current.activeLevelIndex).toBe(2);
+    expect(result.current.project.stairLinks[0]).toMatchObject({ fromLevel: 1, toLevel: 0 });
+    act(() => result.current.switchLevel(0));
+    act(() => result.current.undo());
+    expect(result.current.map.notes.map(note => note.id)).toEqual([7]);
+    expect(result.current.project.levels[2].notes.map(note => note.id)).toEqual([1, 2]);
+    act(() => result.current.redo());
+    expect(result.current.map.notes.map(note => note.id)).toEqual([7, 8]);
+    await act(async () => { await vi.advanceTimersByTimeAsync(500); });
+    act(() => result.current.deleteLevel(1));
+    expect(result.current.project.levels.map(level => level.meta.name)).toEqual(['Second', 'First (copy)']);
+    expect(result.current.project.stairLinks).toEqual([]);
+    act(() => result.current.switchLevel(1));
+    act(() => result.current.undo());
+    expect(result.current.map.notes.map(note => note.id)).toEqual([1]);
+    expect(result.current.project.levels[0].notes.map(note => note.id)).toEqual([7, 8]);
   });
 
   it('refreshes checkpoint capacity after explicit cleanup before another destructive action', async () => {

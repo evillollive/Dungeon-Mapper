@@ -4,7 +4,7 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's dungeon foundation and approved wood/earth materials are merged in #167 and #168. The eight-piece furnishing reference and richer palette are approved in #169; the full package remains incomplete. UX-08 is merged in #170. UX-09's automated browser/CI milestone is merged in #171; its critical keyboard-workflow follow-up is implemented for review. Full release qualification remains open. No participant usability acceptance is claimed.
+**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's dungeon foundation and approved wood/earth materials are merged in #167 and #168. The eight-piece furnishing reference and richer palette are approved in #169; the full package remains incomplete. UX-08 is merged in #170. UX-09's automated browser/CI milestone is merged in #171; its critical keyboard-workflow follow-up is merged in #172. Full release qualification remains open. No participant usability acceptance is claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
@@ -808,14 +808,16 @@ limits, three-engine evidence, update policy and still-open release gates.
 CI merged in #171. The owner explicitly selected this work before
 finishing the remaining art catalog. Chromium, Firefox and WebKit cover creation,
 shell focus/layout, publication and local two-window session recovery, plus the
-existing export/offline journey. Lint errors are blocking; 73 existing hook
-warnings are documented and count-capped rather than hidden. A reproduced WebKit
+existing export/offline journey. Lint errors are blocking; the initial 73 hook
+warnings were documented and count-capped rather than hidden. Subsequent
+map-hook housekeeping reduces that allowance to five without suppressing
+the remaining warnings. A reproduced WebKit
 resize-observer loop in player preview is fixed with lifecycle regressions.
 [UX-09 handoff](./UX-09-HANDOFF.md) records the exact scope and remaining gates.
 This is not approval to mark the full UX-09 package complete.
 
 **Second bounded milestone, 2026-09-11:** Critical keyboard workflows and
-related housekeeping are implemented for review. Native note/initiative
+related housekeeping are merged in #172. Native note/initiative
 selection no longer intercepts input spaces, newlines or rename confirmation.
 Reorder buttons, draft focus return and polite turn announcements supplement
 existing controls. Shared modal focus excludes hidden/disabled/collapsed
@@ -965,7 +967,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-07 | Foundation and materials merged in #167/#168; eight-piece furnishing slice and richer palette approved in #169 | [Approved furnishing colors](./media/ux07-furnishings/color-review.png); token sets, larger furnishing catalog and remaining art packages are still open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
-| UX-09 | In progress; browser/CI gates merged in #171; critical keyboard follow-up implemented for review | [Keyboard workflow scope, journey coverage, lint baseline and remaining release gates](./UX-09-HANDOFF.md); human screen-reader and reference-device performance milestones remain open |
+| UX-09 | In progress; browser/CI gates merged in #171; critical keyboard follow-up merged in #172 | [Keyboard workflow scope, journey coverage, lint baseline and remaining release gates](./UX-09-HANDOFF.md); human screen-reader and reference-device performance milestones remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |
 
 ## 10. Relationship to the previous roadmap

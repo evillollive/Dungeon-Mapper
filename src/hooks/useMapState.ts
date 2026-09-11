@@ -122,7 +122,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const resizeMap = useCallback((width: number, height: number) => {
     if (width === map.meta.width && height === map.meta.height) return;
@@ -133,8 +133,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex, map.meta.width, map.meta.height, prepareReplacement]);
+  }, [setProject, debouncedSave, activeLevelIndex, map.meta.width, map.meta.height, prepareReplacement, pushHistory]);
 
   const clearMap = useCallback(() => {
     if (!prepareReplacement('Clear level')) return;
@@ -147,8 +146,7 @@ export function useMapState() {
       return updated;
     });
     resetIds();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex, prepareReplacement]);
+  }, [setProject, debouncedSave, activeLevelIndex, prepareReplacement, pushHistory, resetIds]);
 
   const generateMap = useCallback((tiles: Tile[][], width: number, height: number, notes: MapNote[] = [], name?: string, roomShapes?: RoomShape[], rivers?: River[]) => {
     if (!prepareReplacement('Generate level')) return false;
@@ -176,8 +174,7 @@ export function useMapState() {
     }
     setSelectedNoteId(null);
     return true;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex, prepareReplacement]);
+  }, [setProject, debouncedSave, activeLevelIndex, prepareReplacement, pushHistory]);
 
   const applyGeneratedRegion = useCallback((genTiles: Tile[][], ox: number, oy: number, genNotes: MapNote[] = [], genRivers: River[] = []) => {
     const regionH = genTiles.length;
@@ -230,8 +227,7 @@ export function useMapState() {
       nextRiverIdRef.current += highestGen;
     }
     return true;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex, prepareReplacement]);
+  }, [setProject, debouncedSave, activeLevelIndex, prepareReplacement, pushHistory]);
 
   // ── Notes ─────────────────────────────────────────────────────────────
 
@@ -249,8 +245,7 @@ export function useMapState() {
     });
     setNextNoteId(id => id + 1);
     return nextNoteId;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [nextNoteId, debouncedSave, activeLevelIndex]);
+  }, [nextNoteId, setProject, debouncedSave, activeLevelIndex, pushHistory]);
 
   const updateNote = useCallback((id: number, label: string, description: string, position?: NoteEditFields) => {
     setProject(prev => {
@@ -271,8 +266,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, debouncedSave, activeLevelIndex, pushHistory]);
 
   const deleteNote = useCallback((id: number) => {
     setProject(prev => {
@@ -287,8 +281,7 @@ export function useMapState() {
       return updated;
     });
     setSelectedNoteId(sel => sel === id ? null : sel);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, debouncedSave, activeLevelIndex, pushHistory]);
 
   // ── Theme ─────────────────────────────────────────────────────────────
 
@@ -298,7 +291,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const setTheme = useCallback((theme: string, preserveExisting = false) => {
     setProject(prev => {
@@ -330,8 +323,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, debouncedSave, activeLevelIndex, pushHistory]);
 
   const saveCustomTheme = useCallback((theme: CustomThemeDefinition) => {
     setProject(prev => {
@@ -345,7 +337,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, setProject]);
 
   const deleteCustomTheme = useCallback((themeId: string) => {
     setProject(prev => {
@@ -363,7 +355,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, setProject]);
 
   // ── Fog of war ────────────────────────────────────────────────────────
 
@@ -384,8 +376,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, debouncedSave, activeLevelIndex, pushHistory]);
 
   const fillAllFog = useCallback((hidden: boolean) => {
     setProject(prev => {
@@ -396,8 +387,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, debouncedSave, activeLevelIndex, pushHistory]);
 
   const setFogEnabled = useCallback((enabled: boolean) => {
     setProject(prev => {
@@ -406,7 +396,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const setDynamicFogEnabled = useCallback((enabled: boolean) => {
     setProject(prev => {
@@ -419,7 +409,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const setExplored = useCallback((explored: boolean[][]) => {
     setProject(prev => {
@@ -428,7 +418,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const resetExplored = useCallback(() => {
     setProject(prev => {
@@ -438,7 +428,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   // ── Tokens ────────────────────────────────────────────────────────────
 
@@ -460,7 +450,7 @@ export function useMapState() {
     });
     if (placed) { nextTokenIdRef.current = newId + 1; return newId; }
     return null;
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, pushHistory, debouncedSave]);
 
   const moveToken = useCallback((id: number, x: number, y: number) => {
     setProject(prev => {
@@ -480,7 +470,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, pushHistory, debouncedSave]);
 
   const removeToken = useCallback((id: number) => {
     setProject(prev => {
@@ -492,7 +482,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, pushHistory, debouncedSave]);
 
   const updateToken = useCallback((id: number, patch: Partial<Omit<Token, 'id'>>) => {
     setProject(prev => {
@@ -505,7 +495,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, pushHistory, debouncedSave]);
 
   const reorderInitiative = useCallback((fromIndex: number, toIndex: number) => {
     setProject(prev => {
@@ -519,7 +509,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const clearInitiative = useCallback(() => {
     setProject(prev => {
@@ -528,7 +518,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   // ── Annotations ───────────────────────────────────────────────────────
 
@@ -543,7 +533,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   const removeAnnotation = useCallback((id: number) => {
     setProject(prev => {
@@ -554,7 +544,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   const clearAnnotations = useCallback((kind?: 'player' | 'gm') => {
     setProject(prev => {
@@ -565,7 +555,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   // ── Markers ───────────────────────────────────────────────────────────
 
@@ -586,7 +576,7 @@ export function useMapState() {
     });
     if (placed) { nextMarkerIdRef.current = newId + 1; return newId; }
     return null;
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, pushHistory, debouncedSave]);
 
   const removeMarker = useCallback((id: number) => {
     setProject(prev => {
@@ -597,7 +587,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   const clearMarkers = useCallback(() => {
     setProject(prev => {
@@ -607,7 +597,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, pushHistory, debouncedSave]);
 
   // ── Light sources ─────────────────────────────────────────────────────
 
@@ -628,7 +618,7 @@ export function useMapState() {
     });
     if (placed) { nextLightIdRef.current = newId + 1; return newId; }
     return null;
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, pushHistory, debouncedSave]);
 
   const removeLightSource = useCallback((id: number) => {
     setProject(prev => {
@@ -639,7 +629,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   const clearLightSources = useCallback(() => {
     setProject(prev => {
@@ -649,7 +639,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, pushHistory, debouncedSave]);
 
   // ── Stamps ────────────────────────────────────────────────────────────
 
@@ -687,8 +677,7 @@ export function useMapState() {
       return newId;
     }
     return null;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, debouncedSave, activeLevelIndex, pushHistory]);
 
   const moveStamp = useCallback((id: number, x: number, y: number) => {
     setProject(prev => {
@@ -706,8 +695,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, debouncedSave, activeLevelIndex, pushHistory]);
 
   const removeStamp = useCallback((id: number) => {
     setProject(prev => {
@@ -721,8 +709,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, debouncedSave, activeLevelIndex, pushHistory]);
 
   const clearStamps = useCallback(() => {
     setProject(prev => {
@@ -733,8 +720,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, debouncedSave, activeLevelIndex, pushHistory]);
 
   /** Update arbitrary properties on a placed stamp. */
   const updateStamp = useCallback((id: number, patch: Partial<Omit<PlacedStamp, 'id' | 'stampId'>>) => {
@@ -750,8 +736,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, debouncedSave, activeLevelIndex, pushHistory]);
 
   /** Move stamp to front (end of array = rendered last = visually on top). */
   const bringStampToFront = useCallback((id: number) => {
@@ -766,8 +751,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, debouncedSave, activeLevelIndex, pushHistory]);
 
   /** Move stamp to back (start of array = rendered first = visually behind). */
   const sendStampToBack = useCallback((id: number) => {
@@ -782,8 +766,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, debouncedSave, activeLevelIndex, pushHistory]);
 
   // ── Background image ──────────────────────────────────────────────────
 
@@ -793,7 +776,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const clearBackgroundImage = useCallback(() => {
     setProject(prev => {
@@ -802,7 +785,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const updateBackgroundImage = useCallback((patch: Partial<BackgroundImage>) => {
     setProject(prev => {
@@ -813,7 +796,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   // ── Paper texture ─────────────────────────────────────────────────────
 
@@ -823,7 +806,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const clearPaperTexture = useCallback(() => {
     setProject(prev => {
@@ -832,7 +815,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const updatePaperTexture = useCallback((patch: Partial<import('../types/map').PaperTextureSettings>) => {
     setProject(prev => {
@@ -844,7 +827,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   // ── Edge blending ────────────────────────────────────────────────────
 
@@ -854,7 +837,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const clearEdgeBlend = useCallback(() => {
     setProject(prev => {
@@ -863,7 +846,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const updateEdgeBlend = useCallback((patch: Partial<import('../types/map').EdgeBlendSettings>) => {
     setProject(prev => {
@@ -875,7 +858,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   // ── Hand-drawn mode ──────────────────────────────────────────────────
 
@@ -885,7 +868,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const clearHandDrawn = useCallback(() => {
     setProject(prev => {
@@ -894,7 +877,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const updateHandDrawn = useCallback((patch: Partial<import('../types/map').HandDrawnSettings>) => {
     setProject(prev => {
@@ -906,7 +889,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   // ── Lighting & atmosphere ───────────────────────────────────────────
 
@@ -916,7 +899,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const clearLightingAtmosphere = useCallback(() => {
     setProject(prev => {
@@ -925,7 +908,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   const updateLightingAtmosphere = useCallback((patch: Partial<import('../types/map').LightingAtmosphereSettings>) => {
     setProject(prev => {
@@ -937,7 +920,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   // ── Art style presets ────────────────────────────────────────────────
 
@@ -964,7 +947,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave]);
 
   // ── Custom stamps ─────────────────────────────────────────────────────
 
@@ -981,7 +964,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, setProject]);
 
   const deleteCustomStamp = useCallback((stampId: string) => {
     setProject(prev => {
@@ -994,7 +977,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, setProject]);
 
   // ── Wall segments ─────────────────────────────────────────────────────
 
@@ -1009,7 +992,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   const removeWallSegment = useCallback((id: number) => {
     setProject(prev => {
@@ -1020,7 +1003,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   const clearWallSegments = useCallback(() => {
     setProject(prev => {
@@ -1031,7 +1014,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   // ── Path segments ─────────────────────────────────────────────────────
 
@@ -1046,7 +1029,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   const removePathSegment = useCallback((id: number) => {
     setProject(prev => {
@@ -1057,7 +1040,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   const clearPathSegments = useCallback(() => {
     setProject(prev => {
@@ -1068,7 +1051,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   // ── Rivers ─────────────────────────────────────────────────────────────
 
@@ -1084,7 +1067,7 @@ export function useMapState() {
       return updated;
     });
     return newId;
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   const updateRiver = useCallback((id: number, changes: Partial<Omit<River, 'id'>>) => {
     setProject(prev => {
@@ -1096,7 +1079,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   const removeRiver = useCallback((id: number) => {
     setProject(prev => {
@@ -1107,7 +1090,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   const clearRivers = useCallback(() => {
     setProject(prev => {
@@ -1118,7 +1101,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   // ── Room shapes (Phase 10: Dynamic Rooms) ──────────────────────────────
 
@@ -1134,7 +1117,7 @@ export function useMapState() {
       return updated;
     });
     return newId;
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   const updateRoomShape = useCallback((id: number, changes: Partial<Omit<RoomShape, 'id'>>) => {
     setProject(prev => {
@@ -1147,7 +1130,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   const removeRoomShape = useCallback((id: number) => {
     setProject(prev => {
@@ -1158,7 +1141,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   const clearRoomShapes = useCallback(() => {
     setProject(prev => {
@@ -1169,7 +1152,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex, pushHistory]);
+  }, [setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   // ── Scene templates ───────────────────────────────────────────────────
 
@@ -1216,7 +1199,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [map, debouncedSave]);
+  }, [map, setProject, debouncedSave]);
 
   const deleteSceneTemplate = useCallback((templateId: string) => {
     setProject(prev => {
@@ -1229,7 +1212,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, setProject]);
 
   const renameSceneTemplate = useCallback((templateId: string, newName: string) => {
     setProject(prev => {
@@ -1241,7 +1224,7 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, setProject]);
 
   const applySceneTemplate = useCallback((templateId: string, ox: number, oy: number) => {
     if (!(project.sceneTemplates ?? []).some(template => template.id === templateId)) {
@@ -1304,7 +1287,7 @@ export function useMapState() {
       return updated;
     });
     return true;
-  }, [debouncedSave, activeLevelIndex, pushHistory, project.sceneTemplates, prepareReplacement]);
+  }, [project.sceneTemplates, prepareReplacement, setProject, pushHistory, activeLevelIndex, debouncedSave]);
 
   return {
     map, project, activeLevelIndex,

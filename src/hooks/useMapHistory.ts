@@ -12,23 +12,23 @@ export function useMapHistory(
   const [canUndo, setCanUndo] = useState(false);
   const [canRedo, setCanRedo] = useState(false);
 
-  function getHistory(levelIdx: number): LevelHistory {
+  const getHistory = useCallback((levelIdx: number): LevelHistory => {
     let h = historyRef.current.get(levelIdx);
     if (!h) {
       h = { past: [], future: [] };
       historyRef.current.set(levelIdx, h);
     }
     return h;
-  }
+  }, []);
 
-  function pushHistory(prev: DungeonMap, levelIdx: number) {
+  const pushHistory = useCallback((prev: DungeonMap, levelIdx: number) => {
     const snap = createHistorySnapshot(prev);
     const h = getHistory(levelIdx);
     h.past = [...h.past.slice(-(MAX_HISTORY_SIZE - 1)), snap];
     h.future = [];
     setCanUndo(true);
     setCanRedo(false);
-  }
+  }, [getHistory]);
 
   const undo = useCallback(() => {
     const h = getHistory(activeLevelIndex);
@@ -44,9 +44,7 @@ export function useMapHistory(
       setCanRedo(true);
       return updated;
     });
-  // React state setters are stable; omitting setProject matches the local hook pattern.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, debouncedSave, activeLevelIndex, getHistory]);
 
   const redo = useCallback(() => {
     const h = getHistory(activeLevelIndex);
@@ -62,9 +60,7 @@ export function useMapHistory(
       setCanRedo(h.future.length > 0);
       return updated;
     });
-  // React state setters are stable; omitting setProject matches the local hook pattern.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, debouncedSave, activeLevelIndex, getHistory]);
 
   return { historyRef, canUndo, canRedo, setCanUndo, setCanRedo, getHistory, pushHistory, undo, redo };
 }

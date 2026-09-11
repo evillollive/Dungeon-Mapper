@@ -32,6 +32,7 @@ The project uses [Vitest](https://vitest.dev/) with [React Testing Library](http
 | FOV engine | `src/utils/__tests__/fov.test.ts` | `isOpaque`, `computeFOV` edge cases (walls, radius, doors) |
 | Stamp catalog | `src/utils/__tests__/stampCatalog.test.ts` | `getStampDef`, built-in stamp integrity, category labels |
 | Map state | `src/hooks/__tests__/mapStateUtils.test.ts` | `createDefaultMap`, `createDefaultProject`, `withDefaults`, `nextIdAfter` |
+| Hook lifecycle | `src/hooks/__tests__/useMapHistory.test.ts`, `src/hooks/__tests__/useLevelManagement.test.ts`, `src/hooks/__tests__/savePersistence.test.tsx` | Stable editing callbacks, current injected dependencies, per-level history and project-generation isolation |
 | Components | `src/components/__tests__/dialogs.test.tsx` | Dialog render/close lifecycle (ShortcutsHelp, ExportDialog) |
 | Paper texture | `src/utils/__tests__/paperTexture.test.ts` | `generatePaperTexture`, pattern rendering, caching, vignette |
 | Edge blending | `src/utils/__tests__/edgeBlend.test.ts` | `drawEdgeBlending`, dither/smooth/stipple styles, intensity |
@@ -144,11 +145,15 @@ independent engine jobs, no fail-fast cancellation and fourteen-day artifacts.
 The aggregate **Browser qualification** check fails when any engine fails,
 is skipped or is cancelled. The active default-branch ruleset requires that
 aggregate and **Build and test**, both strict/up-to-date. **Build and test** also treats lint errors as
-blocking. The existing 73 `react-hooks/exhaustive-deps` warnings remain visible
-and are capped with `--max-warnings 73`; lower that ceiling as debt is removed,
+blocking. The remaining five `react-hooks/exhaustive-deps` warnings remain visible
+and are capped with `--max-warnings 5`; lower that ceiling as debt is removed,
 never increase it to hide new warnings. This is a count ceiling, not per-warning
-identity tracking. Existing debt is confined to `App.tsx`, `MapCanvas.tsx`,
-`useLevelManagement.ts` and `useMapState.ts`.
+identity tracking. Remaining warnings are confined to `App.tsx` and
+`MapCanvas.tsx`. Map-state, level-management and history callbacks now declare
+their dependencies without hook-rule suppressions. Shared history helpers stay
+stable across ordinary renders but read the current history ref, including
+after level reindexing. Project-scoped actions still refresh when the editor
+generation changes, so callbacks retained from a previous project are rejected.
 
 See [UX-09 qualification status](./UX-09-HANDOFF.md) for actual coverage and
 remaining human/device/performance gates. Passing these jobs is not an

@@ -36,7 +36,7 @@ export function useLevelManagement(
       return prev;
     });
 
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, activeLevelIndex, debouncedSave, setActiveLevelIndex, syncIdsToLevel, getHistory, setCanUndo, setCanRedo, setSelectedNoteId]);
 
   const addLevel = useCallback((name?: string) => {
     setProject(prev => {
@@ -54,7 +54,7 @@ export function useLevelManagement(
       return updated;
     });
 
-  }, [debouncedSave]);
+  }, [debouncedSave, setActiveLevelIndex, setCanRedo, setCanUndo, setProject, setSelectedNoteId, syncIdsToLevel]);
 
   const renameLevel = useCallback((idx: number, name: string) => {
     setProject(prev => {
@@ -66,7 +66,7 @@ export function useLevelManagement(
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, setProject]);
 
   const deleteLevel = useCallback((idx: number) => {
     if (levelCount <= 1 || idx < 0 || idx >= levelCount) return;
@@ -103,7 +103,7 @@ export function useLevelManagement(
       return updated;
     });
 
-  }, [debouncedSave, activeLevelIndex, levelCount, prepareReplacement]);
+  }, [levelCount, prepareReplacement, setProject, activeLevelIndex, historyRef, debouncedSave, setActiveLevelIndex, syncIdsToLevel, getHistory, setCanUndo, setCanRedo, setSelectedNoteId]);
 
   const duplicateLevel = useCallback((idx: number) => {
     setProject(prev => {
@@ -135,7 +135,7 @@ export function useLevelManagement(
       return updated;
     });
 
-  }, [debouncedSave]);
+  }, [debouncedSave, historyRef, setActiveLevelIndex, setCanRedo, setCanUndo, setProject, setSelectedNoteId, syncIdsToLevel]);
 
   const reorderLevels = useCallback((fromIdx: number, toIdx: number) => {
     setProject(prev => {
@@ -169,7 +169,7 @@ export function useLevelManagement(
       setActiveLevelIndex(newActive);
       return updated;
     });
-  }, [debouncedSave, activeLevelIndex]);
+  }, [setProject, historyRef, activeLevelIndex, debouncedSave, setActiveLevelIndex]);
 
   const setProjectName = useCallback((name: string) => {
     setProject(prev => {
@@ -177,7 +177,7 @@ export function useLevelManagement(
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, setProject]);
 
   const addStairLink = useCallback((link: StairLink) => {
     setProject(prev => {
@@ -188,7 +188,7 @@ export function useLevelManagement(
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, setProject]);
 
   const removeStairLink = useCallback((fromLevel: number, fromX: number, fromY: number) => {
     setProject(prev => {
@@ -202,7 +202,7 @@ export function useLevelManagement(
       debouncedSave(updated);
       return updated;
     });
-  }, [debouncedSave]);
+  }, [debouncedSave, setProject]);
 
   return {
     switchLevel, addLevel, renameLevel, deleteLevel,
