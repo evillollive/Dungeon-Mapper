@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import type { PlacedStamp, Token, MapNote, LightSource, DungeonMap, StampDef, RoomShape, River, TileType } from '../types/map';
+import type { PlacedStamp, Token, MapNote, NoteEditFields, LightSource, DungeonMap, StampDef, RoomShape, River, TileType } from '../types/map';
 import { ALL_TILE_TYPES, RIVER_TYPES } from '../types/map';
 import { getStampDef } from '../utils/stampCatalog';
 import { getThemeWithCustom } from '../utils/customThemes';
@@ -30,7 +30,7 @@ export interface SelectionInspectorProps {
   onUpdateToken: (id: number, patch: Partial<Omit<Token, 'id'>>) => void;
   onRemoveToken: (id: number) => void;
   onSelectToken: (id: number | null) => void;
-  onUpdateNote: (id: number, label: string, description: string, position?: { x: number; y: number }) => void;
+  onUpdateNote: (id: number, label: string, description: string, position?: NoteEditFields) => void;
   onDeleteNote: (id: number) => void;
   onSelectNote: (id: number | null) => void;
   onRemoveLightSource: (id: number) => void;
@@ -115,6 +115,7 @@ export default function SelectionInspector(p: SelectionInspectorProps) {
             <label><input type="checkbox" checked={d.flipY} onChange={e => set({ ...d, flipY: e.target.checked })} />Flip vertically</label>
           </fieldset>
           <label><input type="checkbox" checked={d.locked ?? false} onChange={e => set({ ...d, locked: e.target.checked })} />Lock stamp</label>
+          <label><input type="checkbox" checked={d.hidden ?? false} onChange={e => set({ ...d, hidden: e.target.checked })} />Hide stamp from players</label>
         </>}
       </EditForm>
       <div className="inspector-fields">
@@ -134,18 +135,29 @@ export default function SelectionInspector(p: SelectionInspectorProps) {
         <label>Token label<input value={d.label} onChange={e => set({ ...d, label: e.target.value })} /></label>
         {position(d.x, d.y, (x, y) => set({ ...d, x, y }), d.size ?? 1)}
         <label>Token icon<input value={d.icon ?? ''} onChange={e => set({ ...d, icon: e.target.value })} /></label>
+        <label><input type="checkbox" checked={d.hidden ?? false} onChange={e => set({ ...d, hidden: e.target.checked })} />Hide token from players</label>
+        <label><input type="checkbox" checked={d.hideFromInitiative ?? false} onChange={e => set({ ...d, hideFromInitiative: e.target.checked })} />Hide from player initiative</label>
+        <small>Visible tokens share their label and icon. Fog still applies to the complete footprint.</small>
       </>}
     </EditForm>;
   } else if (note) {
     label = 'Note';
     remove = () => p.onDeleteNote(note.id);
     deselect ??= () => p.onSelectNote(null);
-    content = <EditForm key={`note-${note.id}`} label={label} value={note} onApply={d => p.onUpdateNote(note.id, d.label, d.description, { x: d.x, y: d.y })}>
+    content = <EditForm key={`note-${note.id}`} label={label} value={note} onApply={d => p.onUpdateNote(note.id, d.label, d.description, {
+      x: d.x, y: d.y, published: d.published, publicLabel: d.publicLabel, publicDescription: d.publicDescription,
+    })}>
       {(d, set) => <>
         <label>Note label<input value={d.label} onChange={e => set({ ...d, label: e.target.value })} /></label>
         <label>Note description<textarea rows={4} value={d.description} onChange={e => set({ ...d, description: e.target.value })} /></label>
         {position(d.x, d.y, (x, y) => set({ ...d, x, y }))}
-        <small>Existing DM content. This is not a player publication control.</small>
+        <small>The label and description above are DM-private. Legacy notes stay private until explicitly published.</small>
+        <fieldset><legend>Player publication</legend>
+          <label>Public note title<input value={d.publicLabel ?? ''} onChange={e => set({ ...d, publicLabel: e.target.value })} /></label>
+          <label>Public note text<textarea rows={3} value={d.publicDescription ?? ''} onChange={e => set({ ...d, publicDescription: e.target.value })} /></label>
+          <label><input type="checkbox" checked={d.published ?? false} onChange={e => set({ ...d, published: e.target.checked })} />Publish note to players</label>
+          <small>Only public fields are shared, and only where the map is visible or explored.</small>
+        </fieldset>
       </>}
     </EditForm>;
   } else if (room) {

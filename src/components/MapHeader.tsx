@@ -78,6 +78,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>((props, ref) => {
       </button>
       <ActionButton id="file.recovery"><span role="status">{props.saveLabel}</span></ActionButton>
       <ActionButton id="view.viewMode" icon="look">{props.viewMode === 'gm' ? 'Edit' : 'DM view'}</ActionButton>
+      <ActionButton id="view.playerPreview" icon="look">Player preview</ActionButton>
       <ActionButton id="help.commandPalette" icon="search">Commands</ActionButton>
       <ActionButton id="dialog.export" icon="export">Export</ActionButton>
       <button className="project-menu-button" type="button" onClick={event => { event.currentTarget.focus(); setMenuOpen(true); }} aria-label="Project menu">
@@ -95,13 +96,15 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>((props, ref) => {
     {menuOpen && <ActionMenu title="Project menu" onClose={() => setMenuOpen(false)} ids={[
       'file.library', 'file.new', 'file.samples', 'file.open', 'file.generate',
       'edit.undo', 'edit.redo', 'edit.copy', 'edit.cut', 'edit.paste',
-      'panel.notes', 'panel.encounter', 'panel.info', 'dialog.templates',
+      'panel.notes', 'panel.encounter', 'panel.info', 'dialog.templates', 'dialog.audience', 'view.playerPreview',
       'dialog.settings', 'file.recovery', 'help.shortcuts', 'help.commandPalette',
     ]} />}
     {props.exportOpen && <ActionMenu title="Export" onClose={props.onCloseExport} ids={[
-      'file.exportJson', 'file.exportPng', 'file.exportSvg', 'file.printExport', 'view.printMode',
+      'file.playerPng', 'file.playerSvg', 'file.exportJson', 'file.exportPng', 'file.exportSvg', 'file.printExport', 'view.printMode',
     ]}>
-      <p>Editable backups include all DM content. Current image exports are not a guaranteed player-safe projection.</p>
+      <p>Player PNG and SVG use the same publication and fog policy as Player preview.
+        Editable backups and DM exports include private content.</p>
+      <p>Player artwork can contain secrets embedded in imported images. Review it before sharing.</p>
       <p>Image resolution is separate from map dimensions, canvas zoom, and interface text size.</p>
     </ActionMenu>}
     {props.settingsOpen && <ShellDialog title="Project settings" onClose={props.onCloseSettings}>

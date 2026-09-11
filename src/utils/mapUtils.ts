@@ -60,6 +60,8 @@ export function floodFill(
     // Clear any per-tile theme override on filled cells so they adopt the
     // current map theme, matching the behavior of setTile/setTiles.
     const next = { ...newTiles[y][x], type: fillType };
+    delete next.discovered;
+    delete next.discoveredType;
     delete next.theme;
     newTiles[y][x] = next;
 
@@ -68,4 +70,3 @@ export function floodFill(
 
   return newTiles;
 }
-

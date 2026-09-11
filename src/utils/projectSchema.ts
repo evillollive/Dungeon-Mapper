@@ -89,20 +89,22 @@ const riverType = oneOf(['water', 'lava', 'underground-stream']);
 const endpoint = oneOf(['spring', 'waterfall', 'cave', 'delta', 'lava-vent', 'outflow']);
 const edge = oneOf(['n', 's', 'e', 'w']);
 const tile = fields({ type: tileType }, {
+  discovered: boolean, discoveredType: tileType,
   noteId: id, theme: text, flowDirection: finite, riverId: id, riverType,
   riverBank: oneOf(['sand', 'dirt', 'rock', 'stone', 'scorched']),
   riverBankRiverId: id, riverBankType: riverType,
 });
 const note = fields({ id, x: integer, y: integer, label: text, description: text }, {
+  published: boolean, publicLabel: text, publicDescription: text,
   kind: oneOf(['room', 'poi']),
 });
 const stamp = fields({
   id, stampId: text, x: finite, y: finite, rotation: finite, scale: positive,
   flipX: boolean, flipY: boolean, opacity: unit, locked: boolean,
-});
+}, { hidden: boolean });
 const token = fields({
   id, x: integer, y: integer, kind: oneOf(['player', 'npc', 'monster']), label: text,
-}, { color: text, icon: text, size: dimension });
+}, { color: text, icon: text, size: dimension, hidden: boolean, hideFromInitiative: boolean });
 const strokeFields = { id, points: array(point), color: text };
 const river = fields({
   id, controlPoints: array(point), width: positive, flowDirection: finite, type: riverType,
@@ -134,7 +136,7 @@ function grid(value: unknown, path: string, width: number, height: number, item:
 
 const map: Validator = (value, path) => {
   fields({
-    meta: fields({ name: text, width: dimension, height: dimension, tileSize: positive }, { theme: text }),
+    meta: fields({ name: text, width: dimension, height: dimension, tileSize: positive }, { theme: text, publicName: text }),
     notes: array(note),
   }, {
     fogEnabled: boolean, dynamicFogEnabled: boolean,

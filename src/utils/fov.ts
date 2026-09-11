@@ -109,9 +109,7 @@ export function computeFOV(
  *
  * Processes one row (distance ring) at a time, maintaining a list of
  * active slope ranges. Wall cells split a range; floor cells extend it.
- * Narrow sub-ranges (angular width less than one cell at the scanning
- * distance) are pruned to prevent exponential range proliferation on
- * maps with many small wall segments (e.g. village building grids).
+ * Disjoint slope ranges retain real shadows, including narrow ones.
  * Out-of-bounds cells are treated as opaque so scanning naturally
  * stops at the map edge.
  */
@@ -142,10 +140,6 @@ function castOctant(
     const nextRanges: { start: number; end: number }[] = [];
     const rNear = r - 0.5 || 1;
     const rFar = r + 0.5;
-    // Minimum angular width that can contain at least one cell at the
-    // next row.  Sub-ranges narrower than this are pruned to prevent
-    // exponential range proliferation.
-    const minWidth = 1.0 / (rFar + 1);
 
     for (const range of ranges) {
       let curStart = range.start;
@@ -162,7 +156,9 @@ function castOctant(
       let blocked = false;
       let nextStart = curStart;
 
-      for (let col = minCol; col <= maxCol; col++) {
+      // Scan from high to low slope, matching start >= end. Scanning in
+      // the opposite direction propagates the blocked side of each wall.
+      for (let col = maxCol; col >= minCol; col--) {
         const leftSlope = (col - 0.5) / rFar;
         const rightSlope = (col + 0.5) / rNear;
 
@@ -196,34 +192,29 @@ function castOctant(
 
         if (blocked) {
           if (cellOpaque) {
-            nextStart = rightSlope;
+            nextStart = leftSlope;
           } else {
             blocked = false;
             curStart = nextStart;
           }
         } else if (cellOpaque) {
           blocked = true;
-          // Only push the sub-range if it's wide enough to contain
-          // cells at subsequent rows.
-          if (curStart - leftSlope >= minWidth) {
-            nextRanges.push({ start: curStart, end: leftSlope });
+          if (curStart > rightSlope) {
+            nextRanges.push({ start: curStart, end: rightSlope });
           }
-          nextStart = rightSlope;
+          nextStart = leftSlope;
         }
       }
 
       // If the last cell in the row was NOT blocked, the remaining
       // unblocked range continues to the next row.
-      if (!blocked && curStart - curEnd >= minWidth) {
+      if (!blocked && curStart > curEnd) {
         nextRanges.push({ start: curStart, end: curEnd });
       }
     }
 
-    // Merge ranges that are separated by a gap narrower than one cell
-    // at the current distance.  Such micro-gaps cannot hide an entire
-    // tile, so merging them has no visible effect on the FOV result but
-    // prevents exponential range proliferation on maps with many small
-    // wall segments (e.g. village building grids).
+    // Merge overlapping ranges only. Bridging even a small gap removes
+    // an actual occluder and can disclose distant cells behind it.
     if (nextRanges.length > 1) {
       // Ranges arrive roughly sorted by descending start slope (they
       // were emitted in column order within each parent range, and
@@ -234,10 +225,8 @@ function castOctant(
       for (let i = 1; i < nextRanges.length; i++) {
         const prev = merged[merged.length - 1];
         const cur = nextRanges[i];
-        // Merge if the gap between prev.end and cur.start is less than
-        // one cell width, or if they overlap.
-        if (prev.end - cur.start <= minWidth) {
-          prev.end = cur.end;
+        if (prev.end <= cur.start) {
+          prev.end = Math.min(prev.end, cur.end);
         } else {
           merged.push(cur);
         }

@@ -19,6 +19,7 @@ export function applyTileUpdates(
     if (current.type === type && current.theme === undefined) continue;
     const row = copyRow(y);
     const next: Tile = { ...current, type };
+    if (current.type !== type) { delete next.discovered; delete next.discoveredType; }
     delete next.theme;
     row[x] = next;
   }

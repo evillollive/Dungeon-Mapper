@@ -19,6 +19,8 @@ import ExportDialog from './components/ExportDialog';
 import SceneTemplateDialog from './components/SceneTemplateDialog';
 import SelectionInspector from './components/SelectionInspector';
 import EditingObjects from './components/EditingObjects';
+import AudienceSettings from './components/AudienceSettings';
+import PlayerPreview from './components/PlayerPreview';
 import ContextPanel from './components/ContextPanel';
 import { useVisualViewport } from './hooks/useVisualViewport';
 import CommandPalette from './components/CommandPalette';
@@ -37,7 +39,9 @@ import { useEditorSelection, type RegionSelection } from './hooks/useEditorSelec
 import { useGlobalShortcuts } from './hooks/useGlobalShortcuts';
 import { useOfflineStatus } from './hooks/useOfflineStatus';
 import { SAVE_PHASE_LABELS } from './utils/saveStatus';
-import { exportMapSVG } from './utils/export';
+import { exportMapSVG, exportHighResPNG } from './utils/export';
+import { projectForAudience } from './utils/audienceProjection';
+import { deriveRenderableTiles } from './utils/derivedRenderMap';
 import { isTokenFogged } from './utils/tokenVisibility';
 import { computeFOV } from './utils/fov';
 import { computePlayerFOV, mergeExplored } from './utils/dynamicFog';
@@ -51,6 +55,7 @@ import { ViewContext, type ViewContextValue } from './contexts/ViewContext';
 import { ActionContext, type ActionContextValue } from './contexts/ActionContext';
 import './App.css';
 import './editor-shell.css';
+import './player-preview.css';
 
 const UI_SCALE_STORAGE_KEY = 'dungeon-mapper:ui-scale';
 const UI_SCALE_OPTIONS = [0.75, 1, 1.25, 1.5, 2] as const;
@@ -126,6 +131,7 @@ function App() {
     fillTiles,
     setTiles,
     setMapName,
+    setPublicName, setSecretDiscovered,
     resizeMap,
     clearMap,
     newMap,
@@ -235,6 +241,10 @@ function App() {
   const themeList = useMemo(() => buildThemeList(customThemes), [customThemes]);
   const [printMode, setPrintMode] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>(loadInitialViewMode);
+  const [showAudienceSettings, setShowAudienceSettings] = useState(false);
+  const [showPlayerPreview, setShowPlayerPreview] = useState(false);
+  const playerProjection = useMemo(() => showPlayerPreview ? projectForAudience(map, customThemes, customStamps) : null,
+    [showPlayerPreview, map, customThemes, customStamps]);
   const [uiScale, setUIScale] = useState<number>(loadInitialUIScale);
   const [activePanel, setActivePanel] = useState<EditorPanel>('build');
   const [showSettings, setShowSettings] = useState(false);
@@ -459,10 +469,11 @@ function App() {
   // When dynamic fog is enabled, compute the union FOV from all player
   // tokens and merge newly-visible cells into the persisted explored grid.
   const dynamicFogEnabled = (map.dynamicFogEnabled ?? false) && (map.fogEnabled ?? false);
+  const sightTiles = useMemo(() => deriveRenderableTiles(map), [map]);
   const playerVisible = useMemo(() => {
     if (!dynamicFogEnabled) return null;
-    return computePlayerFOV(map.tiles, map.tokens ?? [], customThemes);
-  }, [dynamicFogEnabled, map.tiles, map.tokens, customThemes]);
+    return computePlayerFOV(sightTiles, (map.tokens ?? []).filter(t => !t.hidden), customThemes);
+  }, [dynamicFogEnabled, sightTiles, map.tokens, customThemes]);
 
   // ── Light Sources ───────────────────────────────────────────────────
   // Compute the union FOV from all placed light sources only when dynamic
@@ -470,8 +481,8 @@ function App() {
   // directly, so normal editing should not pay this FOV cost on every tile
   // or light-source change.
   const lightVisible = useMemo(
-    () => dynamicFogEnabled ? computeLightVisible(map.tiles, map.lightSources, customThemes) : null,
-    [dynamicFogEnabled, map.tiles, map.lightSources, customThemes],
+    () => dynamicFogEnabled ? computeLightVisible(sightTiles, map.lightSources, customThemes) : null,
+    [dynamicFogEnabled, sightTiles, map.lightSources, customThemes],
   );
 
   // Whenever the visible set changes, merge into the explored grid so
@@ -479,7 +490,7 @@ function App() {
   // Light sources also contribute to explored so lit areas stay dimmed
   // after a light source is removed.
   useEffect(() => {
-    if (!dynamicFogEnabled || showLibrary || showCreateProject) return;
+    if (!dynamicFogEnabled || showLibrary || showCreateProject || showPlayerPreview) return;
     const w = map.meta.width;
     const h = map.meta.height;
     const currentExplored = map.explored ?? Array.from({ length: h }, () => Array<boolean>(w).fill(false));
@@ -496,7 +507,7 @@ function App() {
       setExplored(merged);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [playerVisible, lightVisible, dynamicFogEnabled, showLibrary, showCreateProject]);
+  }, [playerVisible, lightVisible, dynamicFogEnabled, showLibrary, showCreateProject, showPlayerPreview]);
 
   const handleToggleDynamicFog = useCallback(() => {
     setDynamicFogEnabled(!dynamicFogEnabled);
@@ -734,8 +745,8 @@ function App() {
 
   const handleExportSVG = useCallback(() => {
     const theme = getThemeWithCustom(themeId, customThemes);
-    exportMapSVG(map, theme, id => getThemeWithCustom(id, customThemes), { viewMode, customStamps });
-  }, [map, themeId, customThemes, viewMode, customStamps]);
+    exportMapSVG(map, theme, id => getThemeWithCustom(id, customThemes), { viewMode: 'gm', customThemes, customStamps });
+  }, [map, themeId, customThemes, customStamps]);
 
   // Auto-clear the polite live-region message a second after announcing
   // it, so the same string can be announced again on the next action.
@@ -883,6 +894,17 @@ function App() {
     { id: 'file.recovery', label: 'Save health & recovery', action: () => setShowSaveDetails(true) },
     { id: 'dialog.settings', label: 'Project settings', action: () => setShowSettings(true) },
     { id: 'dialog.export', label: 'Export', action: () => setShowExportMenu(true) },
+    { id: 'dialog.audience', label: 'Audience & secrets', action: () => setShowAudienceSettings(true) },
+    { id: 'view.playerPreview', label: 'Preview as player', action: () => setShowPlayerPreview(true) },
+    { id: 'file.playerPng', label: 'Player PNG (published content)', action: () => {
+      void exportHighResPNG(map, { dpi: map.meta.tileSize, pagePresetId: 'none', themeId, printMode,
+        viewMode: 'player', customThemes, customStamps }).catch(error => {
+        window.alert(error instanceof Error ? error.message : 'Player PNG export failed. The project is unchanged.');
+      });
+    } },
+    { id: 'file.playerSvg', label: 'Player SVG (published content)', action: () => {
+      exportMapSVG(map, getThemeWithCustom(themeId, customThemes), undefined, { viewMode: 'player', customThemes, customStamps });
+    } },
     { id: 'dialog.templates', label: 'Scene templates', action: () => setShowSceneTemplateDialog(true) },
     { id: 'dialog.customTheme', label: 'Custom theme builder', action: () => setShowCustomThemeDialog(true) },
   ];
@@ -897,7 +919,7 @@ function App() {
     command.action();
   };
   const hasInspection = inspected !== null;
-  useGlobalShortcuts(editorActions, !showLibrary && !showCreateProject &&
+  useGlobalShortcuts(editorActions, !showLibrary && !showCreateProject && !showPlayerPreview &&
     !['restoring', 'restore-failed', 'replacing'].includes(saveState.phase));
 
   // ── Context values ──────────────────────────────────────────────────
@@ -1018,6 +1040,19 @@ function App() {
       {saveState.phase !== 'restoring' && <ProjectChooser projectId={projectId} name="" unavailable locked
         onRename={setProjectName} onSwitch={switchProject} disabled={saveState.phase !== 'restore-failed'} />}
       {saveState.phase === 'restore-failed' && <button onClick={() => setLibraryView(true)}>Your maps</button>}
+    </div>;
+  }
+
+  if (showPlayerPreview && playerProjection) {
+    return <div className="editor-shell player-preview-host">
+      <div className="preview-host-controls">
+        <button type="button" autoFocus onClick={() => {
+          setShowPlayerPreview(false);
+          requestAnimationFrame(() => document.querySelector<HTMLElement>('[data-action="view.playerPreview"]')?.focus());
+        }}>Close player preview</button>
+        <p>DM preview on this trusted device. Not a separate player window or online session.</p>
+      </div>
+      <PlayerPreview projection={playerProjection} />
     </div>;
   }
 
@@ -1520,6 +1555,13 @@ function App() {
           feetPerCell={measureFeetPerCell}
         />
       )}
+      {showAudienceSettings && <AudienceSettings map={map} customThemes={customThemes}
+        onClose={() => setShowAudienceSettings(false)} onSetPublicName={setPublicName} onDiscover={setSecretDiscovered}
+        onInspect={(kind, id) => {
+          setShowAudienceSettings(false);
+          selectObject({ kind, id });
+        }}
+        onPreview={() => { setShowAudienceSettings(false); setShowPlayerPreview(true); }} />}
       {showSceneTemplateDialog && (
         <SceneTemplateDialog
           templates={project.sceneTemplates ?? []}

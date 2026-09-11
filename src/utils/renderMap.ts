@@ -23,6 +23,7 @@ import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
 import { deriveRenderableTiles } from './derivedRenderMap';
 import { drawRiverBanks, drawRiverEndpointMarkers } from './riverPolish';
+import { projectForAudience, type PlayerProjection } from './audienceProjection';
 
 // Screen-mode canvas styling (mirrored from MapCanvas.tsx).
 const SCREEN_BG = '#f4f1e4';
@@ -134,6 +135,26 @@ export interface RenderMapOptions {
  * or slice it into pages.
  */
 export function renderMapToCanvas(
+  map: DungeonMap,
+  opts: RenderMapOptions,
+): HTMLCanvasElement {
+  if (opts.viewMode === 'player') {
+    return renderPlayerProjection(projectForAudience(map, opts.customThemes, opts.customStamps), opts);
+  }
+  return renderMapDataToCanvas(map, opts);
+}
+
+export function renderPlayerProjection(
+  projection: PlayerProjection,
+  opts: Pick<RenderMapOptions, 'tileSize' | 'printMode' | 'feetPerCell' | 'includeTexture' | 'includeEdgeBlend' | 'includeHandDrawn' | 'includeLighting'>,
+): HTMLCanvasElement {
+  return renderMapDataToCanvas(projection.map, {
+    ...opts, viewMode: 'player', themeId: projection.map.meta.theme ?? 'dungeon',
+    customThemes: projection.customThemes, customStamps: projection.customStamps,
+  });
+}
+
+function renderMapDataToCanvas(
   map: DungeonMap,
   opts: RenderMapOptions,
 ): HTMLCanvasElement {
@@ -345,7 +366,7 @@ export function renderMapToCanvas(
   // Tokens
   const tokens = map.tokens ?? [];
   const visibleTokens = (fogActive && isPlayerView)
-    ? tokens.filter(t => !isTokenFogged(t, fog, undefined, dynamicFogActive ? map.explored : undefined))
+    ? tokens.filter(t => !isTokenFogged(t, fog, dynamicFogActive ? new Set<string>() : undefined, map.explored))
     : tokens;
   for (const token of visibleTokens) {
     renderToken(ctx, token, tileSize);

@@ -73,7 +73,7 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
               }
             }}
           >
-            {editingId === note.id ? (
+            {!readOnly && editingId === note.id ? (
               <div className="note-edit" onClick={e => e.stopPropagation()}>
                 <input
                   className="note-input"

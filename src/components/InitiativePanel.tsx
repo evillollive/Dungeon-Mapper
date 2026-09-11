@@ -91,7 +91,7 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
           No tokens yet.<br />
           {isGm
             ? 'Place a token from the Tokens section to add it here.'
-            : 'Drop a token on the map to add it here.'}
+            : 'No public initiative entries.'}
         </div>
       )}
 
@@ -173,7 +173,7 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
                   return null;
                 })()}
               </span>
-              {editingId === token.id ? (
+              {isGm && editingId === token.id ? (
                 <input
                   className="initiative-input"
                   value={editLabel}

@@ -13,6 +13,8 @@ import { decodeProject, encodeProject } from './projectSchema';
 import { isTokenFogged } from './tokenVisibility';
 import { deriveRenderableTiles } from './derivedRenderMap';
 import { getRiverBankColor, getRiverEndpointMarker } from './riverPolish';
+import { projectForAudience } from './audienceProjection';
+import { getThemeWithCustom } from './customThemes';
 
 const SVG_CUSTOM_TILE_FALLBACK_COLOR = '#777777';
 
@@ -83,9 +85,16 @@ export function exportMapSVG(
   map: DungeonMap,
   theme: TileTheme,
   resolveTheme?: (id: string) => TileTheme,
-  opts: { viewMode?: ViewMode; customStamps?: readonly StampDef[]; includeTexture?: boolean; includeEdgeBlend?: boolean; includeHandDrawn?: boolean; includeLighting?: boolean } = {}
+  opts: { viewMode?: ViewMode; customThemes?: readonly CustomThemeDefinition[]; customStamps?: readonly StampDef[]; includeTexture?: boolean; includeEdgeBlend?: boolean; includeHandDrawn?: boolean; includeLighting?: boolean } = {}
 ): void {
   const viewMode: ViewMode = opts.viewMode ?? 'gm';
+  if (viewMode === 'player') {
+    const projection = projectForAudience(map, opts.customThemes, opts.customStamps);
+    map = projection.map;
+    theme = getThemeWithCustom(map.meta.theme ?? theme.id, projection.customThemes);
+    resolveTheme = id => getThemeWithCustom(id, projection.customThemes);
+    opts = { ...opts, customStamps: projection.customStamps };
+  }
   const includeTexture = opts.includeTexture ?? true;
   const includeEdgeBlend = opts.includeEdgeBlend ?? true;
   const includeHandDrawn = opts.includeHandDrawn ?? true;
@@ -347,7 +356,7 @@ export function exportMapSVG(
 
   // Tokens: hidden under fog in player exports (mirrors on-screen behavior).
   for (const token of map.tokens ?? []) {
-    if (isPlayerView && isTokenFogged(token, fog, undefined, dynamicFogActive ? map.explored : undefined)) continue;
+    if (isPlayerView && isTokenFogged(token, fog, dynamicFogActive ? new Set<string>() : undefined, map.explored)) continue;
     const sz = Math.max(1, Math.floor(token.size ?? 1));
     const tcx = token.x * tileSize + (tileSize * sz) / 2;
     const tcy = token.y * tileSize + (tileSize * sz) / 2;
@@ -525,7 +534,8 @@ export async function exportHighResPNG(
     includeLighting: opts.includeLighting,
   });
 
-  const baseName = map.meta.name.replace(/\s+/g, '_') || 'dungeon';
+  const name = opts.viewMode === 'player' ? map.meta.publicName?.trim() || 'Player map' : map.meta.name;
+  const baseName = name.replace(/\s+/g, '_') || 'dungeon';
 
   const preset = PAGE_PRESETS.find(p => p.id === opts.pagePresetId) ?? PAGE_PRESETS[0];
 
@@ -567,9 +577,9 @@ export async function exportHighResPNG(
 
 /** Convert a canvas to a PNG blob and trigger a download. */
 function downloadCanvasAsPNG(canvas: HTMLCanvasElement, fileName: string): Promise<void> {
-  return new Promise<void>((resolve) => {
+  return new Promise<void>((resolve, reject) => {
     canvas.toBlob((blob) => {
-      if (!blob) { resolve(); return; }
+      if (!blob) { reject(new Error('PNG rendering failed. Try a lower resolution; the project is unchanged.')); return; }
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
