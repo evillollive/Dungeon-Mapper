@@ -88,14 +88,37 @@ QA_OUTPUT=/absolute/path/to/qualification npm run test:browser
 QA_OUTPUT=/absolute/path/to/qualification npm run test:browser -- --project=webkit --grep=publication
 ```
 
-The four journeys cover guided creation and Library continuity, editor
-navigation/focus/layout, player publication/preview, and session recovery with a
-real second window. Each test owns fresh browser storage, and the runner closes
+The five journeys cover guided creation and Library continuity, editor
+navigation/focus/layout, player publication/preview, session recovery with a
+real second window, and critical keyboard workflows. Each test owns fresh browser storage, and the runner closes
 its pages and contexts on success, failure, or timeout. These use production
 assets under `/Dungeon-Mapper/`, not a development-only fixture route.
 `ux02Creation.browser.mjs`, `ux03Shell.browser.mjs`, `ux05Audience.browser.mjs`
 and `ux06Session.browser.mjs` now export Page-based journeys instead of being
 standalone scripts or function expressions for external evaluation.
+
+`ux09Keyboard.browser.mjs` uses actual key presses and Tab/Shift+Tab navigation,
+not `click()` or programmatic `focus()` as substitutes for keyboard access.
+Importing its fixed project uses `setInputFiles` instead of the native OS picker.
+On macOS WebKit it uses Option+Tab to reach all controls, matching the browser's
+native alternative to its text-field-only Tab default. Firefox's headless
+shell stops at the document edge; the journey reverses direction there.
+Neither case changes application tab indices or skips assertions.
+
+```bash
+QA_OUTPUT=/absolute/path/to/keyboard npm run test:browser -- --grep="keyboard critical"
+```
+
+The journey covers creation cancellation and collapsed advanced options, note
+spaces/newlines and cancellation, initiative renaming/reordering, modal focus
+during responsive sheet mounting, recovery, a real backup download, reload,
+preparation and keyboard-operated session movement/turn/end/resume. Note actions
+are exercised at all five roadmap viewports and at 100%/200% interface text.
+Assertions cover 44-pixel edit targets, visible focus, clipping and hit testing,
+and 4.5:1 contrast for note labels/descriptions/badges and initiative names/order.
+These are scoped checks, not an automated WCAG conformance declaration or an
+OS screen-reader task study. The configured interface text size is not browser
+page zoom. Artifacts record the navigation mode and actual layout/contrast values.
 
 `QA_OUTPUT` is required. The runner replaces only its `browser-results` and
 `browser-report` subdirectories there; keep separate directories for evidence
@@ -109,14 +132,14 @@ The strict-port preview server defaults to port 5309 (`QA_PORT` overrides it);
 an existing server is not reused. Tests run serially, with no retries, a
 three-minute test timeout and a twenty-minute suite timeout. `test.only` and
 empty test selection fail. `--grep` and `--project` are local selectors; CI
-always runs all four journeys for each engine.
+always runs all five journeys for each engine.
 
 After building once, `npm run test:browser:run` and `npm run test:ux08:run`
 reuse `dist`. Only the latter uses `QA_ENGINES` and defaults to port 5308.
 The UX-08 runner owns its server so it can stop the sole origin and control
 worker updates. Do not run both suites concurrently on the same custom port.
 
-CI runs all four journeys plus UX-08 for Chromium, Firefox and WebKit, with
+CI runs all five journeys plus UX-08 for Chromium, Firefox and WebKit, with
 independent engine jobs, no fail-fast cancellation and fourteen-day artifacts.
 The aggregate **Browser qualification** check fails when any engine fails,
 is skipped or is cancelled. The active default-branch ruleset requires that

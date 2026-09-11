@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { DungeonProject } from '../types/map';
 import { buildThemeList } from '../utils/customThemes';
 import { GENERATOR_LIST } from '../utils/generators';
@@ -100,9 +101,8 @@ function CandidatePreview({ project, onBack, onCreate }: {
 
 export default function CreateProjectDialog({ onCancel, onCreate, sourceProject, initialPath = 'sample' }: CreateProjectDialogProps) {
   const id = useId();
-  const dialog = useRef<HTMLDivElement>(null);
-  const cancelRef = useRef(onCancel);
   const uploadController = useRef<AbortController | null>(null);
+  const dialog = useFocusTrap<HTMLDivElement>({ onEscape: () => { uploadController.current?.abort(); onCancel(); } });
   const [path, setPath] = useState<CreationPath>(initialPath);
   const [sampleId, setSampleId] = useState(PREMADE_MAP_SUMMARIES[0].id);
   const [name, setName] = useState('My next adventure');
@@ -120,40 +120,12 @@ export default function CreateProjectDialog({ onCancel, onCreate, sourceProject,
   const optionsHeading = useRef<HTMLHeadingElement>(null);
   const themes = buildThemeList(sourceProject?.customThemes);
 
-  useEffect(() => { cancelRef.current = onCancel; }, [onCancel]);
   useEffect(() => {
-    const root = dialog.current!;
-    const previousFocus = document.activeElement as HTMLElement | null;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    const controls = () => Array.from(root.querySelectorAll<HTMLElement>('button, input, select, summary, [tabindex="0"]'))
-      .filter(node => !node.matches(':disabled') && !node.closest('[hidden]') && !Array.from(root.querySelectorAll('details:not([open])')).some(details => details.contains(node) && node !== details.querySelector('summary')));
-    controls()[0]?.focus();
-    const keydown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.preventDefault();
-        event.stopPropagation();
-        uploadController.current?.abort();
-        cancelRef.current();
-      }
-      if (event.key === 'Tab') {
-        const nodes = controls();
-        const current = nodes.indexOf(document.activeElement as HTMLElement);
-        const next = current < 0 ? (event.shiftKey ? nodes.length - 1 : 0)
-          : (current + (event.shiftKey ? -1 : 1) + nodes.length) % nodes.length;
-        event.preventDefault();
-        nodes[next]?.focus();
-      }
-    };
-    const focusin = (event: FocusEvent) => { if (!root.contains(event.target as Node)) controls()[0]?.focus(); };
-    document.addEventListener('keydown', keydown, true);
-    document.addEventListener('focusin', focusin);
     return () => {
       uploadController.current?.abort();
-      document.removeEventListener('keydown', keydown, true);
-      document.removeEventListener('focusin', focusin);
       document.body.style.overflow = previousOverflow;
-      if (previousFocus?.isConnected) previousFocus.focus();
     };
   }, []);
 

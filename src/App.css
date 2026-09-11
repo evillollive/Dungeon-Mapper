@@ -1045,13 +1045,13 @@
 
 .initiative-item {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 6px;
   padding: 4px 6px;
   margin-bottom: 3px;
   border: 1px solid var(--border);
   background: var(--surface-base);
-  cursor: pointer;
   transition: border-color 0.12s, background 0.12s;
   user-select: none;
 }
@@ -1060,7 +1060,7 @@
 }
 .initiative-item.selected {
   border-color: var(--accent);
-  background: #f5e8e8;
+  background: var(--surface-active);
 }
 .initiative-item.drag-over {
   /* Visual cue for the drop target while reordering. */
@@ -1072,10 +1072,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
+  min-width: 1.5em;
+  height: 1.5em;
   background: var(--text-primary);
-  color: var(--text-primary);
+  color: var(--surface-base);
   font-size: var(--fs-10);
   font-weight: bold;
   border-radius: 50%;
@@ -1107,15 +1107,37 @@
   padding: 1px 4px;
   border: 1px solid var(--border);
   background: var(--surface-panel);
+  color: var(--text-primary);
   min-width: 0;
+}
+
+.initiative-select-btn, .note-select-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 4px;
+  text-align: left;
+  color: var(--text-primary);
+  background: transparent;
+  border: 0;
+}
+.initiative-select-btn { flex-basis: 100%; }
+.initiative-actions { display: flex; gap: 4px; margin-left: auto; }
+.initiative-reorder-btn { min-width: 44px; min-height: 44px; }
+.initiative-select-btn:focus-visible, .note-select-btn:focus-visible, .initiative-reorder-btn:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
 }
 
 .initiative-edit-btn {
   background: var(--surface-panel);
   border: 1px solid var(--border);
   color: var(--text-secondary);
-  width: 18px;
-  height: 18px;
+  width: 44px;
+  height: 44px;
   font-size: var(--fs-11);
   display: flex;
   align-items: center;
@@ -1177,7 +1199,6 @@
 .note-item {
   border: 1px solid var(--border);
   margin-bottom: 4px;
-  cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
   background: var(--surface-base);
 }
@@ -1186,12 +1207,16 @@
 }
 .note-item.selected {
   border-color: var(--accent);
-  background: #f5e8e8;
+  background: var(--surface-active);
 }
 
 .note-view {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   padding: 6px;
 }
+.note-select-btn { flex-direction: column; align-items: stretch; }
 
 .note-header-row {
   display: flex;
@@ -1204,10 +1229,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 18px;
-  height: 18px;
+  width: 1.5em;
+  height: 1.5em;
   background: var(--text-primary);
-  color: var(--text-primary);
+  color: var(--surface-base);
   font-size: var(--fs-10);
   font-weight: bold;
   border-radius: 50%;
@@ -1219,9 +1244,7 @@
   font-weight: bold;
   color: var(--text-primary);
   flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow-wrap: anywhere;
 }
 
 .note-actions {
@@ -1233,8 +1256,8 @@
   background: var(--surface-panel);
   border: 1px solid var(--border);
   color: var(--text-secondary);
-  width: 18px;
-  height: 18px;
+  width: 44px;
+  height: 44px;
   font-size: var(--fs-11);
   display: flex;
   align-items: center;
@@ -1258,8 +1281,10 @@
 }
 
 .note-desc {
+  flex-basis: 100%;
   font-size: var(--fs-11);
-  color: #4a4438;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
   margin-top: 3px;
   line-height: 1.4;
   word-break: break-word;

@@ -313,8 +313,10 @@ function RunSession({ initial }: { initial: SessionRecord }) {
           </section>
           <section className="session-card session-encounter" aria-label="Session encounter">
             <p className="session-eyebrow">ENCOUNTER / RULES NEUTRAL</p>
-            <h2>Round {record.progress.round}</h2>
-            <p>Current turn: {encounter.tokens?.find(t => t.id === encounter.initiative?.[record.progress.turn])?.label ?? 'No entry on this level'}</p>
+            <div role="status" aria-live="polite" aria-atomic="true" aria-label="Current encounter turn">
+              <h2>Round {record.progress.round}</h2>
+              <p>Current turn: {encounter.tokens?.find(t => t.id === encounter.initiative?.[record.progress.turn])?.label ?? 'No entry on this level'}</p>
+            </div>
             <p>Turn {record.progress.turn + 1}. Encounter: {encounter.meta.name}. DM inspection does not change the encounter.</p>
             <div className="session-actions">
               <button disabled={disabled || !encounter.initiative?.length || (record.progress.round === 1 && record.progress.turn === 0)} onClick={() => commit({ ...record, progress: stepTurn(record.progress, -1) })}>Previous turn</button>

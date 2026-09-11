@@ -1,6 +1,6 @@
-# UX-09: Automated browser journeys and CI gates
+# UX-09: Accessible workflows and release gates
 
-First bounded milestone, 2026-09-11, based on `a38ea34`. The owner selected
+First bounded milestone, 2026-09-11, based on `a38ea34`, merged in #171. The owner selected
 automated browser journeys and enforced CI gates before remaining UX-07 art
 work. This starts UX-09; it does not complete its release acceptance.
 
@@ -69,6 +69,71 @@ CI results and source revisions attached to the pull request are the landing
 evidence; local macOS results do not establish Linux CI or physical Safari
 device qualification on their own.
 
+## Critical keyboard workflows milestone
+
+Second bounded milestone, 2026-09-11, based on `b3a7e94`. It adds the fifth
+journey to the existing required browser jobs without introducing a dependency,
+weakening a gate or changing project/session schemas.
+
+| Surface | Change |
+| --- | --- |
+| Notes | Native selection button is separate from the editing form and actions. Spaces and newlines remain input, Enter submits the title form, and Escape cancels the draft. Save/cancel focuses and scrolls the edit action fully into view, including Firefox's short-landscape case. Descriptions preserve line breaks and use readable theme text; labels wrap and badges scale with text. |
+| Initiative | Native selection no longer swallows input keys. Enter saves and Escape cancels renaming with focus return; ordinary blur still saves. Visible Up/Down buttons supplement Alt+Arrow and drag ordering. Displayed positions map to original indices when stale IDs are omitted. Reorder status is announced. |
+| Modals | One focus primitive covers creation, scene templates and existing dialogs. It excludes hidden/disabled/inert/collapsed controls, contains empty/busy dialogs and restores the opener, remaining sheet or editor fallback. Icon picker contents mount only while open, so its trap registers on every opening. Responsive sheets cannot steal focus from an open dialog. Draft Escape does not dismiss the enclosing sheet. |
+| Panel layout | Edit/delete/rename/reorder targets are at least 44 CSS pixels. Notes and initiative use the context panel's outer scroller instead of a squeezed legacy inner scroller. Below 501 pixels in viewport height, Close panel scrolls with content rather than covering the focused action. |
+| Run | Current round and turn form a named, atomic polite live region. Existing keyboard coordinate controls and session persistence are unchanged. No new private data enters player projections. |
+
+The browser journey is deliberately pointer-free after file-picker fixture setup:
+creation cancellation, note multiline edits, initiative rename/reorder, scene
+templates, nested modal resize, backup download, recovery focus return, reload,
+preparation, token movement, next turn, end and resume. It records five viewport
+sizes at both 100% and 200% interface text, with focus, actual clipping/hit tests,
+edit-target size and scoped note/initiative text contrast. It does not substitute
+programmatic focus for keyboard reachability.
+
+macOS WebKit uses its native Option+Tab route to all controls. Firefox's headless
+shell does not cycle back from the document edge, so the journey can reverse with
+Shift+Tab. Native select type-ahead is used instead of platform-specific Home/End
+behavior. These input choices are recorded, not presented as universal browser
+defaults. Full browser/OS keyboard settings and screen-reader interaction still
+need human qualification.
+
+Housekeeping consolidates duplicate creation focus logic, includes the new
+journey in the existing lint scope, updates contributor/user guidance, and
+corrects #171's stale pending-merge status. The 73-warning hook baseline remains
+unchanged. Local artifacts stay outside the repository; CI retains them through
+the existing upload step.
+
+### Local candidate evidence
+
+The integrated production run passed all fifteen UX-09 journey/engine cases.
+After the final label/badge sizing adjustment, the keyboard journey passed
+again in all engines. The UX-08 export/offline/update journey also passed in all
+three engines. The full Vitest run passed 683 cases across 58 files, including
+17 new keyboard/focus regressions; the targeted nine-file set passed 82 cases.
+Build and the existing lint gate pass without adding to the 73-warning ceiling.
+Existing jsdom navigation warnings remain outside this milestone.
+
+| Engine | Version | Keyboard journey | Note layout cases | Lowest sampled text contrast |
+| --- | --- | --- | --- | --- |
+| Chromium | 151.0.7922.34 | Passed | 10 | 10.61:1 |
+| Firefox | 153.0 | Passed | 10 | 10.61:1 |
+| WebKit | 26.5 | Passed with macOS Option+Tab | 10 | 10.61:1 |
+
+The contrast samples are note labels, descriptions and badges plus initiative
+names/order in the fixture's default UI theme. They are not every theme, state
+or interface element. Layout evidence checks the full edit-button rectangle
+against clipping ancestors and its actual hit target, not just viewport bounds.
+This caught a legacy inner scroller and a sticky close button covering actions
+in short landscape windows. Independent review also caught the initially closed
+icon picker's missing trap registration; its open/resize/close lifecycle now
+has a focused regression.
+
+Artifacts are under the session's `files/ux09-release-candidate`,
+`files/ux09-final-layout` and `files/ux08-regression` directories. Exact-head
+GitHub CI remains the landing gate; local macOS results do not establish Linux,
+physical-device or assistive-technology acceptance.
+
 ## Remaining release gates
 
 UX-09 remains **in progress**. These automated journeys cover parts of roadmap
@@ -77,7 +142,7 @@ UX-07's full art catalog and launch assets remain incomplete. UX-00 participant
 research remains deferred with zero participants.
 
 Human keyboard/screen-reader review (VoiceOver/Safari and NVDA/Firefox), WCAG
-2.2 AA evaluation, the full layout matrix, physical touch/pen/keyboard behavior,
+2.2 AA evaluation beyond the scoped panel checks, the full-app layout/zoom matrix, physical touch/pen/keyboard behavior,
 printed-paper scale, reference-device selection and F05 input-to-paint/loading
 budgets are still open. No latency threshold or usability success rate is
 claimed from test-run duration. Existing React `act` and jsdom navigation

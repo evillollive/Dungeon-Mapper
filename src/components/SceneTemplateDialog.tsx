@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { SceneTemplate } from '../types/map';
 
 interface SceneTemplateDialogProps {
@@ -23,6 +24,7 @@ const SceneTemplateDialog: React.FC<SceneTemplateDialogProps> = ({
   onCreateProject,
   onClose,
 }) => {
+  const dialog = useFocusTrap<HTMLDivElement>();
   const [newName, setNewName] = useState('');
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState('');
@@ -56,7 +58,10 @@ const SceneTemplateDialog: React.FC<SceneTemplateDialogProps> = ({
   };
 
   return (
-    <div className="modal-overlay" role="dialog" aria-modal="true" aria-label="Scene Templates">
+    <div ref={dialog} className="modal-overlay" role="dialog" aria-modal="true" aria-label="Scene Templates"
+      onKeyDown={event => {
+        if (event.key === 'Escape') { event.stopPropagation(); onClose(); }
+      }}>
       <div className="modal-panel" style={{ minWidth: 340, maxWidth: 480 }}>
         <div className="modal-header">
           <span>📋 Scene Templates</span>
@@ -109,7 +114,7 @@ const SceneTemplateDialog: React.FC<SceneTemplateDialogProps> = ({
                     className="modal-input"
                     value={renameValue}
                     onChange={e => setRenameValue(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') setRenamingId(null); }}
+                    onKeyDown={e => { if (e.key === 'Enter') handleRename(); if (e.key === 'Escape') { e.stopPropagation(); setRenamingId(null); } }}
                     style={{ flex: 1 }}
                     autoFocus
                     aria-label="Rename template"

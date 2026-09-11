@@ -4,11 +4,11 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's dungeon foundation and approved wood/earth materials are merged in #167 and #168. The eight-piece furnishing reference and richer palette are approved in #169; the full package remains incomplete. UX-08 is merged in #170. UX-09's first automated browser/CI milestone is implemented; full release qualification remains open. No participant usability acceptance is claimed.
+**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's dungeon foundation and approved wood/earth materials are merged in #167 and #168. The eight-piece furnishing reference and richer palette are approved in #169; the full package remains incomplete. UX-08 is merged in #170. UX-09's automated browser/CI milestone is merged in #171; its critical keyboard-workflow follow-up is implemented for review. Full release qualification remains open. No participant usability acceptance is claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
-**Latest implementation:** UX-08 adds intent-first export, bounded print pages, physical scale metadata, optional-art fallbacks, offline cache readiness and explicit save-aware updates. Production Chromium, Firefox and WebKit journeys passed; see the [export/offline contract and qualification limits](./UX-08-HANDOFF.md). This proceeds using the approved UX-07 foundation and eight-piece furnishing slice without claiming the remaining art package complete. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
+**Latest implementation:** UX-09's keyboard milestone separates row selection from note/initiative editing, adds visible reorder actions and turn announcements, shares modal focus management, and removes clipped note actions in short landscape layouts. Its fifth browser journey covers critical keyboard workflows and note-panel layout/contrast at 100%/200% interface text. See [UX-09 scope and remaining gates](./UX-09-HANDOFF.md). UX-08's [export/offline contract](./UX-08-HANDOFF.md) is unchanged. Remaining art, participant, physical-device, screen-reader and performance acceptance gates stay open.
 
 **UX-09 automated follow-up, 2026-09-11:** The owner chose a bounded browser
 regression and blocking-CI milestone. Existing creation, shell, publication and
@@ -805,7 +805,7 @@ limits, three-engine evidence, update policy and still-open release gates.
 **Priority:** P0/P1. **Depends on:** UX-01 through UX-08.
 
 **First bounded milestone, 2026-09-11:** Automated browser journeys and blocking
-CI implemented, pending landing. The owner explicitly selected this work before
+CI merged in #171. The owner explicitly selected this work before
 finishing the remaining art catalog. Chromium, Firefox and WebKit cover creation,
 shell focus/layout, publication and local two-window session recovery, plus the
 existing export/offline journey. Lint errors are blocking; 73 existing hook
@@ -813,6 +813,18 @@ warnings are documented and count-capped rather than hidden. A reproduced WebKit
 resize-observer loop in player preview is fixed with lifecycle regressions.
 [UX-09 handoff](./UX-09-HANDOFF.md) records the exact scope and remaining gates.
 This is not approval to mark the full UX-09 package complete.
+
+**Second bounded milestone, 2026-09-11:** Critical keyboard workflows and
+related housekeeping are implemented for review. Native note/initiative
+selection no longer intercepts input spaces, newlines or rename confirmation.
+Reorder buttons, draft focus return and polite turn announcements supplement
+existing controls. Shared modal focus excludes hidden/disabled/collapsed
+controls and gives open dialogs precedence over responsive sheets. Notes and
+initiative use readable theme colors and accessible action sizes; context
+panels use one scroller rather than squeezing the list under fixed headers.
+The fifth production browser journey checks real keyboard input, persistence
+and ten note-panel viewport/text-size combinations per engine. This does not
+complete whole-app contrast, browser zoom or human nonvisual task acceptance.
 
 **Deliverables:** Completed acceptance matrix, human task study, keyboard/screen-reader pass, browser regression coverage, measured performance report, updated feature/help docs, and blocking CI for agreed gates.
 
@@ -953,7 +965,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-07 | Foundation and materials merged in #167/#168; eight-piece furnishing slice and richer palette approved in #169 | [Approved furnishing colors](./media/ux07-furnishings/color-review.png); token sets, larger furnishing catalog and remaining art packages are still open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
-| UX-09 | In progress; automated browser/CI milestone implemented, pending landing | [Journey coverage, lint baseline, CI contract and remaining release gates](./UX-09-HANDOFF.md) |
+| UX-09 | In progress; browser/CI gates merged in #171; critical keyboard follow-up implemented for review | [Keyboard workflow scope, journey coverage, lint baseline and remaining release gates](./UX-09-HANDOFF.md); human screen-reader and reference-device performance milestones remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |
 
 ## 10. Relationship to the previous roadmap

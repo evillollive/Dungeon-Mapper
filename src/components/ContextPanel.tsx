@@ -1,16 +1,8 @@
-import { useEffect, type ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 
 function ContextSheet({ children, onClose }: { children: ReactNode; onClose: () => void }) {
-  const ref = useFocusTrap<HTMLElement>();
-  useEffect(() => {
-    const escape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') { event.stopPropagation(); onClose(); }
-    };
-    // Safari can leave focus on body after tapping a button.
-    document.addEventListener('keydown', escape);
-    return () => document.removeEventListener('keydown', escape);
-  }, [onClose]);
+  const ref = useFocusTrap<HTMLElement>({ onEscape: onClose, layer: 'sheet' });
   return <aside ref={ref} className="right-panel context-panel context-sheet" role="dialog" aria-modal="true" aria-label="Context panel">
     {children}
   </aside>;

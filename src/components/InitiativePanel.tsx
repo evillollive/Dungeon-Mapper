@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import type { Token, ViewMode } from '../types/map';
 import { TOKEN_KIND_COLORS } from '../types/map';
 import { ICON_BY_ID } from '../utils/iconLibrary';
@@ -38,6 +39,8 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
   const [editLabel, setEditLabel] = useState('');
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const [notice, setNotice] = useState('');
+  const editButtons = useRef(new Map<number, HTMLButtonElement>());
   const isGm = viewMode === 'gm';
 
   // Resolve initiative ids to live token records, dropping any stale ids
@@ -61,6 +64,16 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
     const trimmed = editLabel.trim();
     if (trimmed.length > 0) onRenameToken(id, trimmed);
     setEditingId(null);
+  };
+  const finishEdit = (id: number, save: boolean) => {
+    flushSync(() => { if (save) saveEdit(id); else setEditingId(null); });
+    const button = editButtons.current.get(id);
+    button?.focus();
+    button?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  };
+  const reorder = (from: number, to: number) => {
+    onReorder(initiative.indexOf(entries[from].id), initiative.indexOf(entries[to].id));
+    setNotice(`${entries[from].label} moved to position ${to + 1} of ${entries.length}.`);
   };
 
   const handleClear = () => {
@@ -95,6 +108,7 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
         </div>
       )}
 
+      <p className="sr-only" role="status">{notice}</p>
       <div className="initiative-list">
         {entries.map((token, idx) => {
           const isSelected = token.id === selectedTokenId;
@@ -107,10 +121,8 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
                 isSelected ? 'selected' : '',
                 isDragOver ? 'drag-over' : '',
               ].filter(Boolean).join(' ')}
-              role="button"
-              tabIndex={0}
-              aria-label={`${token.label}, position ${idx + 1}${isGm ? '. Use Alt+Up/Down to reorder' : ''}`}
-              aria-pressed={isSelected}
+              role="group"
+              aria-label={`${token.label}, position ${idx + 1}`}
               draggable={isGm && editingId !== token.id}
               onDragStart={isGm ? (e) => {
                 setDragIndex(idx);
@@ -128,7 +140,7 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
               } : undefined}
               onDrop={isGm ? (e) => {
                 e.preventDefault();
-                if (dragIndex !== null && dragIndex !== idx) onReorder(dragIndex, idx);
+                if (dragIndex !== null && dragIndex !== idx) reorder(dragIndex, idx);
                 setDragIndex(null);
                 setDragOverIndex(null);
               } : undefined}
@@ -136,20 +148,18 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
                 setDragIndex(null);
                 setDragOverIndex(null);
               } : undefined}
-              onClick={() => onSelectToken(isSelected ? null : token.id)}
-              onKeyDown={e => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onSelectToken(isSelected ? null : token.id);
-                } else if (isGm && e.altKey && e.key === 'ArrowUp' && idx > 0) {
-                  e.preventDefault();
-                  onReorder(idx, idx - 1);
-                } else if (isGm && e.altKey && e.key === 'ArrowDown' && idx < entries.length - 1) {
-                  e.preventDefault();
-                  onReorder(idx, idx + 1);
-                }
-              }}
             >
+              <button type="button" className="initiative-select-btn"
+                aria-label={`${token.label}, position ${idx + 1}${isGm ? '. Use Alt+Up/Down to reorder' : ''}`}
+                aria-pressed={isSelected}
+                onClick={() => onSelectToken(isSelected ? null : token.id)}
+                onKeyDown={e => {
+                  if (isGm && e.altKey && e.key === 'ArrowUp' && idx > 0) {
+                    e.preventDefault(); reorder(idx, idx - 1);
+                  } else if (isGm && e.altKey && e.key === 'ArrowDown' && idx < entries.length - 1) {
+                    e.preventDefault(); reorder(idx, idx + 1);
+                  }
+                }}>
               <span className="initiative-order">{idx + 1}</span>
               <span
                 className="initiative-swatch"
@@ -173,30 +183,38 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
                   return null;
                 })()}
               </span>
-              {isGm && editingId === token.id ? (
+                <span className="initiative-name" title={token.label}>{token.label}</span>
+              </button>
+              {isGm && editingId === token.id && (
                 <input
                   className="initiative-input"
+                  aria-label={`Name for ${token.label}`}
                   value={editLabel}
                   autoFocus
                   onChange={e => setEditLabel(e.target.value)}
                   onClick={e => e.stopPropagation()}
                   onBlur={() => saveEdit(token.id)}
                   onKeyDown={e => {
-                    if (e.key === 'Enter') { e.preventDefault(); saveEdit(token.id); }
-                    else if (e.key === 'Escape') { e.preventDefault(); setEditingId(null); }
+                    if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); finishEdit(token.id, true); }
+                    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); finishEdit(token.id, false); }
                   }}
                 />
-              ) : (
-                <span className="initiative-name" title={token.label}>{token.label}</span>
               )}
               {isGm && editingId !== token.id && (
+                <div className="initiative-actions">
+                  <button type="button" className="initiative-reorder-btn" disabled={idx === 0}
+                    aria-label={`Move ${token.label} up`} onClick={() => reorder(idx, idx - 1)}>Up</button>
+                  <button type="button" className="initiative-reorder-btn" disabled={idx === entries.length - 1}
+                    aria-label={`Move ${token.label} down`} onClick={() => reorder(idx, idx + 1)}>Down</button>
                 <button
                   type="button"
                   className="initiative-edit-btn"
+                  ref={node => { if (node) editButtons.current.set(token.id, node); else editButtons.current.delete(token.id); }}
                   onClick={e => { e.stopPropagation(); startEdit(token); }}
                   title="Rename"
                   aria-label={`Rename ${token.label}`}
                 >✎</button>
+                </div>
               )}
             </div>
           );
