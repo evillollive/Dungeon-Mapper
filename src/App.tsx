@@ -47,7 +47,7 @@ import { computeFOV } from './utils/fov';
 import { computePlayerFOV, mergeExplored } from './utils/dynamicFog';
 import { computeLightVisible } from './utils/lightSources';
 import { buildThemeList, getThemeWithCustom } from './utils/customThemes';
-import { ALL_TILE_TYPES, isBuiltInTileType, type DungeonProject, type ToolType, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape, type LightSourcePreset, type RiverType, LIGHT_SOURCE_PRESETS } from './types/map';
+import { ALL_TILE_TYPES, isBuiltInTileType, isFloorMaterialId, type DungeonProject, type ToolType, type ViewMode, type MarkerShape, type TokenKind, type MeasureShape, type LightSourcePreset, type RiverType, LIGHT_SOURCE_PRESETS } from './types/map';
 import LevelTabs from './components/LevelTabs';
 import { ToolContext, type ToolContextValue } from './contexts/ToolContext';
 import { MapContext, type MapContextValue } from './contexts/MapContext';
@@ -130,6 +130,7 @@ function App() {
     setTile,
     fillTiles,
     setTiles,
+    activeFloorMaterial, setActiveFloorMaterial,
     setMapName,
     setPublicName, setSecretDiscovered,
     resizeMap,
@@ -236,6 +237,8 @@ function App() {
   const canvasRef = useRef<MapCanvasHandle>(null);
   const headerRef = useRef<MapHeaderHandle>(null);
   const themeId = map.meta.theme ?? 'dungeon';
+  const unavailableFloorMaterials = useMemo(() => map.tiles.some(row =>
+    row.some(tile => tile.floorMaterial !== undefined && !isFloorMaterialId(tile.floorMaterial))), [map.tiles]);
   const customThemes = useMemo(() => project.customThemes ?? [], [project.customThemes]);
   const customStamps = useMemo(() => project.customStamps ?? [], [project.customStamps]);
   const themeList = useMemo(() => buildThemeList(customThemes), [customThemes]);
@@ -1154,6 +1157,9 @@ function App() {
               activePanel={activePanel}
               activeTool={activeTool}
               activeTile={activeTile}
+              activeFloorMaterial={activeFloorMaterial}
+              onSetFloorMaterial={setActiveFloorMaterial}
+              unavailableFloorMaterials={unavailableFloorMaterials}
               themeId={themeId}
               customThemes={customThemes}
               onSetTool={runTool}

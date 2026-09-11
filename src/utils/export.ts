@@ -106,6 +106,7 @@ export function exportMapSVG(
   const { width, height, tileSize, name } = map.meta;
   const tiles = deriveRenderableTiles(map);
   const tileDrawContext = {
+    getFloorMaterial: (x: number, y: number) => tiles[y]?.[x]?.floorMaterial,
     getTileBaseType: (x: number, y: number) => {
       const type = tiles[y]?.[x]?.type;
       return type ? getSemanticTileType(type, opts.customThemes) : undefined;

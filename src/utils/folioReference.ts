@@ -4,6 +4,8 @@ import { FOLIO_THEME_ID } from '../themes/folio-v1/art';
 
 export const FOLIO_REFERENCE_ID = 'folio-cistern';
 export const FOLIO_REFERENCE_NAME = 'The Quiet Cistern';
+export const FOLIO_MATERIALS_REFERENCE_ID = 'folio-materials';
+export const FOLIO_MATERIALS_REFERENCE_NAME = "The Warden's Rest";
 
 /** Hand-authored junctions and one-cell passages make this a repeatable art fixture. */
 export function buildFolioReference(): DungeonProject {
@@ -84,4 +86,26 @@ export function buildFolioReference(): DungeonProject {
       wallSegments: [], pathSegments: [], rivers: [], roomShapes: [],
     }],
   };
+}
+
+export function buildFolioMaterialsReference(): DungeonProject {
+  const project = buildFolioReference();
+  project.name = FOLIO_MATERIALS_REFERENCE_NAME;
+  const map = project.levels[0];
+  map.meta.name = FOLIO_MATERIALS_REFERENCE_NAME;
+  map.meta.publicName = "The Warden's Rest";
+  for (let y = 7; y <= 15; y++) {
+    for (let x = 3; x <= 8; x++) {
+      if (map.tiles[y][x].type === 'floor') map.tiles[y][x].floorMaterial = 'folio-worn-wood-v1';
+    }
+  }
+  for (let y = 22; y <= 27; y++) {
+    for (let x = 3; x <= 10; x++) {
+      if (map.tiles[y][x].type === 'floor') map.tiles[y][x].floorMaterial = 'folio-earth-v1';
+    }
+  }
+  map.notes[2].published = true;
+  map.notes[2].publicLabel = 'Warden quarters';
+  map.notes[2].publicDescription = 'Worn timber boards soften the footsteps in this old study.';
+  return project;
 }

@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useSyncExternalStore, useEffect } from 'react';
-import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, SceneTemplate, StampDef, Tile, TileType, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment, River, RoomShape } from '../types/map';
-import { createFogGrid, floodFill } from '../utils/mapUtils';
+import type { CustomThemeDefinition, DungeonMap, DungeonProject, MapNote, SceneTemplate, StampDef, Tile, Token, TokenKind, AnnotationStroke, ShapeMarker, MarkerShape, BackgroundImage, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment, River, RoomShape } from '../types/map';
+import { createFogGrid } from '../utils/mapUtils';
 import { SaveCoordinator } from '../utils/saveCoordinator';
 import { reThemeNotes } from '../utils/reThemeNotes';
 import { clearVisibleMapContent, createDefaultProject, nextIdAfter, replaceGeneratedMapContent, resizeMapContent, updateActiveLevel } from './mapStateUtils';
@@ -10,7 +10,7 @@ import { useLevelManagement } from './useLevelManagement';
 import { useMapPersistence } from './useMapPersistence';
 import { useProjectDispatch } from './useProjectDispatch';
 import { getPresetSettings as getPresetSettingsFn } from '../utils/artStylePresets';
-import { applyTileUpdates } from '../utils/tileEditing';
+import { useTileEditing } from './useTileEditing';
 import type { NoteEditFields } from '../types/map';
 import { useAudienceEditing } from './useAudienceEditing';
 import { clearDerivedDiscovery } from '../utils/secretDiscovery';
@@ -109,50 +109,8 @@ export function useMapState() {
 
   // ── Tile operations ───────────────────────────────────────────────────
 
-  const setTile = useCallback((x: number, y: number, type: TileType) => {
-    setProject(prev => {
-      const prevMap = prev.levels[activeLevelIndex];
-      const newTiles = applyTileUpdates(prevMap.tiles, [{ x, y, type }], prevMap.meta.width, prevMap.meta.height);
-      if (!newTiles) return prev;
-      pushHistory(prevMap, activeLevelIndex);
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, tiles: newTiles }));
-      debouncedSave(updated);
-      return updated;
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
-
-  const fillTiles = useCallback((x: number, y: number, fillType: TileType) => {
-    setProject(prev => {
-      const prevMap = prev.levels[activeLevelIndex];
-      const targetType = prevMap.tiles[y]?.[x]?.type;
-      if (!targetType) return prev;
-      pushHistory(prevMap, activeLevelIndex);
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
-        ...m, tiles: floodFill(m.tiles, x, y, targetType, fillType),
-      }));
-      debouncedSave(updated);
-      return updated;
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
-
-  const setTiles = useCallback((updates: { x: number; y: number; type: TileType }[]) => {
-    setProject(prev => {
-      const prevMap = prev.levels[activeLevelIndex];
-      const newTiles = applyTileUpdates(prevMap.tiles, updates, prevMap.meta.width, prevMap.meta.height);
-      if (!newTiles) return prev;
-      pushHistory(prevMap, activeLevelIndex);
-      const updated = updateActiveLevel(prev, activeLevelIndex, m => ({ ...m, tiles: newTiles }));
-      debouncedSave(updated);
-      return updated;
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSave, activeLevelIndex]);
-
-  const getTileType = useCallback((x: number, y: number): TileType | null => {
-    return map.tiles[y]?.[x]?.type ?? null;
-  }, [map.tiles]);
+  const { setTile, setTiles, fillTiles, getTileType, activeFloorMaterial, setActiveFloorMaterial } =
+    useTileEditing(map, setProject, debouncedSave, activeLevelIndex, pushHistory);
 
   const setMapName = useCallback((name: string) => {
     setProject(prev => {
@@ -1354,7 +1312,7 @@ export function useMapState() {
     projectGeneration: coordinator.getGeneration(),
     forgetDeletedProject: coordinator.forgetDeletedProject,
     selectedNoteId, setSelectedNoteId,
-    setTile, fillTiles, setTiles, getTileType,
+    setTile, fillTiles, setTiles, getTileType, activeFloorMaterial, setActiveFloorMaterial,
     setMapName, setPublicName, setSecretDiscovered, resizeMap, clearMap, newMap,
     loadMapData, loadProjectData,
     generateMap, applyGeneratedRegion,

@@ -2,6 +2,7 @@ import type { BuiltInTileType, TileType } from '../types/map';
 
 export interface TileDrawContext {
   getTileBaseType(x: number, y: number): BuiltInTileType | undefined;
+  getFloorMaterial?(x: number, y: number): string | undefined;
 }
 
 export interface TileTheme {

@@ -9,6 +9,13 @@ export type BuiltInTileType =
 export type CustomTileType = `custom:${string}`;
 export type TileType = BuiltInTileType | CustomTileType;
 
+export const FLOOR_MATERIAL_IDS = ['folio-worn-wood-v1', 'folio-earth-v1'] as const;
+export type FloorMaterialId = typeof FLOOR_MATERIAL_IDS[number];
+
+export function isFloorMaterialId(value: string | undefined): value is FloorMaterialId {
+  return FLOOR_MATERIAL_IDS.some(id => id === value);
+}
+
 export interface CustomTileDefinition {
   id: CustomTileType;
   label: string;
@@ -34,6 +41,8 @@ export interface CustomThemeDefinition {
 
 export interface Tile {
   type: TileType;
+  /** Versioned cosmetic floor substrate, also retained beneath floor symbols. */
+  floorMaterial?: string;
   /** Discovery is separate from fog and applies only to this tile's secret. */
   discovered?: boolean;
   /** Binds discovery to derived geometry without copying it into base tiles. */

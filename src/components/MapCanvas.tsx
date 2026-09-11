@@ -1402,6 +1402,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
 
     const tileDrawContext: TileDrawContext = {
+      getFloorMaterial: (x, y) => renderTiles[y]?.[x]?.floorMaterial,
       getTileBaseType: (x, y) => {
         const type = renderTiles[y]?.[x]?.type;
         return type ? getSemanticTileType(type, customThemes) : undefined;

@@ -111,6 +111,7 @@ export function useMapClipboard(
             const src = buf.tiles[dy][dx];
             const next: Tile = { type: src.type };
             if (src.theme) next.theme = src.theme;
+            if (src.floorMaterial !== undefined) next.floorMaterial = src.floorMaterial;
             if (src.noteId !== undefined) {
               const remapped = idMap.get(src.noteId);
               if (remapped !== undefined) next.noteId = remapped;

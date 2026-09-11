@@ -191,6 +191,7 @@ function renderMapDataToCanvas(
   }
 
   const tileDrawContext: TileDrawContext = {
+    getFloorMaterial: (x, y) => tiles[y]?.[x]?.floorMaterial,
     getTileBaseType: (x, y) => {
       const type = tiles[y]?.[x]?.type;
       return type ? getSemanticTileType(type, customThemes) : undefined;

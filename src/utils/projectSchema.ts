@@ -89,6 +89,7 @@ const riverType = oneOf(['water', 'lava', 'underground-stream']);
 const endpoint = oneOf(['spring', 'waterfall', 'cave', 'delta', 'lava-vent', 'outflow']);
 const edge = oneOf(['n', 's', 'e', 'w']);
 const tile = fields({ type: tileType }, {
+  floorMaterial: text,
   discovered: boolean, discoveredType: tileType,
   noteId: id, theme: text, flowDirection: finite, riverId: id, riverType,
   riverBank: oneOf(['sand', 'dirt', 'rock', 'stone', 'scorched']),

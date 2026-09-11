@@ -9,12 +9,17 @@ import StampPicker from './StampPicker';
 import { useAssetFavorites } from '../hooks/useAssetFavorites';
 import { FOLIO_MANIFEST, isUnavailableFolio } from '../themes/folio-v1/manifest';
 import '../themes/folio-v1/preview.css';
+import type { FloorMaterialId } from '../types/map';
+import FloorMaterialPicker from './FloorMaterialPicker';
 
 interface DrawToolsTabProps {
   objectControls?: React.ReactNode;
   section?: 'build' | 'decorate' | 'look';
   activeTool: ToolType;
   activeTile: TileType;
+  activeFloorMaterial?: FloorMaterialId;
+  onSetFloorMaterial?: (material: FloorMaterialId | undefined) => void;
+  unavailableFloorMaterials?: boolean;
   themeId: string;
   customThemes: readonly CustomThemeDefinition[];
   onSetTool: (tool: ToolType) => void;
@@ -139,6 +144,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
   objectControls,
   section = 'build',
   activeTool, activeTile, themeId, customThemes, onSetTool, onSetTile,
+  activeFloorMaterial, onSetFloorMaterial, unavailableFloorMaterials,
   onSetTheme, preserveOnThemeSwitch, onTogglePreserveOnThemeSwitch,
   onOpenCustomThemeBuilder,
   selectedStampId, onSelectStamp, onClearStamps,
@@ -189,6 +195,8 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
         </select>
       </label>
       </div>
+      {themeId === FOLIO_MANIFEST.themeId && activeTile === 'floor' && onSetFloorMaterial &&
+        <FloorMaterialPicker value={activeFloorMaterial} onChange={onSetFloorMaterial} />}
       {objectControls}
       <details className="tool-discovery">
       <summary>All building tools and shortcuts</summary>
@@ -401,6 +409,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
               <TilePreview key={type} type={type} size={32} themeId={themeId} customThemes={customThemes} />)}
           </div>
           <p>Pinned to this map. Bundled; no download needed.</p>
+          <p>Wood and earth v1 are available under Build &gt; Floor finish.</p>
           <details>
             <summary>Pack details</summary>
             <p>Existing maps are not upgraded automatically. Use the Minimal preset
@@ -408,6 +417,8 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
             <small>{FOLIO_MANIFEST.attribution} {FOLIO_MANIFEST.license}</small>
           </details>
         </div>}
+        {unavailableFloorMaterials && <p role="status">Some saved floor finishes are unavailable.
+          They display as the theme's ordinary floor. Saved references are retained.</p>}
         <button
           type="button"
           className="tool-btn"
