@@ -5,12 +5,14 @@ import creation from './ux02Creation.browser.mjs';
 import shell from './ux03Shell.browser.mjs';
 import audience from './ux05Audience.browser.mjs';
 import session from './ux06Session.browser.mjs';
+import keyboard from './ux09Keyboard.browser.mjs';
 
 const journeys = [
   ['guided creation and library continuity', creation],
   ['editor navigation, focus and responsive layout', shell],
   ['publication and player-safe preview', audience],
   ['session recovery and two-window player display', session],
+  ['keyboard critical workflows and panel accessibility', keyboard],
 ];
 
 for (const [name, journey] of journeys) {

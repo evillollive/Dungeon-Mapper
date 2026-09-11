@@ -99,6 +99,10 @@
   background: var(--surface-panel); transform: none;
 }
 .context-close { align-self: flex-end; flex-shrink: 0; }
+.editor-shell .context-panel > :is(.notes-panel, .initiative-panel) {
+  flex: none; max-height: none; overflow: visible;
+}
+.editor-shell .context-panel :is(.notes-list, .initiative-list) { flex: none; overflow: visible; }
 .editor-shell .tool-btn { font-size: var(--text-small); flex-wrap: wrap; }
 .focused-tool-material { position: sticky; top: -16px; z-index: 2; background: var(--surface-panel); padding: 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
 .focused-tool-material .active-material { margin-bottom: 8px; }
@@ -212,4 +216,7 @@
 @media (forced-colors: active) {
   .action-button[aria-pressed="true"] { outline: 2px solid Highlight; }
   .shell-dialog, .context-panel { border: 2px solid CanvasText; }
+}
+@media (max-height: 500px) {
+  .context-close { position: static; }
 }

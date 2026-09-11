@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { ICONS, ICON_CATEGORIES, type IconDef } from '../utils/iconLibrary';
 
@@ -11,23 +11,10 @@ interface IconPickerProps {
   onCancel: () => void;
 }
 
-const IconPicker: React.FC<IconPickerProps> = ({ open, onSelect, onCancel }) => {
+const IconPickerContents: React.FC<Omit<IconPickerProps, 'open'>> = ({ onSelect, onCancel }) => {
   const focusTrapRef = useFocusTrap();
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const inputRef = useRef<HTMLInputElement>(null);
-  const wasOpenRef = useRef(false);
-
-  // Reset state when transitioning from closed → open. Focus the search
-  // input when the dialog opens via rAF (an external side-effect that
-  // belongs in an effect).
-  useEffect(() => {
-    if (open && !wasOpenRef.current) {
-      // Focus the search input when the dialog opens.
-      requestAnimationFrame(() => inputRef.current?.focus());
-    }
-    wasOpenRef.current = open;
-  }, [open]);
 
   const filtered = useMemo(() => {
     let icons: IconDef[] = ICONS;
@@ -69,8 +56,6 @@ const IconPicker: React.FC<IconPickerProps> = ({ open, onSelect, onCancel }) => 
     if (e.target === e.currentTarget) handleCancel();
   }, [handleCancel]);
 
-  if (!open) return null;
-
   return (
     <div
       ref={focusTrapRef}
@@ -111,7 +96,6 @@ const IconPicker: React.FC<IconPickerProps> = ({ open, onSelect, onCancel }) => 
         </div>
 
         <input
-          ref={inputRef}
           type="text"
           value={search}
           onChange={e => setSearch(e.target.value)}
@@ -223,5 +207,8 @@ const IconPicker: React.FC<IconPickerProps> = ({ open, onSelect, onCancel }) => 
     </div>
   );
 };
+
+const IconPicker: React.FC<IconPickerProps> = ({ open, onSelect, onCancel }) =>
+  open ? <IconPickerContents onSelect={onSelect} onCancel={onCancel} /> : null;
 
 export default IconPicker;

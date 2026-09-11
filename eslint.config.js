@@ -11,6 +11,7 @@ export default defineConfig([
     files: [
       'playwright.config.mjs',
       'src/test/ux09.spec.mjs',
+      'src/test/ux09Keyboard.browser.mjs',
       'src/test/ux02Creation.browser.mjs',
       'src/test/ux03Shell.browser.mjs',
       'src/test/ux05Audience.browser.mjs',

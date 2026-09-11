@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import type { MapNote } from '../types/map';
 
 interface NotesPanelProps {
@@ -23,6 +24,7 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editLabel, setEditLabel] = useState('');
   const [editDesc, setEditDesc] = useState('');
+  const editButtons = useRef(new Map<number, HTMLButtonElement>());
 
   const startEdit = (note: MapNote) => {
     setEditingId(note.id);
@@ -30,9 +32,16 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
     setEditDesc(note.description);
   };
 
+  const finishEdit = (id: number) => {
+    flushSync(() => setEditingId(null));
+    const button = editButtons.current.get(id);
+    button?.focus();
+    button?.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+  };
+
   const saveEdit = (id: number) => {
     onUpdateNote(id, editLabel, editDesc);
-    setEditingId(null);
+    finishEdit(id);
   };
 
   return (
@@ -61,22 +70,17 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
           <div
             key={note.id}
             className={`note-item ${selectedNoteId === note.id ? 'selected' : ''}`}
-            role="button"
-            tabIndex={0}
-            aria-pressed={selectedNoteId === note.id}
-            aria-label={`Select note ${note.id}: ${note.label}`}
-            onClick={() => onSelectNote(selectedNoteId === note.id ? null : note.id)}
-            onKeyDown={e => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                onSelectNote(selectedNoteId === note.id ? null : note.id);
-              }
-            }}
+            role="group"
+            aria-label={`Note ${note.id}: ${note.label}`}
           >
             {!readOnly && editingId === note.id ? (
-              <div className="note-edit" onClick={e => e.stopPropagation()}>
+              <form className="note-edit" onSubmit={event => { event.preventDefault(); saveEdit(note.id); }}
+                onKeyDown={event => {
+                  if (event.key === 'Escape') { event.stopPropagation(); finishEdit(note.id); }
+                }}>
                 <input
                   className="note-input"
+                  autoFocus
                   value={editLabel}
                   onChange={e => setEditLabel(e.target.value)}
                   placeholder="Room name"
@@ -91,19 +95,27 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
                   rows={3}
                 />
                 <div className="note-edit-actions">
-                  <button type="button" className="note-save-btn" onClick={(e) => { e.stopPropagation(); saveEdit(note.id); }}>Save</button>
-                  <button type="button" className="note-cancel-btn" onClick={(e) => { e.stopPropagation(); setEditingId(null); }}>Cancel</button>
+                  <button type="submit" className="note-save-btn">Save</button>
+                  <button type="button" className="note-cancel-btn" onClick={() => finishEdit(note.id)}>Cancel</button>
                 </div>
-              </div>
+              </form>
             ) : (
               <div className="note-view">
-                <div className="note-header-row">
-                  <span className="note-badge">{note.id}</span>
-                  <span className="note-label">{note.label}</span>
+                <button type="button" className="note-select-btn"
+                  aria-pressed={selectedNoteId === note.id}
+                  aria-label={`Select note ${note.id}: ${note.label}`}
+                  onClick={() => onSelectNote(selectedNoteId === note.id ? null : note.id)}>
+                  <span className="note-header-row">
+                    <span className="note-badge">{note.id}</span>
+                    <span className="note-label">{note.label}</span>
+                  </span>
+                  <span className="note-coords">({note.x}, {note.y})</span>
+                </button>
                   {!readOnly && <div className="note-actions">
                     <button
                       className="note-edit-btn"
-                      onClick={e => { e.stopPropagation(); startEdit(note); }}
+                      ref={node => { if (node) editButtons.current.set(note.id, node); else editButtons.current.delete(note.id); }}
+                      onClick={() => startEdit(note)}
                       title="Edit note"
                       aria-label={`Edit note ${note.id}: ${note.label}`}
                     >✎</button>
@@ -114,8 +126,6 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
                       aria-label={`Delete note ${note.id}: ${note.label}`}
                     >✕</button>
                   </div>}
-                </div>
-                <div className="note-coords">({note.x}, {note.y})</div>
                 {note.description && (
                   <div className="note-desc">{note.description}</div>
                 )}

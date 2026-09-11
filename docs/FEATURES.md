@@ -30,7 +30,7 @@ If you want the full tour in one place, this is it. Dungeon Mapper starts fast, 
 - **Edit / Present views** - header **👁 Present** toggle swaps to a player-safe toolbar with a freehand drawing pen, an eraser, fog-of-war controls, and token tools (see [Present View](#present-view) below)
 - **Fog of war** - per-cell hidden / revealed flags with a Defog brush, Reveal `V` / Hide `H` drag-rectangles, Reset Fog (re-cover the map), Clear Fog (reveal everything), an optional GM **🌫 Show Fog** preview overlay, fog edge feathering, and **Dynamic Fog** mode that auto-reveals cells visible from player tokens with 3-state rendering (hidden / explored / visible)
 - **Tokens with icon library** - drop Player, NPC, and Monster tokens (small 1×1, medium 2×2, large 3×3) onto the map with a searchable icon picker (30+ icons in 6 categories); Move Token to drag, Remove Token to delete
-- **Initiative panel** - a turn-order list in the right-hand sidebar that mirrors placed tokens; the GM can drag entries to reorder, rename them inline, or clear the list (see [Initiative](#initiative) below)
+- **Initiative panel** - a turn-order list with selectable entries, visible Up/Down controls, Alt+Arrow and drag reordering, inline renaming and Clear (see [Initiative](#initiative) below)
 - **Shape / area markers** - place colored shape overlays (circle, square, diamond) on the map for marking spell areas, hazard zones, and tactical effects; 8 color options with adjustable radius (see [Markers](#markers) below)
 - **Measure tool** - measure distances between cells in four shapes (ruler, circle, cone, line) with configurable feet-per-cell scale (default 5 ft); overlays are drawn in cyan with a distance readout pill (see [Measure](#measure) below)
 - **Light sources** - place light sources on the map from preset profiles (torch, lantern, magical, custom) with adjustable radius and color; integrates with dynamic fog to illuminate cells within range (see [Light Sources](#light-sources) below)
@@ -38,7 +38,7 @@ If you want the full tour in one place, this is it. Dungeon Mapper starts fast, 
 - **Player annotations** - freehand pen with eight color swatches and Thin / Medium / Thick brush widths; per-stroke eraser and a Clear All button
 - **Zoom & pan** - `+` / `-` / `Reset` / `Fit` controls along the bottom of the map; right-click drag (or long-press on touch) to pan; mouse-wheel zoom while holding `Shift` (or with Caps Lock on); pinch-to-zoom and two-finger pan on touch devices; on-canvas HUD displays current zoom level and cursor coordinates
 - **Undo / Redo** - up to 50 steps per level (`Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z`)
-- **Room notes** - numbered annotations placed on the map with labels and descriptions; in Present view, notes that sit under fog are hidden from the side panel
+- **Room notes** - numbered annotations with keyboard-editable labels and multiline descriptions. Player preview uses explicitly published public fields in known geography, not the DM's private text.
 - **Auto-save** - map state persisted to IndexedDB on every change (migrates legacy localStorage data automatically)
 - **Line-of-Sight / FOV** - click any cell to visualize which cells are visible from that point, with walls blocking the view; click the same cell again to clear (`O` shortcut)
 - **Export / Import** - one intent-first dialog for private project backups, player-safe PNG/SVG images, bounded print pages and grid-aligned images for other tools
@@ -155,13 +155,17 @@ The initiative panel keeps the tactical state tied to the map instead of floatin
 
 In **Edit mode** the panel is fully editable:
 
-- **Drag** an entry up or down to change the turn order.
-- **✎ Rename** an entry inline so the displayed label can be something other than the token's auto-generated name.
+- **Reorder** with the visible Up/Down buttons, drag an entry, or focus its selection button and use `Alt+Up` / `Alt+Down`.
+- **Rename** an entry inline. `Enter` saves, `Escape` cancels, and focus returns to Rename. Leaving the field also saves a nonblank name.
 - **Clear** wipes the initiative list (tokens themselves stay on the map).
 
-In **Present mode** the panel is read-only - no rename, reorder, or clear. When fog is enabled, tokens whose footprint sits entirely under fog are also omitted from the list so it doesn't leak the existence of hidden enemies.
+The legacy **DM view** list is read-only, but that local fog-aware view is not
+a player-safe display. Use **Player preview** or the separate local player
+display for audience-filtered information.
 
 The initiative order is persisted with the map (auto-save and JSON export).
+During Run, Next/Previous turn operates on separately saved session progress.
+The current round and turn are exposed in a polite live region.
 
 ### Markers
 
@@ -474,7 +478,11 @@ Once you spend a few minutes with Dungeon Mapper, shortcuts start doing a lot of
 
 ## Accessibility
 
-Dungeon Mapper is designed so keyboard users and screen-reader users can actually navigate the editor with confidence. The goal isn't just to check boxes, it's to make a complex tool feel dependable no matter how you use it.
+Keyboard controls cover creation, notes, initiative, export/recovery and routine
+session actions. Full screen-reader task review and WCAG 2.2 AA qualification
+remain open; automated checks are not conformance certification. On macOS
+Safari/WebKit, use Option+Tab to reach all controls if ordinary Tab visits only
+text fields, or enable the browser's full keyboard navigation setting.
 
 - **Single-listener keyboard registry.** Every global shortcut listed
  above is owned by `useGlobalShortcuts`, which automatically suppresses
@@ -503,19 +511,22 @@ Dungeon Mapper is designed so keyboard users and screen-reader users can actuall
  and initiative panel items, form inputs, and edit/delete buttons)
  expose a high-contrast `:focus-visible` ring that is shown only for
  keyboard users.
-- **Keyboard-navigable panels.** Room note and initiative panel entries
- are keyboard-focusable with `Enter`/`Space` to select. Initiative
- entries can be reordered with `Alt+Up`/`Alt+Down` arrow keys as a
- keyboard alternative to drag-and-drop.
+- **Keyboard-navigable panels.** Native selection buttons use `Enter`/`Space`
+ without intercepting editing keys. Initiative has visible Up/Down buttons
+ and `Alt+Up`/`Alt+Down` reordering. Note descriptions accept newlines;
+ Save/Cancel returns to Edit, and `Escape` cancels the draft before closing
+ a mobile sheet. Actions remain scrollable in short landscape layouts.
 - **Descriptive labels.** Note edit/delete buttons and initiative rename
  buttons carry `aria-label` attributes that include the item name for
  clear screen-reader identification. Form inputs in note editing have
  explicit `aria-label` values. All range sliders and color pickers in
  the toolbar include descriptive `aria-label` text.
-- **Modal dialogs.** All dialogs (Export, Generate Hub, Icon Picker,
- Shortcuts Help, Scene Templates, Command Palette) use `role="dialog"` and `aria-modal="true"` with
- `aria-label` or `aria-labelledby`. Global shortcuts are automatically
- suppressed while a modal is open, and `Escape` dismisses any dialog.
+- **Modal dialogs.** Creation, Export, Generate Hub, Icon Picker, Shortcuts
+ Help, Scene Templates and Command Palette use named dialog semantics and
+ shared focus containment. Tab cycling skips unavailable controls and closed
+ advanced sections. Escape dismisses the active dialog or editing draft,
+ and focus returns to the opener when it still exists. A resized mobile
+ sheet does not take focus from an already-open dialog.
 - **Print mode.** A high-contrast monochrome rendering of the map is
  available via the **🖨 Print** button (`Shift+P`) for users who need
  the highest possible contrast or want to print the map.

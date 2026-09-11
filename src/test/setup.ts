@@ -1,5 +1,8 @@
 import '@testing-library/jest-dom/vitest';
 
+// jsdom has no layout or scrolling implementation.
+Element.prototype.scrollIntoView = () => {};
+
 // Mock canvas getContext for jsdom (which doesn't support Canvas)
 HTMLCanvasElement.prototype.getContext = (() => {
   const noop = () => {};

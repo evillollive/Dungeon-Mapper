@@ -6,8 +6,32 @@ const FOCUSABLE_SELECTOR = [
   'input:not([disabled])',
   'select:not([disabled])',
   'textarea:not([disabled])',
+  'summary',
+  '[contenteditable="true"]',
   '[tabindex]:not([tabindex="-1"])',
 ].join(', ');
+
+type FocusLayer = 'sheet' | 'dialog';
+const traps: { container: HTMLElement; layer: FocusLayer }[] = [];
+
+function focusableElements(container: HTMLElement) {
+  return [...container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)].filter(node => {
+    if (node.matches(':disabled, input[type="hidden"], [tabindex="-1"]')) return false;
+    for (let parent: HTMLElement | null = node; parent; parent = parent.parentElement) {
+      if (parent.matches('[hidden], [inert], [aria-hidden="true"]')) return false;
+      const style = getComputedStyle(parent);
+      if (style.display === 'none' || style.visibility === 'hidden' || style.visibility === 'collapse') return false;
+      if (parent instanceof HTMLDetailsElement && !parent.open &&
+        !parent.querySelector(':scope > summary')?.contains(node)) return false;
+    }
+    return true;
+  });
+}
+
+function focusFirst(container: HTMLElement) {
+  if (!container.hasAttribute('tabindex')) container.setAttribute('tabindex', '-1');
+  (focusableElements(container)[0] ?? container).focus();
+}
 
 /**
  * Traps keyboard focus inside the referenced container element.
@@ -18,60 +42,71 @@ const FOCUSABLE_SELECTOR = [
  * unmounts it returns focus to the element that was focused before the
  * trap was activated.
  */
-export function useFocusTrap<T extends HTMLElement = HTMLDivElement>() {
+export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
+  { onEscape, layer = 'dialog' }: { onEscape?: () => void; layer?: FocusLayer } = {},
+) {
   const containerRef = useRef<T>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const escapeRef = useRef(onEscape);
+  useEffect(() => { escapeRef.current = onEscape; }, [onEscape]);
 
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
 
-    // Remember the element that had focus before the trap was activated.
     previousFocusRef.current = document.activeElement as HTMLElement | null;
+    // Responsive sheets may mount underneath an existing dialog on resize.
+    // Nested effects may also mount before their parent.
+    const childIndex = traps.findIndex(trap => container.contains(trap.container) ||
+      (layer === 'sheet' && trap.layer === 'dialog'));
+    const entry = { container, layer };
+    traps.splice(childIndex < 0 ? traps.length : childIndex, 0, entry);
+    const isActive = () => traps.at(-1) === entry;
 
-    // Move focus into the container.
-    const focusables = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-    if (focusables.length > 0) {
-      focusables[0].focus();
-    } else {
-      // Ensure the container is focusable even if it doesn't have tabindex.
-      if (!container.hasAttribute('tabindex')) {
-        container.setAttribute('tabindex', '-1');
-      }
-      container.focus();
-    }
+    if (isActive()) focusFirst(container);
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || !isActive()) return;
+      if (e.key === 'Escape' && escapeRef.current) {
+        e.preventDefault();
+        e.stopPropagation();
+        escapeRef.current();
+      }
       if (e.key !== 'Tab') return;
 
-      const nodes = container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR);
-      if (nodes.length === 0) return;
-
-      const first = nodes[0];
-      const last = nodes[nodes.length - 1];
-
-      if (e.shiftKey) {
-        if (document.activeElement === first) {
-          e.preventDefault();
-          last.focus();
-        }
-      } else {
-        if (document.activeElement === last) {
-          e.preventDefault();
-          first.focus();
-        }
+      const nodes = focusableElements(container);
+      e.preventDefault();
+      if (nodes.length === 0) {
+        focusFirst(container);
+        return;
       }
+
+      const current = nodes.indexOf(document.activeElement as HTMLElement);
+      const next = current < 0 ? (e.shiftKey ? nodes.length - 1 : 0)
+        : (current + (e.shiftKey ? -1 : 1) + nodes.length) % nodes.length;
+      nodes[next].focus();
+    };
+    const handleFocusIn = (event: FocusEvent) => {
+      if (isActive() && event.target instanceof Node && !container.contains(event.target)) focusFirst(container);
     };
 
-    container.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('focusin', handleFocusIn);
 
     return () => {
-      container.removeEventListener('keydown', handleKeyDown);
-      // Restore focus to the previously focused element.
-      if (previousFocusRef.current?.isConnected) previousFocusRef.current.focus();
-      else document.getElementById('dm-canvas-area')?.focus();
+      const ownedFocus = isActive();
+      traps.splice(traps.indexOf(entry), 1);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('focusin', handleFocusIn);
+      if (ownedFocus) {
+        const remaining = traps.at(-1)?.container;
+        const previous = previousFocusRef.current;
+        if (previous?.isConnected && (!remaining || remaining.contains(previous))) previous.focus();
+        else if (remaining?.isConnected) focusFirst(remaining);
+        else document.getElementById('dm-canvas-area')?.focus();
+      }
     };
-  }, []);
+  }, [layer]);
 
   return containerRef;
 }
