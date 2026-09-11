@@ -1424,7 +1424,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
             const tileTheme = tile.theme ? getThemeWithCustom(tile.theme, customThemes) : theme;
             tileTheme.drawTile(ctx, tile.type, x, y, tileSize, tileDrawContext);
             // Draw print-mode-inspired glyph overlay for quick identification.
-            if (isBuiltInTileType(tile.type)) {
+            if (isBuiltInTileType(tile.type) && !tileTheme.includesTileGlyphs) {
               drawTileOverlay(ctx, tile.type, x, y, tileSize, tileTheme.tileColors[tile.type]);
             }
           }

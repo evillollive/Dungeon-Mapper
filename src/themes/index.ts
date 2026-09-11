@@ -15,6 +15,10 @@ export interface TileTheme {
   gridColor: string;
   /** Optional per-theme tint for the paper texture layer. */
   paperTint?: string;
+  /** Themes with complete semantic symbols do not need legacy letter overlays. */
+  includesTileGlyphs?: boolean;
+  /** Trusted built-in vector art, using the same tile context as Canvas. */
+  tileSVG?(id: TileType, x: number, y: number, size: number, context?: TileDrawContext): string | undefined;
   drawTile(ctx: CanvasRenderingContext2D, id: TileType, x: number, y: number, size: number, context?: TileDrawContext): void;
 }
 
@@ -31,6 +35,7 @@ import { moderncityTheme } from './moderncity';
 import { pirateTheme } from './pirate';
 import { desertTheme } from './desert';
 import { ancientTheme } from './ancient';
+import { folioTheme } from './folio-v1/theme';
 
 export const THEME_REGISTRY: Record<string, TileTheme> = {
   dungeon: dungeonTheme,
@@ -46,6 +51,7 @@ export const THEME_REGISTRY: Record<string, TileTheme> = {
   pirate: pirateTheme,
   desert: desertTheme,
   ancient: ancientTheme,
+  [folioTheme.id]: folioTheme,
 };
 
 // Themes are exposed to the UI sorted alphabetically by display name so the

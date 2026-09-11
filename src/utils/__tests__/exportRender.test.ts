@@ -89,6 +89,15 @@ describe('export and render helpers', () => {
     expect(canvas.height).toBe(24);
   });
 
+  it('preserves versioned per-tile art in SVG without requiring a caller resolver', async () => {
+    const map = smallMap();
+    map.tiles[1][1] = { type: 'floor', theme: 'dungeon-folio-v1' };
+    exportMapSVG(map, getTheme('dungeon'));
+    const svg = await blobs[0].text();
+    expect(svg).toContain(getTheme('dungeon-folio-v1').tileSVG?.('floor', 1, 1, map.meta.tileSize));
+    expect(svg).toContain(`fill="${getTheme('dungeon').tileColors.floor}"`);
+  });
+
   it('renders a 128×128 full-stack map without changing dimensions', () => {
     const map = createDefaultMap('Full Stack Profile');
     map.meta.width = 128;

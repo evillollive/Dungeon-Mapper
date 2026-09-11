@@ -4,11 +4,11 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-04 are merged. UX-05 implementation and Chromium qualification are recorded below; cross-browser follow-up and release research gates remain open. No participant usability acceptance is claimed.
+**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's first dungeon art slice received owner visual approval on September 11, 2026; the full package remains incomplete. Cross-browser follow-up and release research gates remain open. No participant usability acceptance is claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
-**Latest implementation:** UX-05 adds explicit note publication, secret discovery, hidden entities, a serializable player projection, read-only player preview, and player PNG/SVG output on merged UX-04 #163. See [the UX-05 handoff](./UX-05-HANDOFF.md) for the visibility policy, compatibility, Chromium evidence, and open follow-ups. The existing DM view remains a trusted authoring surface, not the player preview. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
+**Latest implementation:** Following UX-06 #166, UX-07 introduces the opt-in Dungeon Folio v1 tile kit and The Quiet Cistern, a hand-authored 32 x 32 reference sample. See the [before/after and output contact sheet](./media/ux07/contact-sheet.png) and the scoped implementation record in UX-07 below. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
 
 ## 1. Product direction
 
@@ -528,6 +528,79 @@ Resolve one decision at a time with the owner: local-first release scope; migrat
 
 **Priority:** P1. **Depends on:** UX-03/04; visibility-sensitive assets integrate with UX-05.
 
+**First bounded milestone, September 11, 2026:** The owner chose the dungeon
+slice first, with visual approval before expanding the artwork. Implemented
+the opt-in **Dungeon Folio v1** theme and **The Quiet Cistern** sample.
+This is a partial ART-02/reference and pack-contract slice, not completion of
+ART-01 through ART-08.
+
+**Owner visual approval, September 11, 2026:** The owner reviewed the shared
+contact sheet and approved the dungeon art direction ("Looks good"). This clears
+the reference-slice visual gate for expanding UX-07. It does not approve a merge,
+complete the remaining art packages, or waive cross-browser, device, accessibility
+or release acceptance. The original evidence images retain their pre-approval
+captions; this dated decision supersedes those pending-approval labels.
+
+Open **Your maps > Open a sample > The Quiet Cistern**, or choose
+**Look > Theme > Dungeon Folio v1** on an existing map. The sample uses the
+existing Minimal preset, no additional atmosphere, four notes with explicit
+public/private content, a sealed room, and reused catalog stamps/tokens.
+The original default sample, all existing theme IDs, and all preset IDs remain
+unchanged.
+
+The pack uses quieter flagstone and rock, muted connected water banks,
+continuous wall masses, timber doors, distinct stairs, arches, pillars and
+semantic hazard symbols. Four coordinate-seeded surface variants reduce
+repetition. Fine surface marks are suppressed below a 16-pixel render tile.
+This is render-resolution detail reduction, not a new editor zoom/LOD engine.
+Worn-wood and earth floor materials, new furnishing/token art, UI icons/fonts,
+illustrations, further samples and full print companion artwork remain later work.
+
+**Version and renderer contract:** The immutable theme ID `dungeon-folio-v1`
+is saved in the existing map/per-tile theme fields. No schema migration or
+silent upgrade occurs. `src/themes/folio-v1/manifest.ts` records stable asset
+IDs, pack/render versions, provenance, AGPL-3.0-or-later notice, viewBox,
+footprints, anchors, variants, fallback semantics and a SHA-256 source fingerprint.
+Editable source is `art.ts`; `NOTICE.txt` records authorship. Canvas and native
+SVG consume the same normalized vector geometry. Print continues using the
+existing semantic renderer. The cache is local to v1, bounded to 256 geometry
+entries and keyed by semantic tile, variant, adjacency and detail tier.
+There are no raster decodes or external requests.
+
+Unknown Folio version IDs retain their saved reference and use the legacy Dungeon
+renderer; Look reports that fallback explicitly. Bundled source corruption is a
+build/fingerprint failure, not a runtime downloadable-asset recovery mechanism.
+Optional pack installation, missing-file recovery and cache lifecycle UI remain
+future work. This kit ships with the app; it adds no separate offline download.
+
+**Evidence:** [Editor and pack picker](./media/ux07/editor.png),
+[player preview](./media/ux07/player.png),
+[phone player preview](./media/ux07/player-phone.png),
+[before/after, player, SVG and print](./media/ux07/contact-sheet.png), and
+[25/50/100/200% render-scale sheet](./media/ux07/zoom-sheet.png).
+The production creation/save/reload/preview journey passed in Chromium
+152.0.7977.83 at `/Dungeon-Mapper/`. Development render contact sheets use
+the same reference with original Dungeon versus Folio art. These are not
+cross-browser, physical-device, printed-paper or participant acceptance.
+
+The 128 x 128 renderer probe at 16 pixels/cell measured 16.7 ms cold,
+14.9 ms warm median and 18.1 ms warm maximum over ten warm samples, retaining
+32 cached geometry entries. A production 32 x 32 editor probe measured
+8.3 ms median and 8.9 ms p95 dispatch-to-next-frame time over 32 synthetic
+pointer moves. These are local observations, not end-to-end hardware input
+latency or a release performance certification. The source kit plus picker
+CSS is 10,907 bytes, 3,861 bytes gzip; it is bundled into existing chunks,
+not independently transferred. It introduces no image/font downloads.
+
+Reusable Page-based browser helpers are `src/test/ux07Art.browser.mjs`
+(production journey) and `src/test/ux07Art.render.browser.mjs` (Vite-only
+contact sheets). Import their default functions in a Playwright-capable
+runner and pass a Page already navigated to the appropriate base URL.
+They create and close isolated contexts and add no application dependency.
+Targeted Vitest coverage includes stable versions, source fingerprint,
+determinism/cache bounds, exposed/shared edges, Canvas/SVG geometry,
+sample connectivity, fresh copies, projected secrets and print fallback.
+
 **Deliverables:** ART-01 through ART-04, ART-06 through ART-08 for the initial release, plus asset manifest/provenance, pack/version selection, previews, deterministic variants, caching, and fallbacks. ART-05/09 extend after the dungeon slice is approved.
 
 **Implementation anchors:** `src/themes/*`, existing art utilities/catalogs, `artStylePresets.ts`, `MapCanvas.tsx`, `renderMap.ts`, `export.ts`, new versioned asset directories.
@@ -692,8 +765,8 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-03 | Merged in #162 | [Production shell, action migration and design tokens](./UX-03-HANDOFF.md) |
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; Chromium qualified; cross-browser follow-up open | [Publication, projection, discovery, evidence and limitations](./UX-05-HANDOFF.md); later release gates remain |
-| UX-06 | Implemented; production Chromium two-window qualified | [Session lifecycle, isolated persistence, display protocol and evidence](./UX-06-HANDOFF.md); PR/CI landing, Firefox/WebKit and later release gates remain |
-| UX-07 | Not started | Art vertical slice and pack pipeline |
+| UX-06 | Merged in #166; production Chromium two-window qualified | [Session lifecycle, isolated persistence, display protocol and evidence](./UX-06-HANDOFF.md); Firefox/WebKit and later release gates remain |
+| UX-07 | First dungeon slice implemented; owner visual approval recorded September 11, 2026 | [Reference and output contact sheet](./media/ux07/contact-sheet.png); versioned tile kit and sample approved for further art expansion. Remaining art packages and full acceptance are open |
 | UX-08 | Not started | Export and production offline |
 | UX-09 | Not started | Release qualification |
 | UX-10 | Deferred | Explicit approval of remote scope |

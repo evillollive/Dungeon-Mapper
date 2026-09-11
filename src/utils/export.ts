@@ -14,7 +14,7 @@ import { isTokenFogged } from './tokenVisibility';
 import { deriveRenderableTiles } from './derivedRenderMap';
 import { getRiverBankColor, getRiverEndpointMarker } from './riverPolish';
 import { projectForAudience } from './audienceProjection';
-import { getThemeWithCustom } from './customThemes';
+import { getSemanticTileType, getThemeWithCustom } from './customThemes';
 
 const SVG_CUSTOM_TILE_FALLBACK_COLOR = '#777777';
 
@@ -93,7 +93,7 @@ export function exportMapSVG(
     map = projection.map;
     theme = getThemeWithCustom(map.meta.theme ?? theme.id, projection.customThemes);
     resolveTheme = id => getThemeWithCustom(id, projection.customThemes);
-    opts = { ...opts, customStamps: projection.customStamps };
+    opts = { ...opts, customThemes: projection.customThemes, customStamps: projection.customStamps };
   }
   const includeTexture = opts.includeTexture ?? true;
   const includeEdgeBlend = opts.includeEdgeBlend ?? true;
@@ -105,6 +105,12 @@ export function exportMapSVG(
   const dynamicFogActive = (map.dynamicFogEnabled ?? false) && fogActive;
   const { width, height, tileSize, name } = map.meta;
   const tiles = deriveRenderableTiles(map);
+  const tileDrawContext = {
+    getTileBaseType: (x: number, y: number) => {
+      const type = tiles[y]?.[x]?.type;
+      return type ? getSemanticTileType(type, opts.customThemes) : undefined;
+    },
+  };
   const svgW = width * tileSize;
   const svgH = height * tileSize;
 
@@ -141,8 +147,14 @@ export function exportMapSVG(
       if (!tile || tile.type === 'empty') continue;
       // Honor per-tile theme overrides (from "preserve tiles when switching
       // themes") so mixed-style maps export with each tile in its original
-      // theme color. Falls back to the map theme when no override / resolver.
-      const tileTheme = tile.theme && resolveTheme ? resolveTheme(tile.theme) : theme;
+      // theme. Resolve built-in/custom overrides even without a caller resolver.
+      const tileTheme = tile.theme
+        ? (resolveTheme?.(tile.theme) ?? getThemeWithCustom(tile.theme, opts.customThemes)) : theme;
+      const art = tileTheme.tileSVG?.(tile.type, x, y, tileSize, tileDrawContext);
+      if (art !== undefined) {
+        svg += art;
+        continue;
+      }
       const fill = sanitizeColor(tileTheme.tileColors[tile.type], SVG_CUSTOM_TILE_FALLBACK_COLOR);
       svg += `<rect x="${x * tileSize}" y="${y * tileSize}" width="${tileSize}" height="${tileSize}" fill="${fill}" stroke="#2d3561" stroke-width="0.5"/>`;
     }
@@ -171,7 +183,9 @@ export function exportMapSVG(
     svg += `<image xlink:href="${escapeXML(ebDataUrl)}" x="0" y="0" width="${svgW}" height="${svgH}"/>`;
   }
 
-  svg += `<g stroke="#2d3561" stroke-width="0.5" opacity="0.5">`;
+  svg += theme.tileSVG
+    ? `<g stroke="${theme.gridColor}" stroke-width="${Math.max(0.5, tileSize * 0.02)}">`
+    : '<g stroke="#2d3561" stroke-width="0.5" opacity="0.5">';
   for (let x = 0; x <= width; x++) svg += `<line x1="${x * tileSize}" y1="0" x2="${x * tileSize}" y2="${svgH}"/>`;
   for (let y = 0; y <= height; y++) svg += `<line x1="0" y1="${y * tileSize}" x2="${svgW}" y2="${y * tileSize}"/>`;
   svg += `</g>`;

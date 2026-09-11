@@ -207,7 +207,7 @@ function renderMapDataToCanvas(
       } else if (tile.type !== 'empty') {
         const tileTheme = tile.theme ? getThemeWithCustom(tile.theme, customThemes) : theme;
         tileTheme.drawTile(ctx, tile.type, x, y, tileSize, tileDrawContext);
-        if (isBuiltInTileType(tile.type)) {
+        if (isBuiltInTileType(tile.type) && !tileTheme.includesTileGlyphs) {
           drawTileOverlay(ctx, tile.type, x, y, tileSize, tileTheme.tileColors[tile.type]);
         }
       }

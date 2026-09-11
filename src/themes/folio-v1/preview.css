@@ -1,0 +1,21 @@
+.folio-pack-preview {
+  padding: 0.65rem 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.folio-pack-preview p {
+  margin: 0 0 0.45rem;
+}
+
+.folio-materials {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-bottom: 0.45rem;
+}
+
+.folio-pack-preview summary {
+  cursor: pointer;
+  padding: 0.25rem 0;
+}

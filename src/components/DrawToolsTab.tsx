@@ -7,6 +7,8 @@ import { getPaperTint } from '../themes';
 import { ART_STYLE_PRESET_DESCRIPTIONS } from '../utils/artStylePresets';
 import StampPicker from './StampPicker';
 import { useAssetFavorites } from '../hooks/useAssetFavorites';
+import { FOLIO_MANIFEST, isUnavailableFolio } from '../themes/folio-v1/manifest';
+import '../themes/folio-v1/preview.css';
 
 interface DrawToolsTabProps {
   objectControls?: React.ReactNode;
@@ -112,7 +114,7 @@ function TilePreview({
     canvas.height = size;
 
     theme.drawTile(ctx, type, 0, 0, size);
-    if (isBuiltInTileType(type)) {
+    if (isBuiltInTileType(type) && !theme.includesTileGlyphs) {
       drawTileOverlay(ctx, type, 0, 0, size, theme.tileColors[type]);
     }
   }, [type, size, themeId, customThemes]);
@@ -383,9 +385,29 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
             onClick={e => e.stopPropagation()}
             title="Map theme"
           >
+            {isUnavailableFolio(themeId) && <option value={themeId}>Unavailable Dungeon Folio version</option>}
             {themeList.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
           </select>
         </label>
+        {isUnavailableFolio(themeId) && <p role="status">
+          This Dungeon Folio version is not bundled here. Using the original Dungeon
+          appearance; geometry and the saved version reference are unchanged.
+          Choose an available theme explicitly to replace it.
+        </p>}
+        {themeId === FOLIO_MANIFEST.themeId && <div className="folio-pack-preview">
+          <p><strong>{FOLIO_MANIFEST.name} {FOLIO_MANIFEST.version}</strong></p>
+          <div className="folio-materials" aria-label="Dungeon Folio material preview">
+            {(['floor', 'wall', 'water', 'door-h', 'stairs-down', 'pillar'] as const).map(type =>
+              <TilePreview key={type} type={type} size={32} themeId={themeId} customThemes={customThemes} />)}
+          </div>
+          <p>Pinned to this map. Bundled; no download needed.</p>
+          <details>
+            <summary>Pack details</summary>
+            <p>Existing maps are not upgraded automatically. Use the Minimal preset
+              for unembellished art. Review <strong>The Quiet Cistern</strong> in samples.</p>
+            <small>{FOLIO_MANIFEST.attribution} {FOLIO_MANIFEST.license}</small>
+          </details>
+        </div>}
         <button
           type="button"
           className="tool-btn"
