@@ -26,8 +26,10 @@ journey in each of three independent engine jobs. It retains failure evidence
 and results for fourteen days. The aggregate **Browser qualification** job
 requires every engine to succeed. **Build and test** now blocks on lint errors
 and on increases beyond the recorded 73-warning baseline. Hook warning debt is
-not declared fixed. The strict required-check ruleset must retain **Build and
-test** and include **Browser qualification** before this milestone is landed.
+not declared fixed. The active **Protect default branch** ruleset (21362094)
+requires both **Build and test** and **Browser qualification**, with strict
+up-to-date checks. Its existing PR, deletion, force-push and bypass policies
+were preserved.
 
 The existing UX-08 runner remains separate because it controls worker bytes and
 actually shuts down its server. It uses the same production build and locked
@@ -50,9 +52,13 @@ failure artifacts are retained separately from the corrective run.
 | Session and local display | Prepare/start, reveal/move, turn/round, measure/ping, checkpoints, inspect versus publish, blank handshake, stale epoch, disconnect/reconnect, DM/player reload, quota recovery, CAS conflict, end/resume/discard and unchanged authored source | Real mobile interruption, OS-level termination and participant routine-play acceptance |
 | UX-08 exports/offline | Actual PNG/SVG/JSON, physical DPI and pixel-identical overlaps, bounded 128-cell print page, cancellation, missing artwork, actual cache readiness, delayed writes, multi-window update rejection and stopped-origin editing/export | Physical printer measurement, cross-schema upgrade and browser cache eviction recovery |
 
-The integrated baseline had 663 passing Vitest cases across 55 files.
-Three new resize lifecycle regressions and the existing seven audience-control
-cases passed after the fix. Browser runs use real IndexedDB, canvas and local
+The integrated Ubuntu run at `ab86a35` passed 666 Vitest cases across 56 files,
+including three new resize lifecycle regressions. All twelve browser journeys
+and three export/offline journeys also passed there. That run's jobs still failed
+at artifact publication because the upload action excluded the hidden output
+directory. The workflow now uses a non-hidden `qualification-artifacts` directory
+and still fails if artifacts are missing; exact-head CI remains the landing gate.
+Browser runs use real IndexedDB, canvas and local
 display transport. Unit mocks are not the basis for the cross-browser claims.
 The largest UX-08 raster surface remains 8,415,000 pixels, not an F05
 interactive performance measurement.

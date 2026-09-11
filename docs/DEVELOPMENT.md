@@ -119,7 +119,8 @@ worker updates. Do not run both suites concurrently on the same custom port.
 CI runs all four journeys plus UX-08 for Chromium, Firefox and WebKit, with
 independent engine jobs, no fail-fast cancellation and fourteen-day artifacts.
 The aggregate **Browser qualification** check fails when any engine fails,
-is skipped or is cancelled. **Build and test** also treats lint errors as
+is skipped or is cancelled. The active default-branch ruleset requires that
+aggregate and **Build and test**, both strict/up-to-date. **Build and test** also treats lint errors as
 blocking. The existing 73 `react-hooks/exhaustive-deps` warnings remain visible
 and are capped with `--max-warnings 73`; lower that ceiling as debt is removed,
 never increase it to hide new warnings. This is a count ceiling, not per-warning
