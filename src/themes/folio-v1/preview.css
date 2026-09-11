@@ -19,3 +19,46 @@
   cursor: pointer;
   padding: 0.25rem 0;
 }
+
+.floor-material-picker {
+  border: 0;
+  padding: 0;
+  margin: 0.75rem 0;
+  min-width: 0;
+}
+
+.floor-material-picker legend {
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 0 0 0.5rem;
+}
+
+.floor-material-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.25rem;
+}
+
+.floor-material-picker .floor-material-options .tile-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  width: 100%;
+  min-height: 78px;
+  padding: 0.25rem;
+  font-size: 0.72rem;
+  white-space: normal;
+  text-align: center;
+}
+
+.floor-material-options canvas {
+  max-width: 100%;
+}
+
+.floor-material-picker p {
+  font-size: 0.75rem;
+  line-height: 1.4;
+  margin: 0.5rem 0;
+}

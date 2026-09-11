@@ -4,8 +4,9 @@ import { computePlayerFOV } from './dynamicFog';
 import { computeLightVisible } from './lightSources';
 import { getSemanticTileType } from './customThemes';
 import { isTokenFogged } from './tokenVisibility';
-import { BUILT_IN_TILE_TYPES } from '../types/map';
+import { BUILT_IN_TILE_TYPES, isFloorMaterialId } from '../types/map';
 import { isSecretDiscovered } from './secretDiscovery';
+import { hasFloorMaterialSurface } from './floorMaterials';
 
 export const SECRET_APPEARANCE: Partial<Record<BuiltInTileType, BuiltInTileType>> = {
   'secret-door': 'wall', trap: 'floor', 'trapped-door-h': 'door-h', 'trapped-door-v': 'door-v',
@@ -80,6 +81,7 @@ export function projectForAudience(
     if (tile.theme) themeIds.add(tile.theme);
     return {
       type, theme: tile.theme, noteId: tile.noteId !== undefined && noteIds.has(tile.noteId) ? tile.noteId : undefined,
+      floorMaterial: hasFloorMaterialSurface(type) && isFloorMaterialId(tile.floorMaterial) ? tile.floorMaterial : undefined,
       flowDirection: tile.flowDirection, riverType: tile.riverType,
       riverBank: tile.riverBank, riverBankType: tile.riverBankType,
     };

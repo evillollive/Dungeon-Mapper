@@ -1,5 +1,6 @@
 import { ALL_TILE_TYPES } from '../../types/map';
 import { FOLIO_THEME_ID } from './art';
+import { FLOOR_MATERIAL_MANIFEST } from './materialManifest';
 
 export const FOLIO_MANIFEST = {
   schemaVersion: 1,
@@ -16,6 +17,7 @@ export const FOLIO_MANIFEST = {
   fallbackThemeId: 'dungeon',
   delivery: 'bundled-procedural-vector',
   previewSampleId: 'folio-cistern',
+  supplements: [FLOOR_MATERIAL_MANIFEST],
   assets: ALL_TILE_TYPES.map(type => ({
     id: `dungeon-folio:v1:${type}`,
     category: 'tile',

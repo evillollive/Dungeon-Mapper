@@ -1,6 +1,7 @@
 import React from 'react';
 import type { CustomThemeDefinition, EdgeBlendSettings, HandDrawnSettings, LightingAtmosphereSettings, PaperTextureSettings, ToolType, TileType, MarkerShape, MeasureShape, LightSourcePreset, RiverType } from '../types/map';
 import type { BackgroundImage } from '../types/map';
+import type { FloorMaterialId } from '../types/map';
 import DrawToolsTab from './DrawToolsTab';
 import TacticalToolsTab from './TacticalToolsTab';
 import AdvancedToolsTab from './AdvancedToolsTab';
@@ -28,6 +29,9 @@ interface NavigationRailProps {
   activePanel: EditorPanel;
   activeTool: ToolType;
   activeTile: TileType;
+  activeFloorMaterial?: FloorMaterialId;
+  onSetFloorMaterial?: (material: FloorMaterialId | undefined) => void;
+  unavailableFloorMaterials?: boolean;
   themeId: string;
   customThemes?: readonly CustomThemeDefinition[];
   onSetTool: (tool: ToolType) => void;
@@ -170,6 +174,9 @@ const NavigationRail: React.FC<NavigationRailProps> = (props) => {
             section={activeMode === 'build' ? 'build' : activeMode === 'decorate' ? 'decorate' : 'look'}
             activeTool={props.activeTool}
             activeTile={props.activeTile}
+            activeFloorMaterial={props.activeFloorMaterial}
+            onSetFloorMaterial={props.onSetFloorMaterial}
+            unavailableFloorMaterials={props.unavailableFloorMaterials}
             themeId={props.themeId}
             customThemes={props.customThemes ?? []}
             onSetTool={props.onSetTool}

@@ -13,3 +13,9 @@ catalogs; those catalogs are not new artwork in this pack.
 
 Distributed under the GNU Affero General Public License, version 3 or
 later. See the repository LICENSE for terms and warranty disclaimer.
+
+Floor material supplement 1.0.0
+Original worn-wood and earth procedural sources: materials.ts.
+Stable per-cell finish IDs, provenance and fingerprint: materialManifest.ts.
+This supplement is opt-in. The original flagstone source and existing
+projects without floorMaterial references retain their previous appearance.

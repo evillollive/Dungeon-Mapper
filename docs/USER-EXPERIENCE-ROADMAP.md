@@ -4,11 +4,11 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's first dungeon art slice received owner visual approval on September 11, 2026; the full package remains incomplete. Cross-browser follow-up and release research gates remain open. No participant usability acceptance is claimed.
+**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's owner-approved dungeon foundation is merged in #167. The next wood/earth floor milestone is implemented for visual review; the full package remains incomplete. Cross-browser follow-up and release research gates remain open. No participant usability acceptance is claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
-**Latest implementation:** Following UX-06 #166, UX-07 introduces the opt-in Dungeon Folio v1 tile kit and The Quiet Cistern, a hand-authored 32 x 32 reference sample. See the [before/after and output contact sheet](./media/ux07/contact-sheet.png) and the scoped implementation record in UX-07 below. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
+**Latest implementation:** Following the approved dungeon foundation in #167, UX-07 adds paintable worn-wood and earth finishes and The Warden's Rest reference sample. See the [materials comparison](./media/ux07-materials/contact-sheet.png) and scoped record below. The Quiet Cistern and original flagstone artwork remain unchanged. UX-00 participant research remains deferred with zero participants; physical-device and UX-09 acceptance gates remain open.
 
 ## 1. Product direction
 
@@ -553,8 +553,9 @@ continuous wall masses, timber doors, distinct stairs, arches, pillars and
 semantic hazard symbols. Four coordinate-seeded surface variants reduce
 repetition. Fine surface marks are suppressed below a 16-pixel render tile.
 This is render-resolution detail reduction, not a new editor zoom/LOD engine.
-Worn-wood and earth floor materials, new furnishing/token art, UI icons/fonts,
-illustrations, further samples and full print companion artwork remain later work.
+Worn-wood and earth floor materials were deferred to the next bounded slice
+recorded below. New furnishing/token art, UI icons/fonts, illustrations,
+further launch samples and full print companion artwork remain later work.
 
 **Version and renderer contract:** The immutable theme ID `dungeon-folio-v1`
 is saved in the existing map/per-tile theme fields. No schema migration or
@@ -600,6 +601,81 @@ They create and close isolated contexts and add no application dependency.
 Targeted Vitest coverage includes stable versions, source fingerprint,
 determinism/cache bounds, exposed/shared edges, Canvas/SVG geometry,
 sample connectivity, fresh copies, projected secrets and print fallback.
+
+**Second bounded milestone, September 11, 2026: wood and earth floors**
+
+The owner authorized landing the approved foundation and proceeding with
+materials before furnishings. #167 was reviewed and merged at `1e66164`.
+This milestone adds **Worn wood** and **Earth**, four deterministic variants
+each, plus **The Warden's Rest**, an independent 32 x 32 material reference.
+The owner approved the restrained material appearance and authorized landing
+#168 on September 11, 2026, then proceeding to an eight-piece furnishing
+reference. This approval does not cover the forthcoming furnishing artwork
+or waive the remaining release gates. The saved material screenshots retain
+their pre-approval captions.
+
+Choose **Look > Dungeon Folio v1**, then **Build > Material > Floor**.
+The adjacent **Floor finish** buttons select Flagstone, Worn wood or Earth.
+Use paint, line, rectangle or region fill as usual. Selecting a finish changes
+no rules; painting a Floor still creates/replaces tiles as an ordinary floor
+operation. Material fill over visible floor ground decorates the existing
+geometry, including room-derived floors, without flattening the room.
+Different finishes, theme overrides, walls and door boundaries constrain fills.
+Explicit filling adopts the current Folio theme, clearing preserved theme
+overrides so the chosen finish is actually visible.
+
+`Tile.floorMaterial` stores `folio-worn-wood-v1` or `folio-earth-v1`.
+It is an additive cosmetic field under schema version 1, not a new semantic
+tile type. Per-cell finishes survive save/reload, JSON, undo/redo, copy/paste
+and region movement. They remain anchored to map cells when vector rooms
+move. Other themes display their normal semantic tiles while retaining the
+references; the finish brush is inactive outside Folio. Flagstone painting
+clears the reference, as do wall, water and erase operations.
+
+Floor symbols retain their substrate when placed on finished floors.
+Player projection preserves only recognized finish IDs on publishable
+surfaces, including the floor representation of an undiscovered trap.
+This prevents a trap from standing out as a different floor texture.
+Unknown geography removes finishes with the rest of the cell. Unknown
+finish versions remain recoverable in project data, fall back to ordinary
+floors, and produce a warning in Look; malformed non-string values are
+rejected on import.
+
+Original `folio-v1/art.ts` remains byte-for-byte unchanged. The supplemental
+`materials.ts` and `materialManifest.ts` provide editable sources, versioned
+IDs, four variants, geometry/anchor metadata, a source fingerprint and the
+existing AGPL notice. Canvas, player display, PNG and SVG use the same
+material geometry. Print keeps the established semantic fallback rather
+than attempting to print decorative wood grain. The independent cache has
+at most 16 entries: two materials, four variants and two detail tiers.
+No asset requests, raster decoding, external fonts or dependencies are added.
+
+Review evidence: [before/after and output contact sheet](./media/ux07-materials/contact-sheet.png),
+[25/50/100/200% render scales](./media/ux07-materials/zoom-sheet.png),
+[editor picker](./media/ux07-materials/editor.png),
+[player preview](./media/ux07-materials/player.png), and
+[phone player preview](./media/ux07-materials/player-phone.png).
+The production Chrome 152.0.7977.83 journey exercised paint, material fill,
+undo/redo, native saves/reload, editable backup downloads and player SVG,
+including secret-trap substrate retention and unchanged geometry.
+The initial visual pass caught clipped picker labels; the final journey
+also asserts label containment and minimum target height.
+Read-only review caught preserved themes hiding material fills; that path
+is corrected with a regression case.
+
+The material source and manifest total 3,738 bytes, 1,578 bytes gzip,
+bundled into existing chunks. A development 128 x 128 mixed-material
+render probe at 16 pixels/cell measured 42.6 ms cold, 39.2 ms warm median
+and 59.3 ms warm maximum over ten warm samples, with eight material cache
+entries. These observations do not certify input latency or release performance.
+Firefox/WebKit, physical touch/pen, print-paper and participant acceptance
+remain open.
+
+`src/test/ux07Materials.browser.mjs` exports a Page-based production journey.
+The existing render helper accepts `{ materials: true }` for the new sheets
+and leaves original evidence files untouched. Both use isolated browser
+contexts. Local qualification used an already-installed Playwright SDK and
+Chrome; no browser package or lockfile change is part of this milestone.
 
 **Deliverables:** ART-01 through ART-04, ART-06 through ART-08 for the initial release, plus asset manifest/provenance, pack/version selection, previews, deterministic variants, caching, and fallbacks. ART-05/09 extend after the dungeon slice is approved.
 
@@ -766,7 +842,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; Chromium qualified; cross-browser follow-up open | [Publication, projection, discovery, evidence and limitations](./UX-05-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; production Chromium two-window qualified | [Session lifecycle, isolated persistence, display protocol and evidence](./UX-06-HANDOFF.md); Firefox/WebKit and later release gates remain |
-| UX-07 | First dungeon slice implemented; owner visual approval recorded September 11, 2026 | [Reference and output contact sheet](./media/ux07/contact-sheet.png); versioned tile kit and sample approved for further art expansion. Remaining art packages and full acceptance are open |
+| UX-07 | Foundation merged in #167; wood/earth appearance approved for landing in #168 | [Materials and outputs](./media/ux07-materials/contact-sheet.png); eight-piece furnishings are next, with a separate visual review. Token sets and remaining art packages are still open |
 | UX-08 | Not started | Export and production offline |
 | UX-09 | Not started | Release qualification |
 | UX-10 | Deferred | Explicit approval of remote scope |

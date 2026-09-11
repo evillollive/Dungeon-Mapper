@@ -1,6 +1,7 @@
 import type { DungeonMap, River, RoomShape, Tile } from '../types/map';
 import { rasterizeRoomShapes } from './roomRasterizer';
 import { rasterizeRivers } from './riverRasterizer';
+import { hasFloorMaterialSurface } from './floorMaterials';
 
 /**
  * Build the tile grid used for visual rendering/export.
@@ -21,5 +22,11 @@ export function deriveRenderableTilesFromBase(
   height: number,
 ): Tile[][] {
   const withRooms = roomShapes.length === 0 ? baseTiles : rasterizeRoomShapes(baseTiles, [...roomShapes], width, height);
-  return rivers.length === 0 ? withRooms : rasterizeRivers(withRooms, rivers, width, height);
+  const rendered = rivers.length === 0 ? withRooms : rasterizeRivers(withRooms, rivers, width, height);
+  if (rendered === baseTiles) return rendered;
+  // A finish decorates the final floor at this cell, never a wall or water overlay.
+  return rendered.map((row, y) => row.map((tile, x) => {
+    const material = baseTiles[y]?.[x]?.floorMaterial;
+    return hasFloorMaterialSurface(tile.type) && material !== undefined ? { ...tile, floorMaterial: material } : tile;
+  }));
 }
