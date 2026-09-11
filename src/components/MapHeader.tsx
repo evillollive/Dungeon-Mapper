@@ -79,6 +79,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>((props, ref) => {
       <ActionButton id="file.recovery"><span role="status">{props.saveLabel}</span></ActionButton>
       <ActionButton id="view.viewMode" icon="look">{props.viewMode === 'gm' ? 'Edit' : 'DM view'}</ActionButton>
       <ActionButton id="view.playerPreview" icon="look">Player preview</ActionButton>
+      <ActionButton id="session.prepare">Prepare session</ActionButton>
       <ActionButton id="help.commandPalette" icon="search">Commands</ActionButton>
       <ActionButton id="dialog.export" icon="export">Export</ActionButton>
       <button className="project-menu-button" type="button" onClick={event => { event.currentTarget.focus(); setMenuOpen(true); }} aria-label="Project menu">

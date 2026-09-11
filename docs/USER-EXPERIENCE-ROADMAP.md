@@ -512,6 +512,8 @@ Resolve one decision at a time with the owner: local-first release scope; migrat
 
 **Priority:** P1. **Depends on:** UX-02, UX-04, UX-05.
 
+**Status:** Implemented with production Chromium two-window qualification on September 11, 2026 UTC. [UX-06 handoff](./UX-06-HANDOFF.md) records session/CAS isolation, the blank-first display protocol, recovery semantics, production evidence and remaining gates. PR review and exact-head CI remain required; Firefox/WebKit and later device/release qualification are open.
+
 **Deliverables:** Prepare checklist, session checkpoints, Run workspace, current turn/round, next/previous turn, reveal controls, pings, player preview, local second-window display, pause/blank, and resume/end flow.
 
 **Implementation anchors:** `App.tsx`, `TacticalToolsTab.tsx`, `PlayerToolbar.tsx`, `InitiativePanel.tsx`, level/fog/token hooks; new session repository and display transport.
@@ -689,8 +691,8 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-02 | Implemented and browser-qualified | [Production library, creation, migration contract, and actual evidence](./UX-02-HANDOFF.md): 519 unit/component tests, 33 native library scenario-engine passes, three-engine production creation and stopped-origin offline journeys. UX-00 research remains deferred; UX-09 acceptance is not claimed |
 | UX-03 | Merged in #162 | [Production shell, action migration and design tokens](./UX-03-HANDOFF.md) |
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
-| UX-05 | Implemented; Chromium qualified; cross-browser follow-up open | [Publication, projection, discovery, evidence and limitations](./UX-05-HANDOFF.md); PR/CI landing and later release gates remain |
-| UX-06 | Not started | Session lifecycle and local display |
+| UX-05 | Merged in #165; Chromium qualified; cross-browser follow-up open | [Publication, projection, discovery, evidence and limitations](./UX-05-HANDOFF.md); later release gates remain |
+| UX-06 | Implemented; production Chromium two-window qualified | [Session lifecycle, isolated persistence, display protocol and evidence](./UX-06-HANDOFF.md); PR/CI landing, Firefox/WebKit and later release gates remain |
 | UX-07 | Not started | Art vertical slice and pack pipeline |
 | UX-08 | Not started | Export and production offline |
 | UX-09 | Not started | Release qualification |

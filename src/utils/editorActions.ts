@@ -7,7 +7,7 @@ export type ActionId = BindingId | `panel.${EditorPanel}` | `theme.${string}`
   | 'tool.wall-erase' | 'tool.path-erase' | 'tool.river-erase'
   | 'file.library' | 'file.samples' | 'file.clear' | 'file.recovery'
   | 'dialog.settings' | 'dialog.templates' | 'dialog.customTheme' | 'dialog.export'
-  | 'dialog.audience' | 'view.playerPreview' | 'file.playerPng' | 'file.playerSvg';
+  | 'dialog.audience' | 'view.playerPreview' | 'file.playerPng' | 'file.playerSvg' | 'session.prepare';
 
 export const TOOL_ACTIONS: Record<ToolType, ActionId> = {
   paint: 'tool.paint', erase: 'tool.erase', fill: 'tool.fill', note: 'tool.note',
@@ -45,6 +45,7 @@ export function actionMode(id: ActionId): 'gm' | 'player' | 'both' {
 }
 
 export function actionDestination(id: ActionId): string {
+  if (id === 'session.prepare') return 'Session';
   if (id === 'dialog.audience' || id === 'view.playerPreview') return 'Audience';
   if (id === 'file.playerPng' || id === 'file.playerSvg') return 'Export';
   if (id.startsWith('panel.')) return id.slice(6);
@@ -81,6 +82,7 @@ export interface ActionState {
   hasStamp: boolean;
   canPreviousLevel: boolean;
   canNextLevel: boolean;
+  canPrepareSession?: boolean;
 }
 
 export type ExtraAction = Pick<EditorAction, 'id' | 'label' | 'action'>;
@@ -120,6 +122,7 @@ export function buildEditorActions(bindings: KeyBinding[], extras: ExtraAction[]
     if (item.id.startsWith('tools.') && !state.hasStamp) unavailableReason = 'Select a placed stamp first';
     if (item.id === 'view.nextLevel' && !state.canNextLevel) unavailableReason = 'Already on the last level';
     if (item.id === 'view.prevLevel' && !state.canPreviousLevel) unavailableReason = 'Already on the first level';
+    if (item.id === 'session.prepare' && !state.canPrepareSession) unavailableReason = 'Save this project before preparing a session';
     return {
       ...item, category: actionDestination(item.id), enabled: !unavailableReason, unavailableReason,
       action: () => { if (!unavailableReason) item.action(); },
