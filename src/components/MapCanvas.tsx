@@ -1248,6 +1248,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     ? tokens.filter(t => !isTokenFogged(t, fog, dynamicFogEnabled ? playerVisible : undefined, explored))
     : tokens, [fogActive, isPlayerView, tokens, fog, dynamicFogEnabled, playerVisible, explored]);
 
+  // Coordinate HUD updates do not change map pixels outside cursor-preview tools.
+  const previewMousePos = activeTool === 'marker' || activeTool === 'light' ||
+    (activeTool === 'room-poly' && polyVertices.length > 0) ||
+    (activeTool === 'select' && hasClipboard && clipboardSize) ? mousePos : null;
+
   // Main render
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1902,8 +1907,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         ctx.lineTo(polyVertices[i].x * tileSize, polyVertices[i].y * tileSize);
       }
       // Draw line to cursor position if available.
-      if (mousePos) {
-        ctx.lineTo(mousePos.x * tileSize, mousePos.y * tileSize);
+      if (previewMousePos) {
+        ctx.lineTo(previewMousePos.x * tileSize, previewMousePos.y * tileSize);
       }
       ctx.stroke();
       ctx.setLineDash([]);
@@ -1962,23 +1967,23 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // Paste preview — when the clipboard has content and the select tool
     // is active, draw a translucent dashed outline at the mouse position
     // (or the selection origin) showing where the paste will land.
-    if (hasClipboard && clipboardSize && activeTool === 'select' && mousePos) {
+    if (hasClipboard && clipboardSize && activeTool === 'select' && previewMousePos) {
       ctx.save();
       ctx.strokeStyle = '#22d3ee';
       ctx.lineWidth = 1.5;
       ctx.setLineDash([4, 3]);
       ctx.globalAlpha = 0.7;
       ctx.strokeRect(
-        mousePos.x * tileSize,
-        mousePos.y * tileSize,
+        previewMousePos.x * tileSize,
+        previewMousePos.y * tileSize,
         clipboardSize.w * tileSize,
         clipboardSize.h * tileSize
       );
       ctx.setLineDash([]);
       ctx.fillStyle = 'rgba(34, 211, 238, 0.12)';
       ctx.fillRect(
-        mousePos.x * tileSize,
-        mousePos.y * tileSize,
+        previewMousePos.x * tileSize,
+        previewMousePos.y * tileSize,
         clipboardSize.w * tileSize,
         clipboardSize.h * tileSize
       );
@@ -1987,11 +1992,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
 
     // Marker preview — when the marker tool is active and the mouse is on
     // the canvas, show a ghost marker at the cursor position.
-    if (activeTool === 'marker' && mousePos) {
+    if (activeTool === 'marker' && previewMousePos) {
       const ghost: ShapeMarker = {
         id: -1,
-        x: mousePos.x,
-        y: mousePos.y,
+        x: previewMousePos.x,
+        y: previewMousePos.y,
         shape: markerShape,
         color: markerColor,
         size: markerSize,
@@ -2004,11 +2009,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // Light source preview — when the light tool is active and the mouse is
     // on the canvas, show a ghost glow at the cursor position so the user
     // can see the illumination radius before placing the source.
-    if (activeTool === 'light' && mousePos) {
+    if (activeTool === 'light' && previewMousePos) {
       const ghost: LightSource = {
         id: -1,
-        x: mousePos.x,
-        y: mousePos.y,
+        x: previewMousePos.x,
+        y: previewMousePos.y,
         radius: lightRadius,
         color: lightColor,
         label: 'preview',
@@ -2025,8 +2030,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.globalAlpha = 0.5;
       ctx.beginPath();
       ctx.arc(
-        (mousePos.x + 0.5) * tileSize,
-        (mousePos.y + 0.5) * tileSize,
+        (previewMousePos.x + 0.5) * tileSize,
+        (previewMousePos.y + 0.5) * tileSize,
         lightRadius * tileSize,
         0,
         Math.PI * 2,
@@ -2035,7 +2040,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, renderTiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, rivers, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, polyVertices, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, mousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType]);
+  }, [map, tiles, renderTiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, rivers, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, polyVertices, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, previewMousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType]);
 
   // Minimap render
   useEffect(() => {

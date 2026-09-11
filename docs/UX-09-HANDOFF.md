@@ -134,6 +134,130 @@ Artifacts are under the session's `files/ux09-release-candidate`,
 GitHub CI remains the landing gate; local macOS results do not establish Linux,
 physical-device or assistive-technology acceptance.
 
+## Dense-map diagnostic milestone
+
+Third bounded milestone, 2026-09-11, based on `54741da`. The owner selected F05
+performance work, explicitly declined to designate this unusually powerful
+development Mac as the reference desktop, and then approved bounded closeout
+with the cursor fix and measured renderer backlog rather than extending into
+a larger renderer rewrite. **Reference-device acceptance remains open.**
+
+`src/test/denseMapFixture.mjs` now supplies F05 v1: 128 x 128 cells, 100 tokens,
+200 furnishings, 100 notes, derived room/river geometry, dynamic fog, lights
+and art enabled. `ux09Performance.spec.mjs` adds a production import/reload,
+hover/paint/token/pan diagnostic plus a delayed-draw probe regression to the
+existing three-engine runner and required browser jobs. Durable edits and
+single-action undo are assertions; latency remains diagnostic, not a CI
+performance certification. No dependency, schema, rendering cache or additional
+production raster allocation was introduced.
+
+The reproduced product defect was full map/art repainting for coordinate-only
+cursor HUD updates. `MapCanvas.tsx` now depends on cursor position only when
+the selected tool actually paints a cursor preview: marker, light, clipboard
+selection or an in-progress polygon. Paint/drag edits still redraw normally.
+Five component regressions preserve the HUD/no-redraw contract and the four
+live preview cases, alongside the existing pointer-cancellation tests.
+
+### Local observations
+
+Host: Apple M5 Max, 64 GiB RAM, macOS, 1440 x 900, DPR 1. These are headless
+desktop observations, not typical-user, physical Safari or mobile results.
+The fixture uses 32-pixel cells, so the main raster is 4096 x 4096 even when
+the map is fitted to the viewport. No detail settings were reduced.
+
+The initial frame-only Chromium probe recorded hover p95 values of
+251.5, 259.6 and 256.0 ms across three repetitions. Profiling identified
+`drawDitherEdge` / native `fillRect` calls as the largest painting cost, with
+Folio strokes and furnishing rendering also contributing. Removing the
+unnecessary hover repaint does **not** fix those costs during actual edits.
+
+The finalized probe waits for synchronous canvas drawing before its frame
+opportunity for paint/token edits. An earlier frame-only probe was discarded
+for edit comparisons because CPU throttling exposed frames occurring before
+React's delayed drawing effect. A deliberate delayed-draw regression protects
+against that misleading low-latency result.
+
+The table gives the range of each repetition's p95, not an average or pooled
+percentile. All three repetitions are retained, including the profiled first
+Chromium run. Warm-ready figures are navigation-to-driver-observed readiness,
+including saved-state checks and a frame opportunity, not a shell-ready mark.
+
+| Engine / version | Hover p95 ms | Paint-drag p95 ms | Token-drag p95 ms | Pan p95 ms | Warm-ready seconds |
+| --- | --- | --- | --- | --- | --- |
+| Chromium 151.0.7922.34 | 5.9-16.8 | 261.1-269.5 | 258.8-263.8 | 12.0-12.7 | 1.48-2.00 |
+| Firefox 153.0 | 7-13 | 265-268 | 261-268 | 13-14 | 1.24-1.25 |
+| WebKit 26.5 | 31-33 | 199-212 | 201-210 | 37-39 | 1.47-1.49 |
+
+Each repetition retains 24 hover/paint-drag/pan samples, twelve token-drag
+samples and separate start/commit samples with their maxima. Chromium's
+unprofiled final repetitions had hover p95 of 8.5 and 5.9 ms; its profiled
+first repetition was 16.8 ms. Do not turn these into a physical latency,
+refresh-rate or representative-device claim. The painting bottleneck is
+still present even on this high-end host.
+
+The initial candidate at `5241fe0` completed all six diagnostic/probe cases.
+Local evidence is in this session's `files/f05-final` directory. Earlier
+`f05-baseline`, `f05-profile` and `f05-candidate` evidence is retained separately;
+do not mix their different probe revisions into one benchmark population.
+Reproduction commands, sample semantics and artifact names are in
+[the development guide](./DEVELOPMENT.md#dense-map-performance-diagnostics-f05).
+
+That candidate's 4x CPU-throttled Chromium stress run **failed its existing
+180-second limit** during the third repetition. Its first two completed
+repetitions recorded paint-drag p95 of 1139.5/1117.2 ms, token-drag p95 of
+1174.8/1109.3 ms, hover p95 of 11.7/10.8 ms, and warm-ready times of
+5.14/5.05 seconds. These are partial observations, not a completed three-run
+result or an estimate of a typical device. `files/f05-throttled-final`
+retains the explicit incomplete result, two completed repetitions, CPU profile,
+timeline and timeout trace. The earlier frame-only throttled run also timed
+out; its misleading paint-drag timings are superseded, not improvement evidence.
+No timeout, sample count, assertion or roadmap threshold was relaxed.
+
+### CI follow-up: independent repetitions
+
+The required Linux WebKit job for `5241fe0` then exposed the same workload
+partitioning problem without artificial throttling. On its AMD EPYC 7763
+runner, the first complete repetition reported paint-drag p95 of 2447 ms,
+token-drag p95 of 2456 ms and warm-ready time of 4.70 seconds. The test timed
+out during painting in repetition two because all three repetitions shared
+one 180-second journey budget. The five existing workflow journeys and the
+delayed-draw probe passed; this was not an assertion failure in those flows.
+
+Each repetition is now an independent test with fresh browser storage, the
+same full F05 import, one warm reload, and all of its original samples and
+assertions. Each retains the runner's three-minute per-test limit; the
+twenty-minute suite limit, serial execution, zero retries and blocking CI
+remain unchanged. The complete diagnostic still requires all three repetitions
+plus the delayed-draw probe. Individual reports identify the repetition and
+the required total of three, and keep failures explicit. This changes workload
+isolation, not the recorded per-action latency or a release acceptance target.
+
+The earlier local and failed-CI evidence remains historical; do not relabel it
+as a successful run of the independently isolated harness. Source revision,
+test name and repetition metadata distinguish the two arrangements.
+Linux's multi-second edits reinforce the still-open renderer bottleneck and
+the owner's decision not to qualify performance using the high-end Mac.
+
+The independent-repetition candidate completed the delayed-draw probe and
+all three repetitions locally with 4x Chromium CPU throttling. Each repetition
+took about 1.1 minutes, within its unchanged limit; the complete run took
+3.3 minutes. Every original sample and persistence/undo assertion was retained.
+Paint-drag p95 remained 1100.9-1112.8 ms and token-drag p95 1081.9-1126.4 ms.
+This is successful collection of slow results, not a renderer improvement.
+Artifacts are in `files/f05-ci-fix-stress`; the new head's Linux CI remains
+the landing gate.
+
+### Next bounded performance work
+
+Optimize dense-map edge-blending/render invalidation with an explicit memory
+budget and preserved art, fog, geometry, cursor-preview, undo and export
+behavior. Do not replace CPU stalls with unbounded full-map bitmap caches or
+silently disable art. Re-measure painting and token movement, not only hover.
+The 100 ms desktop, 150 ms mobile and two-second warm-launch targets remain
+unchanged and unaccepted. CPU throttling is only a stress probe; reference
+hardware, physical input-to-paint tracing, mobile/detail policy, memory
+pressure, cold/offline loading and F05 high-resolution export remain open.
+
 ## Remaining release gates
 
 Subsequent housekeeping removes 68 of the original 73 hook warnings and
@@ -152,7 +276,8 @@ research remains deferred with zero participants.
 Human keyboard/screen-reader review (VoiceOver/Safari and NVDA/Firefox), WCAG
 2.2 AA evaluation beyond the scoped panel checks, the full-app layout/zoom matrix, physical touch/pen/keyboard behavior,
 printed-paper scale, reference-device selection and F05 input-to-paint/loading
-budgets are still open. No latency threshold or usability success rate is
+budgets are still open. Local F05 diagnostics above do not close those gates.
+No latency threshold or usability success rate is
 claimed from test-run duration. Existing React `act` and jsdom navigation
 warnings are not silently presented as a warning-free unit-test baseline.
 

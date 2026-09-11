@@ -8,7 +8,7 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
-**Latest implementation:** UX-09's keyboard milestone separates row selection from note/initiative editing, adds visible reorder actions and turn announcements, shares modal focus management, and removes clipped note actions in short landscape layouts. Its fifth browser journey covers critical keyboard workflows and note-panel layout/contrast at 100%/200% interface text. See [UX-09 scope and remaining gates](./UX-09-HANDOFF.md). UX-08's [export/offline contract](./UX-08-HANDOFF.md) is unchanged. Remaining art, participant, physical-device, screen-reader and performance acceptance gates stay open.
+**Latest implementation:** UX-09's bounded F05 milestone adds a deterministic dense-map diagnostic and removes full art repaints on coordinate-only cursor movement. Local measurements still expose slow painting/token dragging; the owner declined to treat the high-end development Mac as representative hardware. See [actual results and the next renderer work](./UX-09-HANDOFF.md#dense-map-diagnostic-milestone). The keyboard milestone and UX-08's [export/offline contract](./UX-08-HANDOFF.md) are unchanged. Remaining art, participant, physical-device, screen-reader and performance acceptance gates stay open.
 
 **UX-09 automated follow-up, 2026-09-11:** The owner chose a bounded browser
 regression and blocking-CI milestone. Existing creation, shell, publication and
@@ -830,6 +830,16 @@ complete whole-app contrast, browser zoom or human nonvisual task acceptance.
 
 **Deliverables:** Completed acceptance matrix, human task study, keyboard/screen-reader pass, browser regression coverage, measured performance report, updated feature/help docs, and blocking CI for agreed gates.
 
+**Third bounded milestone, 2026-09-11:** F05 v1 and a draw-aware production
+performance diagnostic now exercise dense-map loading, hover, painting, token
+movement and keyboard pan in all three desktop engines. Coordinate-only
+hover no longer repaints all map art. The owner explicitly chose local
+diagnostics without reference-device acceptance and bounded closeout rather
+than a larger renderer rewrite. Painting and token dragging remain slow;
+memory-conscious edge-blending/render invalidation is the next performance
+slice. See [measurements, limitations and follow-up](./UX-09-HANDOFF.md#dense-map-diagnostic-milestone).
+No latency target, mobile gate or full UX-09 acceptance is marked complete.
+
 **Implementation anchors:** Existing Vitest/Testing Library tests; new browser suite configured deliberately in this milestone or earlier when first needed; `.github/workflows/ci.yml`; docs.
 
 **Tests:** All section 8 fixtures and journeys. Run lint and resolve or explicitly scope existing debt before removing `continue-on-error`; do not claim a clean baseline prematurely. New browser tooling must have locked dependencies and documented scripts rather than assuming Playwright is already an npm dependency.
@@ -967,7 +977,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-07 | Foundation and materials merged in #167/#168; eight-piece furnishing slice and richer palette approved in #169 | [Approved furnishing colors](./media/ux07-furnishings/color-review.png); token sets, larger furnishing catalog and remaining art packages are still open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
-| UX-09 | In progress; browser/CI gates merged in #171; critical keyboard follow-up merged in #172 | [Keyboard workflow scope, journey coverage, lint baseline and remaining release gates](./UX-09-HANDOFF.md); human screen-reader and reference-device performance milestones remain open |
+| UX-09 | In progress; browser/CI and keyboard merged in #171/#172; bounded F05 diagnostics and cursor repaint fix implemented | [Local F05 results and next renderer slice](./UX-09-HANDOFF.md#dense-map-diagnostic-milestone); painting/token latency, human screen-reader and reference-device performance acceptance remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |
 
 ## 10. Relationship to the previous roadmap
