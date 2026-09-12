@@ -3,13 +3,33 @@ import type { DungeonMap, River, TileType } from '../types/map';
 import { bresenhamLine } from '../utils/canvasGeometry';
 import { applyTileUpdates } from '../utils/tileEditing';
 
+function isDraftRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object';
+}
+
+/** Drafts share untouched branches; compare only changed branches, including moves back to the origin. */
+function sameDraftValue(left: unknown, right: unknown): boolean {
+  if (left === right) return true;
+  if (Array.isArray(left) || Array.isArray(right)) {
+    return Array.isArray(left) && Array.isArray(right) && left.length === right.length &&
+      left.every((value, index) => sameDraftValue(value, right[index]));
+  }
+  if (!isDraftRecord(left) || !isDraftRecord(right)) return false;
+  const keys = Object.keys(left);
+  return keys.length === Object.keys(right).length &&
+    keys.every(key => Object.hasOwn(right, key) && sameDraftValue(left[key], right[key]));
+}
+
 /** Preview edits locally. Neither autosave nor history sees an interrupted gesture. */
 export function useCanvasDraft(source: DungeonMap) {
   const [preview, setPreview] = useState<DungeonMap | null>(null);
   const draft = useRef<DungeonMap | null>(null);
   const commits = useRef(new Map<string, () => void>());
   const stage = useCallback((key: string, update: (map: DungeonMap) => DungeonMap, commit: () => void) => {
-    draft.current = update(draft.current ?? source);
+    const current = draft.current ?? source;
+    const next = update(current);
+    if (next === current) return;
+    draft.current = next;
     commits.current.set(key, commit);
     setPreview(draft.current);
   }, [source]);
@@ -19,7 +39,7 @@ export function useCanvasDraft(source: DungeonMap) {
     setPreview(null);
   }, []);
   const finish = useCallback(() => {
-    const pending = JSON.stringify(draft.current) === JSON.stringify(source) ? [] : [...commits.current.values()];
+    const pending = draft.current && !sameDraftValue(draft.current, source) ? [...commits.current.values()] : [];
     cancel();
     pending.forEach(commit => commit());
   }, [cancel, source]);

@@ -419,7 +419,7 @@ function App() {
       }
       return next;
     });
-  }, [setActiveTool]);
+  }, [setActiveTool, setSelectedPlacedStampId]);
 
   // Compute stair links relevant to the active level for canvas rendering.
   const activeStairLinks = useMemo(() => {
