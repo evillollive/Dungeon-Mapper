@@ -441,6 +441,55 @@ original measurements per engine identical to the pre-change baseline. Both
 atlas replays matched the cached image exactly in all nine selected cases.
 Diagnostics took 80-130 ms; focused lint and strict harness type-checking passed.
 
+### CI follow-up: clipped whole-atlas compositing
+
+Ubuntu run [`34702635983`](https://github.com/evillollive/Dungeon-Mapper/actions/runs/34702635983)
+at `b110564` confirms the same PR-caused WebKit pixel failure: 54 small-map
+cases exceed the isolated 2/255 bound, with maximum 5/255. Direct-renderer
+maximum 6/255 and mean maximum 0.217/255 still pass. Browser qualification
+fails only because it aggregates that job. Build/test, Chromium and Firefox
+pass; all ten other WebKit cases pass. No transient or pre-existing check
+failure was found.
+
+The three diagnostic replays exactly reproduce the original measurements,
+and every cropped all-edge replay matches its measured cached image.
+For the two failing selected cases, source pixels are identical but cropped
+source copies introduce per-edge compositing differences. Clipped whole-atlas
+copies eliminate those per-edge differences, reducing the composed isolated
+maxima from 5 to 1 (8px/DPR 1) and 4 to 1 (8px/DPR 1.5). The 32px control
+is unchanged at 1. This supports changing the copy operation, not the
+rasterization, art, oracle or tolerances. It is bounded evidence for these
+cases, not yet a passing Linux production-head matrix.
+
+Production now clips a whole-page copy to the physical destination strip and
+shifts it by destination minus source offset. Each admitted entry retains one
+rectangle-only `Path2D`, reused across hits/color changes and released with the
+entry. This stays within the existing 16,384-entry bound, adds no raster pages,
+and preserves the caller's current path as well as drawing/clip state.
+There is no browser-specific branch. Diagnostics understand the whole-page
+call and report `clippedAtlasVsCached` as its replay-fidelity check.
+
+Local validation passes 42 targeted unit/component tests, strict harness
+type-checking, build, and lint with the same five existing warnings. Fifteen
+three-engine browser cases cover all 192 unchanged pixel measurements per
+engine, eight physical-placement/clip/path/state scenarios per engine,
+unchanged F05 allocation limits, delayed-draw probes, and one complete F05
+repetition per engine. Isolated maxima are 2/2/0 for Chromium/Firefox/WebKit;
+direct maxima are 7/7/5, with mean maxima below 0.237. All nine selected
+diagnostic replays are faithful. DPR 1/2/3 retained-edge/overflow counts and
+16 MiB raster limits are unchanged, without warm traversal raster/path churn.
+
+Focused before/after observations on the same M5 Max/64 GiB development host
+retain every interaction and persistence/undo assertion. Paint/token p95 ms:
+Chromium 156.2/151.2 to 159.6/155.2; Firefox 161/159 to 159/149; WebKit 102/106
+to 98/90. This single paired repetition indicates the cache benefit remains,
+not statistical equivalence or reference-device acceptance. Candidate
+warm-ready times are 2.03/1.33/1.58 seconds; release targets remain open.
+Evidence is in `logs/ci-clipped-ubuntu-34702635983`,
+`logs/ci-clipped-copy-baseline` and `logs/ci-clipped-copy-candidate/validation.json`
+in the follow-up worktree. The exact production-head Ubuntu checks remain
+pending after push; no assertions, F05 samples, CI settings or timeouts changed.
+
 ### Next bounded performance work
 
 Profile the remaining full tile, furnishing and lighting redraws before choosing

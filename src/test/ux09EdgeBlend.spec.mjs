@@ -83,3 +83,16 @@ test('F05 edge cache remains bounded at DPR 1, 2 and 3 without traversal churn',
     body: JSON.stringify(result, null, 2), contentType: 'application/json',
   });
 });
+
+test('edge cache copies preserve clip bounds, physical placement and caller state', async ({ page }) => {
+  await page.setContent('<title>Edge blend copy state</title>');
+  const checks = await page.evaluate(async source => {
+    const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+    try {
+      return (await import(url)).verifyEdgeBlendCopyState();
+    } finally {
+      URL.revokeObjectURL(url);
+    }
+  }, harness);
+  assert.equal(checks, 8);
+});

@@ -113,6 +113,87 @@ export function compareEdgeBlendPixels() {
   return { checks, maximumDelta, maximumIsolatedDelta, results };
 }
 
+export function verifyEdgeBlendCopyState() {
+  let checks = 0;
+  for (const dpr of [1, 1.25, 1.5, 2]) {
+    for (const [offsetX, offsetY] of [[10, 20], [-7, 3]]) {
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) throw new Error('Canvas unavailable');
+      const cache = new EdgeBlendCache();
+      const check = (condition: boolean, message: string) => {
+        if (!condition) throw new Error(`${message} at DPR ${dpr}, offset ${offsetX},${offsetY}`);
+      };
+      try {
+        ctx.fillStyle = '#001122';
+        ctx.fillRect(0, 0, 256, 256);
+        const dx = 24 * dpr - 1 + offsetX, dy = 24 * dpr - 1 + offsetY;
+        const width = Math.ceil(9 * dpr) + 2;
+        const height = Math.ceil(2 * dpr) + Math.ceil(dpr) + 2;
+        const clipBottom = dy + Math.ceil(height / 2);
+        const callerClip = new Path2D();
+        callerClip.rect(0, 0, 256, clipBottom);
+        ctx.clip(callerClip);
+        ctx.setTransform(dpr, 0, 0, dpr, offsetX, offsetY);
+        ctx.beginPath();
+        ctx.rect(1, 2, 3, 4);
+        ctx.globalAlpha = 0.37;
+        ctx.fillStyle = '#abcdef';
+        ctx.strokeStyle = '#fedcba';
+        ctx.lineWidth = 3;
+        ctx.imageSmoothingEnabled = false;
+        ctx.imageSmoothingQuality = 'high';
+        const state = () => JSON.stringify({
+          transform: Array.from(ctx.getTransform().toFloat64Array()),
+          alpha: ctx.globalAlpha, composite: ctx.globalCompositeOperation,
+          fill: ctx.fillStyle, stroke: ctx.strokeStyle, lineWidth: ctx.lineWidth,
+          smoothing: ctx.imageSmoothingEnabled, smoothingQuality: ctx.imageSmoothingQuality,
+        });
+        const path = () => [
+          ctx.isPointInPath(offsetX + 2 * dpr, offsetY + 3 * dpr),
+          ctx.isPointInPath(dx + width / 2, dy + height / 2),
+        ];
+        const beforeState = state(), beforePath = path();
+        check(beforePath[0] && !beforePath[1], 'Invalid caller-path fixture');
+        const settings: EdgeBlendSettings = { enabled: true, style: 'dither', intensity: 0.35, opacity: 0.6 };
+        check(cache.prepare(ctx, 8, settings, 8, 8), 'Cache did not prepare');
+        // Populate neighboring slots so an unbounded whole-atlas copy leaks art.
+        for (let x = 0; x < 8; x++) cache.draw(ctx, 8, 'N', '#00ff00', 0.35, 0.6, x, 0, true);
+        cache.draw(ctx, 8, 'N', '#ff2244', 0.35, 0.6, 3, 3, true);
+        check(cache.draw(ctx, 8, 'N', '#ff2244', 0.35, 0.6, 3, 3), 'Cached copy was bypassed');
+        check(state() === beforeState, 'Cached copy changed caller drawing state');
+        check(JSON.stringify(path()) === JSON.stringify(beforePath), 'Cached copy changed the current path');
+        const data = ctx.getImageData(0, 0, 256, 256).data;
+        let changed = 0;
+        for (let y = 0; y < 256; y++) for (let x = 0; x < 256; x++) {
+          const i = (y * 256 + x) * 4;
+          if (data[i] === 0 && data[i + 1] === 17 && data[i + 2] === 34 && data[i + 3] === 255) continue;
+          changed++;
+          check(x >= dx && x < dx + width && y >= dy && y < dy + height && y < clipBottom,
+            'Atlas pixels escaped the strip or caller clip');
+        }
+        check(changed > 0, 'Cached copy drew no visible pixels');
+        ctx.resetTransform();
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = '#ff00ff';
+        ctx.fillRect(0, 0, 256, 256);
+        const inside = ctx.getImageData(0, 0, 1, 1).data;
+        const outside = ctx.getImageData(0, clipBottom + 1, 1, 1).data;
+        check(inside[0] === 255 && inside[1] === 0 && inside[2] === 255 && inside[3] === 255,
+          'Strip clip leaked into subsequent drawing');
+        check(outside[0] === 0 && outside[1] === 17 && outside[2] === 34 && outside[3] === 255,
+          'Caller clip was not preserved');
+        checks++;
+      } finally {
+        cache.clear();
+        canvas.width = canvas.height = 0;
+      }
+    }
+  }
+  return checks;
+}
+
 export function measureDenseEdgeCache(map: DungeonMap) {
   const settings = map.edgeBlend;
   if (!settings) throw new Error('Missing F05 edge settings');

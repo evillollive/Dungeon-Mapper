@@ -125,8 +125,8 @@ export function diagnoseEdgeBlendPixels(samples: Sample[]) {
       croppedMapVsWholeMap: 'Same source pixels; only drawImage source rectangle changes.',
       atlasVsWholeMap: 'Actual atlas crop versus full-map per-edge oracle on the same opaque background.',
       clippedAtlasVsWholeMap: 'Whole populated atlas shifted by destination minus source offset, clipped to the strip, versus the same per-edge oracle.',
-      clippedAtlasVsAtlas: 'Clipped whole-atlas copy versus the existing source-subrectangle copy; diagnostic only, not a new pass criterion.',
-      composedReplay: 'All recorded edges in original order for each selected case; atlasVsCached checks replay placement, clippedAtlasVsIsolated compares the alternative with the independent oracle.',
+      clippedAtlasVsAtlas: 'Clipped whole-atlas copy versus the historical source-subrectangle copy; diagnostic only, not a new pass criterion.',
+      composedReplay: 'All recorded edges in original order; clippedAtlasVsCached checks the production whole-atlas replay, atlasVsCached retains the historical cropped-copy comparison, clippedAtlasVsIsolated uses the independent oracle.',
     },
     cases,
   };
@@ -165,13 +165,31 @@ function diagnoseSample(sample: Sample) {
   });
   const cachedContext = new Proxy(context, {
     get(target, key) {
-      if (key === 'drawImage') return (source: HTMLCanvasElement, ...rects: [...Rect, ...Rect]) => {
+      if (key === 'drawImage') return (source: HTMLCanvasElement, ...rects: [number, number] | [...Rect, ...Rect]) => {
         if (recording) {
           if (!activeEdge) throw new Error('Missing diagnostic edge identity');
-          blits.push({ edge: activeEdge, source, from: rects.slice(0, 4) as Rect,
-            to: rects.slice(4) as Rect, state: contextState(target) });
+          let from: Rect, to: Rect;
+          if (rects.length === 2) {
+            // Reconstruct the strip extent for source inspection only. Replay
+            // fidelity below checks it against the actual clipped production draw.
+            const { x, y, direction } = activeEdge;
+            const band = Math.max(2, Math.round(tileSize * settings.intensity * 0.5));
+            const dot = Math.max(1, Math.round(tileSize * 0.04));
+            const long = Math.ceil((tileSize + dot) * dpr) + 2;
+            const short = Math.ceil(band * dpr) + Math.ceil(dot * dpr) + 2;
+            const vertical = direction === 'E' || direction === 'W';
+            to = [x * tileSize * dpr + Math.floor((direction === 'E' ? tileSize - band : 0) * dpr) - 1,
+              y * tileSize * dpr + Math.floor((direction === 'S' ? tileSize - band : 0) * dpr) - 1,
+              vertical ? short : long, vertical ? long : short];
+            from = [to[0] - rects[0], to[1] - rects[1], to[2], to[3]];
+          } else {
+            from = rects.slice(0, 4) as Rect;
+            to = rects.slice(4) as Rect;
+          }
+          blits.push({ edge: activeEdge, source, from, to, state: contextState(target) });
         }
-        target.drawImage(source, ...rects);
+        if (rects.length === 2) target.drawImage(source, ...rects);
+        else target.drawImage(source, ...rects);
       };
       const value = Reflect.get(target, key, target);
       return typeof value === 'function' ? value.bind(target) : value;
@@ -336,6 +354,7 @@ function diagnoseSample(sample: Sample) {
         replay: { isolated: isolatedDelta, direct: difference(direct, cached, side) },
         composedReplay: {
           atlasVsCached: difference(cached, atlasReplay, side),
+          clippedAtlasVsCached: difference(cached, clippedAtlasReplay, side),
           clippedAtlasVsAtlas: difference(atlasReplay, clippedAtlasReplay, side),
           clippedAtlasVsIsolated: difference(isolated, clippedAtlasReplay, side),
           clippedAtlasVsDirect: difference(direct, clippedAtlasReplay, side),

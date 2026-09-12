@@ -78,6 +78,7 @@ interface StripEntry {
   page: StripPage;
   sx: number;
   sy: number;
+  clip: Path2D;
   color: string;
   rasterizedAt: number;
 }
@@ -217,8 +218,10 @@ export class EdgeBlendCache {
           this.pages.push(page);
         }
         const slot = page.used++;
+        const clip = new Path2D();
+        clip.rect(x * tileSize * scale + left, y * tileSize * scale + top, width, height);
         entry = { page, sx: slot % page.columns * width,
-          sy: Math.floor(slot / page.columns) * height, color, rasterizedAt: this.generation };
+          sy: Math.floor(slot / page.columns) * height, clip, color, rasterizedAt: this.generation };
         this.entries.set(key, entry);
       }
       const { page, sx, sy } = entry;
@@ -239,8 +242,12 @@ export class EdgeBlendCache {
     ctx.save();
     ctx.setTransform(1, 0, 0, 1, this.offsetX, this.offsetY);
     ctx.globalAlpha = 1;
-    ctx.drawImage(entry.page.canvas, entry.sx, entry.sy, width, height,
-      x * tileSize * scale + left, y * tileSize * scale + top, width, height);
+    // Cropped source rectangles take a different compositing path in WebKit.
+    // A bounded, reusable Path2D clips the whole-page copy without changing
+    // the caller's current path (which save/restore does not preserve).
+    ctx.clip(entry.clip);
+    ctx.drawImage(entry.page.canvas,
+      x * tileSize * scale + left - entry.sx, y * tileSize * scale + top - entry.sy);
     ctx.restore();
     return true;
   }

@@ -57,6 +57,7 @@ function mockCtx() {
     beginPath: vi.fn(() => calls.push('beginPath')),
     arc: vi.fn(() => calls.push('arc')),
     fill: vi.fn(() => calls.push('fill')),
+    clip: vi.fn(),
     drawImage: vi.fn(),
     clearRect: vi.fn(),
     setTransform: vi.fn(),
@@ -90,6 +91,7 @@ describe('drawEdgeBlending', () => {
     let atlasContexts: ReturnType<typeof mockCtx>[];
     let cache: EdgeBlendCache;
     let ctx: ReturnType<typeof mockCtx>;
+    let clips: number[][];
     const tiles = makeTiles([['floor', 'wall'], ['water', 'floor']]);
     const draw = (grid = tiles, settings = makeSettings(), theme = mockTheme, size = 32) =>
       drawEdgeBlending(ctx, grid, grid[0].length, grid.length, size, settings, theme, [], cache);
@@ -98,6 +100,8 @@ describe('drawEdgeBlending', () => {
       atlasContexts = [];
       cache = new EdgeBlendCache();
       ctx = mockCtx();
+      clips = [];
+      vi.spyOn(Path2D.prototype, 'rect').mockImplementation((...rect) => { clips.push(rect); });
       vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => {
         const context = mockCtx();
         atlasContexts.push(context);
@@ -123,6 +127,9 @@ describe('drawEdgeBlending', () => {
       expect(cache.stats).toMatchObject({ entries: 8, misses: 8, hits: 8 });
       expect(atlasContexts.map(context => context.fillRect.mock.calls.length)).toEqual(fills);
       expect(ctx.drawImage).toHaveBeenCalledTimes(16);
+      expect(clips).toHaveLength(8);
+      expect(ctx.clip.mock.calls.slice(8)).toEqual(ctx.clip.mock.calls.slice(0, 8));
+      expect(ctx.beginPath).not.toHaveBeenCalled();
     });
 
     it('invalidates only changed neighbor colors and restores them on undo', () => {
@@ -135,6 +142,8 @@ describe('drawEdgeBlending', () => {
       expect(cache.stats).toMatchObject({ entries: 8, misses: 12, hits: 12 });
       draw(tiles, makeSettings(), { ...mockTheme, tileColors: { ...mockTheme.tileColors, floor: '#123456' } });
       expect(cache.stats.misses).toBe(16);
+      expect(clips).toHaveLength(8);
+      expect(ctx.clip.mock.calls.slice(24)).toEqual(ctx.clip.mock.calls.slice(0, 8));
     });
 
     it('does not replay edges removed by painting or empty neighbors', () => {
@@ -177,19 +186,28 @@ describe('drawEdgeBlending', () => {
       })).toBe(true);
     });
 
-    it('copies strips one-for-one in physical pixels while retaining viewport translation', () => {
+    it('clips whole-page copies to physical strip bounds and retains viewport translation', () => {
       ctx.getTransform.mockReturnValue({ a: 1.25, b: 0, c: 0, d: 1.25, e: 10, f: 20 });
-      draw();
-      expect(ctx.drawImage).toHaveBeenCalledTimes(8);
-      for (const call of ctx.drawImage.mock.calls) {
-        const [, sx, sy, width, height, dx, dy, dw, dh] = call;
-        expect([sx, sy, width, height, dx, dy, dw, dh].every(Number.isInteger)).toBe(true);
-        expect(dw).toBe(width);
-        expect(dh).toBe(height);
-      }
-      expect(ctx.setTransform).toHaveBeenCalledTimes(8);
+      const directions = ['N', 'S', 'E', 'W'] as const;
+      const traverse = () => {
+        cache.prepare(ctx, 32, makeSettings(), 8, 8);
+        for (const dir of directions) cache.draw(ctx, 32, dir, '#123456', 0.35, 0.6, 1, 2);
+      };
+      traverse();
+      expect(clips).toEqual([[39, 79, 44, 12], [39, 111, 44, 12], [71, 79, 12, 44], [39, 79, 12, 44]]);
+      expect(ctx.drawImage.mock.calls.map(call => call.slice(1))).toEqual([[39, 79], [-5, 111], [71, 79], [27, 79]]);
+      expect(ctx.clip).toHaveBeenCalledTimes(4);
+      expect(ctx.setTransform).toHaveBeenCalledTimes(4);
       expect(ctx.setTransform).toHaveBeenCalledWith(1, 0, 0, 1, 10, 20);
-      expect(ctx.restore).toHaveBeenCalledTimes(9);
+      expect(ctx.restore).toHaveBeenCalledTimes(4);
+      expect(ctx.save).toHaveBeenCalledTimes(4);
+      expect(ctx.beginPath).not.toHaveBeenCalled();
+      const paths = ctx.clip.mock.calls.slice();
+      ctx.getTransform.mockReturnValue({ a: 1.25, b: 0, c: 0, d: 1.25, e: -12, f: 7 });
+      traverse();
+      expect(ctx.setTransform).toHaveBeenLastCalledWith(1, 0, 0, 1, -12, 7);
+      expect(ctx.clip.mock.calls.slice(4)).toEqual(paths);
+      expect(clips).toHaveLength(4);
     });
 
     it.each([
@@ -232,6 +250,7 @@ describe('drawEdgeBlending', () => {
         Array.from({ length: 32 }, (_, x) => ({ type: (x + y) % 2 ? 'floor' : 'wall' })));
       draw(dense, makeSettings(), mockTheme, 256);
       const first = cache.stats;
+      expect(clips).toHaveLength(first.entries);
       expect(first.rasterBytes).toBe(EDGE_BLEND_CACHE_MAX_BYTES);
       expect(first.entries).toBeLessThanOrEqual(EDGE_BLEND_CACHE_MAX_ENTRIES);
       expect(first.bypasses).toBeGreaterThan(0);
@@ -240,6 +259,7 @@ describe('drawEdgeBlending', () => {
         rasterBytes: first.rasterBytes, entries: first.entries, misses: first.misses,
         hits: first.entries, bypasses: first.bypasses * 2,
       });
+      expect(clips).toHaveLength(first.entries);
     });
 
     it('bounds metadata independently for very small strips', () => {
@@ -248,6 +268,7 @@ describe('drawEdgeBlending', () => {
         cache.draw(ctx, 1, 'N', '#123456', 0.35, 0.6, x, 0);
       }
       expect(cache.stats.entries).toBe(EDGE_BLEND_CACHE_MAX_ENTRIES);
+      expect(clips).toHaveLength(EDGE_BLEND_CACHE_MAX_ENTRIES);
       expect(cache.stats.bypasses).toBe(1);
       expect(cache.stats.rasterBytes).toBeLessThanOrEqual(EDGE_BLEND_CACHE_MAX_BYTES);
     });
