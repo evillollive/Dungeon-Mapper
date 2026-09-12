@@ -8,7 +8,7 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
-**Latest implementation:** UX-09's bounded F05 milestone adds a deterministic dense-map diagnostic and removes full art repaints on coordinate-only cursor movement. Local measurements still expose slow painting/token dragging; the owner declined to treat the high-end development Mac as representative hardware. See [actual results and the next renderer work](./UX-09-HANDOFF.md#dense-map-diagnostic-milestone). The keyboard milestone and UX-08's [export/offline contract](./UX-08-HANDOFF.md) are unchanged. Remaining art, participant, physical-device, screen-reader and performance acceptance gates stay open.
+**Latest implementation:** UX-09's bounded edge-strip cache reduces local Chromium dense-map paint/token latency by approximately 40%, with a 16 MiB raw raster ceiling per editor and no reduced detail. Painting remains above target in Chromium/Firefox, and the high-end development Mac is not representative hardware. See [memory limits, measured results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone). The keyboard milestone and UX-08's [export/offline contract](./UX-08-HANDOFF.md) are unchanged. Remaining art, participant, physical-device, screen-reader and performance acceptance gates stay open.
 
 **UX-09 automated follow-up, 2026-09-11:** The owner chose a bounded browser
 regression and blocking-CI milestone. Existing creation, shell, publication and
@@ -835,10 +835,20 @@ performance diagnostic now exercise dense-map loading, hover, painting, token
 movement and keyboard pan in all three desktop engines. Coordinate-only
 hover no longer repaints all map art. The owner explicitly chose local
 diagnostics without reference-device acceptance and bounded closeout rather
-than a larger renderer rewrite. Painting and token dragging remain slow;
-memory-conscious edge-blending/render invalidation is the next performance
-slice. See [measurements, limitations and follow-up](./UX-09-HANDOFF.md#dense-map-diagnostic-milestone).
+than a larger renderer rewrite. Painting and token dragging remained slow;
+the subsequent edge-strip milestone below addresses part of that cost.
+See [diagnostic measurements and limitations](./UX-09-HANDOFF.md#dense-map-diagnostic-milestone).
 No latency target, mobile gate or full UX-09 acceptance is marked complete.
+
+**Fourth bounded milestone, 2026-09-11:** The owner selected a bounded dither
+edge-strip cache, not a broader invalidation rewrite. It retains at most
+16 MiB of raw raster per editor and 16,384 entries, preserves art detail, draws
+overflow directly and releases pages on lifecycle/settings changes. Local
+Chromium paint/token p95 falls from roughly 260 ms to 150-159 ms. Cross-engine
+pixel comparisons cover explicit RGBA compositing tolerance, and high-DPR
+allocation cases retain the same cap without traversal churn. Batching atlas
+population fixes an initial loading regression; loading and representative-device
+gates are not accepted. See [renderer contract and final evidence](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone).
 
 **Implementation anchors:** Existing Vitest/Testing Library tests; new browser suite configured deliberately in this milestone or earlier when first needed; `.github/workflows/ci.yml`; docs.
 
@@ -977,7 +987,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-07 | Foundation and materials merged in #167/#168; eight-piece furnishing slice and richer palette approved in #169 | [Approved furnishing colors](./media/ux07-furnishings/color-review.png); token sets, larger furnishing catalog and remaining art packages are still open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
-| UX-09 | In progress; browser/CI and keyboard merged in #171/#172; bounded F05 diagnostics and cursor repaint fix implemented | [Local F05 results and next renderer slice](./UX-09-HANDOFF.md#dense-map-diagnostic-milestone); painting/token latency, human screen-reader and reference-device performance acceptance remain open |
+| UX-09 | In progress; browser/CI, keyboard and F05 diagnostics merged in #171/#172/#174; bounded edge-strip cache implemented | [Cache limits, final F05 results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone); painting/token latency, human screen-reader and reference-device performance acceptance remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |
 
 ## 10. Relationship to the previous roadmap

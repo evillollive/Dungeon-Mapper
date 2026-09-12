@@ -247,12 +247,123 @@ This is successful collection of slow results, not a renderer improvement.
 Artifacts are in `files/f05-ci-fix-stress`; the new head's Linux CI remains
 the landing gate.
 
+## Bounded edge-strip cache milestone
+
+Fourth bounded milestone, 2026-09-11, based on `7130a7f` after #174 merged.
+The owner selected a 16 MiB edge-strip cache, not the broader static/dynamic
+renderer invalidation redesign. There are no dependency, schema, artwork,
+export-policy or release-threshold changes.
+
+### Renderer and memory contract
+
+`EdgeBlendCache` in `src/utils/edgeBlend.ts` retains only dither strips in
+at most sixteen 512 x 512 RGBA canvas pages per mounted editor: **16 MiB of
+raw raster storage**, with an independent **16,384-entry metadata limit**.
+It allocates pages on demand, never a second full-map image. These bounds
+do not include browser/GPU copies, object overhead, the existing main canvas,
+paper texture or other renderer allocations, and are not a total process-memory
+guarantee.
+
+Edges are identified by cell and direction. Every traversal rechecks derived
+geometry, semantic neighbor types and the resolved neighbor color. A changed
+color replaces that strip in place; removed edges are not replayed. Token,
+fog and selection changes reuse unaffected strips. Scale, cell size, intensity
+or opacity changes clear the atlas. Project/level, map dimensions, theme,
+custom-theme definitions, viewing role and unmount also release it; disabling
+blending or entering print mode releases it rather than retaining unused pages.
+
+Capacity overflow draws directly with the original detail. Admission stops
+instead of evicting an entire traversal's working set on every frame. High-DPR
+maps therefore get fewer cached edges, not lower-resolution art. Non-dither
+styles, oversized strips, non-pixel-aligned transforms and unsupported drawing
+state keep the direct path. Export/player-projection renderers do not request
+this editor cache and retain their existing resolution-independent path.
+
+An initial candidate exposed a startup regression, particularly in WebKit:
+alternating a strip write with an atlas read caused expensive source
+synchronization/copying. The final implementation populates all missing strips
+before compositing them in the original order, and avoids clearing fresh slots.
+A regression asserts that all atlas writes finish before the first read.
+The superseded `files/f05-final` and `files/f05-stress` observations are not
+the final loading results below.
+
+### Art and behavior evidence
+
+The seeds, dot positions, edge order, colors and opacity formula are unchanged.
+Intermediate RGBA8 compositing is **not byte-identical** to drawing every
+individual dot onto the final background. The new three-engine browser test
+compares 192 cases per engine across cell sizes 8/32/64, DPR 1/1.25/1.5/2,
+light/dark backgrounds, cold/warm caches, painting/undo, derived rooms/rivers,
+theme changes and intensity/opacity changes.
+
+An independent full-size, per-edge compositing oracle detects misplaced,
+clipped or stale atlas strips, allowing two channel levels for device-origin
+coverage/compositing rounding. The original direct renderer comparison allows
+at most 8/255 per channel and mean error at most 0.25/255. Measured maxima were
+7/255 in Chromium/Firefox and 5/255 in WebKit, with maximum mean error below
+0.237/255. These explicit rasterization tolerances replace an initial,
+unsubstantiated 3/255 test assumption, not any existing release gate.
+
+The bounded F05 allocation case traverses the complete derived fixture with a
+small destination canvas, separately from the real full-size interaction
+diagnostic. All engines recorded:
+
+| DPR | Retained edges | Direct overflow per traversal | Atlas raw raster |
+| --- | --- | --- | --- |
+| 1 | 12,268 | 0 | 16 MiB |
+| 2 | 3,584 | 8,684 | 16 MiB |
+| 3 | 1,760 | 10,508 | 16 MiB |
+
+An unchanged second traversal performs no new strip rasterization or page
+allocation. Unit/component regressions cover color replacement, custom
+semantics, removed boundaries, settings/DPR, capacity, metadata bounds,
+oversized strips, token/fog reuse, project/theme/role changes and disposal.
+Existing cursor-preview and gesture-cancellation cases remain intact.
+
+### Local measurements
+
+Same development host and F05 v1 as above: Apple M5 Max, 64 GiB, 1440 x 900,
+DPR 1, full detail. All three independent repetitions and every existing
+sample/persistence/undo assertion were retained. Ranges are repetition p95
+values, not pooled percentiles. Chromium repetition one is profiled in both
+the baseline and candidate. No representative hardware acceptance is claimed.
+
+| Engine / version | Hover p95 ms | Paint-drag p95 ms | Token-drag p95 ms | Pan p95 ms | Warm-ready seconds |
+| --- | --- | --- | --- | --- | --- |
+| Chromium 151.0.7922.34 | 4.6-15.9 | 150.2-158.6 | 148.8-157.5 | 11.9-12.1 | 1.49-2.01 |
+| Firefox 153.0 | 13-14 | 158-192 | 156-159 | 13-14 | 1.24-1.25 |
+| WebKit 26.5 | 30-38 | 88-93 | 84-86 | 36-41 | 1.47-1.50 |
+
+The fresh Chromium baseline in this session recorded paint p95 261.9-266.8 ms
+and token p95 254.4-257.8 ms: approximately **40% lower edit latency**.
+Firefox/WebKit's earlier direct-renderer numbers remain historical comparisons,
+not fresh same-session baseline runs. The Firefox 192 ms repetition is retained,
+not discarded. Chromium's first synchronous drawing stack after reload rose
+from 1.02-1.04 seconds to 1.08-1.09 seconds while populating the bounded cache.
+Warm readiness includes polling overhead and one 2.01-second result; do not
+claim a loading-target pass.
+
+The complete final 4x Chromium CPU stress run took 2.3 minutes, with each
+repetition inside its unchanged three-minute limit. Paint p95 was
+632.4-653.1 ms, token p95 615.0-637.2 ms, and warm readiness 5.09-5.56 seconds.
+These are still slow results, not typical-device estimates or mobile acceptance.
+
+The integrated pre-batching candidate passed all 33 browser cases and all
+three UX-08 export/offline journeys. After correcting atlas population, all
+18 targeted renderer/F05 cases and four Chromium stress cases passed again,
+along with 84 targeted unit/component cases. Evidence is under this session's
+`files/f05-baseline`, `files/f05-batched-final`, `files/f05-batched-stress` and
+`files/ux08-regression`. Raw reports identify the base revision and dirty
+working tree; the PR identifies the committed patch. Exact-head CI remains
+the landing gate, with no skipped checks, relaxed samples or timeout changes.
+
 ### Next bounded performance work
 
-Optimize dense-map edge-blending/render invalidation with an explicit memory
-budget and preserved art, fog, geometry, cursor-preview, undo and export
-behavior. Do not replace CPU stalls with unbounded full-map bitmap caches or
-silently disable art. Re-measure painting and token movement, not only hover.
+Profile the remaining full tile, furnishing and lighting redraws before choosing
+another bounded optimization. A static/dynamic-layer and dirty-region redesign
+is a separate, larger scope requiring explicit agreement on invalidation and
+memory budgets. Preserve fog, derived geometry, cursor previews, undo and export
+behavior; do not silently reduce detail or add unbounded full-map bitmaps.
 The 100 ms desktop, 150 ms mobile and two-second warm-launch targets remain
 unchanged and unaccepted. CPU throttling is only a stress probe; reference
 hardware, physical input-to-paint tracing, mobile/detail policy, memory

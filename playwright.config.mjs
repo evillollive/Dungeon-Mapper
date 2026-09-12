@@ -10,7 +10,7 @@ const baseURL = `http://127.0.0.1:${port}/Dungeon-Mapper/`;
 
 export default defineConfig({
   testDir: './src/test',
-  testMatch: ['ux09.spec.mjs', 'ux09Performance.spec.mjs'],
+  testMatch: ['ux09.spec.mjs', 'ux09Performance.spec.mjs', 'ux09EdgeBlend.spec.mjs'],
   outputDir: join(output, 'browser-results'),
   reporter: [
     ['list'],
