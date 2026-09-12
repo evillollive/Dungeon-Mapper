@@ -89,9 +89,10 @@ QA_OUTPUT=/absolute/path/to/qualification npm run test:browser
 QA_OUTPUT=/absolute/path/to/qualification npm run test:browser -- --project=webkit --grep=publication
 ```
 
-The five journeys cover guided creation and Library continuity, editor
+The six journeys cover guided creation and Library continuity, editor
 navigation/focus/layout, player publication/preview, session recovery with a
-real second window, and critical keyboard workflows. Each test owns fresh browser storage, and the runner closes
+real second window, critical keyboard workflows, and furnishing catalog
+placement/transforms/player export. Each test owns fresh browser storage, and the runner closes
 its pages and contexts on success, failure, or timeout. These use production
 assets under `/Dungeon-Mapper/`, not a development-only fixture route.
 `ux02Creation.browser.mjs`, `ux03Shell.browser.mjs`, `ux05Audience.browser.mjs`
@@ -133,14 +134,14 @@ The strict-port preview server defaults to port 5309 (`QA_PORT` overrides it);
 an existing server is not reused. Tests run serially, with no retries, a
 three-minute test timeout and a twenty-minute suite timeout. `test.only` and
 empty test selection fail. `--grep` and `--project` are local selectors; CI
-always runs all five journeys for each engine.
+always runs all six journeys for each engine.
 
 After building once, `npm run test:browser:run` and `npm run test:ux08:run`
 reuse `dist`. Only the latter uses `QA_ENGINES` and defaults to port 5308.
 The UX-08 runner owns its server so it can stop the sole origin and control
 worker updates. Do not run both suites concurrently on the same custom port.
 
-CI runs all five journeys plus UX-08 for Chromium, Firefox and WebKit, with
+CI runs all six journeys plus UX-08 for Chromium, Firefox and WebKit, with
 independent engine jobs, no fail-fast cancellation and fourteen-day artifacts.
 It also runs the F05 diagnostic, its delayed-draw probe, and the two edge-cache
 pixel/allocation cases described below. Their behavior assertions block CI, but their latency values do not
@@ -161,6 +162,28 @@ generation changes, so callbacks retained from a previous project are rejected.
 See [UX-09 qualification status](./UX-09-HANDOFF.md) for actual coverage and
 remaining human/device/performance gates. Passing these jobs is not an
 accessibility conformance or full-release certification.
+
+## Folio furnishing catalog qualification
+
+The 24-piece catalog has a production UI journey in `ux07Furnishings.browser.mjs`
+and a renderer matrix in `ux07Furnishings.spec.mjs`. Both run on all three
+engines in the existing blocking browser suite:
+
+```bash
+QA_OUTPUT=/absolute/path/to/furnishings npm run test:browser -- --grep='[Ff]urnishing'
+```
+
+The UI journey checks sample creation, the full catalog, legacy and new placement
+scales, transforms, undo/redo, reload, backup and player output. Its screenshots
+are written to the runner's evidence directory, not into historical docs.
+The renderer harness is bundled in memory from current source, with no
+test route in the production app. It compares actual editor and export paint
+commands, bounds independent Canvas rasterization differences, and compares
+each asset's player SVG at four scales and four transform/opacity settings.
+The in-memory command recorder is restored even when the comparison fails.
+Color/print contact sheets, a composed sample and zoom sheets are retained under
+`browser-results`. These do not certify physical print scale, touch interaction
+or dense-map performance. See the UX roadmap for the owner-approval status.
 
 ## Dense-map performance diagnostics (F05)
 

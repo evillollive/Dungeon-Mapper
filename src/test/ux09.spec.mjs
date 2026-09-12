@@ -6,6 +6,7 @@ import shell from './ux03Shell.browser.mjs';
 import audience from './ux05Audience.browser.mjs';
 import session from './ux06Session.browser.mjs';
 import keyboard from './ux09Keyboard.browser.mjs';
+import furnishings from './ux07Furnishings.browser.mjs';
 
 const journeys = [
   ['guided creation and library continuity', creation],
@@ -13,6 +14,7 @@ const journeys = [
   ['publication and player-safe preview', audience],
   ['session recovery and two-window player display', session],
   ['keyboard critical workflows and panel accessibility', keyboard],
+  ['furnishing catalog placement, transforms and player export', furnishings],
 ];
 
 for (const [name, journey] of journeys) {

@@ -8,6 +8,22 @@ import crate from './crate.svg?raw';
 import barrel from './barrel.svg?raw';
 import altar from './altar.svg?raw';
 import rubble from './rubble.svg?raw';
+import roundTable from './round-table.svg?raw';
+import bench from './bench.svg?raw';
+import stool from './stool.svg?raw';
+import desk from './desk.svg?raw';
+import chest from './chest.svg?raw';
+import wardrobe from './wardrobe.svg?raw';
+import weaponRack from './weapon-rack.svg?raw';
+import brazier from './brazier.svg?raw';
+import sarcophagus from './sarcophagus.svg?raw';
+import sacks from './sacks.svg?raw';
+import boulder from './boulder.svg?raw';
+import fern from './fern.svg?raw';
+import shrub from './shrub.svg?raw';
+import campfire from './campfire.svg?raw';
+import bedroll from './bedroll.svg?raw';
+import tent from './tent.svg?raw';
 
 export interface FolioFurnishing extends StampDef {
   defaultScale: number;
@@ -61,6 +77,22 @@ const sources: { key: string; name: string; category: StampCategory; scale: numb
   { key: 'barrel', name: 'Folio barrel', category: 'dungeon-dressing', scale: 0.8, source: barrel },
   { key: 'altar', name: 'Folio altar', category: 'dungeon-dressing', scale: 1.5, source: altar },
   { key: 'rubble', name: 'Folio rubble', category: 'dungeon-dressing', scale: 1.25, source: rubble },
+  { key: 'round-table', name: 'Folio round table', category: 'furniture', scale: 1.5, source: roundTable },
+  { key: 'bench', name: 'Folio bench', category: 'furniture', scale: 1.75, source: bench },
+  { key: 'stool', name: 'Folio stool', category: 'furniture', scale: 0.9, source: stool },
+  { key: 'desk', name: 'Folio writing desk', category: 'furniture', scale: 1.5, source: desk },
+  { key: 'chest', name: 'Folio chest', category: 'furniture', scale: 1, source: chest },
+  { key: 'wardrobe', name: 'Folio wardrobe', category: 'furniture', scale: 1.5, source: wardrobe },
+  { key: 'weapon-rack', name: 'Folio weapon rack', category: 'dungeon-dressing', scale: 1.5, source: weaponRack },
+  { key: 'brazier', name: 'Folio brazier', category: 'dungeon-dressing', scale: 0.85, source: brazier },
+  { key: 'sarcophagus', name: 'Folio sarcophagus', category: 'dungeon-dressing', scale: 2, source: sarcophagus },
+  { key: 'sacks', name: 'Folio supply sacks', category: 'dungeon-dressing', scale: 1, source: sacks },
+  { key: 'boulder', name: 'Folio boulder', category: 'nature', scale: 1.5, source: boulder },
+  { key: 'fern', name: 'Folio fern', category: 'nature', scale: 0.9, source: fern },
+  { key: 'shrub', name: 'Folio shrub', category: 'nature', scale: 1.25, source: shrub },
+  { key: 'campfire', name: 'Folio campfire', category: 'dungeon-dressing', scale: 1.25, source: campfire },
+  { key: 'bedroll', name: 'Folio bedroll', category: 'furniture', scale: 1.5, source: bedroll },
+  { key: 'tent', name: 'Folio tent', category: 'structures', scale: 2.5, source: tent },
 ];
 
 export const FOLIO_FURNISHINGS: FolioFurnishing[] = sources.map(source => {

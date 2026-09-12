@@ -19,7 +19,7 @@ If you want the full tour in one place, this is it. Dungeon Mapper starts fast, 
 - **Command palette** - fuzzy-search overlay (`Ctrl/Cmd+K`) for quick access to tools, themes, file actions, view toggles, and canvas commands
 - **Selection inspector** - docked right panel showing properties of the selected stamp/token/note, or a map summary (dimensions, tile counts, theme) when nothing is selected
 - **Generate Hub** - unified generation window (`G` shortcut) with tabbed Generate and Samples panels, archetype filtering, and all generation controls in one place
-- **Stamps** - 196 built-in stamps (40 universal + 156 per-theme across 13 themes) plus custom stamp upload (PNG/SVG/JPEG/WebP, 2 MB limit); place, move, rotate, flip, scale, adjust opacity, lock, and z-order stamps on the canvas (see [Stamps](#stamps) below)
+- **Stamps** - the original 196-stamp catalog plus 24 versioned Dungeon Folio furnishings and custom stamp upload (PNG/SVG/JPEG/WebP, 2 MB limit); place, move, rotate, flip, scale, adjust opacity, lock, and z-order stamps on the canvas (see [Stamps](#stamps) below)
 - **Wall, path & river drawing** - free-form wall segments snapped to grid edges (`W`), smooth path/road lines (`Shift+W`), and editable flowing river vectors (`U`) with erase modes; independent of tile grid until rivers rasterize to water (see [Wall, Path & River Tools](#wall-path--river-tools) below)
 - **Scene/room templates** - save a selection of tiles, notes, and stamps as a reusable template; apply templates to stamp pre-built rooms onto any map (see [Scene Templates](#scene-templates) below)
 - **Tabbed toolbar** - GM tools organized into three tabs (Draw, Tactical, Advanced) for progressive disclosure and reduced clutter
@@ -243,6 +243,20 @@ Stamps are how you add flavor without turning every detail into tile work. Furni
 ### Per-theme filtering
 
 The stamp picker can stay focused on the current theme or open up the whole library. That keeps browsing quick when you're in the zone, but still lets you break the rules whenever the map wants something weird.
+
+### Dungeon Folio furnishings
+
+Choose **Dungeon Folio v1**, then **Decorate > Theme** for 24 original furnishings:
+tables and seating, beds and storage, chapel and dungeon props, vegetation and
+camping gear. The new **The Wayfarer's Refuge** sample combines the full set in
+a 24 x 24 hall, chapel and campsite. **The Keeper's Hall** retains the original
+eight-piece composition.
+
+Each piece has an authored starting scale, editable rotation/flips/opacity,
+consistent shadows and a print companion. Existing artwork and saved IDs are
+unchanged. Furnishings are decoration: campfires and braziers do not emit light,
+and tents, plants or furniture do not block movement or sight. Add actual light
+sources or map geometry separately when needed.
 
 ### Custom stamp upload
 
