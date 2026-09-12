@@ -2130,7 +2130,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [activeTool, selection, onEraseTiles]);
+  }, [activeTool, selection, onEraseTiles, setSelection]);
 
   const getTileCoords = useCallback((e: { clientX: number; clientY: number }) => {
     const canvas = canvasRef.current;
@@ -2377,7 +2377,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setIsDragging(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [cancelDraft]);
+  }, [cancelDraft, paintCells]);
   useLayoutEffect(() => { cancelGesture(); activePointersRef.current.clear(); }, [sourceMap, cancelGesture]);
   useLayoutEffect(() => {
     cancelGestureRef.current = cancelGesture;
@@ -2687,7 +2687,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     }
 
     const coords = getTileCoords(e);
-    if (coords) setMousePos(coords);
+    if (coords) {
+      setMousePos(previous => previous?.x === coords.x && previous.y === coords.y ? previous : coords);
+    }
 
     if (!isPlayerView && isRoomTool(activeTool)) {
       const fc = getFractionalCoords(e);
@@ -2871,7 +2873,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     } else if (activeTool === 'paint' || activeTool === 'erase') {
       handleCanvasAction(e);
     }
-  }, [activeTool, isDragging, dragStart, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, roomShapes, rivers, meta.width, meta.height, onMoveToken, onMoveStamp, onUpdateRiver, zoom]);
+  }, [activeTool, isDragging, dragStart, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, roomShapes, rivers, meta.width, meta.height, onMoveToken, onMoveStamp, onUpdateRiver]);
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!activePointersRef.current.has(e.pointerId)) return;
@@ -3047,7 +3049,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     setIsDragging(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, roomEditPreview, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType, onAddWallSegment, onAddPathSegment, onAddRiver, onAddRoomShape, onUpdateRoomShape, cancelGesture, finishDraft, setSelection]);
+  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, roomEditPreview, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType, onAddWallSegment, onAddPathSegment, onAddRiver, onAddRoomShape, onUpdateRoomShape, cancelGesture, finishDraft, setSelection, paintCells]);
 
   const handlePointerLeave = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (e.currentTarget.hasPointerCapture(e.pointerId)) return;

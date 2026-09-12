@@ -10,6 +10,13 @@
 
 **Latest implementation:** UX-09's bounded edge-strip cache reduces local Chromium dense-map paint/token latency by approximately 40%, with a 16 MiB raw raster ceiling per editor and no reduced detail. Painting remains above target in Chromium/Firefox, and the high-end development Mac is not representative hardware. See [memory limits, measured results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone). The keyboard milestone and UX-08's [export/offline contract](./UX-08-HANDOFF.md) are unchanged. Remaining art, participant, physical-device, screen-reader and performance acceptance gates stay open.
 
+**Cleanup follow-up, 2026-09-12:** The remaining five hook warnings are resolved
+and the lint ceiling is zero. Older performance PRs #155 and #164 are reconciled
+against the renderer work rather than merged unchanged: same-cell preview
+redraws are avoided, and draft completion skips unchanged branches without
+losing return-to-origin no-op detection. See [cleanup scope](./UX-09-HANDOFF.md#hook-and-performance-pr-cleanup).
+The release backlog remains here; this cleanup does not complete UX-07 or UX-09.
+
 **UX-09 automated follow-up, 2026-09-11:** The owner chose a bounded browser
 regression and blocking-CI milestone. Existing creation, shell, publication and
 two-window session journeys now run in the locked Playwright runner on all three
@@ -810,8 +817,9 @@ finishing the remaining art catalog. Chromium, Firefox and WebKit cover creation
 shell focus/layout, publication and local two-window session recovery, plus the
 existing export/offline journey. Lint errors are blocking; the initial 73 hook
 warnings were documented and count-capped rather than hidden. Subsequent
-map-hook housekeeping reduces that allowance to five without suppressing
-the remaining warnings. A reproduced WebKit
+map-hook housekeeping reduced that allowance to five; the September 12 cleanup
+resolves those remaining warnings and enforces a zero-warning ceiling without
+new suppressions. A reproduced WebKit
 resize-observer loop in player preview is fixed with lifecycle regressions.
 [UX-09 handoff](./UX-09-HANDOFF.md) records the exact scope and remaining gates.
 This is not approval to mark the full UX-09 package complete.

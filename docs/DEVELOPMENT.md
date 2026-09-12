@@ -147,12 +147,12 @@ pixel/allocation cases described below. Their behavior assertions block CI, but 
 certify a release or impose machine-dependent timing thresholds.
 The aggregate **Browser qualification** check fails when any engine fails,
 is skipped or is cancelled. The active default-branch ruleset requires that
-aggregate and **Build and test**, both strict/up-to-date. **Build and test** also treats lint errors as
-blocking. The remaining five `react-hooks/exhaustive-deps` warnings remain visible
-and are capped with `--max-warnings 5`; lower that ceiling as debt is removed,
-never increase it to hide new warnings. This is a count ceiling, not per-warning
-identity tracking. Remaining warnings are confined to `App.tsx` and
-`MapCanvas.tsx`. Map-state, level-management and history callbacks now declare
+aggregate and **Build and test**, both strict/up-to-date. **Build and test** also
+blocks on lint errors and warnings with `--max-warnings 0`. The five remaining
+hook dependency warnings in `App.tsx` and `MapCanvas.tsx` have been resolved
+without new suppressions; do not raise the ceiling to admit new warnings.
+Existing scoped rule suppressions elsewhere remain a separate concern, not a
+claim of a suppression-free codebase. Map-state, level-management and history callbacks declare
 their dependencies without hook-rule suppressions. Shared history helpers stay
 stable across ordinary renders but read the current history ref, including
 after level reindexing. Project-scoped actions still refresh when the editor

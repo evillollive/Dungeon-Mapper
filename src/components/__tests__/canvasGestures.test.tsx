@@ -65,6 +65,22 @@ describe('canvas gesture commit boundaries', () => {
     const initialDraws = context.mock.calls.length;
     pointer(canvas, 'pointermove', 2, 3);
     expect(context.mock.calls.length).toBeGreaterThan(initialDraws);
+    const previewDraws = context.mock.calls.length;
+    pointer(canvas, 'pointermove', 2.1, 3.1);
+    expect(context).toHaveBeenCalledTimes(previewDraws);
+    pointer(canvas, 'pointermove', 3, 4);
+    expect(context.mock.calls.length).toBeGreaterThan(previewDraws);
+    expect(screen.getByText('X:3 Y:4')).toBeInTheDocument();
+  });
+  it('clears a selection through the latest callback after its owner changes', () => {
+    const p = props();
+    const first = vi.fn(), latest = vi.fn();
+    const selection = { x: 1, y: 1, w: 2, h: 2 };
+    const { rerender } = render(<MapCanvas {...p} activeTool="select" regionSelection={selection} onSelectionChange={first} />);
+    rerender(<MapCanvas {...p} activeTool="select" regionSelection={selection} onSelectionChange={latest} />);
+    fireEvent.keyDown(screen.getByRole('application'), { key: 'Escape' });
+    expect(first).not.toHaveBeenCalled();
+    expect(latest).toHaveBeenCalledExactlyOnceWith(null);
   });
   it.each(['mouse', 'touch', 'pen'])('groups a %s paint stroke and interpolates skipped cells', type => {
     const p = props();

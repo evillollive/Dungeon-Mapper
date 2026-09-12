@@ -502,12 +502,45 @@ unchanged and unaccepted. CPU throttling is only a stress probe; reference
 hardware, physical input-to-paint tracing, mobile/detail policy, memory
 pressure, cold/offline loading and F05 high-resolution export remain open.
 
+## Hook and performance PR cleanup
+
+Bounded cleanup, 2026-09-12, based on `9dd4b10` after #175. The five remaining
+hook dependency warnings are resolved and `npm run lint` now permits zero
+warnings. Selection callbacks track their current project/scope, the canvas
+selection key listener uses its current owner, draft cancellation/completion
+declare the stable paint-cell ref, and pointer movement drops an unused zoom
+dependency. No lint rule or browser gate is disabled.
+
+Older performance PRs are reconciled in this cleanup rather than merged onto
+newer canvas code unchanged:
+
+| PR | Reconciled behavior |
+| --- | --- |
+| #155 | Preserve cursor-position identity within a tile. #174 already avoids ordinary cursor-only art redraws, but marker, light, clipboard and polygon previews still benefit from this additional guard. Crossing a tile boundary continues updating the preview and HUD. |
+| #164 | Remove full-map JSON serialization from draft completion and skip identity-no-op stages. Unlike the original proposal, compare changed branches through structural sharing so dragging a token, stamp or river back to its origin still creates no commit. Unchanged map branches and tile rows are not traversed. |
+
+Regressions cover all four preview tools, replacement selection callbacks,
+serialization-free completion, untouched branch/row access, identity no-ops,
+repeated completion, changed object keys and return-to-origin moves. Existing
+gesture interruption and single-commit behavior remain intact. This is not a
+new renderer architecture or a claim that F05 release targets are met.
+
+Local candidate evidence: 72 cases in eight targeted Vitest files, the
+zero-warning lint gate and production build pass. Twelve browser cases cover
+editor navigation, keyboard workflows, the delayed-draw probe and one complete
+F05 repetition per engine in Chromium, Firefox and WebKit. This focused run is
+not a three-repetition benchmark or full release qualification. Artifacts are
+in the cleanup session's `files/cleanup-browser` directory. Exact-head required
+CI remains the landing gate.
+
 ## Remaining release gates
 
 Subsequent housekeeping removes 68 of the original 73 hook warnings and
 19 dependency-rule suppressions from map-state, level-management and history
-hooks. The current lint allowance is five warnings, confined to `App.tsx` and
-`MapCanvas.tsx`. History helpers now have stable identities; editing callbacks
+hooks. The September 12 cleanup resolves the other five warnings in `App.tsx`
+and `MapCanvas.tsx`, making the current lint allowance zero. Existing scoped
+rule suppressions outside that cleanup remain; this is not a claim that every
+suppression has been retired. History helpers have stable identities; editing callbacks
 declare current dependencies while preserving per-level undo and stale-project
 callback rejection. The counts above describe the earlier milestone evidence,
 not the current warning baseline.
