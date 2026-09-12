@@ -4,11 +4,11 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's dungeon foundation and approved wood/earth materials are merged in #167 and #168. The eight-piece furnishing reference and richer palette are approved in #169; the full package remains incomplete. UX-08 is merged in #170. UX-09's automated browser/CI milestone is merged in #171; its critical keyboard-workflow follow-up is merged in #172. Full release qualification remains open. No participant usability acceptance is claimed.
+**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's dungeon foundation and approved wood/earth materials are merged in #167 and #168. The eight-piece furnishing reference and richer palette are approved in #169; the expanded 24-piece catalog is implemented with owner visual approval pending. The full package remains incomplete. UX-08 is merged in #170. UX-09's automated browser/CI milestone is merged in #171; its critical keyboard-workflow follow-up is merged in #172. Full release qualification remains open. No participant usability acceptance is claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
-**Latest implementation:** UX-09's bounded edge-strip cache reduces local Chromium dense-map paint/token latency by approximately 40%, with a 16 MiB raw raster ceiling per editor and no reduced detail. Painting remains above target in Chromium/Firefox, and the high-end development Mac is not representative hardware. See [memory limits, measured results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone). The keyboard milestone and UX-08's [export/offline contract](./UX-08-HANDOFF.md) are unchanged. Remaining art, participant, physical-device, screen-reader and performance acceptance gates stay open.
+**Latest performance implementation:** UX-09's bounded edge-strip cache reduces local Chromium dense-map paint/token latency by approximately 40%, with a 16 MiB raw raster ceiling per editor and no reduced detail. Painting remains above target in Chromium/Firefox, and the high-end development Mac is not representative hardware. See [memory limits, measured results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone). The keyboard milestone and UX-08's [export/offline contract](./UX-08-HANDOFF.md) are unchanged. Remaining art, participant, physical-device, screen-reader and performance acceptance gates stay open.
 
 **Cleanup follow-up, 2026-09-12:** The remaining five hook warnings are resolved
 and the lint ceiling is zero. Older performance PRs #155 and #164 are reconciled
@@ -774,6 +774,62 @@ physical print/touch/screen-reader review and cross-browser qualification
 remain outside this slice. Owner approval of the earlier floors does not
 approve these new furnishing designs.
 
+**Fourth bounded milestone, September 12, 2026: 24-piece furnishing catalog**
+
+The owner selected catalog expansion before token artwork. Sixteen original
+SVG sources extend the approved eight: round table, bench, stool, writing desk,
+chest, wardrobe, weapon rack, brazier, sarcophagus, supply sacks, boulder, fern,
+shrub, campfire, bedroll and tent. The new designs reuse the approved warmer
+wood, blue cloth, green accents, cool stone and dark outlines. **Owner visual
+approval of these sixteen additions is pending.**
+
+The additive pack release is `1.1.0`; render version 1 and all existing IDs,
+eight original source hashes, scales and saved appearances are unchanged.
+There is no schema migration or replacement of legacy/custom stamps.
+**Decorate > Theme** shows all 24 assets for **Dungeon Folio v1**, with searchable
+names and the existing category/favorites controls. Fires are explicitly
+decorative, and tents/plants do not add collision or sight rules.
+
+Open **The Wayfarer's Refuge** (`folio-wayfarers-refuge`) for a fresh 24 x 24
+sample with lodging, a communal hall, chapel and campsite. Its 34 placements
+include all 24 types, transformed examples, one private chest and a private
+note. The original **The Keeper's Hall** sample is preserved.
+
+The complete SVG sources total 14,905 bytes, 3,683 bytes gzip. Their 125 path
+records use 124 distinct version-scoped cache entries, including cast shadows
+and print reuse, within the unchanged 128-entry limit. There are no new
+dependencies, raster atlases or network asset requests. Source fingerprints
+and the AGPL notice are maintained alongside the editable sources.
+
+Local qualification passed 69 targeted unit/component cases and six
+browser cases across Chromium 151.0.7922.34, Firefox 153.0 and WebKit 26.5.
+The catalog journey covers the actual new sample, all saved asset IDs, legacy
+bed/new tent default placement, rotation/flips/scale/opacity, undo/redo, reload,
+editable backup, player SVG and the phone player viewport. It now runs in CI.
+The rendering case covers all 24 assets at 8/16/32/64 pixels per cell in four
+transform/opacity configurations, exact editor/export and print vector commands,
+bounded raster drift, and 384 per-asset SVG comparisons per engine.
+
+Independent WebKit Canvas draws, including identical repeated print exports,
+showed small raster differences despite equal geometry/paint commands. The
+new test therefore requires exact commands plus explicit pixel bounds, not
+bit-identical independent canvases: color maximum 2/255 and mean below
+0.0001/255; print maximum 32/255 and mean below 0.01/255. SVG comparisons are
+bounded below 1/255 mean per four-cell asset region; observed maxima were
+0.035/0.322/0.223 in Chromium/Firefox/WebKit. No existing renderer assertions,
+CI timeouts, performance thresholds or production renderer behavior changed.
+
+Review surfaces: [all 24 color/print pieces](./media/ux07-catalog/catalog.png),
+[DM/player/SVG/print sample](./media/ux07-catalog/maps.png),
+[25/50/100/200% scales](./media/ux07-catalog/zooms.png),
+[production editor](./media/ux07-catalog/editor.png), and
+[phone player view](./media/ux07-catalog/player-phone.png).
+Browser evidence is reproducible with the commands in
+[Development](./DEVELOPMENT.md#folio-furnishing-catalog-qualification).
+This completes implementation of the planned furnishing count, not visual
+acceptance, the token kit, remaining launch artwork, physical-device/print
+review or UX-09 performance qualification.
+
 **Deliverables:** ART-01 through ART-04, ART-06 through ART-08 for the initial release, plus asset manifest/provenance, pack/version selection, previews, deterministic variants, caching, and fallbacks. ART-05/09 extend after the dungeon slice is approved.
 
 **Implementation anchors:** `src/themes/*`, existing art utilities/catalogs, `artStylePresets.ts`, `MapCanvas.tsx`, `renderMap.ts`, `export.ts`, new versioned asset directories.
@@ -993,7 +1049,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; current production journey passes Chromium, Firefox and WebKit in UX-09 | [Original policy and evidence](./UX-05-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
-| UX-07 | Foundation and materials merged in #167/#168; eight-piece furnishing slice and richer palette approved in #169 | [Approved furnishing colors](./media/ux07-furnishings/color-review.png); token sets, larger furnishing catalog and remaining art packages are still open |
+| UX-07 | Foundation/materials merged in #167/#168; eight-piece furnishing palette approved in #169; 24-piece catalog implemented | [Expanded catalog](./media/ux07-catalog/catalog.png) awaits owner visual approval; token sets and remaining art packages stay open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; browser/CI, keyboard and F05 diagnostics merged in #171/#172/#174; bounded edge-strip cache implemented | [Cache limits, final F05 results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone); painting/token latency, human screen-reader and reference-device performance acceptance remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |

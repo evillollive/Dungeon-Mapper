@@ -16,7 +16,8 @@ import { generateRiversForMap, getGeneratedRiverType } from './generators/riverG
 import { makeRng, seedFromString } from './generators/random';
 import { buildFolioReference, FOLIO_REFERENCE_ID, FOLIO_REFERENCE_NAME, buildFolioMaterialsReference, FOLIO_MATERIALS_REFERENCE_ID, FOLIO_MATERIALS_REFERENCE_NAME } from './folioReference';
 import { FOLIO_THEME_ID } from '../themes/folio-v1/art';
-import { buildFolioFurnishingReference, FOLIO_FURNISHING_REFERENCE_ID, FOLIO_FURNISHING_REFERENCE_NAME } from './folioFurnishingReference';
+import { buildFolioFurnishingReference, FOLIO_FURNISHING_REFERENCE_ID, FOLIO_FURNISHING_REFERENCE_NAME,
+  buildFolioCatalogReference, FOLIO_CATALOG_REFERENCE_ID, FOLIO_CATALOG_REFERENCE_NAME } from './folioFurnishingReference';
 
 export interface PremadeMapSummary {
   id: string;
@@ -1281,12 +1282,22 @@ export const PREMADE_MAP_SUMMARIES: PremadeMapSummary[] = [...PREMADE_MAP_SPECS.
   sizeLabel: '16 x 16',
   levelCount: 1,
   description: 'A furnished keeper hall with eight original top-down props, shared table seating, sleeping quarters and stores. Review scale, rotation and restrained shadows.',
+}, {
+  id: FOLIO_CATALOG_REFERENCE_ID,
+  name: FOLIO_CATALOG_REFERENCE_NAME,
+  themeId: FOLIO_THEME_ID,
+  themeLabel: 'Dungeon Folio v1',
+  archetype: 'Furnished refuge and campsite',
+  sizeLabel: '24 x 24',
+  levelCount: 1,
+  description: 'All 24 Folio furnishings in a roadside hall, sleeping quarters, chapel and leafy campsite. Decorative fires and tents do not change light, movement or sight.',
 }];
 
 export function buildPremadeProject(id: string): DungeonProject {
   if (id === FOLIO_REFERENCE_ID) return buildFolioReference();
   if (id === FOLIO_MATERIALS_REFERENCE_ID) return buildFolioMaterialsReference();
   if (id === FOLIO_FURNISHING_REFERENCE_ID) return buildFolioFurnishingReference();
+  if (id === FOLIO_CATALOG_REFERENCE_ID) return buildFolioCatalogReference();
   const spec = PREMADE_MAP_SPECS.find(item => item.id === id);
   if (!spec) throw new Error(`Unknown premade map: ${id}`);
 

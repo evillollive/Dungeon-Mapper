@@ -1,10 +1,15 @@
-Dungeon Folio furnishings 1.0.0
+Dungeon Folio furnishings 1.1.0
 Copyright (C) 2026 Dungeon Mapper contributors
 SPDX-License-Identifier: AGPL-3.0-or-later
 
-Eight original top-down SVG furnishings authored for Dungeon Mapper with
+Twenty-four original top-down SVG furnishings authored for Dungeon Mapper with
 GitHub Copilot assistance: table, chair, bed, shelf, crate, barrel, altar,
-and rubble. No third-party artwork, fonts or textures are included.
+rubble, round table, bench, stool, writing desk, chest, wardrobe, weapon rack,
+brazier, sarcophagus, supply sacks, boulder, fern, shrub, campfire, bedroll,
+and tent. No third-party artwork, fonts or textures are included.
+
+Version 1.1.0 adds sixteen sources. The original eight SVG sources, their
+stable IDs, default scales and the 1.x rendering contract are unchanged.
 
 The .svg files are editable, authoritative path-only sources. catalog.ts
 admits this deliberately restricted format and derives monochrome paths.

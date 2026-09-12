@@ -79,8 +79,9 @@ const StampPicker: React.FC<StampPickerProps> = ({
     <div className="toolbar-section">
       <div className="toolbar-label">STAMPS</div>
       {themeId === FOLIO_THEME_ID && <p className="folio-pack-preview">
-        Dungeon Folio furnishings v1. Choose Theme to see the eight-piece set.
+        Dungeon Folio furnishings v1. Choose Theme to see all 24 pieces.
         Sizes start in a common cell scale; each placed object remains adjustable.
+        These are decorations: fires do not emit light, and objects do not block movement or sight.
       </p>}
       {unavailableFolioFurnishings && <p role="status">
         A saved Folio furnishing is unavailable. A placeholder is shown; its saved ID is retained.

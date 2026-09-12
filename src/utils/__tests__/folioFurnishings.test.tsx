@@ -1,13 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
+import { gzipSync } from 'node:zlib';
 import { act, cleanup, fireEvent, render, renderHook, screen } from '@testing-library/react';
 import { FOLIO_FURNISHINGS, getFolioFurnishing, isUnavailableFolioFurnishing, parseBundledFolioSvg } from '../../assets/folio-furnishings-v1/catalog';
 import { FOLIO_FURNISHING_MANIFEST } from '../../assets/folio-furnishings-v1/manifest';
 import { getStampDef } from '../stampCatalog';
-import { clearFolioStampPathCache, drawFolioStampShadow, folioShadowPlacement, folioStampPathCacheSize, folioStampShadowSVG, stampPath, stampPaths } from '../folioFurnishingRender';
-import { buildFolioFurnishingReference } from '../folioFurnishingReference';
+import { clearFolioStampPathCache, drawFolioStampShadow, FOLIO_STAMP_PATH_CACHE_LIMIT, folioShadowPlacement, folioStampPathCacheSize, folioStampShadowSVG, stampPath, stampPaths } from '../folioFurnishingRender';
+import { buildFolioFurnishingReference, buildFolioCatalogReference, FOLIO_CATALOG_REFERENCE_ID } from '../folioFurnishingReference';
 import { buildFolioReference } from '../folioReference';
+import { buildPremadeProject, PREMADE_MAP_SUMMARIES } from '../premadeMaps';
 import { decodeProject, encodeProject } from '../projectSchema';
 import { projectForAudience } from '../audienceProjection';
 import { _drawStampShadows_test } from '../lightingAtmosphere';
@@ -25,9 +27,9 @@ beforeEach(() => {
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 describe('Folio furnishing kit', () => {
-  it('has eight unique, fingerprinted original sources and monochrome companions', () => {
-    expect(FOLIO_FURNISHINGS).toHaveLength(8);
-    expect(new Set(FOLIO_FURNISHINGS.map(stamp => stamp.id)).size).toBe(8);
+  it('has 24 unique, fingerprinted original sources and monochrome companions', () => {
+    expect(FOLIO_FURNISHINGS).toHaveLength(24);
+    expect(new Set(FOLIO_FURNISHINGS.map(stamp => stamp.id)).size).toBe(24);
     for (const asset of FOLIO_FURNISHING_MANIFEST.assets) {
       const source = readFileSync(asset.source);
       expect(asset.sourceHash).toBe(`sha256:${createHash('sha256').update(source).digest('hex')}`);
@@ -37,6 +39,13 @@ describe('Folio furnishing kit', () => {
       expect(stampPaths(stamp, true)?.every(path =>
         (!path.fill || path.fill === '#ffffff') && path.stroke === '#202820')).toBe(true);
     }
+  });
+
+  it('keeps the complete vector kit below 8 KiB gzip and the existing path-cache capacity', () => {
+    const sources = FOLIO_FURNISHINGS.map(stamp => readFileSync(stamp.sourceFile));
+    expect(gzipSync(Buffer.concat(sources)).byteLength).toBeLessThan(8 * 1024);
+    expect(FOLIO_FURNISHINGS.reduce((count, stamp) => count + stamp.paths!.length, 0))
+      .toBeLessThanOrEqual(FOLIO_STAMP_PATH_CACHE_LIMIT);
   });
 
   it('rejects corrupt or executable source markup rather than admitting it as artwork', () => {
@@ -81,15 +90,27 @@ describe('Folio furnishing kit', () => {
   });
 
   it('caches paths independently of object position, rotation, print colors and scale', () => {
+    const compiled = FOLIO_FURNISHINGS.flatMap(def =>
+      def.paths!.map(path => ({ def, path: path.path, compiled: stampPath(def, path.path) })));
     for (let pass = 0; pass < 5; pass++) {
-      for (const def of FOLIO_FURNISHINGS) {
-        for (const path of stampPaths(def, pass % 2 === 0)!) {
-          expect(stampPath(def, path.path)).toBe(stampPath(def, path.path));
-        }
+      for (const entry of compiled) {
+        expect(stampPath(entry.def, entry.path)).toBe(entry.compiled);
+        for (const path of stampPaths(entry.def, pass % 2 === 0)!) stampPath(entry.def, path.path);
+        stampPath(entry.def, entry.def.shadowPath);
       }
     }
-    expect(folioStampPathCacheSize()).toBeLessThanOrEqual(64);
-    expect(folioStampPathCacheSize()).toBeGreaterThan(40);
+    expect(folioStampPathCacheSize()).toBe(new Set(compiled.map(entry => entry.compiled)).size);
+    expect(folioStampPathCacheSize()).toBeLessThanOrEqual(FOLIO_STAMP_PATH_CACHE_LIMIT);
+  });
+
+  it('evicts paths at the existing 128-entry ceiling', () => {
+    const def = FOLIO_FURNISHINGS[0];
+    const first = stampPath(def, 'M0 0H1');
+    for (let i = 1; i <= FOLIO_STAMP_PATH_CACHE_LIMIT; i++) stampPath(def, `M${i} 0H1`);
+    expect(folioStampPathCacheSize()).toBe(FOLIO_STAMP_PATH_CACHE_LIMIT);
+    expect(stampPath(def, 'M0 0H1')).not.toBe(first);
+    clearFolioStampPathCache();
+    expect(folioStampPathCacheSize()).toBe(0);
   });
 
   it('keeps shadows southeast in map space through rotation and flips, and suppresses them in print', () => {
@@ -120,7 +141,7 @@ describe('Folio furnishing kit', () => {
     expect(gradient).toHaveBeenCalledOnce();
   });
 
-  it('round-trips all eight types and excludes private or partly fogged transformed objects', () => {
+  it('preserves the eight-piece reference and excludes private or partly fogged transformed objects', () => {
     const project = decodeProject(encodeProject(buildFolioFurnishingReference()));
     const map = project.levels[0];
     expect(new Set(map.stamps!.map(stamp => stamp.stampId)).size).toBe(8);
@@ -131,6 +152,42 @@ describe('Folio furnishing kit', () => {
     map.stamps = [{ ...table, rotation: 45, flipX: true }];
     map.fog![7][6] = true;
     expect(projectForAudience(map).map.stamps).toHaveLength(0);
+  });
+
+  it('offers a fresh, round-trippable 24-piece reference without changing the approved sample', () => {
+    expect(PREMADE_MAP_SUMMARIES.find(sample => sample.id === FOLIO_CATALOG_REFERENCE_ID)?.sizeLabel).toBe('24 x 24');
+    expect(FOLIO_FURNISHING_MANIFEST.previewSampleId).toBe(FOLIO_CATALOG_REFERENCE_ID);
+    const project = buildPremadeProject(FOLIO_CATALOG_REFERENCE_ID);
+    expect(decodeProject(encodeProject(project))).toMatchObject(project);
+    const map = project.levels[0];
+    expect(new Set(map.stamps!.map(stamp => stamp.stampId)))
+      .toEqual(new Set(FOLIO_FURNISHINGS.map(def => def.id)));
+    expect(map.stamps).toHaveLength(34);
+    expect(map.lightSources).toEqual([]);
+    expect(map.wallSegments).toEqual([]);
+    expect(projectForAudience(map).map.stamps).toHaveLength(33);
+    expect(JSON.stringify(projectForAudience(map))).not.toContain('sealed route ledger');
+    map.stamps![0].x = 99;
+    expect(buildFolioCatalogReference().levels[0].stamps![0].x).toBe(3.7);
+    expect(buildFolioFurnishingReference().levels[0].stamps).toHaveLength(16);
+  });
+
+  it('preserves placement, transforms and hidden state for every catalog asset', async () => {
+    const { result } = renderHook(() => useMapState());
+    const originalTiles = result.current.map.tiles;
+    for (const def of FOLIO_FURNISHINGS) {
+      await act(async () => { result.current.addStamp(def.id, 4, 4, {
+        rotation: 45, flipX: true, flipY: true, opacity: 0.65,
+      }); });
+      const id = result.current.map.stamps!.at(-1)!.id;
+      await act(async () => { result.current.updateStamp(id, { hidden: true }); });
+    }
+    expect(result.current.map.tiles).toBe(originalTiles);
+    expect(result.current.map.stamps?.map(stamp => stamp.scale)).toEqual(FOLIO_FURNISHINGS.map(def => def.defaultScale));
+    const project = buildFolioCatalogReference();
+    project.levels[0].stamps = result.current.map.stamps;
+    expect(decodeProject(encodeProject(project)).levels[0].stamps).toEqual(result.current.map.stamps);
+    expect(projectForAudience(project.levels[0]).map.stamps).toEqual([]);
   });
 
   it('uses authored default sizes without overwriting explicit scale or legacy defaults', () => {
@@ -145,16 +202,33 @@ describe('Folio furnishing kit', () => {
     expect(result.current.map.stamps).toHaveLength(3);
   });
 
-  it('offers the eight named theme stamps and reports unavailable versions', () => {
+  it('offers all 24 named theme stamps and reports unavailable versions', () => {
     const select = vi.fn();
     const setTool = vi.fn();
     render(<StampPicker activeTool="paint" selectedStampId={null} themeId="dungeon-folio-v1"
       onSelectStamp={select} onSetTool={setTool} onClearStamps={vi.fn()} unavailableFolioFurnishings />);
     fireEvent.click(screen.getByRole('tab', { name: /Show.*Theme stamps/ }));
-    expect(screen.getAllByRole('button', { name: /^Folio / })).toHaveLength(8);
+    expect(screen.getAllByRole('button', { name: /^Folio / })).toHaveLength(24);
     fireEvent.click(screen.getByRole('button', { name: 'Folio bed', exact: true }));
     expect(select).toHaveBeenCalledWith('folio-furnishings-v1-bed');
     expect(setTool).toHaveBeenCalledWith('stamp');
     expect(screen.getByText(/A saved Folio furnishing is unavailable/)).toBeVisible();
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search stamps' }), { target: { value: 'tent' } });
+    expect(screen.getAllByRole('button', { name: /^Folio / })).toHaveLength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Folio tent', exact: true }));
+    expect(select).toHaveBeenLastCalledWith('folio-furnishings-v1-tent');
+  });
+
+  it('filters new nature and structure assets without leaking them into other themes', () => {
+    const props = { activeTool: 'paint' as const, selectedStampId: null, themeId: 'dungeon-folio-v1',
+      onSelectStamp: vi.fn(), onSetTool: vi.fn(), onClearStamps: vi.fn() };
+    const { rerender } = render(<StampPicker {...props} />);
+    fireEvent.click(screen.getByRole('tab', { name: /Show.*Nature stamps/ }));
+    expect(screen.getAllByRole('button', { name: /^Folio / }).map(button => button.textContent))
+      .toEqual(['Folio boulder', 'Folio fern', 'Folio shrub']);
+    fireEvent.click(screen.getByRole('tab', { name: /Show.*Structures stamps/ }));
+    expect(screen.getAllByRole('button', { name: /^Folio / })).toHaveLength(1);
+    rerender(<StampPicker {...props} themeId="dungeon" />);
+    expect(screen.queryByRole('button', { name: /^Folio / })).not.toBeInTheDocument();
   });
 });
