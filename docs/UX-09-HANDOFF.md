@@ -425,6 +425,22 @@ three engines. All selected diagnostic replays matched their original case's
 isolated maximum, direct maximum and direct mean. Focused lint and strict
 type-checking of the test-only harness also passed.
 
+Run `34701738152` reproduced the 54 Linux WebKit failures and showed identical
+visible source pixels but source-rectangle-dependent compositing. The follow-up
+adds a test-only whole-atlas copy, shifted by destination minus source offset
+and clipped to the destination strip. The same three cases/four inspected edges
+report per-edge deltas against the cropped atlas and full-map oracle, plus
+all-edge composed deltas and a small worst-pixel crop. `composedReplay.atlasVsCached`
+checks that the source-subrectangle replay reproduces the measured cached image.
+All source consumers finish before diagnostic source readbacks. This alternative
+is evidence only, not a replacement gate or a production fix; Ubuntu must still
+establish whether it removes the rounding difference.
+
+The forced Mac comparison passed all six browser/allocation tests, with all 192
+original measurements per engine identical to the pre-change baseline. Both
+atlas replays matched the cached image exactly in all nine selected cases.
+Diagnostics took 80-130 ms; focused lint and strict harness type-checking passed.
+
 ### Next bounded performance work
 
 Profile the remaining full tile, furnishing and lighting redraws before choosing

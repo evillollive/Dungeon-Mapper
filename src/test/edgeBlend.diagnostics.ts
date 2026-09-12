@@ -73,6 +73,33 @@ function crop(data: Uint8ClampedArray, side: number, x: number, y: number) {
   return rows;
 }
 
+function copyAtlas(ctx: CanvasRenderingContext2D, blit: Blit, clipped: boolean) {
+  const [sx, sy, sw, sh] = blit.from;
+  const [dx, dy, dw, dh] = blit.to;
+  const { transform, alpha, composite, smoothing, smoothingQuality } = blit.state;
+  const { a, b, c, d, e, f } = transform;
+  if (sw !== dw || sh !== dh || ![...blit.from, ...blit.to, e, f].every(Number.isInteger) ||
+    a !== 1 || d !== 1 || b !== 0 || c !== 0) {
+    throw new Error('Diagnostic atlas copy requires one-to-one physical pixel placement');
+  }
+  ctx.save();
+  ctx.setTransform(a, b, c, d, e, f);
+  ctx.globalAlpha = alpha;
+  ctx.globalCompositeOperation = composite;
+  ctx.imageSmoothingEnabled = smoothing;
+  ctx.imageSmoothingQuality = smoothingQuality;
+  if (clipped) {
+    // Path2D leaves the caller's current path intact, unlike beginPath/rect.
+    const clip = new Path2D();
+    clip.rect(dx, dy, dw, dh);
+    ctx.clip(clip);
+    ctx.drawImage(blit.source, dx - sx, dy - sy);
+  } else {
+    ctx.drawImage(blit.source, ...blit.from, ...blit.to);
+  }
+  ctx.restore();
+}
+
 // This pass has its own canvases/cache. It never adds readbacks to the original
 // 192 measurements. Two small-map DPRs and one matching 32px control are enough.
 export function diagnoseEdgeBlendPixels(samples: Sample[]) {
@@ -97,6 +124,9 @@ export function diagnoseEdgeBlendPixels(samples: Sample[]) {
       originVsMap: 'Same commands and surface dimensions, strip relocated to physical origin.',
       croppedMapVsWholeMap: 'Same source pixels; only drawImage source rectangle changes.',
       atlasVsWholeMap: 'Actual atlas crop versus full-map per-edge oracle on the same opaque background.',
+      clippedAtlasVsWholeMap: 'Whole populated atlas shifted by destination minus source offset, clipped to the strip, versus the same per-edge oracle.',
+      clippedAtlasVsAtlas: 'Clipped whole-atlas copy versus the existing source-subrectangle copy; diagnostic only, not a new pass criterion.',
+      composedReplay: 'All recorded edges in original order for each selected case; atlasVsCached checks replay placement, clippedAtlasVsIsolated compares the alternative with the independent oracle.',
     },
     cases,
   };
@@ -215,6 +245,12 @@ function diagnoseSample(sample: Sample) {
       const selected = candidates.length ? candidates.slice(0, 4) : blits.map((blit, index) => ({ blit, index }))
         .filter(({ blit }, index, all) => all.findIndex(item => item.blit.edge.direction === blit.edge.direction) === index);
       const make = () => { const ctx = surface(side); allocated.push(ctx); return ctx; };
+      const opaque = () => {
+        const ctx = make();
+        ctx.fillStyle = background;
+        ctx.fillRect(0, 0, side, side);
+        return ctx;
+      };
       const probes = selected.map(({ blit, index }) => {
         const [dx, dy, width, height] = blit.to;
         const [sx, sy] = blit.from;
@@ -228,19 +264,25 @@ function diagnoseSample(sample: Sample) {
         };
         const map = replay(0, 0), packed = replay(sx - dx, sy - dy), origin = replay(-dx, -dy);
         const composite = (source: HTMLCanvasElement, from?: Rect) => {
-          const ctx = make();
-          ctx.fillStyle = background;
-          ctx.fillRect(0, 0, side, side);
+          const ctx = opaque();
           if (from) ctx.drawImage(source, ...from, ...blit.to);
           else ctx.drawImage(source, 0, 0);
           return ctx;
         };
+        const clippedAtlas = opaque();
+        copyAtlas(clippedAtlas, blit, true);
         // Finish every source consumer before any diagnostic source readback.
-        return { blit, vector, index, map, packed, origin,
+        return { blit, vector, index, map, packed, origin, clippedAtlas,
           wholeMap: composite(map.canvas), croppedMap: composite(map.canvas, blit.to),
           atlas: composite(blit.source, blit.from), packedImage: composite(packed.canvas, blit.from),
           originImage: composite(origin.canvas, [0, 0, width, height]) };
       });
+      const composedAtlas = opaque(), composedClippedAtlas = opaque();
+      for (const blit of blits) {
+        copyAtlas(composedAtlas, blit, false);
+        copyAtlas(composedClippedAtlas, blit, true);
+      }
+      const atlasReplay = pixels(composedAtlas), clippedAtlasReplay = pixels(composedClippedAtlas);
       const details = probes.map(probe => {
         const { blit, map, packed, origin } = probe;
         const [dx, dy, width, height] = blit.to;
@@ -255,7 +297,7 @@ function diagnoseSample(sample: Sample) {
         };
         const rawMap = visible(pixels(map, blit.to)), rawAtlas = visible(pixels(source, blit.from));
         const rawPacked = visible(pixels(packed, blit.from)), rawOrigin = visible(pixels(origin, [0, 0, width, height]));
-        const wholeMap = pixels(probe.wholeMap), atlas = pixels(probe.atlas);
+        const wholeMap = pixels(probe.wholeMap), atlas = pixels(probe.atlas), clippedAtlas = pixels(probe.clippedAtlas);
         const atCaseWorst = (data: Uint8ClampedArray, px: number, py: number, rowWidth: number) => {
           if (px < 0 || py < 0 || px >= rowWidth || py >= data.length / 4 / rowWidth) return null;
           const offset = (py * rowWidth + px) * 4;
@@ -276,10 +318,13 @@ function diagnoseSample(sample: Sample) {
             rawPacked: atCaseWorst(rawPacked, x - dx, y - dy, width),
             rawOrigin: atCaseWorst(rawOrigin, x - dx, y - dy, width),
             opaqueAtlas: atCaseWorst(atlas, x, y, side),
+            opaqueClippedAtlas: atCaseWorst(clippedAtlas, x, y, side),
             opaqueWholeMap: atCaseWorst(wholeMap, x, y, side),
           },
           opaqueComposite: {
             atlasVsWholeMap: difference(wholeMap, atlas, side),
+            clippedAtlasVsWholeMap: difference(wholeMap, clippedAtlas, side),
+            clippedAtlasVsAtlas: difference(atlas, clippedAtlas, side),
             croppedMapVsWholeMap: difference(wholeMap, pixels(probe.croppedMap), side),
             packedVsAtlas: difference(atlas, pixels(probe.packedImage), side),
             originVsWholeMap: difference(wholeMap, pixels(probe.originImage), side),
@@ -289,7 +334,14 @@ function diagnoseSample(sample: Sample) {
       return {
         originalSample: sample, settings, cache: cache.stats,
         replay: { isolated: isolatedDelta, direct: difference(direct, cached, side) },
-        worstCrop: { direct: crop(direct, side, x, y), cached: crop(cached, side, x, y), isolated: crop(isolated, side, x, y) },
+        composedReplay: {
+          atlasVsCached: difference(cached, atlasReplay, side),
+          clippedAtlasVsAtlas: difference(atlasReplay, clippedAtlasReplay, side),
+          clippedAtlasVsIsolated: difference(isolated, clippedAtlasReplay, side),
+          clippedAtlasVsDirect: difference(direct, clippedAtlasReplay, side),
+        },
+        worstCrop: { direct: crop(direct, side, x, y), cached: crop(cached, side, x, y), isolated: crop(isolated, side, x, y),
+          clippedAtlas: crop(clippedAtlasReplay, side, x, y) },
         edgeCount: blits.length, worstPixelContributors: candidates.length, inspectedEdges: details,
       };
     }
