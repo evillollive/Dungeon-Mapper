@@ -374,10 +374,32 @@ A new regression checks rectangular small-map pages and disposal on resize.
 The custom-semantic cache fixture retains both edge assertions using an empty
 second row so the strips and their gutters fit the smaller surface.
 
-All six renderer browser cases pass locally after this correction, alongside
-41 targeted unit/component cases and the existing build/lint gates. Linux
-confirmation is pending the new head's CI. Failure artifacts remain in
+All six renderer browser cases passed locally after this correction, alongside
+41 targeted unit/component cases and the existing build/lint gates. Linux CI
+at `c08e327` reduced the worst oracle difference from 55/255 to 5/255, but
+still failed the unchanged 2/255 bound for small maps. Failure artifacts remain in
 `files/ci-webkit-failure`; local corrective evidence is in `files/ci-small-atlas-fix`.
+
+### CI follow-up: device-pixel compositing
+
+The remaining Linux WebKit discrepancy is not hidden with a larger tolerance.
+Cached strips now copy directly in physical pixel coordinates with equal source
+and destination extents, instead of dividing their dimensions by DPR and
+scaling them back through the destination transform. The copy preserves the
+integer viewport translation and restores the caller's drawing state. It also
+retains the caller's image-smoothing setting rather than forcing a different
+sampling path from the independent oracle.
+
+The added regression requires integer source/destination rectangles, equal
+pixel extents, retained translation and balanced context restoration. All
+42 targeted unit/component cases and nine local browser cases passed, covering
+the unchanged pixel matrix and cache bounds plus one full F05 repetition per
+engine. That repetition's paint/token p95 values were 156.1/148.6 ms in
+Chromium, 162/158 ms in Firefox and 90/93 ms in WebKit. This is a targeted
+regression observation, not a replacement three-repetition benchmark.
+The build and existing lint gate pass; Linux confirmation remains pending the
+new head's CI. Evidence is in `files/ci-device-pixel-fix` and
+`files/ci-webkit-small-atlas`. No samples, thresholds or timeouts changed.
 
 ### Next bounded performance work
 

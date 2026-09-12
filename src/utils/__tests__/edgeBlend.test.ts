@@ -177,6 +177,21 @@ describe('drawEdgeBlending', () => {
       })).toBe(true);
     });
 
+    it('copies strips one-for-one in physical pixels while retaining viewport translation', () => {
+      ctx.getTransform.mockReturnValue({ a: 1.25, b: 0, c: 0, d: 1.25, e: 10, f: 20 });
+      draw();
+      expect(ctx.drawImage).toHaveBeenCalledTimes(8);
+      for (const call of ctx.drawImage.mock.calls) {
+        const [, sx, sy, width, height, dx, dy, dw, dh] = call;
+        expect([sx, sy, width, height, dx, dy, dw, dh].every(Number.isInteger)).toBe(true);
+        expect(dw).toBe(width);
+        expect(dh).toBe(height);
+      }
+      expect(ctx.setTransform).toHaveBeenCalledTimes(8);
+      expect(ctx.setTransform).toHaveBeenCalledWith(1, 0, 0, 1, 10, 20);
+      expect(ctx.restore).toHaveBeenCalledTimes(9);
+    });
+
     it.each([
       ['intensity', makeSettings({ intensity: 0.8 }), 32, 1],
       ['opacity', makeSettings({ opacity: 0.2 }), 32, 1],

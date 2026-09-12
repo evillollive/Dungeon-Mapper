@@ -93,6 +93,8 @@ export class EdgeBlendCache {
   private entries = new Map<string, StripEntry>();
   private configuration = '';
   private scale = 1;
+  private offsetX = 0;
+  private offsetY = 0;
   private pageWidth = ATLAS_SIDE;
   private pageHeight = ATLAS_SIDE;
   private hits = 0;
@@ -157,6 +159,8 @@ export class EdgeBlendCache {
       this.pageWidth = pageWidth;
       this.pageHeight = pageHeight;
     }
+    this.offsetX = transform.e;
+    this.offsetY = transform.f;
     this.generation++;
     return true;
   }
@@ -230,9 +234,14 @@ export class EdgeBlendCache {
       this.misses++;
     }
     if (populateOnly) return true;
+    // Copy device pixels one-for-one rather than dividing into logical
+    // coordinates and asking the canvas transform to scale them back.
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, this.offsetX, this.offsetY);
     ctx.globalAlpha = 1;
     ctx.drawImage(entry.page.canvas, entry.sx, entry.sy, width, height,
-      x * tileSize + left / scale, y * tileSize + top / scale, width / scale, height / scale);
+      x * tileSize * scale + left, y * tileSize * scale + top, width, height);
+    ctx.restore();
     return true;
   }
 }
@@ -425,7 +434,6 @@ export function drawEdgeBlending(
   const useCache = cache?.prepare(ctx, tileSize, settings, width, height);
 
   ctx.save();
-  if (useCache) ctx.imageSmoothingEnabled = false;
 
   const dirs: Dir[] = ['N', 'S', 'E', 'W'];
 
