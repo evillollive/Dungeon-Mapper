@@ -2,8 +2,8 @@
  * Unit tests for src/utils/edgeBlend.ts — Edge Blending renderer.
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { drawEdgeBlending } from '../edgeBlend';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { drawEdgeBlending, EdgeBlendCache, EDGE_BLEND_CACHE_MAX_BYTES, EDGE_BLEND_CACHE_MAX_ENTRIES } from '../edgeBlend';
 import type { Tile, EdgeBlendSettings } from '../../types/map';
 import type { TileTheme } from '../../themes';
 import type { BuiltInTileType, TileType } from '../../types/map';
@@ -57,10 +57,21 @@ function mockCtx() {
     beginPath: vi.fn(() => calls.push('beginPath')),
     arc: vi.fn(() => calls.push('arc')),
     fill: vi.fn(() => calls.push('fill')),
+    clip: vi.fn(),
+    drawImage: vi.fn(),
+    clearRect: vi.fn(),
+    setTransform: vi.fn(),
+    getTransform: vi.fn(() => ({ a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 })),
     createLinearGradient: vi.fn(() => ({
       addColorStop: vi.fn(),
     })),
     globalAlpha: 1,
+    globalCompositeOperation: 'source-over',
+    filter: 'none',
+    shadowBlur: 0,
+    shadowOffsetX: 0,
+    shadowOffsetY: 0,
+    shadowColor: 'rgba(0, 0, 0, 0)',
     fillStyle: '',
     _calls: calls,
   } as unknown as CanvasRenderingContext2D & { _calls: string[] };
@@ -74,6 +85,204 @@ describe('drawEdgeBlending', () => {
 
   beforeEach(() => {
     ctx = mockCtx();
+  });
+
+  describe('bounded edge strip cache', () => {
+    let atlasContexts: ReturnType<typeof mockCtx>[];
+    let cache: EdgeBlendCache;
+    let ctx: ReturnType<typeof mockCtx>;
+    let clips: number[][];
+    const tiles = makeTiles([['floor', 'wall'], ['water', 'floor']]);
+    const draw = (grid = tiles, settings = makeSettings(), theme = mockTheme, size = 32) =>
+      drawEdgeBlending(ctx, grid, grid[0].length, grid.length, size, settings, theme, [], cache);
+
+    beforeEach(() => {
+      atlasContexts = [];
+      cache = new EdgeBlendCache();
+      ctx = mockCtx();
+      clips = [];
+      vi.spyOn(Path2D.prototype, 'rect').mockImplementation((...rect) => { clips.push(rect); });
+      vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(() => {
+        const context = mockCtx();
+        atlasContexts.push(context);
+        return context;
+      });
+    });
+
+    afterEach(() => {
+      cache.clear();
+      vi.restoreAllMocks();
+    });
+
+    it('reuses all unchanged edges without repeating dot fills', () => {
+      draw();
+      expect(cache.stats).toMatchObject({ entries: 8, misses: 8, hits: 0, bypasses: 0 });
+      const fills = atlasContexts.map(context => context.fillRect.mock.calls.length);
+      expect(fills.every(count => count > 0)).toBe(true);
+      expect(atlasContexts.every(context => context.clearRect.mock.calls.length === 0)).toBe(true);
+      const lastWrite = Math.max(...atlasContexts.flatMap(context => context.fillRect.mock.invocationCallOrder));
+      expect(lastWrite).toBeLessThan(ctx.drawImage.mock.invocationCallOrder[0]);
+      expect(ctx.fillRect).not.toHaveBeenCalled();
+      draw();
+      expect(cache.stats).toMatchObject({ entries: 8, misses: 8, hits: 8 });
+      expect(atlasContexts.map(context => context.fillRect.mock.calls.length)).toEqual(fills);
+      expect(ctx.drawImage).toHaveBeenCalledTimes(16);
+      expect(clips).toHaveLength(8);
+      expect(ctx.clip.mock.calls.slice(8)).toEqual(ctx.clip.mock.calls.slice(0, 8));
+      expect(ctx.beginPath).not.toHaveBeenCalled();
+    });
+
+    it('invalidates only changed neighbor colors and restores them on undo', () => {
+      draw();
+      const edited = makeTiles([['floor', 'water'], ['water', 'floor']]);
+      draw(edited);
+      expect(cache.stats).toMatchObject({ entries: 8, misses: 10, hits: 6 });
+      expect(atlasContexts.reduce((sum, context) => sum + context.clearRect.mock.calls.length, 0)).toBe(2);
+      draw();
+      expect(cache.stats).toMatchObject({ entries: 8, misses: 12, hits: 12 });
+      draw(tiles, makeSettings(), { ...mockTheme, tileColors: { ...mockTheme.tileColors, floor: '#123456' } });
+      expect(cache.stats.misses).toBe(16);
+      expect(clips).toHaveLength(8);
+      expect(ctx.clip.mock.calls.slice(24)).toEqual(ctx.clip.mock.calls.slice(0, 8));
+    });
+
+    it('does not replay edges removed by painting or empty neighbors', () => {
+      draw();
+      ctx.drawImage.mockClear();
+      draw(makeTiles([['floor', 'floor'], ['empty', 'floor']]));
+      expect(ctx.drawImage).not.toHaveBeenCalled();
+      draw();
+      expect(cache.stats.hits).toBe(8);
+    });
+
+    it('resolves custom tile semantics on every traversal', () => {
+      const customThemes = [{
+        id: 'custom-theme:example' as const, name: 'Example', baseThemeId: 'dungeon',
+        gridColor: '#111111', tileColors: {}, tileLabels: {},
+        customTiles: [{ id: 'custom:stone' as const, label: 'Stone', color: '#999999', baseType: 'floor' as const }],
+      }];
+      const grid = makeTiles([['custom:stone', 'wall'], ['empty', 'empty']]);
+      drawEdgeBlending(ctx, grid, 2, 2, 32, makeSettings(), mockTheme, customThemes, cache);
+      expect(cache.stats.entries).toBe(2);
+      ctx.drawImage.mockClear();
+      const changed = [{ ...customThemes[0], customTiles: [{ ...customThemes[0].customTiles[0], baseType: 'wall' as const }] }];
+      drawEdgeBlending(ctx, grid, 2, 2, 32, makeSettings(), mockTheme, changed, cache);
+      expect(ctx.drawImage).not.toHaveBeenCalled();
+      drawEdgeBlending(ctx, grid, 2, 2, 32, makeSettings(), mockTheme, customThemes, cache);
+      expect(cache.stats.hits).toBe(2);
+    });
+
+    it('matches small-map surface dimensions and invalidates resized pages', () => {
+      draw();
+      const pages = ctx.drawImage.mock.calls.map(call => call[0] as HTMLCanvasElement);
+      expect(pages.every(page => page.width === 64 && page.height === 64)).toBe(true);
+      expect(cache.stats.rasterBytes).toBe(cache.stats.pages * 64 * 64 * 4);
+      ctx.drawImage.mockClear();
+      draw(makeTiles([['floor', 'wall', 'floor'], ['water', 'floor', 'water']]));
+      expect(pages.every(page => page.width === 0 && page.height === 0)).toBe(true);
+      expect(ctx.drawImage.mock.calls.every(call => {
+        const page = call[0] as HTMLCanvasElement;
+        return page.width === 96 && page.height === 64;
+      })).toBe(true);
+    });
+
+    it('clips whole-page copies to physical strip bounds and retains viewport translation', () => {
+      ctx.getTransform.mockReturnValue({ a: 1.25, b: 0, c: 0, d: 1.25, e: 10, f: 20 });
+      const directions = ['N', 'S', 'E', 'W'] as const;
+      const traverse = () => {
+        cache.prepare(ctx, 32, makeSettings(), 8, 8);
+        for (const dir of directions) cache.draw(ctx, 32, dir, '#123456', 0.35, 0.6, 1, 2);
+      };
+      traverse();
+      expect(clips).toEqual([[39, 79, 44, 12], [39, 111, 44, 12], [71, 79, 12, 44], [39, 79, 12, 44]]);
+      expect(ctx.drawImage.mock.calls.map(call => call.slice(1))).toEqual([[39, 79], [-5, 111], [71, 79], [27, 79]]);
+      expect(ctx.clip).toHaveBeenCalledTimes(4);
+      expect(ctx.setTransform).toHaveBeenCalledTimes(4);
+      expect(ctx.setTransform).toHaveBeenCalledWith(1, 0, 0, 1, 10, 20);
+      expect(ctx.restore).toHaveBeenCalledTimes(4);
+      expect(ctx.save).toHaveBeenCalledTimes(4);
+      expect(ctx.beginPath).not.toHaveBeenCalled();
+      const paths = ctx.clip.mock.calls.slice();
+      ctx.getTransform.mockReturnValue({ a: 1.25, b: 0, c: 0, d: 1.25, e: -12, f: 7 });
+      traverse();
+      expect(ctx.setTransform).toHaveBeenLastCalledWith(1, 0, 0, 1, -12, 7);
+      expect(ctx.clip.mock.calls.slice(4)).toEqual(paths);
+      expect(clips).toHaveLength(4);
+    });
+
+    it.each([
+      ['intensity', makeSettings({ intensity: 0.8 }), 32, 1],
+      ['opacity', makeSettings({ opacity: 0.2 }), 32, 1],
+      ['tile size', makeSettings(), 64, 1],
+      ['DPR', makeSettings(), 32, 2],
+    ] as const)('releases old raster pages on %s changes', (_label, settings, size, dpr) => {
+      draw();
+      const oldCanvases = ctx.drawImage.mock.calls.map(call => call[0] as HTMLCanvasElement);
+      ctx.getTransform.mockReturnValue({ a: dpr, b: 0, c: 0, d: dpr, e: 0, f: 0 });
+      draw(tiles, settings, mockTheme, size);
+      expect(oldCanvases.every(canvas => canvas.width === 0 && canvas.height === 0)).toBe(true);
+      expect(cache.stats).toMatchObject({ misses: 8, hits: 0, entries: 8 });
+    });
+
+    it.each(['smooth', 'stipple', 'disabled', 'unaligned', 'rotated', 'filtered', 'shadow', 'composite'] as const)(
+      'uses direct drawing and releases the cache for %s',
+      mode => {
+        draw();
+        ctx.drawImage.mockClear();
+        const settings = makeSettings();
+        if (mode === 'smooth' || mode === 'stipple') settings.style = mode;
+        if (mode === 'disabled') settings.enabled = false;
+        if (mode === 'unaligned') ctx.getTransform.mockReturnValue({ a: 1.1, b: 0, c: 0, d: 1.1, e: 0, f: 0 });
+        if (mode === 'rotated') ctx.getTransform.mockReturnValue({ a: 0, b: 1, c: -1, d: 0, e: 0, f: 0 });
+        if (mode === 'filtered') ctx.filter = 'blur(2px)';
+        if (mode === 'shadow') ctx.shadowColor = '#000000';
+        if (mode === 'composite') ctx.globalCompositeOperation = 'multiply';
+        draw(tiles, settings);
+        expect(ctx.drawImage).not.toHaveBeenCalled();
+        expect(cache.stats.rasterBytes).toBe(0);
+        expect(cache.stats.entries).toBe(0);
+        if (mode !== 'disabled') expect(ctx.fillRect.mock.calls.length + ctx.fill.mock.calls.length).toBeGreaterThan(0);
+      },
+    );
+
+    it('bounds raster allocation and retains hot strips when the traversal exceeds capacity', () => {
+      const dense = Array.from({ length: 32 }, (_, y) =>
+        Array.from({ length: 32 }, (_, x) => ({ type: (x + y) % 2 ? 'floor' : 'wall' })));
+      draw(dense, makeSettings(), mockTheme, 256);
+      const first = cache.stats;
+      expect(clips).toHaveLength(first.entries);
+      expect(first.rasterBytes).toBe(EDGE_BLEND_CACHE_MAX_BYTES);
+      expect(first.entries).toBeLessThanOrEqual(EDGE_BLEND_CACHE_MAX_ENTRIES);
+      expect(first.bypasses).toBeGreaterThan(0);
+      draw(dense, makeSettings(), mockTheme, 256);
+      expect(cache.stats).toMatchObject({
+        rasterBytes: first.rasterBytes, entries: first.entries, misses: first.misses,
+        hits: first.entries, bypasses: first.bypasses * 2,
+      });
+      expect(clips).toHaveLength(first.entries);
+    });
+
+    it('bounds metadata independently for very small strips', () => {
+      cache.prepare(ctx, 1, makeSettings(), 512, 512);
+      for (let x = 0; x < EDGE_BLEND_CACHE_MAX_ENTRIES + 1; x++) {
+        cache.draw(ctx, 1, 'N', '#123456', 0.35, 0.6, x, 0);
+      }
+      expect(cache.stats.entries).toBe(EDGE_BLEND_CACHE_MAX_ENTRIES);
+      expect(clips).toHaveLength(EDGE_BLEND_CACHE_MAX_ENTRIES);
+      expect(cache.stats.bypasses).toBe(1);
+      expect(cache.stats.rasterBytes).toBeLessThanOrEqual(EDGE_BLEND_CACHE_MAX_BYTES);
+    });
+
+    it('does not allocate an oversized strip and frees all pages on clear', () => {
+      draw(tiles, makeSettings(), mockTheme, 600);
+      expect(cache.stats).toMatchObject({ entries: 0, rasterBytes: 0, bypasses: 8 });
+      expect(ctx.fillRect).toHaveBeenCalled();
+      draw();
+      const canvases = ctx.drawImage.mock.calls.map(call => call[0] as HTMLCanvasElement);
+      cache.clear();
+      expect(cache.stats).toMatchObject({ entries: 0, rasterBytes: 0 });
+      expect(canvases.every(canvas => canvas.width === 0 && canvas.height === 0)).toBe(true);
+    });
   });
 
   it('does nothing when disabled', () => {

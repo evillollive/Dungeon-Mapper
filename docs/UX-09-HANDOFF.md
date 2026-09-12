@@ -247,12 +247,256 @@ This is successful collection of slow results, not a renderer improvement.
 Artifacts are in `files/f05-ci-fix-stress`; the new head's Linux CI remains
 the landing gate.
 
+## Bounded edge-strip cache milestone
+
+Fourth bounded milestone, 2026-09-11, based on `7130a7f` after #174 merged.
+The owner selected a 16 MiB edge-strip cache, not the broader static/dynamic
+renderer invalidation redesign. There are no dependency, schema, artwork,
+export-policy or release-threshold changes.
+
+### Renderer and memory contract
+
+`EdgeBlendCache` in `src/utils/edgeBlend.ts` retains only dither strips in
+at most sixteen RGBA canvas pages, each no larger than 512 x 512, per mounted editor: **16 MiB of
+raw raster storage**, with an independent **16,384-entry metadata limit**.
+It allocates pages on demand, never a second full-map image. These bounds
+do not include browser/GPU copies, object overhead, the existing main canvas,
+paper texture or other renderer allocations, and are not a total process-memory
+guarantee.
+
+Edges are identified by cell and direction. Every traversal rechecks derived
+geometry, semantic neighbor types and the resolved neighbor color. A changed
+color replaces that strip in place; removed edges are not replayed. Token,
+fog and selection changes reuse unaffected strips. Scale, cell size, intensity
+or opacity changes clear the atlas. Project/level, map dimensions, theme,
+custom-theme definitions, viewing role and unmount also release it; disabling
+blending or entering print mode releases it rather than retaining unused pages.
+
+Capacity overflow draws directly with the original detail. Admission stops
+instead of evicting an entire traversal's working set on every frame. High-DPR
+maps therefore get fewer cached edges, not lower-resolution art. Non-dither
+styles, oversized strips, non-pixel-aligned transforms and unsupported drawing
+state keep the direct path. Export/player-projection renderers do not request
+this editor cache and retain their existing resolution-independent path.
+
+An initial candidate exposed a startup regression, particularly in WebKit:
+alternating a strip write with an atlas read caused expensive source
+synchronization/copying. The final implementation populates all missing strips
+before compositing them in the original order, and avoids clearing fresh slots.
+A regression asserts that all atlas writes finish before the first read.
+The superseded `files/f05-final` and `files/f05-stress` observations are not
+the final loading results below.
+
+### Art and behavior evidence
+
+The seeds, dot positions, edge order, colors and opacity formula are unchanged.
+Intermediate RGBA8 compositing is **not byte-identical** to drawing every
+individual dot onto the final background. The new three-engine browser test
+compares 192 cases per engine across cell sizes 8/32/64, DPR 1/1.25/1.5/2,
+light/dark backgrounds, cold/warm caches, painting/undo, derived rooms/rivers,
+theme changes and intensity/opacity changes.
+
+An independent full-size, per-edge compositing oracle detects misplaced,
+clipped or stale atlas strips, allowing two channel levels for device-origin
+coverage/compositing rounding. The original direct renderer comparison allows
+at most 8/255 per channel and mean error at most 0.25/255. Measured maxima were
+7/255 in Chromium/Firefox and 5/255 in WebKit, with maximum mean error below
+0.237/255. These explicit rasterization tolerances replace an initial,
+unsubstantiated 3/255 test assumption, not any existing release gate.
+
+The bounded F05 allocation case traverses the complete derived fixture with a
+small destination canvas, separately from the real full-size interaction
+diagnostic. All engines recorded:
+
+| DPR | Retained edges | Direct overflow per traversal | Atlas raw raster |
+| --- | --- | --- | --- |
+| 1 | 12,268 | 0 | 16 MiB |
+| 2 | 3,584 | 8,684 | 16 MiB |
+| 3 | 1,760 | 10,508 | 16 MiB |
+
+An unchanged second traversal performs no new strip rasterization or page
+allocation. Unit/component regressions cover color replacement, custom
+semantics, removed boundaries, settings/DPR, capacity, metadata bounds,
+oversized strips, token/fog reuse, project/theme/role changes and disposal.
+Existing cursor-preview and gesture-cancellation cases remain intact.
+
+### Local measurements
+
+Same development host and F05 v1 as above: Apple M5 Max, 64 GiB, 1440 x 900,
+DPR 1, full detail. All three independent repetitions and every existing
+sample/persistence/undo assertion were retained. Ranges are repetition p95
+values, not pooled percentiles. Chromium repetition one is profiled in both
+the baseline and candidate. No representative hardware acceptance is claimed.
+
+| Engine / version | Hover p95 ms | Paint-drag p95 ms | Token-drag p95 ms | Pan p95 ms | Warm-ready seconds |
+| --- | --- | --- | --- | --- | --- |
+| Chromium 151.0.7922.34 | 4.6-15.9 | 150.2-158.6 | 148.8-157.5 | 11.9-12.1 | 1.49-2.01 |
+| Firefox 153.0 | 13-14 | 158-192 | 156-159 | 13-14 | 1.24-1.25 |
+| WebKit 26.5 | 30-38 | 88-93 | 84-86 | 36-41 | 1.47-1.50 |
+
+The fresh Chromium baseline in this session recorded paint p95 261.9-266.8 ms
+and token p95 254.4-257.8 ms: approximately **40% lower edit latency**.
+Firefox/WebKit's earlier direct-renderer numbers remain historical comparisons,
+not fresh same-session baseline runs. The Firefox 192 ms repetition is retained,
+not discarded. Chromium's first synchronous drawing stack after reload rose
+from 1.02-1.04 seconds to 1.08-1.09 seconds while populating the bounded cache.
+Warm readiness includes polling overhead and one 2.01-second result; do not
+claim a loading-target pass.
+
+The complete final 4x Chromium CPU stress run took 2.3 minutes, with each
+repetition inside its unchanged three-minute limit. Paint p95 was
+632.4-653.1 ms, token p95 615.0-637.2 ms, and warm readiness 5.09-5.56 seconds.
+These are still slow results, not typical-device estimates or mobile acceptance.
+
+The integrated pre-batching candidate passed all 33 browser cases and all
+three UX-08 export/offline journeys. After correcting atlas population, all
+18 targeted renderer/F05 cases and four Chromium stress cases passed again,
+along with 84 targeted unit/component cases. Evidence is under this session's
+`files/f05-baseline`, `files/f05-batched-final`, `files/f05-batched-stress` and
+`files/ux08-regression`. Raw reports identify the base revision and dirty
+working tree; the PR identifies the committed patch. Exact-head CI remains
+the landing gate, with no skipped checks, relaxed samples or timeout changes.
+
+### CI follow-up: small-map atlas surfaces
+
+The first Linux run at `e51d702` passed the build, Chromium and Firefox jobs,
+and ten of eleven WebKit browser cases. The pixel comparison failed only for
+8-pixel cells: cached versus isolated-edge differences reached 55/255, while
+all 32/64-pixel cases remained inside the existing 2/255 oracle bound.
+This is a rendering discrepancy, not a reason to loosen that bound.
+
+Atlas page dimensions now also stop at the map's physical backing dimensions,
+so a small map does not force its edge rasterization onto a larger 512-pixel
+surface. Canvas raster backends can differ with surface size. This is a shared
+renderer change, with no browser/OS branch. The sixteen-page and 16 MiB limits,
+the full-size F05 atlas layout, and every existing pixel assertion are unchanged.
+A new regression checks rectangular small-map pages and disposal on resize.
+The custom-semantic cache fixture retains both edge assertions using an empty
+second row so the strips and their gutters fit the smaller surface.
+
+All six renderer browser cases passed locally after this correction, alongside
+41 targeted unit/component cases and the existing build/lint gates. Linux CI
+at `c08e327` reduced the worst oracle difference from 55/255 to 5/255, but
+still failed the unchanged 2/255 bound for small maps. Failure artifacts remain in
+`files/ci-webkit-failure`; local corrective evidence is in `files/ci-small-atlas-fix`.
+
+### CI follow-up: device-pixel compositing
+
+The remaining Linux WebKit discrepancy is not hidden with a larger tolerance.
+Cached strips now copy directly in physical pixel coordinates with equal source
+and destination extents, instead of dividing their dimensions by DPR and
+scaling them back through the destination transform. The copy preserves the
+integer viewport translation and restores the caller's drawing state. It also
+retains the caller's image-smoothing setting rather than forcing a different
+sampling path from the independent oracle.
+
+The added regression requires integer source/destination rectangles, equal
+pixel extents, retained translation and balanced context restoration. All
+42 targeted unit/component cases and nine local browser cases passed, covering
+the unchanged pixel matrix and cache bounds plus one full F05 repetition per
+engine. That repetition's paint/token p95 values were 156.1/148.6 ms in
+Chromium, 162/158 ms in Firefox and 90/93 ms in WebKit. This is a targeted
+regression observation, not a replacement three-repetition benchmark.
+The build and existing lint gate pass; Linux confirmation remains pending the
+new head's CI. Evidence is in `files/ci-device-pixel-fix` and
+`files/ci-webkit-small-atlas`. No samples, thresholds or timeouts changed.
+
+### CI follow-up: bounded pixel diagnostics
+
+Linux run `34700570563` at `f9d063e` retained the same 192 measurements as
+`c08e327`, including 54 small-map oracle failures (maximum 5/255). Browser
+qualification is a cascade of the WebKit journey failure, not a separate cause.
+The renderer is unchanged in this diagnostic follow-up.
+
+After the original comparisons, a failure in any engine attaches
+`edge-blend-diagnostics` JSON for two 8px cases at different DPRs and one matching
+32px control. At most four edges per case expose actual atlas/source rectangles,
+context attributes, exact vector commands, worst-pixel crops, transparent
+alpha/premultiplied deltas, same-surface translation replays, and full-source
+versus cropped-source compositing. Source reads occur after diagnostic blits.
+The original matrix, inputs, assertions, F05 harness and CI timeouts are unchanged.
+For local validation only, set `QA_EDGE_BLEND_DIAGNOSTICS=1` alongside `QA_OUTPUT`
+when running `npm run test:browser:run -- src/test/ux09EdgeBlend.spec.mjs`.
+This forces evidence collection, never changes the pass/fail bounds, and is not
+Linux reproduction or a claim that CI is fixed.
+
+The forced local pass completed all six renderer/allocation cases across the
+three engines. All selected diagnostic replays matched their original case's
+isolated maximum, direct maximum and direct mean. Focused lint and strict
+type-checking of the test-only harness also passed.
+
+Run `34701738152` reproduced the 54 Linux WebKit failures and showed identical
+visible source pixels but source-rectangle-dependent compositing. The follow-up
+adds a test-only whole-atlas copy, shifted by destination minus source offset
+and clipped to the destination strip. The same three cases/four inspected edges
+report per-edge deltas against the cropped atlas and full-map oracle, plus
+all-edge composed deltas and a small worst-pixel crop. `composedReplay.atlasVsCached`
+checks that the source-subrectangle replay reproduces the measured cached image.
+All source consumers finish before diagnostic source readbacks. This alternative
+is evidence only, not a replacement gate or a production fix; Ubuntu must still
+establish whether it removes the rounding difference.
+
+The forced Mac comparison passed all six browser/allocation tests, with all 192
+original measurements per engine identical to the pre-change baseline. Both
+atlas replays matched the cached image exactly in all nine selected cases.
+Diagnostics took 80-130 ms; focused lint and strict harness type-checking passed.
+
+### CI follow-up: clipped whole-atlas compositing
+
+Ubuntu run [`34702635983`](https://github.com/evillollive/Dungeon-Mapper/actions/runs/34702635983)
+at `b110564` confirms the same PR-caused WebKit pixel failure: 54 small-map
+cases exceed the isolated 2/255 bound, with maximum 5/255. Direct-renderer
+maximum 6/255 and mean maximum 0.217/255 still pass. Browser qualification
+fails only because it aggregates that job. Build/test, Chromium and Firefox
+pass; all ten other WebKit cases pass. No transient or pre-existing check
+failure was found.
+
+The three diagnostic replays exactly reproduce the original measurements,
+and every cropped all-edge replay matches its measured cached image.
+For the two failing selected cases, source pixels are identical but cropped
+source copies introduce per-edge compositing differences. Clipped whole-atlas
+copies eliminate those per-edge differences, reducing the composed isolated
+maxima from 5 to 1 (8px/DPR 1) and 4 to 1 (8px/DPR 1.5). The 32px control
+is unchanged at 1. This supports changing the copy operation, not the
+rasterization, art, oracle or tolerances. It is bounded evidence for these
+cases, not yet a passing Linux production-head matrix.
+
+Production now clips a whole-page copy to the physical destination strip and
+shifts it by destination minus source offset. Each admitted entry retains one
+rectangle-only `Path2D`, reused across hits/color changes and released with the
+entry. This stays within the existing 16,384-entry bound, adds no raster pages,
+and preserves the caller's current path as well as drawing/clip state.
+There is no browser-specific branch. Diagnostics understand the whole-page
+call and report `clippedAtlasVsCached` as its replay-fidelity check.
+
+Local validation passes 42 targeted unit/component tests, strict harness
+type-checking, build, and lint with the same five existing warnings. Fifteen
+three-engine browser cases cover all 192 unchanged pixel measurements per
+engine, eight physical-placement/clip/path/state scenarios per engine,
+unchanged F05 allocation limits, delayed-draw probes, and one complete F05
+repetition per engine. Isolated maxima are 2/2/0 for Chromium/Firefox/WebKit;
+direct maxima are 7/7/5, with mean maxima below 0.237. All nine selected
+diagnostic replays are faithful. DPR 1/2/3 retained-edge/overflow counts and
+16 MiB raster limits are unchanged, without warm traversal raster/path churn.
+
+Focused before/after observations on the same M5 Max/64 GiB development host
+retain every interaction and persistence/undo assertion. Paint/token p95 ms:
+Chromium 156.2/151.2 to 159.6/155.2; Firefox 161/159 to 159/149; WebKit 102/106
+to 98/90. This single paired repetition indicates the cache benefit remains,
+not statistical equivalence or reference-device acceptance. Candidate
+warm-ready times are 2.03/1.33/1.58 seconds; release targets remain open.
+Evidence is in `logs/ci-clipped-ubuntu-34702635983`,
+`logs/ci-clipped-copy-baseline` and `logs/ci-clipped-copy-candidate/validation.json`
+in the follow-up worktree. The exact production-head Ubuntu checks remain
+pending after push; no assertions, F05 samples, CI settings or timeouts changed.
+
 ### Next bounded performance work
 
-Optimize dense-map edge-blending/render invalidation with an explicit memory
-budget and preserved art, fog, geometry, cursor-preview, undo and export
-behavior. Do not replace CPU stalls with unbounded full-map bitmap caches or
-silently disable art. Re-measure painting and token movement, not only hover.
+Profile the remaining full tile, furnishing and lighting redraws before choosing
+another bounded optimization. A static/dynamic-layer and dirty-region redesign
+is a separate, larger scope requiring explicit agreement on invalidation and
+memory budgets. Preserve fog, derived geometry, cursor previews, undo and export
+behavior; do not silently reduce detail or add unbounded full-map bitmaps.
 The 100 ms desktop, 150 ms mobile and two-second warm-launch targets remain
 unchanged and unaccepted. CPU throttling is only a stress probe; reference
 hardware, physical input-to-paint tracing, mobile/detail policy, memory

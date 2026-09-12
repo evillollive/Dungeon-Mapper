@@ -4,9 +4,9 @@
  * stepping.  Supports three blend styles: dither (noise), smooth
  * (gradient), and stipple (dot pattern).
  *
- * The renderer generates an offscreen canvas that is composited on
- * top of the tile layer. Per-theme blend masks are achieved by
- * sampling tile colours from the active theme.
+ * Per-theme blend masks sample tile colours from the active theme.
+ * The editor can retain dither strips in a bounded atlas; exports
+ * keep the direct, resolution-independent drawing path.
  */
 
 import type { Tile, EdgeBlendSettings, EdgeBlendStyle } from '../types/map';
@@ -58,6 +58,200 @@ function getTileColor(
 type Dir = 'N' | 'S' | 'E' | 'W';
 const DX: Record<Dir, number> = { N: 0, S: 0, E: 1, W: -1 };
 const DY: Record<Dir, number> = { N: -1, S: 1, E: 0, W: 0 };
+
+export const EDGE_BLEND_CACHE_MAX_BYTES = 16 * 1024 * 1024;
+export const EDGE_BLEND_CACHE_MAX_ENTRIES = 16_384;
+const ATLAS_SIDE = 512;
+const MAX_ATLAS_PAGES = EDGE_BLEND_CACHE_MAX_BYTES / (ATLAS_SIDE * ATLAS_SIDE * 4);
+
+interface StripPage {
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+  width: number;
+  height: number;
+  used: number;
+  capacity: number;
+  columns: number;
+}
+
+interface StripEntry {
+  page: StripPage;
+  sx: number;
+  sy: number;
+  clip: Path2D;
+  color: string;
+  rasterizedAt: number;
+}
+
+/**
+ * At most sixteen 512px RGBA pages and 16,384 entries per editor.
+ * Admission stops when full, rather than evicting strips that the next
+ * full-map traversal would immediately need again. Overflow draws directly.
+ * No map, image, fog or tile-grid references are retained.
+ */
+export class EdgeBlendCache {
+  private pages: StripPage[] = [];
+  private entries = new Map<string, StripEntry>();
+  private configuration = '';
+  private scale = 1;
+  private offsetX = 0;
+  private offsetY = 0;
+  private pageWidth = ATLAS_SIDE;
+  private pageHeight = ATLAS_SIDE;
+  private hits = 0;
+  private misses = 0;
+  private bypasses = 0;
+  private generation = 0;
+
+  get stats() {
+    return {
+      rasterBytes: this.pages.length * this.pageWidth * this.pageHeight * 4,
+      pages: this.pages.length,
+      entries: this.entries.size,
+      hits: this.hits,
+      misses: this.misses,
+      bypasses: this.bypasses,
+    };
+  }
+
+  clear(): void {
+    for (const { canvas } of this.pages) {
+      canvas.width = 0;
+      canvas.height = 0;
+    }
+    this.pages = [];
+    this.entries.clear();
+    this.configuration = '';
+    this.hits = this.misses = this.bypasses = 0;
+    this.generation = 0;
+  }
+
+  prepare(
+    ctx: CanvasRenderingContext2D,
+    tileSize: number,
+    settings: EdgeBlendSettings,
+    mapWidth: number,
+    mapHeight: number,
+  ): boolean {
+    const transform = ctx.getTransform();
+    // Raster reuse requires the same device-pixel phase at every tile origin.
+    // Unaligned/transformed callers retain the original vector drawing path.
+    if (!settings.enabled || settings.style !== 'dither' || tileSize <= 0 ||
+      !Number.isFinite(transform.a) || transform.a <= 0 ||
+      transform.a !== transform.d || transform.b !== 0 || transform.c !== 0 ||
+      !Number.isInteger(transform.e) || !Number.isInteger(transform.f) ||
+      !Number.isInteger(tileSize * transform.a) ||
+      ctx.globalCompositeOperation !== 'source-over' ||
+      (ctx.filter !== undefined && ctx.filter !== 'none') ||
+      ctx.shadowBlur !== 0 || ctx.shadowOffsetX !== 0 || ctx.shadowOffsetY !== 0 ||
+      ctx.shadowColor !== 'rgba(0, 0, 0, 0)') {
+      this.clear();
+      return false;
+    }
+    // Keep small-map atlas surfaces the same size as their destination.
+    // Canvas backends can rasterize small and large surfaces differently.
+    const pageWidth = Math.min(ATLAS_SIDE, mapWidth * tileSize * transform.a);
+    const pageHeight = Math.min(ATLAS_SIDE, mapHeight * tileSize * transform.a);
+    const configuration = `${tileSize}|${transform.a}|${settings.intensity}|${settings.opacity}|${pageWidth}|${pageHeight}`;
+    if (this.configuration !== configuration) {
+      this.clear();
+      this.configuration = configuration;
+      this.scale = transform.a;
+      this.pageWidth = pageWidth;
+      this.pageHeight = pageHeight;
+    }
+    this.offsetX = transform.e;
+    this.offsetY = transform.f;
+    this.generation++;
+    return true;
+  }
+
+  draw(
+    ctx: CanvasRenderingContext2D,
+    tileSize: number,
+    dir: Dir,
+    color: string,
+    intensity: number,
+    opacity: number,
+    x: number,
+    y: number,
+    populateOnly = false,
+  ): boolean {
+    const scale = this.scale;
+    const band = Math.max(2, Math.round(tileSize * intensity * 0.5));
+    const dot = Math.max(1, Math.round(tileSize * 0.04));
+    const vertical = dir === 'E' || dir === 'W';
+    // Include dot overhang and a transparent physical-pixel gutter. Adjacent
+    // cached edges must preserve the direct renderer's overlaps and order.
+    const left = Math.floor((dir === 'E' ? tileSize - band : 0) * scale) - 1;
+    const top = Math.floor((dir === 'S' ? tileSize - band : 0) * scale) - 1;
+    const longSide = Math.ceil((tileSize + dot) * scale) + 2;
+    const shortSide = Math.ceil(band * scale) + Math.ceil(dot * scale) + 2;
+    const width = vertical ? shortSide : longSide;
+    const height = vertical ? longSide : shortSide;
+    const key = `${x},${y},${dir}`;
+    let entry = this.entries.get(key);
+    if (entry?.color === color) {
+      if (!populateOnly && entry.rasterizedAt !== this.generation) this.hits++;
+    } else {
+      const replacing = entry !== undefined;
+      if (!entry) {
+        if (width > this.pageWidth || height > this.pageHeight ||
+          this.entries.size >= EDGE_BLEND_CACHE_MAX_ENTRIES) {
+          if (!populateOnly) this.bypasses++;
+          return false;
+        }
+        let page = this.pages.find(p => p.width === width && p.height === height && p.used < p.capacity);
+        if (!page) {
+          if (this.pages.length >= MAX_ATLAS_PAGES) {
+            if (!populateOnly) this.bypasses++;
+            return false;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = this.pageWidth;
+          canvas.height = this.pageHeight;
+          const atlasContext = canvas.getContext('2d');
+          if (!atlasContext) throw new Error('Edge-blend canvas rendering is unavailable.');
+          const columns = Math.floor(this.pageWidth / width);
+          page = { canvas, ctx: atlasContext, width, height, used: 0,
+            columns, capacity: columns * Math.floor(this.pageHeight / height) };
+          this.pages.push(page);
+        }
+        const slot = page.used++;
+        const clip = new Path2D();
+        clip.rect(x * tileSize * scale + left, y * tileSize * scale + top, width, height);
+        entry = { page, sx: slot % page.columns * width,
+          sy: Math.floor(slot / page.columns) * height, clip, color, rasterizedAt: this.generation };
+        this.entries.set(key, entry);
+      }
+      const { page, sx, sy } = entry;
+      if (replacing) {
+        page.ctx.setTransform(1, 0, 0, 1, 0, 0);
+        page.ctx.clearRect(sx, sy, width, height);
+      }
+      page.ctx.setTransform(scale, 0, 0, scale,
+        sx - left - x * tileSize * scale, sy - top - y * tileSize * scale);
+      drawDitherEdge(page.ctx, x * tileSize, y * tileSize, tileSize, dir, color, intensity, opacity, x, y);
+      entry.color = color;
+      entry.rasterizedAt = this.generation;
+      this.misses++;
+    }
+    if (populateOnly) return true;
+    // Copy device pixels one-for-one rather than dividing into logical
+    // coordinates and asking the canvas transform to scale them back.
+    ctx.save();
+    ctx.setTransform(1, 0, 0, 1, this.offsetX, this.offsetY);
+    ctx.globalAlpha = 1;
+    // Cropped source rectangles take a different compositing path in WebKit.
+    // A bounded, reusable Path2D clips the whole-page copy without changing
+    // the caller's current path (which save/restore does not preserve).
+    ctx.clip(entry.clip);
+    ctx.drawImage(entry.page.canvas,
+      x * tileSize * scale + left - entry.sx, y * tileSize * scale + top - entry.sy);
+    ctx.restore();
+    return true;
+  }
+}
 
 // ── Per-edge blend drawing ─────────────────────────────────────────────
 
@@ -236,44 +430,57 @@ export function drawEdgeBlending(
   settings: EdgeBlendSettings,
   theme: TileTheme,
   customThemes: readonly CustomThemeDefinition[],
+  cache?: EdgeBlendCache,
 ): void {
-  if (!settings.enabled) return;
+  if (!settings.enabled) {
+    cache?.clear();
+    return;
+  }
 
   const { style, intensity, opacity } = settings;
+  const useCache = cache?.prepare(ctx, tileSize, settings, width, height);
 
   ctx.save();
 
   const dirs: Dir[] = ['N', 'S', 'E', 'W'];
 
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const tile = tiles[y]?.[x];
-      if (!tile || tile.type === 'empty') continue;
+  const drawEdges = (populateOnly: boolean) => {
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width; x++) {
+        const tile = tiles[y]?.[x];
+        if (!tile || tile.type === 'empty') continue;
 
-      const px = x * tileSize;
-      const py = y * tileSize;
-
-      for (const dir of dirs) {
-        const nx = x + DX[dir];
-        const ny = y + DY[dir];
-
-        // Skip out-of-bounds — no blending at map edges
-        if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
-
-        const nbr = tiles[ny]?.[nx];
-        if (!nbr || nbr.type === 'empty') continue;
-
-        // Only blend between tiles of different base types
+        const px = x * tileSize;
+        const py = y * tileSize;
         const thisBase = getSemanticTileType(tile.type, customThemes);
-        const nbrBase = getSemanticTileType(nbr.type, customThemes);
-        if (thisBase === nbrBase) continue;
 
-        const nbrColor = getTileColor(nbr, theme, customThemes);
+        for (const dir of dirs) {
+          const nx = x + DX[dir];
+          const ny = y + DY[dir];
 
-        drawEdge(ctx, style, px, py, tileSize, dir, nbrColor, intensity, opacity, x, y);
+          // Skip out-of-bounds; no blending at map edges.
+          if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue;
+
+          const nbr = tiles[ny]?.[nx];
+          if (!nbr || nbr.type === 'empty') continue;
+
+          // Only blend between tiles of different base types.
+          const nbrBase = getSemanticTileType(nbr.type, customThemes);
+          if (thisBase === nbrBase) continue;
+
+          const nbrColor = getTileColor(nbr, theme, customThemes);
+
+          if (useCache && cache?.draw(ctx, tileSize, dir, nbrColor, intensity, opacity, x, y, populateOnly)) continue;
+          if (!populateOnly) drawEdge(ctx, style, px, py, tileSize, dir, nbrColor, intensity, opacity, x, y);
+        }
       }
     }
-  }
+  };
+
+  // Do not alternate atlas writes and reads: Canvas implementations may copy
+  // or synchronize an entire page each time its sampled source is mutated.
+  if (useCache) drawEdges(true);
+  drawEdges(false);
 
   ctx.globalAlpha = 1;
   ctx.restore();

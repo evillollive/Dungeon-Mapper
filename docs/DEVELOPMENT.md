@@ -142,8 +142,8 @@ worker updates. Do not run both suites concurrently on the same custom port.
 
 CI runs all five journeys plus UX-08 for Chromium, Firefox and WebKit, with
 independent engine jobs, no fail-fast cancellation and fourteen-day artifacts.
-It also runs the F05 diagnostic and its delayed-draw probe regression described
-below. Their behavior assertions block CI, but their latency values do not
+It also runs the F05 diagnostic, its delayed-draw probe, and the two edge-cache
+pixel/allocation cases described below. Their behavior assertions block CI, but their latency values do not
 certify a release or impose machine-dependent timing thresholds.
 The aggregate **Browser qualification** check fails when any engine fails,
 is skipped or is cancelled. The active default-branch ruleset requires that
@@ -172,9 +172,9 @@ through the real production Library, not a hidden application fixture route.
 
 ```bash
 QA_OUTPUT=/absolute/path/to/f05 npm run test:browser -- --grep=F05
-# Reuse dist, restrict to Chromium, and apply a labeled CPU stress probe:
+# Reuse dist and apply a labeled CPU stress probe to the interaction diagnostic:
 QA_CPU_THROTTLE=4 QA_OUTPUT=/absolute/path/to/f05-throttled \
-  npm run test:browser:run -- --project=chromium --grep=F05
+  npm run test:browser:run -- src/test/ux09Performance.spec.mjs --project=chromium
 ```
 
 The same strict-port server, dependency lock, failure artifacts and three-minute
@@ -227,3 +227,37 @@ There are deliberately no 100 ms/2-second CI assertions before representative
 hardware and measurement methodology are agreed. Do not lower the roadmap
 targets or interpret a green diagnostic as performance acceptance.
 See [actual local results and remaining bottleneck](./UX-09-HANDOFF.md#dense-map-diagnostic-milestone).
+
+### Bounded edge-cache regressions
+
+`ux09EdgeBlend.spec.mjs` adds two required cases per engine using the existing
+Vite/Playwright dependencies. Vite bundles `src/test/edgeBlend.render.ts` in
+memory for an isolated browser harness. No test route, debug flag or renderer
+API is exposed by the production app. The existing F05 interaction diagnostic
+continues to exercise the actual production editor.
+
+```bash
+QA_OUTPUT=/absolute/path/to/edge-cache npm run test:browser -- src/test/ux09EdgeBlend.spec.mjs
+```
+
+The pixel case compares cold/warm, paint/undo, derived geometry, theme,
+opacity and intensity across 8/32/64-pixel cells, four DPR values and two
+backgrounds. `edge-blend-pixels` records all 192 cases, direct-renderer channel
+differences and an independent per-edge raster oracle. Tolerances are
+2/255 against the oracle, 8/255 maximum and 0.25/255 mean against the direct
+renderer, accounting for intermediate RGBA8 rounding rather than claiming
+byte-identical compositing.
+
+`f05-edge-cache-budget` records page count, raw bytes, retained edges,
+rasterizations, hits and overflow at DPR 1/2/3. It traverses all F05 geometry
+with a small destination, so this is a cache allocation/reuse test, not total
+application memory or high-DPR interaction qualification. The hard bounds are
+16 MiB raw raster and 16,384 entries per editor. Overflow uses direct drawing;
+the test rejects new rasterization/page allocation on an unchanged second
+traversal. Unit/component tests also cover semantic/color invalidation,
+settings, disposal and populating pages before sampling them.
+
+Keep the performance probe's four cases, these two renderer cases and the five
+workflow journeys in every engine job. Read
+[the cache milestone](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone)
+for final measurements, startup costs, memory exclusions and remaining gates.

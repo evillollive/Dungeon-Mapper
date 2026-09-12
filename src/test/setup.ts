@@ -3,6 +3,11 @@ import '@testing-library/jest-dom/vitest';
 // jsdom has no layout or scrolling implementation.
 Element.prototype.scrollIntoView = () => {};
 
+// Match the rectangle-only Path2D used by the edge cache; pixels are browser-tested.
+globalThis.Path2D = class {
+  rect() {}
+} as unknown as typeof Path2D;
+
 // Mock canvas getContext for jsdom (which doesn't support Canvas)
 HTMLCanvasElement.prototype.getContext = (() => {
   const noop = () => {};
