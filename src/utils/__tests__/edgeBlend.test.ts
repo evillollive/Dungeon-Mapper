@@ -152,15 +152,29 @@ describe('drawEdgeBlending', () => {
         gridColor: '#111111', tileColors: {}, tileLabels: {},
         customTiles: [{ id: 'custom:stone' as const, label: 'Stone', color: '#999999', baseType: 'floor' as const }],
       }];
-      const grid = makeTiles([['custom:stone', 'wall']]);
-      drawEdgeBlending(ctx, grid, 2, 1, 32, makeSettings(), mockTheme, customThemes, cache);
+      const grid = makeTiles([['custom:stone', 'wall'], ['empty', 'empty']]);
+      drawEdgeBlending(ctx, grid, 2, 2, 32, makeSettings(), mockTheme, customThemes, cache);
       expect(cache.stats.entries).toBe(2);
       ctx.drawImage.mockClear();
       const changed = [{ ...customThemes[0], customTiles: [{ ...customThemes[0].customTiles[0], baseType: 'wall' as const }] }];
-      drawEdgeBlending(ctx, grid, 2, 1, 32, makeSettings(), mockTheme, changed, cache);
+      drawEdgeBlending(ctx, grid, 2, 2, 32, makeSettings(), mockTheme, changed, cache);
       expect(ctx.drawImage).not.toHaveBeenCalled();
-      drawEdgeBlending(ctx, grid, 2, 1, 32, makeSettings(), mockTheme, customThemes, cache);
+      drawEdgeBlending(ctx, grid, 2, 2, 32, makeSettings(), mockTheme, customThemes, cache);
       expect(cache.stats.hits).toBe(2);
+    });
+
+    it('matches small-map surface dimensions and invalidates resized pages', () => {
+      draw();
+      const pages = ctx.drawImage.mock.calls.map(call => call[0] as HTMLCanvasElement);
+      expect(pages.every(page => page.width === 64 && page.height === 64)).toBe(true);
+      expect(cache.stats.rasterBytes).toBe(cache.stats.pages * 64 * 64 * 4);
+      ctx.drawImage.mockClear();
+      draw(makeTiles([['floor', 'wall', 'floor'], ['water', 'floor', 'water']]));
+      expect(pages.every(page => page.width === 0 && page.height === 0)).toBe(true);
+      expect(ctx.drawImage.mock.calls.every(call => {
+        const page = call[0] as HTMLCanvasElement;
+        return page.width === 96 && page.height === 64;
+      })).toBe(true);
     });
 
     it.each([
@@ -214,7 +228,7 @@ describe('drawEdgeBlending', () => {
     });
 
     it('bounds metadata independently for very small strips', () => {
-      cache.prepare(ctx, 1, makeSettings());
+      cache.prepare(ctx, 1, makeSettings(), 512, 512);
       for (let x = 0; x < EDGE_BLEND_CACHE_MAX_ENTRIES + 1; x++) {
         cache.draw(ctx, 1, 'N', '#123456', 0.35, 0.6, x, 0);
       }

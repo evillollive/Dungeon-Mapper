@@ -257,7 +257,7 @@ export-policy or release-threshold changes.
 ### Renderer and memory contract
 
 `EdgeBlendCache` in `src/utils/edgeBlend.ts` retains only dither strips in
-at most sixteen 512 x 512 RGBA canvas pages per mounted editor: **16 MiB of
+at most sixteen RGBA canvas pages, each no larger than 512 x 512, per mounted editor: **16 MiB of
 raw raster storage**, with an independent **16,384-entry metadata limit**.
 It allocates pages on demand, never a second full-map image. These bounds
 do not include browser/GPU copies, object overhead, the existing main canvas,
@@ -356,6 +356,28 @@ along with 84 targeted unit/component cases. Evidence is under this session's
 `files/ux08-regression`. Raw reports identify the base revision and dirty
 working tree; the PR identifies the committed patch. Exact-head CI remains
 the landing gate, with no skipped checks, relaxed samples or timeout changes.
+
+### CI follow-up: small-map atlas surfaces
+
+The first Linux run at `e51d702` passed the build, Chromium and Firefox jobs,
+and ten of eleven WebKit browser cases. The pixel comparison failed only for
+8-pixel cells: cached versus isolated-edge differences reached 55/255, while
+all 32/64-pixel cases remained inside the existing 2/255 oracle bound.
+This is a rendering discrepancy, not a reason to loosen that bound.
+
+Atlas page dimensions now also stop at the map's physical backing dimensions,
+so a small map does not force its edge rasterization onto a larger 512-pixel
+surface. Canvas raster backends can differ with surface size. This is a shared
+renderer change, with no browser/OS branch. The sixteen-page and 16 MiB limits,
+the full-size F05 atlas layout, and every existing pixel assertion are unchanged.
+A new regression checks rectangular small-map pages and disposal on resize.
+The custom-semantic cache fixture retains both edge assertions using an empty
+second row so the strips and their gutters fit the smaller surface.
+
+All six renderer browser cases pass locally after this correction, alongside
+41 targeted unit/component cases and the existing build/lint gates. Linux
+confirmation is pending the new head's CI. Failure artifacts remain in
+`files/ci-webkit-failure`; local corrective evidence is in `files/ci-small-atlas-fix`.
 
 ### Next bounded performance work
 

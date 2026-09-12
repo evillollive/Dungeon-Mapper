@@ -62,7 +62,7 @@ const DY: Record<Dir, number> = { N: -1, S: 1, E: 0, W: 0 };
 export const EDGE_BLEND_CACHE_MAX_BYTES = 16 * 1024 * 1024;
 export const EDGE_BLEND_CACHE_MAX_ENTRIES = 16_384;
 const ATLAS_SIDE = 512;
-const ATLAS_BYTES = ATLAS_SIDE * ATLAS_SIDE * 4;
+const MAX_ATLAS_PAGES = EDGE_BLEND_CACHE_MAX_BYTES / (ATLAS_SIDE * ATLAS_SIDE * 4);
 
 interface StripPage {
   canvas: HTMLCanvasElement;
@@ -93,6 +93,8 @@ export class EdgeBlendCache {
   private entries = new Map<string, StripEntry>();
   private configuration = '';
   private scale = 1;
+  private pageWidth = ATLAS_SIDE;
+  private pageHeight = ATLAS_SIDE;
   private hits = 0;
   private misses = 0;
   private bypasses = 0;
@@ -100,7 +102,7 @@ export class EdgeBlendCache {
 
   get stats() {
     return {
-      rasterBytes: this.pages.length * ATLAS_BYTES,
+      rasterBytes: this.pages.length * this.pageWidth * this.pageHeight * 4,
       pages: this.pages.length,
       entries: this.entries.size,
       hits: this.hits,
@@ -121,7 +123,13 @@ export class EdgeBlendCache {
     this.generation = 0;
   }
 
-  prepare(ctx: CanvasRenderingContext2D, tileSize: number, settings: EdgeBlendSettings): boolean {
+  prepare(
+    ctx: CanvasRenderingContext2D,
+    tileSize: number,
+    settings: EdgeBlendSettings,
+    mapWidth: number,
+    mapHeight: number,
+  ): boolean {
     const transform = ctx.getTransform();
     // Raster reuse requires the same device-pixel phase at every tile origin.
     // Unaligned/transformed callers retain the original vector drawing path.
@@ -137,11 +145,17 @@ export class EdgeBlendCache {
       this.clear();
       return false;
     }
-    const configuration = `${tileSize}|${transform.a}|${settings.intensity}|${settings.opacity}`;
+    // Keep small-map atlas surfaces the same size as their destination.
+    // Canvas backends can rasterize small and large surfaces differently.
+    const pageWidth = Math.min(ATLAS_SIDE, mapWidth * tileSize * transform.a);
+    const pageHeight = Math.min(ATLAS_SIDE, mapHeight * tileSize * transform.a);
+    const configuration = `${tileSize}|${transform.a}|${settings.intensity}|${settings.opacity}|${pageWidth}|${pageHeight}`;
     if (this.configuration !== configuration) {
       this.clear();
       this.configuration = configuration;
       this.scale = transform.a;
+      this.pageWidth = pageWidth;
+      this.pageHeight = pageHeight;
     }
     this.generation++;
     return true;
@@ -177,25 +191,25 @@ export class EdgeBlendCache {
     } else {
       const replacing = entry !== undefined;
       if (!entry) {
-        if (width > ATLAS_SIDE || height > ATLAS_SIDE ||
+        if (width > this.pageWidth || height > this.pageHeight ||
           this.entries.size >= EDGE_BLEND_CACHE_MAX_ENTRIES) {
           if (!populateOnly) this.bypasses++;
           return false;
         }
         let page = this.pages.find(p => p.width === width && p.height === height && p.used < p.capacity);
         if (!page) {
-          if ((this.pages.length + 1) * ATLAS_BYTES > EDGE_BLEND_CACHE_MAX_BYTES) {
+          if (this.pages.length >= MAX_ATLAS_PAGES) {
             if (!populateOnly) this.bypasses++;
             return false;
           }
           const canvas = document.createElement('canvas');
-          canvas.width = ATLAS_SIDE;
-          canvas.height = ATLAS_SIDE;
+          canvas.width = this.pageWidth;
+          canvas.height = this.pageHeight;
           const atlasContext = canvas.getContext('2d');
           if (!atlasContext) throw new Error('Edge-blend canvas rendering is unavailable.');
-          const columns = Math.floor(ATLAS_SIDE / width);
+          const columns = Math.floor(this.pageWidth / width);
           page = { canvas, ctx: atlasContext, width, height, used: 0,
-            columns, capacity: columns * Math.floor(ATLAS_SIDE / height) };
+            columns, capacity: columns * Math.floor(this.pageHeight / height) };
           this.pages.push(page);
         }
         const slot = page.used++;
@@ -408,7 +422,7 @@ export function drawEdgeBlending(
   }
 
   const { style, intensity, opacity } = settings;
-  const useCache = cache?.prepare(ctx, tileSize, settings);
+  const useCache = cache?.prepare(ctx, tileSize, settings, width, height);
 
   ctx.save();
   if (useCache) ctx.imageSmoothingEnabled = false;
