@@ -4,7 +4,7 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's dungeon foundation and approved wood/earth materials are merged in #167 and #168. The eight-piece furnishing reference and richer palette are approved in #169; the expanded 24-piece catalog is implemented with owner visual approval pending. The full package remains incomplete. UX-08 is merged in #170. UX-09's automated browser/CI milestone is merged in #171; its critical keyboard-workflow follow-up is merged in #172. Full release qualification remains open. No participant usability acceptance is claimed.
+**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's dungeon foundation and approved wood/earth materials are merged in #167 and #168. The eight-piece furnishing reference and richer palette are approved in #169; the expanded 24-piece catalog received owner visual approval on September 12, 2026 in #177. The full package remains incomplete. UX-08 is merged in #170. UX-09's automated browser/CI milestone is merged in #171; its critical keyboard-workflow follow-up is merged in #172. Full release qualification remains open. No participant usability acceptance is claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
@@ -780,8 +780,14 @@ The owner selected catalog expansion before token artwork. Sixteen original
 SVG sources extend the approved eight: round table, bench, stool, writing desk,
 chest, wardrobe, weapon rack, brazier, sarcophagus, supply sacks, boulder, fern,
 shrub, campfire, bedroll and tent. The new designs reuse the approved warmer
-wood, blue cloth, green accents, cool stone and dark outlines. **Owner visual
-approval of these sixteen additions is pending.**
+wood, blue cloth, green accents, cool stone and dark outlines. **The owner
+approved these sixteen additions on September 12, 2026.**
+
+**Owner closeout, September 12, 2026:** After reviewing the expanded catalog,
+the owner said, "It's great! Let's keep these and move forward." This accepts
+the new furnishing artwork alongside the original eight pieces. The dated
+approval supersedes pending-review captions in the recorded images. It does
+not approve token artwork or waive physical-device, print or release gates.
 
 The additive pack release is `1.1.0`; render version 1 and all existing IDs,
 eight original source hashes, scales and saved appearances are unchanged.
@@ -826,8 +832,8 @@ Review surfaces: [all 24 color/print pieces](./media/ux07-catalog/catalog.png),
 [phone player view](./media/ux07-catalog/player-phone.png).
 Browser evidence is reproducible with the commands in
 [Development](./DEVELOPMENT.md#folio-furnishing-catalog-qualification).
-This completes implementation of the planned furnishing count, not visual
-acceptance, the token kit, remaining launch artwork, physical-device/print
+This completes implementation and owner visual acceptance of the planned
+furnishing count, not the token kit, remaining launch artwork, physical-device/print
 review or UX-09 performance qualification.
 
 **Deliverables:** ART-01 through ART-04, ART-06 through ART-08 for the initial release, plus asset manifest/provenance, pack/version selection, previews, deterministic variants, caching, and fallbacks. ART-05/09 extend after the dungeon slice is approved.
@@ -1049,7 +1055,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; current production journey passes Chromium, Firefox and WebKit in UX-09 | [Original policy and evidence](./UX-05-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
-| UX-07 | Foundation/materials merged in #167/#168; eight-piece furnishing palette approved in #169; 24-piece catalog implemented | [Expanded catalog](./media/ux07-catalog/catalog.png) awaits owner visual approval; token sets and remaining art packages stay open |
+| UX-07 | Foundation/materials merged in #167/#168; eight-piece furnishing palette approved in #169; expanded 24-piece catalog approved September 12 in #177 | [Approved expanded catalog](./media/ux07-catalog/catalog.png); token sets and remaining art packages stay open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; browser/CI, keyboard and F05 diagnostics merged in #171/#172/#174; bounded edge-strip cache implemented | [Cache limits, final F05 results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone); painting/token latency, human screen-reader and reference-device performance acceptance remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |

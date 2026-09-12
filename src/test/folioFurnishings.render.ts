@@ -157,7 +157,7 @@ export async function showFurnishingReview() {
   kicker.className = 'kicker'; kicker.textContent = 'DUNGEON FOLIO / FURNISHINGS 1.1';
   const title = document.createElement('h1'); title.textContent = 'A place to stay.';
   const introduction = document.createElement('p');
-  introduction.textContent = 'Sixteen additions for lived-in halls, quiet chapels and roadside camps. Warm timber, blue canvas, green leaves and cool stone. New artwork awaiting owner review.';
+  introduction.textContent = 'Sixteen additions for lived-in halls, quiet chapels and roadside camps. Warm timber, blue canvas, green leaves and cool stone. Artwork approved September 12, 2026.';
   document.body.append(kicker, title, introduction);
   const catalog = document.createElement('section'); catalog.id = 'catalog';
   for (const [label, defs] of [
