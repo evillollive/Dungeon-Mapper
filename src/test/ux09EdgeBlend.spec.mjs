@@ -37,6 +37,28 @@ test('edge strips preserve direct renderer pixels across edits and device scales
   await info.attach('edge-blend-pixels', {
     body: JSON.stringify(result, null, 2), contentType: 'application/json',
   });
+  const needsDiagnostics = result.maximumIsolatedDelta > 2 || result.maximumDelta > 8 ||
+    result.results.some(sample => sample.meanDelta > 0.25);
+  if (needsDiagnostics || process.env.QA_EDGE_BLEND_DIAGNOSTICS === '1') {
+    let diagnostics;
+    try {
+      diagnostics = await page.evaluate(async ({ source, samples }) => {
+        const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+        try {
+          return (await import(url)).diagnoseEdgeBlendPixels(samples);
+        } finally {
+          URL.revokeObjectURL(url);
+        }
+      }, { source: harness, samples: result.results });
+    } catch (error) {
+      diagnostics = { error: error.stack ?? String(error) };
+    }
+    await info.attach('edge-blend-diagnostics', {
+      body: JSON.stringify(diagnostics, null, 2), contentType: 'application/json',
+    });
+    // A broken diagnostic must not replace the original pixel failure.
+    if (!needsDiagnostics) assert(!diagnostics.error, diagnostics.error);
+  }
   // Allow one coverage-rounding step and one compositing-rounding step when
   // comparing different device-pixel origins, without allowing shifted art.
   assert(result.maximumIsolatedDelta <= 2, `Atlas packing changed edge pixels: ${result.maximumIsolatedDelta}`);

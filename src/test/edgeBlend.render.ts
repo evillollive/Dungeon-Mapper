@@ -3,6 +3,8 @@ import { getTheme } from '../themes';
 import { deriveRenderableTiles, deriveRenderableTilesFromBase } from '../utils/derivedRenderMap';
 import type { CustomThemeDefinition, DungeonMap, EdgeBlendSettings, Tile } from '../types/map';
 
+export { diagnoseEdgeBlendPixels } from './edgeBlend.diagnostics';
+
 // Bundled only by the browser test, never exposed by the production application.
 export function compareEdgeBlendPixels() {
   const cache = new EdgeBlendCache();

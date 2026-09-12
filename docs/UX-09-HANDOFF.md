@@ -401,6 +401,30 @@ The build and existing lint gate pass; Linux confirmation remains pending the
 new head's CI. Evidence is in `files/ci-device-pixel-fix` and
 `files/ci-webkit-small-atlas`. No samples, thresholds or timeouts changed.
 
+### CI follow-up: bounded pixel diagnostics
+
+Linux run `34700570563` at `f9d063e` retained the same 192 measurements as
+`c08e327`, including 54 small-map oracle failures (maximum 5/255). Browser
+qualification is a cascade of the WebKit journey failure, not a separate cause.
+The renderer is unchanged in this diagnostic follow-up.
+
+After the original comparisons, a failure in any engine attaches
+`edge-blend-diagnostics` JSON for two 8px cases at different DPRs and one matching
+32px control. At most four edges per case expose actual atlas/source rectangles,
+context attributes, exact vector commands, worst-pixel crops, transparent
+alpha/premultiplied deltas, same-surface translation replays, and full-source
+versus cropped-source compositing. Source reads occur after diagnostic blits.
+The original matrix, inputs, assertions, F05 harness and CI timeouts are unchanged.
+For local validation only, set `QA_EDGE_BLEND_DIAGNOSTICS=1` alongside `QA_OUTPUT`
+when running `npm run test:browser:run -- src/test/ux09EdgeBlend.spec.mjs`.
+This forces evidence collection, never changes the pass/fail bounds, and is not
+Linux reproduction or a claim that CI is fixed.
+
+The forced local pass completed all six renderer/allocation cases across the
+three engines. All selected diagnostic replays matched their original case's
+isolated maximum, direct maximum and direct mean. Focused lint and strict
+type-checking of the test-only harness also passed.
+
 ### Next bounded performance work
 
 Profile the remaining full tile, furnishing and lighting redraws before choosing
