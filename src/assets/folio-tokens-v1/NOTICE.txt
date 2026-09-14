@@ -1,4 +1,4 @@
-Dungeon Folio token catalog, version 0.2.1, render version 1
+Dungeon Folio token catalog, version 0.2.2, render version 1
 Original artwork by Dungeon Mapper contributors, 2026.
 SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -10,9 +10,12 @@ No third-party artwork, external fonts, images or runtime network requests.
 
 The reference direction, affiliation frames and one-line copy were approved
 September 14, 2026. The owner subsequently requested new Drake, Ranger,
-Duelist, Brute, Owl and Ooze artwork. Those six redraws await visual review.
+Duelist, Brute, Owl and Ooze artwork. Subsequent feedback narrowed the remaining
+revisions to Ranger and Duelist. These now use hood/quiver and feathered-hat/
+rapier portraits instead of full-body poses; both await owner visual review.
 Warden, Wayfinder, Arcanist, Sunkeeper, Wolf, Spider and the frames are unchanged
 by that revision. Drake's earlier approval is superseded by the redraw request.
 This pack is unreleased; revised draft silhouettes retain their existing IDs.
+The latest portrait revision does not change the other ten assets or frames.
 Versioned icon IDs preserve existing choices.
 Affiliation uses existing player/npc/monster kinds, not ownership or rules.
