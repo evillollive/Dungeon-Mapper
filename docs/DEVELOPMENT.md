@@ -185,6 +185,31 @@ Color/print contact sheets, a composed sample and zoom sheets are retained under
 `browser-results`. These do not certify physical print scale, touch interaction
 or dense-map performance. See the UX roadmap for the owner-approval status.
 
+## Folio token reference qualification
+
+ART-04's three-token reference has a production journey in
+`ux07Tokens.browser.mjs` and a renderer matrix in `ux07Tokens.spec.mjs`,
+both included in the existing three-engine blocking browser suite:
+
+```bash
+QA_OUTPUT=/absolute/path/to/tokens npm run test:browser -- --grep='Folio token'
+```
+
+The journey covers sample creation, choosing a silhouette independently of
+affiliation, cancellation, coordinate changes, undo/redo, reload, backup and
+player output at desktop/phone viewports. The matrix compares all nine
+silhouette/frame combinations at four cell sizes and three token footprints.
+It compares the shared editor drawing path with the actual map export and
+monochrome renderers, plus native SVG rasterization within each token footprint.
+Reference, affiliation, composed-map and scale sheets are saved with browser
+results. These checks do not establish owner approval, physical-device
+readability, printer acceptance or dense-map responsiveness.
+
+For interactive visual review, run `npm run dev` and open
+`/Dungeon-Mapper/docs/prototypes/ux07-tokens/index.html` on that server.
+This source-driven review is not a production application route.
+The three-token expansion gate is recorded in the UX roadmap.
+
 ## Dense-map performance diagnostics (F05)
 
 `src/test/denseMapFixture.mjs` builds a deterministic 128 x 128 dungeon with

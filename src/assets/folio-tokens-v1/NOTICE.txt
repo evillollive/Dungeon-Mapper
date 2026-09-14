@@ -1,0 +1,12 @@
+Dungeon Folio token reference, version 0.1.0, render version 1
+Original artwork by Dungeon Mapper contributors, 2026.
+SPDX-License-Identifier: AGPL-3.0-or-later
+
+Three original silhouettes: Warden, Wayfinder and Drake.
+Editable silhouette sources: warden.svg, wayfinder.svg, drake.svg.
+Editable affiliation frame paths: ../../utils/folioTokenRender.ts.
+No third-party artwork, external fonts, images or runtime network requests.
+
+Artwork is opt-in and pending owner visual approval. This reference is not
+the twelve-silhouette catalog. Versioned icon IDs preserve existing choices.
+Affiliation uses existing player/npc/monster kinds, not ownership or rules.

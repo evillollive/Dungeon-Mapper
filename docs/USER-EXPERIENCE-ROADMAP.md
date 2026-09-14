@@ -836,6 +836,51 @@ This completes implementation and owner visual acceptance of the planned
 furnishing count, not the token kit, remaining launch artwork, physical-device/print
 review or UX-09 performance qualification.
 
+**Fifth bounded milestone, September 14, 2026: three-token visual reference**
+
+ART-04 starts with original **Warden**, **Wayfinder** and **Drake** silhouettes,
+not the twelve-token expansion. Dark ink on an ivory field separates the
+figure from the map. Party tokens use a blue shield and diamond crest, NPCs
+a green round seal with paired marks, and monsters a rust-red hexagon and
+chevron. All three frames work with every silhouette. Print companions retain
+the outlines and marks without relying on color. Selection remains the existing
+independent outer ring; frames do not grant ownership or add game rules.
+
+Choose **Folio tokens** in the placement icon picker, or open the new
+**The Lantern Watch** sample (`folio-token-watch`). The sample copies the
+furnished Keeper's Hall without changing that earlier sample or its legacy
+tokens. It includes three public figures and a hidden lookout for player-view
+review. Existing icons, emoji, custom token colors and saved token IDs are not
+replaced. The new IDs use `folio-token-v1-*` in the existing `Token.icon` field;
+there is no project/session schema change or dependency addition.
+
+The original SVG sources, source fingerprints, provenance and manifest live
+in `src/assets/folio-tokens-v1`. The candidate pack version is `0.1.0`, render
+version 1. Shared vector descriptions drive the picker, initiative, map,
+player display and SVG; print uses black/white paints. A twelve-path maximum
+bundled geometry cache is independent of token count, affiliation color and
+scale, with no new raster allocation.
+
+The first local production journeys cover creation, crossed silhouette/kind
+placement, cancellation, coordinate edits, undo/redo, reload, private JSON,
+player SVG and the 390 x 844 player viewport in Chromium, Firefox and WebKit.
+The renderer matrix covers nine silhouette/frame combinations at 16/24/32/64
+pixels per cell and one/two/three-cell footprints. Canvas/editor and print
+comparisons retain a maximum 2/255 channel difference and mean below 0.01/255;
+SVG mean is below 2/255 within the actual token footprint, not diluted by
+empty surroundings. These are artwork/compatibility observations, not
+physical-device, printer, participant or F05 performance qualification.
+
+**Owner visual approval is pending. Do not expand to twelve on the basis of
+implementation or browser results alone.** Review the
+[reference trio](./media/ux07-tokens/reference.png),
+[all affiliations in color, grayscale and print](./media/ux07-tokens/affiliations.png),
+[furnished DM/player/print/SVG maps](./media/ux07-tokens/maps.png),
+[production editor](./media/ux07-tokens/editor.png), and
+[phone player preview](./media/ux07-tokens/player-phone.png).
+The [development guide](./DEVELOPMENT.md#folio-token-reference-qualification)
+documents the interactive review and reproduction commands.
+
 **Deliverables:** ART-01 through ART-04, ART-06 through ART-08 for the initial release, plus asset manifest/provenance, pack/version selection, previews, deterministic variants, caching, and fallbacks. ART-05/09 extend after the dungeon slice is approved.
 
 **Implementation anchors:** `src/themes/*`, existing art utilities/catalogs, `artStylePresets.ts`, `MapCanvas.tsx`, `renderMap.ts`, `export.ts`, new versioned asset directories.
@@ -1055,7 +1100,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; current production journey passes Chromium, Firefox and WebKit in UX-09 | [Original policy and evidence](./UX-05-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
-| UX-07 | Foundation/materials merged in #167/#168; eight-piece furnishing palette approved in #169; expanded 24-piece catalog approved September 12 in #177 | [Approved expanded catalog](./media/ux07-catalog/catalog.png); token sets and remaining art packages stay open |
+| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; three-token reference implemented September 14, pending visual approval | [Token reference](./media/ux07-tokens/reference.png); twelve-token expansion and remaining art packages stay open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; browser/CI, keyboard and F05 diagnostics merged in #171/#172/#174; bounded edge-strip cache implemented | [Cache limits, final F05 results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone); painting/token latency, human screen-reader and reference-device performance acceptance remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |

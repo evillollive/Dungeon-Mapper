@@ -3,6 +3,8 @@ import { flushSync } from 'react-dom';
 import type { Token, ViewMode } from '../types/map';
 import { TOKEN_KIND_COLORS } from '../types/map';
 import { ICON_BY_ID } from '../utils/iconLibrary';
+import { FOLIO_TOKEN_BY_ID } from '../assets/folio-tokens-v1/catalog';
+import FolioTokenIcon from './FolioTokenIcon';
 
 /**
  * Right-hand-side panel showing the active turn order. Tokens are listed in
@@ -161,6 +163,7 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
                   }
                 }}>
               <span className="initiative-order">{idx + 1}</span>
+              {token.icon && FOLIO_TOKEN_BY_ID.has(token.icon) ? <FolioTokenIcon token={token} /> :
               <span
                 className="initiative-swatch"
                 style={{
@@ -182,7 +185,7 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
                   }
                   return null;
                 })()}
-              </span>
+              </span>}
                 <span className="initiative-name" title={token.label}>{token.label}</span>
               </button>
               {isGm && editingId === token.id && (
