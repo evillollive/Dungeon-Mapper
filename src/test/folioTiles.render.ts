@@ -3,6 +3,7 @@ import { folioTheme } from '../themes/folio-v1/theme';
 import { FolioTileCache, FOLIO_TILE_CACHE_MAX_BYTES, FOLIO_TILE_CACHE_MAX_ENTRIES } from '../themes/folio-v1/tileCache';
 import { deriveRenderableTiles, deriveRenderableTilesFromBase } from '../utils/derivedRenderMap';
 import { getSemanticTileType } from '../utils/customThemes';
+export { diagnoseFolioTileRasterization } from './folioTiles.diagnostics';
 
 function checkBudget(cache: FolioTileCache): void {
   if (cache.stats.rasterBytes > FOLIO_TILE_CACHE_MAX_BYTES || cache.stats.entries > FOLIO_TILE_CACHE_MAX_ENTRIES) {
@@ -176,6 +177,7 @@ export function measureDenseFolioTileCache(map: DungeonMap) {
           for (let x = 0; x < map.meta.width; x++) {
             cache.draw(ctx, tiles[y][x].type, x, y, map.meta.tileSize, context);
           }
+
         }
         checkBudget(cache);
         return cache.stats;

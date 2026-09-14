@@ -30,6 +30,17 @@ test('Folio tile sprites preserve direct pixels across materials, edits and devi
   }, harness);
   await info.attach('folio-tile-pixels', { body: JSON.stringify(result), contentType: 'application/json' });
   assert.equal(result.length, 210);
+  if (process.env.QA_FLOOR_DIAGNOSTICS === '1') {
+    const diagnostics = await page.evaluate(async source => {
+      const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
+      try {
+        return (await import(url)).diagnoseFolioTileRasterization();
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    }, harness);
+    await info.attach('folio-raster-diagnostics', { body: JSON.stringify(diagnostics), contentType: 'application/json' });
+  }
   // Translating the same vector commands to a small surface can round RGB by one
   // 8-bit step. Coverage must stay exact, with no contour or opacity allowance.
   assert(result.every(sample => sample.alphaDelta === 0 && sample.maxDelta <= 1 && sample.meanDelta <= 0.01),
