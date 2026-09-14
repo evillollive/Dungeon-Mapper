@@ -316,3 +316,35 @@ Keep the performance probe's four cases, these two renderer cases and the five
 workflow journeys in every engine job. Read
 [the cache milestone](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone)
 for final measurements, startup costs, memory exclusions and remaining gates.
+
+### Bounded Folio floor-path regressions
+
+`ux09FolioTiles.spec.mjs` uses an in-memory Vite bundle of
+`src/test/folioTiles.render.ts`, with no production debug route. The existing
+blocking runner discovers all three cases on every engine:
+
+```bash
+QA_OUTPUT=/absolute/path/to/floor-cache npm run test:browser -- src/test/ux09FolioTiles.spec.mjs
+```
+
+The pixel matrix covers 210 combinations per engine, including cold/warm
+reuse, materials, paint/undo, derived geometry, dense floors, two backgrounds,
+three cell sizes and five DPRs. Alpha equality is exact; RGB may differ by at
+most 1/255 with mean error at most 0.01/255. The bounds are unchanged from
+the rejected bitmap candidates; current rendering reuses native vector paths.
+The other cases cover physical placement, clipping, caller state and F05
+allocation/reuse. All resolution and compositing still happen on the original
+destination, without high-DPR cutoffs. Existing export renderers remain uncached.
+
+The per-editor bounds are twelve entries and 56 native paths. No new canvases
+or image-copy operations are used. Unit/component coverage includes material
+keys, complete-variant path bounds, allocation-free warm traversal, detail-tier
+changes, high resolutions, caller alpha, project/theme/audience/print changes
+and disposal.
+
+WebKit runs the same pixel case as a fail-fast preflight before the full
+required browser suite. Set `QA_FLOOR_DIAGNOSTICS=1` when investigating raster
+behavior to attach bounded comparisons of backing sizes, readback hints,
+coordinate origins and copy modes. These diagnose the rejected bitmap approach,
+never alter the pixel assertion, and are not exposed by the production app.
+See [measured results and limitations](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone).

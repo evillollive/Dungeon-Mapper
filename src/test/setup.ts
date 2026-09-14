@@ -3,9 +3,12 @@ import '@testing-library/jest-dom/vitest';
 // jsdom has no layout or scrolling implementation.
 Element.prototype.scrollIntoView = () => {};
 
-// Match the rectangle-only Path2D used by the edge cache; pixels are browser-tested.
+// Native path geometry and pixels are exercised in the browser renderer tests.
 globalThis.Path2D = class {
   rect() {}
+  moveTo() {}
+  lineTo() {}
+  arc() {}
 } as unknown as typeof Path2D;
 
 // Mock canvas getContext for jsdom (which doesn't support Canvas)

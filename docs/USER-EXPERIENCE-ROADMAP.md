@@ -10,6 +10,16 @@
 
 **Latest performance implementation:** UX-09's bounded edge-strip cache reduces local Chromium dense-map paint/token latency by approximately 40%, with a 16 MiB raw raster ceiling per editor and no reduced detail. Painting remains above target in Chromium/Firefox, and the high-end development Mac is not representative hardware. See [memory limits, measured results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone). The keyboard milestone and UX-08's [export/offline contract](./UX-08-HANDOFF.md) are unchanged. Remaining art, participant, physical-device, screen-reader and performance acceptance gates stay open.
 
+**Floor-rendering follow-up, 2026-09-14:** A per-editor cache reuses twelve
+Folio floor variants and at most 56 native paths, with no extra raster buffers,
+map-state caching or export changes. Bitmap prototypes were rejected after
+Linux WebKit fidelity and latency failures. The native-path approach keeps
+rasterization on the original destination. Local Firefox/WebKit painting
+improves; Chromium's gain is modest and token p95 is mixed. Warm-ready timing
+remains variable and no release performance target is accepted.
+See [floor-cache limits and measured results](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone).
+The full renderer redesign and reference-device gates remain outside this slice.
+
 **Cleanup follow-up, 2026-09-12:** The remaining five hook warnings are resolved
 and the lint ceiling is zero. Older performance PRs #155 and #164 are reconciled
 against the renderer work rather than merged unchanged: same-cell preview
@@ -1170,7 +1180,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; complete twelve-token catalog and copy approved September 14 in #178 | [Approved token catalog](./media/ux07-token-catalog/reference.png); remaining art packages and human/device release gates stay open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
-| UX-09 | In progress; browser/CI, keyboard and F05 diagnostics merged in #171/#172/#174; bounded edge-strip cache implemented | [Cache limits, final F05 results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone); painting/token latency, human screen-reader and reference-device performance acceptance remain open |
+| UX-09 | In progress; browser/CI, keyboard and F05 diagnostics merged in #171/#172/#174; bounded edge-strip and native floor-path caches implemented | [Floor-cache limits and final F05 results](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone); painting/token latency, loading, human screen-reader and reference-device performance acceptance remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |
 
 ## 10. Relationship to the previous roadmap

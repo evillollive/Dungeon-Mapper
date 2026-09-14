@@ -490,10 +490,111 @@ Evidence is in `logs/ci-clipped-ubuntu-34702635983`,
 in the follow-up worktree. The exact production-head Ubuntu checks remain
 pending after push; no assertions, F05 samples, CI settings or timeouts changed.
 
+## Bounded Folio floor-path milestone
+
+September 14, 2026, based on `e6c0b11`. The unchanged F05 Chromium profile
+identified repeated Folio tile drawing as the largest remaining art cost:
+approximately 1,977 ms inclusive across the profiled interaction sequence,
+including 1,821 ms in shape drawing and its native Canvas calls.
+
+`src/themes/folio-v1/tileCache.ts` now reuses only the four variants of
+flagstone, worn wood and earth floors in `MapCanvas`. Walls, water, symbols,
+other themes and all export renderers keep their direct drawing paths. The
+versioned artwork, source fingerprints, map schema, fog policy, derived geometry,
+furnishings, lighting and gesture/undo implementation are unchanged.
+
+### Admission, memory and fidelity
+
+Each editor owns at most **twelve variants and 56 native `Path2D` objects**.
+The cache retains immutable line/circle paths and rectangle commands. It
+creates no canvases, bitmaps, image copies or additional raster pages.
+The existing edge cache's 16 MiB raw raster ceiling is unchanged; native path
+storage is separately bounded by object count, not an asserted byte estimate.
+
+Floors are drawn into the original destination context, preserving primitive
+order, materials, contours, resolution and caller compositing. Size changes
+refresh the detail tier. DPR and transforms are applied at drawing time without
+raster resampling or a high-resolution cutoff. Project/level changes,
+dimensions, themes, audience, print mode and unmount release retained paths.
+Token movement, fog, painting and undo reuse artwork, never cached map state.
+
+**Rejected bitmap approaches and Linux investigation:** CI run `34837437995`
+at `0ce50af` exposed Linux WebKit floor-sprite differences up to 14/255.
+Uniform backing surfaces in `34690f7` did not solve the pixel mismatch and
+introduced a performance regression in run `34838899112`: all three F05
+repetitions exceeded their unchanged 180-second limits. Traces show
+3.6-3.9-second drawing waits, not missing commit events.
+
+The owner explicitly approved a focused Linux investigation after that bounded
+pass was paused. Diagnostics in run `34840840359` vary backing size,
+`willReadFrequently`, source origin and whole/clipped/cropped copies.
+Changing copy mode or normalizing geometry does not remove the differences.
+Rasterization changes with surface size and readback hints; drawing at the
+original origin on an equally sized surface reproduces the reference.
+That does not justify allocating full-map buffers for every tile variant.
+Both sprite implementations are therefore replaced, not conditionally shipped.
+There is no browser/OS branch, no main-canvas backend change and no relaxed
+image tolerance. The reusable native-path approach avoids cross-surface
+rasterization entirely.
+
+The new blocking browser matrix compares direct and cached rendering for
+210 combinations per engine: 8/32/64-pixel cells, DPR 1/1.25/1.5/2/3,
+transparent and paper backgrounds, cold/warm traversal, paint/undo, materials,
+derived room/river geometry and a dense floor grid. Alpha must match exactly;
+RGB allows one 8-bit rounding step, with mean error at most 0.01/255.
+Local native-path maxima are 0/0/0 for Chromium/Firefox/WebKit, with zero alpha
+or mean difference. Eight additional scenarios per engine cover physical
+translation, clipping, caller state and cold/warm path reuse.
+
+### Comparable local observations
+
+Both baseline and final runs use the unchanged F05 diagnostic, three
+independent repetitions per engine, identical samples and persistence/undo
+assertions, 1440 x 900, DPR 1, and no CPU throttling. Host: Apple M5 Max,
+64 GiB, macOS kernel 25.6.0. Browsers: Chromium 151.0.7922.34,
+Firefox 153.0 and WebKit 26.5. These are ranges of repetition p95 values,
+not pooled statistics or representative-device acceptance.
+
+| Engine | Paint p95 before / after (ms) | Token p95 before / after (ms) | Warm-ready before / after (s) |
+| --- | --- | --- | --- |
+| Chromium | 153.2-161.7 / 150.6-151.8 | 151.8-157.4 / 143.8-157.0 | 1.49-1.54 / 1.49-2.00 |
+| Firefox | 158-193 / 140-143 | 164-204 / 138-144 | 1.25-1.27 / 1.24-1.25 |
+| WebKit | 91-99 / 77-79 | 84-98 / 76-86 | 1.49-1.54 / 1.47-1.53 |
+
+Chromium repetition one is profiled in both runs; its paint/token p95 changes
+from 157.3/157.4 to 150.6/147.2 ms. The two unprofiled repetitions change from
+161.7/151.8 and 153.2/153.1 to 151.6/143.8 and 151.8/157.0 ms.
+Chromium's improvement is modest and token p95 is mixed; its last token
+repetition is slightly slower. Firefox and WebKit paint p95 are consistently
+lower in this local sample. This is not a universal speedup or a 100 ms
+desktop-target pass. Earlier approximately 20% Chromium figures described
+rejected raster prototypes and must not be attributed to the native-path change.
+
+Chromium's warm-ready proxy remains variable, including one repetition at
+2.00 seconds. It includes browser-driver assertions as well as drawing.
+No startup improvement or loading acceptance is claimed.
+
+The current native-path candidate passes 82 focused unit/component cases,
+strict harness type-checking, lint/build, nine floor browser cases and all
+twelve F05 cases locally. Raster-specific allocation tests have been replaced
+with path-count, no-canvas-allocation, high-resolution and caller-alpha coverage.
+The original pixel matrix, clip/state scenarios, F05 samples, timing targets,
+retries and timeouts remain unchanged. WebKit runs the pixel matrix as an early
+CI preflight; failure blocks the job before expensive full-suite execution.
+Passing it still requires the full unchanged browser and UX-08 suites.
+
+Current artifacts: `files/perf-baseline`, `files/floor-vector-final` and
+`files/perf-vector-final`. Rejected approaches and diagnostics remain in
+`files/ci-webkit`, `files/ci-webkit-surface`, `files/ci-floor-diagnostics`,
+`files/floor-surface-fix` and `files/perf-surface-fix`.
+Exact-head remote CI remains the landing gate. UX-09 and human/device
+release qualification remain open.
+
 ### Next bounded performance work
 
-Profile the remaining full tile, furnishing and lighting redraws before choosing
-another bounded optimization. A static/dynamic-layer and dirty-region redesign
+Re-profile the remaining non-floor tile, furnishing, edge and lighting redraws
+before choosing another bounded optimization. Investigate the Chromium
+warm-readiness interval separately from first-draw time. A static/dynamic-layer and dirty-region redesign
 is a separate, larger scope requiring explicit agreement on invalidation and
 memory budgets. Preserve fog, derived geometry, cursor previews, undo and export
 behavior; do not silently reduce detail or add unbounded full-map bitmaps.

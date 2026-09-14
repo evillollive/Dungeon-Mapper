@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import MapCanvas from '../MapCanvas';
 import { createDefaultMap } from '../../hooks/mapStateUtils';
 import { EdgeBlendCache } from '../../utils/edgeBlend';
+import { FolioTileCache } from '../../themes/folio-v1/tileCache';
 
 const EMPTY_ARRAY = [] as const;
 const noop = () => {};
@@ -93,6 +94,61 @@ describe('MapCanvas render performance', () => {
     unmount();
     expect(cache.stats).toMatchObject({ rasterBytes: 0, entries: 0 });
   });
+
+  it('retains floor paths through token, fog, material, paint and undo edits', () => {
+    const prepare = vi.spyOn(FolioTileCache.prototype, 'prepare');
+    const props = mapCanvasProps();
+    props.viewMode = 'gm';
+    props.themeId = 'dungeon-folio-v1';
+    props.map.tiles[0][0] = { type: 'floor' };
+    const { rerender, unmount } = render(<MapCanvas {...props} />);
+    const cache = prepare.mock.contexts[0];
+    const initial = cache.stats;
+    expect(initial.entries).toBeGreaterThan(0);
+    rerender(<MapCanvas {...props} map={{ ...props.map,
+      tokens: props.map.tokens?.map(token => ({ ...token, x: token.x + 1 })),
+      fogEnabled: true, fog: props.map.tiles.map(row => row.map(() => true)),
+    }} gmShowFog />);
+    expect(cache.stats.misses).toBe(initial.misses);
+    expect(cache.stats.hits).toBeGreaterThan(initial.hits);
+    const changedTiles = props.map.tiles.map(row => row.slice());
+    changedTiles[0][0] = { type: 'floor', floorMaterial: 'folio-earth-v1' };
+    rerender(<MapCanvas {...props} map={{ ...props.map, tiles: changedTiles }} />);
+    expect(cache.stats.misses).toBe(initial.misses + 1);
+    const paintedTiles = changedTiles.map(row => row.slice());
+    paintedTiles[0][0] = { type: 'water' };
+    rerender(<MapCanvas {...props} map={{ ...props.map, tiles: paintedTiles }} />);
+    rerender(<MapCanvas {...props} />);
+    expect(cache.stats.misses).toBe(initial.misses + 1);
+    unmount();
+    expect(cache.stats).toMatchObject({ entries: 0, paths: 0 });
+  });
+
+  it.each(['project', 'dimensions', 'theme', 'custom themes', 'player', 'print'] as const)(
+    'releases floor paths on %s changes',
+    change => {
+      const prepare = vi.spyOn(FolioTileCache.prototype, 'prepare');
+      const clear = vi.spyOn(FolioTileCache.prototype, 'clear');
+      const props = mapCanvasProps();
+      props.viewMode = 'gm';
+      props.themeId = 'dungeon-folio-v1';
+      props.map.tiles[0][0] = { type: 'floor' };
+      const { rerender } = render(<MapCanvas {...props} viewportKey="first:0" />);
+      const cache = prepare.mock.contexts[0];
+      expect(cache.stats.entries).toBeGreaterThan(0);
+      clear.mockClear();
+      const next = { ...props, viewportKey: 'first:0' };
+      if (change === 'project') next.viewportKey = 'second:0';
+      if (change === 'dimensions') next.map = { ...props.map, meta: { ...props.map.meta, width: 8 } };
+      if (change === 'theme') next.themeId = 'wilderness';
+      if (change === 'custom themes') next.customThemes = [];
+      if (change === 'player') next.viewMode = 'player';
+      if (change === 'print') next.printMode = true;
+      rerender(<MapCanvas {...next} />);
+      expect(clear).toHaveBeenCalled();
+      if (change === 'theme' || change === 'print') expect(cache.stats.paths).toBe(0);
+    },
+  );
 
   it.each(['project', 'dimensions', 'theme', 'custom themes', 'player', 'print', 'disabled'] as const)(
     'invalidates edge strips on %s changes',

@@ -50,6 +50,11 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps ${{ matrix.engine }}
       - run: npm run build
+      - name: Floor pixel preflight
+        if: matrix.engine == 'webkit'
+        env:
+          QA_OUTPUT: ${{ github.workspace }}/qualification-artifacts/floor-preflight
+        run: npm run test:browser:run -- src/test/ux09FolioTiles.spec.mjs --project=webkit --grep="preserve direct pixels"
       - run: npm run test:browser:run -- --project=${{ matrix.engine }}
       - name: Export, offline and controlled update journeys
         if: ${{ !cancelled() }}
