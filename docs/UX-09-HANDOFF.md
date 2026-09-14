@@ -490,7 +490,7 @@ Evidence is in `logs/ci-clipped-ubuntu-34702635983`,
 in the follow-up worktree. The exact production-head Ubuntu checks remain
 pending after push; no assertions, F05 samples, CI settings or timeouts changed.
 
-## Bounded Folio floor-sprite milestone
+## Bounded Folio floor-path milestone
 
 September 14, 2026, based on `e6c0b11`. The unchanged F05 Chromium profile
 identified repeated Folio tile drawing as the largest remaining art cost:
@@ -505,50 +505,46 @@ furnishings, lighting and gesture/undo implementation are unchanged.
 
 ### Admission, memory and fidelity
 
-Each editor owns at most twelve sprites and **1 MiB of raw RGBA raster**.
-Sprites retain native device-pixel resolution, including a padded fringe for
-wood joints. The F05 fixture retains 836,352 bytes at each of
-DPR 1 / 2 / 3, with twelve allocations followed by allocation-free traversals.
-Together with the existing edge-strip allowance, the two caches have a
-17 MiB raw raster ceiling per editor. This excludes browser/GPU copies,
-Canvas-object overhead, the main canvas, paper texture and other application
-memory. There are no full-map snapshots or static/dynamic layer changes.
+Each editor owns at most **twelve variants and 56 native `Path2D` objects**.
+The cache retains immutable line/circle paths and rectangle commands. It
+creates no canvases, bitmaps, image copies or additional raster pages.
+The existing edge cache's 16 MiB raw raster ceiling is unchanged; native path
+storage is separately bounded by object count, not an asserted byte estimate.
 
-Only uniform, integer-aligned device-pixel placement with ordinary source-over
-compositing is admitted. Tiles above 128 physical pixels, unsupported drawing
-state, unavailable sprite contexts, and budget overflow use full-detail direct
-drawing. All twelve admitted variants fit within that bound without
-eviction/reallocation churn. Size/DPR changes,
-project/level changes, dimensions, themes, audience changes, print mode and
-unmount release retained backing surfaces. Token movement, fog, painting and
-undo reuse immutable artwork rather than cached map state.
+Floors are drawn into the original destination context, preserving primitive
+order, materials, contours, resolution and caller compositing. Size changes
+refresh the detail tier. DPR and transforms are applied at drawing time without
+raster resampling or a high-resolution cutoff. Project/level changes,
+dimensions, themes, audience, print mode and unmount release retained paths.
+Token movement, fog, painting and undo reuse artwork, never cached map state.
 
-The initial all-tile prototype was rejected: water contours cross cell
-boundaries, and compositing them through sprites changed their pixels.
-Restricting admission to floors preserves those contours on the original
-renderer. Larger translated curves also exposed WebKit raster differences,
-so sprites above 128 physical pixels are not admitted on any engine. Neither
-case reduces detail or introduces a browser-specific branch.
+**Rejected bitmap approaches and Linux investigation:** CI run `34837437995`
+at `0ce50af` exposed Linux WebKit floor-sprite differences up to 14/255.
+Uniform backing surfaces in `34690f7` did not solve the pixel mismatch and
+introduced a performance regression in run `34838899112`: all three F05
+repetitions exceeded their unchanged 180-second limits. Traces show
+3.6-3.9-second drawing waits, not missing commit events.
 
-**Linux surface follow-up:** CI run `34837437995` at `0ce50af` passed build/test,
-Chromium, Firefox, all nineteen other WebKit browser cases and UX-08, but the
-new floor pixel matrix exposed Linux WebKit small-surface differences up to
-14/255. The previously admitted 132-pixel backing surfaces stayed within the
-existing one-step bound. All sprites now use that uniform backing size, with
-a retained rectangle-only clip around the actual padded tile during whole-source
-copies. This avoids both tiny-surface rasterization and cropped-source sampling.
-The revised 1 MiB ceiling replaces the initial 512 KiB budget; it does not admit
-larger or lower-resolution artwork. The pixel bounds and complete matrix are
-unchanged. A unit regression fixes backing dimensions and clip reuse.
+The owner explicitly approved a focused Linux investigation after that bounded
+pass was paused. Diagnostics in run `34840840359` vary backing size,
+`willReadFrequently`, source origin and whole/clipped/cropped copies.
+Changing copy mode or normalizing geometry does not remove the differences.
+Rasterization changes with surface size and readback hints; drawing at the
+original origin on an equally sized surface reproduces the reference.
+That does not justify allocating full-map buffers for every tile variant.
+Both sprite implementations are therefore replaced, not conditionally shipped.
+There is no browser/OS branch, no main-canvas backend change and no relaxed
+image tolerance. The reusable native-path approach avoids cross-surface
+rasterization entirely.
 
 The new blocking browser matrix compares direct and cached rendering for
 210 combinations per engine: 8/32/64-pixel cells, DPR 1/1.25/1.5/2/3,
 transparent and paper backgrounds, cold/warm traversal, paint/undo, materials,
 derived room/river geometry and a dense floor grid. Alpha must match exactly;
 RGB allows one 8-bit rounding step, with mean error at most 0.01/255.
-Final maxima are 0/0/1 for Chromium/Firefox/WebKit; WebKit's largest mean
-difference is 0.001953125/255. Eight additional scenarios per engine cover
-physical translation, clipping, caller state and cold/warm copies.
+Local native-path maxima are 0/0/0 for Chromium/Firefox/WebKit, with zero alpha
+or mean difference. Eight additional scenarios per engine cover physical
+translation, clipping, caller state and cold/warm path reuse.
 
 ### Comparable local observations
 
@@ -561,40 +557,38 @@ not pooled statistics or representative-device acceptance.
 
 | Engine | Paint p95 before / after (ms) | Token p95 before / after (ms) | Warm-ready before / after (s) |
 | --- | --- | --- | --- |
-| Chromium | 153.2-161.7 / 126.6-127.9 | 151.8-157.4 / 124.4-135.3 | 1.49-1.54 / 1.44-1.96 |
-| Firefox | 158-193 / 113-116 | 164-204 / 110-114 | 1.25-1.27 / 1.21-1.24 |
-| WebKit | 91-99 / 73-90 | 84-98 / 75-76 | 1.49-1.54 / 1.43-1.48 |
+| Chromium | 153.2-161.7 / 150.6-151.8 | 151.8-157.4 / 143.8-157.0 | 1.49-1.54 / 1.49-2.00 |
+| Firefox | 158-193 / 140-143 | 164-204 / 138-144 | 1.25-1.27 / 1.24-1.25 |
+| WebKit | 91-99 / 77-79 | 84-98 / 76-86 | 1.49-1.54 / 1.47-1.53 |
 
 Chromium repetition one is profiled in both runs; its paint/token p95 changes
-from 157.3/157.4 to 127.9/124.4 ms. The two unprofiled repetitions change from
-161.7/151.8 and 153.2/153.1 to 126.6/133.8 and 127.6/135.3 ms.
-This is roughly 17-22% less paint latency and 12-21% less token latency in
-Chromium, not a 100 ms
-desktop-target pass.
+from 157.3/157.4 to 150.6/147.2 ms. The two unprofiled repetitions change from
+161.7/151.8 and 153.2/153.1 to 151.6/143.8 and 151.8/157.0 ms.
+Chromium's improvement is modest and token p95 is mixed; its last token
+repetition is slightly slower. Firefox and WebKit paint p95 are consistently
+lower in this local sample. This is not a universal speedup or a 100 ms
+desktop-target pass. Earlier approximately 20% Chromium figures described
+rejected raster prototypes and must not be attributed to the native-path change.
 
-Chromium's warm-ready proxy remained variable: two repetitions report
-1.44-1.46 seconds, while one reports 1.96 seconds. Its first draw ends at
-1.39-1.43 seconds, versus 1.41-1.45 before. The extra interval in the slow
-repetition follows drawing and includes the harness's readiness assertions.
-Earlier candidates also recorded that interval. This does not establish a
-startup improvement or dismiss the readiness difference as noise. Loading
-acceptance remains open.
+Chromium's warm-ready proxy remains variable, including one repetition at
+2.00 seconds. It includes browser-driver assertions as well as drawing.
+No startup improvement or loading acceptance is claimed.
 
-Local evidence includes 91 focused unit/component cases, strict harness
-type-checking, lint and build, all eight production workflows and the existing
-edge-cache cases on three engines, the final nine floor-cache browser cases,
-and all twelve final F05 cases. After the surface correction, the 34 directly
-affected unit/component cases, all nine floor cases and all twelve F05 cases
-pass again locally, alongside build/lint. The broader candidate run exposed the
-high-resolution WebKit issue above; the final floor matrix confirms its direct
-fallback. No existing pixel bounds, F05 samples, timing targets, retries or
-timeouts changed. The new spec is included in the existing blocking CI runner.
+The current native-path candidate passes 82 focused unit/component cases,
+strict harness type-checking, lint/build, nine floor browser cases and all
+twelve F05 cases locally. Raster-specific allocation tests have been replaced
+with path-count, no-canvas-allocation, high-resolution and caller-alpha coverage.
+The original pixel matrix, clip/state scenarios, F05 samples, timing targets,
+retries and timeouts remain unchanged. WebKit runs the pixel matrix as an early
+CI preflight; failure blocks the job before expensive full-suite execution.
+Passing it still requires the full unchanged browser and UX-08 suites.
 
-Artifacts are in this session's `files/perf-baseline`, `files/perf-candidate`,
-`files/floor-final`, `files/perf-final`, `files/ci-webkit`,
-`files/floor-surface-fix` and `files/perf-surface-fix`. The surface-fix measurements
-supersede the earlier candidate figures. Exact-head remote CI remains the
-landing gate. UX-09 and the human/device release gates remain open.
+Current artifacts: `files/perf-baseline`, `files/floor-vector-final` and
+`files/perf-vector-final`. Rejected approaches and diagnostics remain in
+`files/ci-webkit`, `files/ci-webkit-surface`, `files/ci-floor-diagnostics`,
+`files/floor-surface-fix` and `files/perf-surface-fix`.
+Exact-head remote CI remains the landing gate. UX-09 and human/device
+release qualification remain open.
 
 ### Next bounded performance work
 

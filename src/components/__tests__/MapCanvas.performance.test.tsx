@@ -95,7 +95,7 @@ describe('MapCanvas render performance', () => {
     expect(cache.stats).toMatchObject({ rasterBytes: 0, entries: 0 });
   });
 
-  it('retains floor sprites through token, fog, material, paint and undo edits', () => {
+  it('retains floor paths through token, fog, material, paint and undo edits', () => {
     const prepare = vi.spyOn(FolioTileCache.prototype, 'prepare');
     const props = mapCanvasProps();
     props.viewMode = 'gm';
@@ -121,11 +121,11 @@ describe('MapCanvas render performance', () => {
     rerender(<MapCanvas {...props} />);
     expect(cache.stats.misses).toBe(initial.misses + 1);
     unmount();
-    expect(cache.stats).toMatchObject({ entries: 0, rasterBytes: 0 });
+    expect(cache.stats).toMatchObject({ entries: 0, paths: 0 });
   });
 
   it.each(['project', 'dimensions', 'theme', 'custom themes', 'player', 'print'] as const)(
-    'releases floor sprites on %s changes',
+    'releases floor paths on %s changes',
     change => {
       const prepare = vi.spyOn(FolioTileCache.prototype, 'prepare');
       const clear = vi.spyOn(FolioTileCache.prototype, 'clear');
@@ -146,7 +146,7 @@ describe('MapCanvas render performance', () => {
       if (change === 'print') next.printMode = true;
       rerender(<MapCanvas {...next} />);
       expect(clear).toHaveBeenCalled();
-      if (change === 'theme' || change === 'print') expect(cache.stats.rasterBytes).toBe(0);
+      if (change === 'theme' || change === 'print') expect(cache.stats.paths).toBe(0);
     },
   );
 

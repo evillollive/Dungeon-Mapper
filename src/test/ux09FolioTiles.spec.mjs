@@ -18,7 +18,7 @@ test.beforeAll(async () => {
   harness = entry.code;
 });
 
-test('Folio tile sprites preserve direct pixels across materials, edits and device scales', async ({ page }, info) => {
+test('Folio floor paths preserve direct pixels across materials, edits and device scales', async ({ page }, info) => {
   await page.setContent('<title>Folio tile renderer comparison</title>');
   const result = await page.evaluate(async source => {
     const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
@@ -41,18 +41,18 @@ test('Folio tile sprites preserve direct pixels across materials, edits and devi
     }, harness);
     await info.attach('folio-raster-diagnostics', { body: JSON.stringify(diagnostics), contentType: 'application/json' });
   }
-  // Translating the same vector commands to a small surface can round RGB by one
-  // 8-bit step. Coverage must stay exact, with no contour or opacity allowance.
+  // Keep the original one-step RGB bound when comparing native path rendering.
+  // Coverage must stay exact, with no contour or opacity allowance.
   assert(result.every(sample => sample.alphaDelta === 0 && sample.maxDelta <= 1 && sample.meanDelta <= 0.01),
     `Tile pixels changed: ${JSON.stringify(result.filter(sample => sample.alphaDelta > 0 || sample.maxDelta > 1 || sample.meanDelta > 0.01).slice(0, 5))}`);
 });
 
-test('Folio tile sprite copies preserve physical placement, clipping and caller state', async ({ page }) => {
-  await page.setContent('<title>Folio tile copy state</title>');
+test('Folio floor paths preserve physical placement, clipping and caller state', async ({ page }) => {
+  await page.setContent('<title>Folio floor path state</title>');
   const checks = await page.evaluate(async source => {
     const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
     try {
-      return (await import(url)).verifyFolioTileCopyState();
+      return (await import(url)).verifyFolioTilePathState();
     } finally {
       URL.revokeObjectURL(url);
     }
@@ -60,8 +60,8 @@ test('Folio tile sprite copies preserve physical placement, clipping and caller 
   assert.equal(checks, 8);
 });
 
-test('F05 Folio tile sprites stay bounded without warm traversal allocations', async ({ page }, info) => {
-  await page.setContent('<title>F05 tile sprite allocation</title>');
+test('F05 Folio floor paths stay bounded without warm traversal allocations', async ({ page }, info) => {
+  await page.setContent('<title>F05 floor path allocation</title>');
   const result = await page.evaluate(async ({ source, map }) => {
     const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }));
     try {

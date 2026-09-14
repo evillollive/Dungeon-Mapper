@@ -1,12 +1,12 @@
 import { ALL_TILE_TYPES, type DungeonMap, type Tile } from '../types/map';
 import { folioTheme } from '../themes/folio-v1/theme';
-import { FolioTileCache, FOLIO_TILE_CACHE_MAX_BYTES, FOLIO_TILE_CACHE_MAX_ENTRIES } from '../themes/folio-v1/tileCache';
+import { FolioTileCache, FOLIO_TILE_CACHE_MAX_PATHS, FOLIO_TILE_CACHE_MAX_ENTRIES } from '../themes/folio-v1/tileCache';
 import { deriveRenderableTiles, deriveRenderableTilesFromBase } from '../utils/derivedRenderMap';
 import { getSemanticTileType } from '../utils/customThemes';
 export { diagnoseFolioTileRasterization } from './folioTiles.diagnostics';
 
 function checkBudget(cache: FolioTileCache): void {
-  if (cache.stats.rasterBytes > FOLIO_TILE_CACHE_MAX_BYTES || cache.stats.entries > FOLIO_TILE_CACHE_MAX_ENTRIES) {
+  if (cache.stats.paths > FOLIO_TILE_CACHE_MAX_PATHS || cache.stats.entries > FOLIO_TILE_CACHE_MAX_ENTRIES) {
     throw new Error('Folio tile cache exceeded its budget');
   }
 }
@@ -97,7 +97,7 @@ export function compareFolioTilePixels() {
   }
 }
 
-export function verifyFolioTileCopyState() {
+export function verifyFolioTilePathState() {
   const canvas = document.createElement('canvas');
   canvas.width = canvas.height = 256;
   const ctx = canvas.getContext('2d');
@@ -130,14 +130,14 @@ export function verifyFolioTileCopyState() {
         cache.prepare(ctx, 32);
         cache.draw(ctx, 'floor', 2, 2, 32, context);
         cache.draw(ctx, 'floor', 2, 2, 32, context);
-        if (state() !== before) throw new Error('Sprite copy changed the caller drawing state or path');
-        if (cache.stats.hits !== 1 || cache.stats.misses !== 1) throw new Error('State scenario did not exercise cold and warm copies');
+        if (state() !== before) throw new Error('Cached drawing changed the caller state or path');
+        if (cache.stats.hits !== 1 || cache.stats.misses !== 1) throw new Error('State scenario did not exercise cold and warm paths');
         const pixels = ctx.getImageData(0, 0, 256, 256).data;
         let visible = 0;
         for (let y = 0; y < 256; y++) {
           for (let x = 0; x < 256; x++) {
             const alpha = pixels[(y * 256 + x) * 4 + 3];
-            if (alpha && y >= Math.ceil(80 * dpr + 3)) throw new Error('Sprite escaped the caller clip');
+            if (alpha && y >= Math.ceil(80 * dpr + 3)) throw new Error('Drawing escaped the caller clip');
             if (alpha) visible++;
           }
         }
@@ -151,7 +151,6 @@ export function verifyFolioTileCopyState() {
     canvas.width = canvas.height = 0;
   }
 }
-
 export function measureDenseFolioTileCache(map: DungeonMap) {
   const tiles = deriveRenderableTiles(map);
   const canvas = document.createElement('canvas');
@@ -183,10 +182,10 @@ export function measureDenseFolioTileCache(map: DungeonMap) {
         return cache.stats;
       };
       const cold = traverse(), warm = traverse();
-      if (cold.misses !== warm.misses || cold.entries !== warm.entries || cold.rasterBytes !== warm.rasterBytes) {
-        throw new Error('Unchanged traversal allocated new tile sprites');
+      if (cold.misses !== warm.misses || cold.entries !== warm.entries || cold.paths !== warm.paths) {
+        throw new Error('Unchanged traversal allocated new floor paths');
       }
-      if (warm.hits <= cold.hits) throw new Error('Unchanged traversal did not reuse tile sprites');
+      if (warm.hits <= cold.hits) throw new Error('Unchanged traversal did not reuse floor paths');
       results.push({ dpr, cold, warm });
     }
     return results;
