@@ -10,6 +10,8 @@
  * These are simplified/redrawn paths for use in this project.
  */
 
+import { FOLIO_TOKENS } from '../assets/folio-tokens-v1/catalog';
+
 export interface IconDef {
   /** Unique identifier. */
   id: string;
@@ -31,6 +33,7 @@ export const ICON_CATEGORIES = [
   'Creatures',
   'Items',
   'Environment',
+  'Folio tokens',
 ] as const;
 
 /**
@@ -260,6 +263,7 @@ export const ICONS: IconDef[] = [
     category: 'Environment',
     path: 'M176 128l-64 128h48l-48 96 96-64v48l48-80 48 80v-48l96 64-48-96h48l-64-128h-48l-16-48h-48l-16 48h-32zm80 64a48 48 0 110 96 48 48 0 010-96z',
   },
+  ...FOLIO_TOKENS,
 ];
 
 /**

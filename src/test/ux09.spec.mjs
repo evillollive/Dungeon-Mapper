@@ -7,6 +7,8 @@ import audience from './ux05Audience.browser.mjs';
 import session from './ux06Session.browser.mjs';
 import keyboard from './ux09Keyboard.browser.mjs';
 import furnishings from './ux07Furnishings.browser.mjs';
+import tokens from './ux07Tokens.browser.mjs';
+import tokenCatalog from './ux07TokenCatalog.browser.mjs';
 
 const journeys = [
   ['guided creation and library continuity', creation],
@@ -15,6 +17,8 @@ const journeys = [
   ['session recovery and two-window player display', session],
   ['keyboard critical workflows and panel accessibility', keyboard],
   ['furnishing catalog placement, transforms and player export', furnishings],
+  ['Folio token placement, affiliation and player export', tokens],
+  ['Folio token catalog placement, persistence and player export', tokenCatalog],
 ];
 
 for (const [name, journey] of journeys) {

@@ -1,17 +1,22 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { ICONS, ICON_CATEGORIES, type IconDef } from '../utils/iconLibrary';
+import type { TokenKind } from '../types/map';
+import { FOLIO_TOKEN_BY_ID } from '../assets/folio-tokens-v1/catalog';
+import { FOLIO_TOKEN_FRAMES } from '../utils/folioTokenRender';
+import FolioTokenIcon from './FolioTokenIcon';
 
 interface IconPickerProps {
   /** Whether the dialog is open. */
   open: boolean;
+  kind?: TokenKind;
   /** Called when the user picks an icon. */
   onSelect: (iconId: string) => void;
   /** Called when the dialog is dismissed without selection. */
   onCancel: () => void;
 }
 
-const IconPickerContents: React.FC<Omit<IconPickerProps, 'open'>> = ({ onSelect, onCancel }) => {
+const IconPickerContents: React.FC<Omit<IconPickerProps, 'open'>> = ({ onSelect, onCancel, kind = 'player' }) => {
   const focusTrapRef = useFocusTrap();
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
@@ -133,6 +138,13 @@ const IconPickerContents: React.FC<Omit<IconPickerProps, 'open'>> = ({ onSelect,
           ))}
         </div>
 
+        {selectedCategory === 'Folio tokens' && (
+          <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: 1.5 }}>
+            Twelve Folio troublemakers. Frame for this token: {FOLIO_TOKEN_FRAMES[kind].label}.
+            {' '}Frames follow token kind, not ownership.
+          </p>
+        )}
+
         <div
           style={{
             display: 'grid',
@@ -164,14 +176,14 @@ const IconPickerContents: React.FC<Omit<IconPickerProps, 'open'>> = ({ onSelect,
                 color: '#e8e8e8',
               }}
             >
-              <svg
+              {FOLIO_TOKEN_BY_ID.has(icon.id) ? <FolioTokenIcon token={{ icon: icon.id, kind }} /> : <svg
                 viewBox="0 0 512 512"
                 width={32}
                 height={32}
                 aria-hidden="true"
               >
                 <path d={icon.path} fill="currentColor" />
-              </svg>
+              </svg>}
               <span style={{ fontSize: '0.55rem', lineHeight: 1.1, textAlign: 'center', wordBreak: 'break-word' }}>
                 {icon.name}
               </span>
@@ -208,7 +220,7 @@ const IconPickerContents: React.FC<Omit<IconPickerProps, 'open'>> = ({ onSelect,
   );
 };
 
-const IconPicker: React.FC<IconPickerProps> = ({ open, onSelect, onCancel }) =>
-  open ? <IconPickerContents onSelect={onSelect} onCancel={onCancel} /> : null;
+const IconPicker: React.FC<IconPickerProps> = ({ open, onSelect, onCancel, kind }) =>
+  open ? <IconPickerContents onSelect={onSelect} onCancel={onCancel} kind={kind} /> : null;
 
 export default IconPicker;

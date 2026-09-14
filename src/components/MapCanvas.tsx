@@ -6,6 +6,7 @@ import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from '../utils/tokenVisibility';
 import { ICON_BY_ID } from '../utils/iconLibrary';
+import { drawFolioToken } from '../utils/folioTokenRender';
 import { drawPlacedStamp } from './canvasStamps';
 import { getCachedPaperTexture } from '../utils/paperTexture';
 import { drawEdgeBlending, EdgeBlendCache } from '../utils/edgeBlend';
@@ -340,7 +341,8 @@ function drawToken(
   ctx: CanvasRenderingContext2D,
   token: Token,
   tileSize: number,
-  isSelected: boolean = false
+  isSelected: boolean = false,
+  printMode = false,
 ) {
   const size = Math.max(1, Math.floor(token.size ?? 1));
   const px = token.x * tileSize + (tileSize * size) / 2;
@@ -358,6 +360,10 @@ function drawToken(
     ctx.lineWidth = Math.max(2, tileSize * size * 0.12);
     ctx.strokeStyle = '#ffd400';
     ctx.stroke();
+  }
+  if (drawFolioToken(ctx, token, tileSize, printMode)) {
+    ctx.restore();
+    return;
   }
   ctx.fillStyle = fill;
   ctx.beginPath();
@@ -1508,7 +1514,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     // Render tokens before fog so fogged cells in player mode genuinely
     // hide the tokens beneath them.
     for (const token of visibleTokens) {
-      drawToken(ctx, token, tileSize, token.id === selectedTokenId);
+      drawToken(ctx, token, tileSize, token.id === selectedTokenId, printMode);
     }
 
     // Live (in-progress) freehand stroke, drawn on top so the user sees

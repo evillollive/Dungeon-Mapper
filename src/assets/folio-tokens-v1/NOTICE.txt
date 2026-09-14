@@ -1,0 +1,17 @@
+Dungeon Folio token catalog, version 1.0.0, render version 1
+Original artwork by Dungeon Mapper contributors, 2026.
+SPDX-License-Identifier: AGPL-3.0-or-later
+
+Twelve original silhouettes: Warden, Wayfinder, Drake, Ranger, Duelist,
+Arcanist, Sunkeeper, Brute, Wolf, Owl, Spider and Ooze.
+Editable silhouette sources: the twelve SVG files beside this notice.
+Editable affiliation frame paths: ../../utils/folioTokenRender.ts.
+No third-party artwork, external fonts, images or runtime network requests.
+
+The owner approved the complete twelve-design catalog, affiliation frames
+and one-line copy on September 14, 2026. This supersedes pending-review labels
+from earlier drafts. Version 1.0.0 preserves the final 0.2.4 artwork, scales,
+IDs and source fingerprints without further visual changes.
+The iteration and approval history is recorded in the UX roadmap.
+Versioned icon IDs preserve existing choices.
+Affiliation uses existing player/npc/monster kinds, not ownership or rules.

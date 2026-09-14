@@ -836,6 +836,119 @@ This completes implementation and owner visual acceptance of the planned
 furnishing count, not the token kit, remaining launch artwork, physical-device/print
 review or UX-09 performance qualification.
 
+**Fifth bounded milestone, September 14, 2026: three-token visual reference**
+
+ART-04 starts with original **Warden**, **Wayfinder** and **Drake** silhouettes,
+not the twelve-token expansion. Dark ink on an ivory field separates the
+figure from the map. Party tokens use a blue shield and diamond crest, NPCs
+a green round seal with paired marks, and monsters a rust-red hexagon and
+chevron. All three frames work with every silhouette. Print companions retain
+the outlines and marks without relying on color. Selection remains the existing
+independent outer ring; frames do not grant ownership or add game rules.
+
+Choose **Folio tokens** in the placement icon picker, or open the new
+**The Lantern Watch** sample (`folio-token-watch`). The sample copies the
+furnished Keeper's Hall without changing that earlier sample or its legacy
+tokens. It includes three public figures and a hidden lookout for player-view
+review. Existing icons, emoji, custom token colors and saved token IDs are not
+replaced. The new IDs use `folio-token-v1-*` in the existing `Token.icon` field;
+there is no project/session schema change or dependency addition.
+
+The original SVG sources, source fingerprints, provenance and manifest live
+in `src/assets/folio-tokens-v1`. The candidate pack version is `0.1.0`, render
+version 1. Shared vector descriptions drive the picker, initiative, map,
+player display and SVG; print uses black/white paints. A twelve-path maximum
+bundled geometry cache is independent of token count, affiliation color and
+scale, with no new raster allocation.
+
+The first local production journeys cover creation, crossed silhouette/kind
+placement, cancellation, coordinate edits, undo/redo, reload, private JSON,
+player SVG and the 390 x 844 player viewport in Chromium, Firefox and WebKit.
+The renderer matrix covers nine silhouette/frame combinations at 16/24/32/64
+pixels per cell and one/two/three-cell footprints. Canvas/editor and print
+comparisons retain a maximum 2/255 channel difference and mean below 0.01/255;
+SVG mean is below 2/255 within the actual token footprint, not diluted by
+empty surroundings. These are artwork/compatibility observations, not
+physical-device, printer, participant or F05 performance qualification.
+
+**Owner template approval, September 14, 2026:** The owner approved the short,
+playful copy and the reference direction: "Yes, perfect, use these as the
+template for the rest." The later six-artwork revision request below
+supersedes the original Drake approval. Historical reference evidence:
+[reference trio](./media/ux07-tokens/reference.png),
+[all affiliations in color, grayscale and print](./media/ux07-tokens/affiliations.png),
+[furnished DM/player/print/SVG maps](./media/ux07-tokens/maps.png),
+[production editor](./media/ux07-tokens/editor.png), and
+[phone player preview](./media/ux07-tokens/player-phone.png).
+The [development guide](./DEVELOPMENT.md#folio-token-reference-qualification)
+documents the interactive review and reproduction commands.
+
+**Sixth bounded milestone, September 14, 2026: full twelve-token catalog**
+
+Ranger, Duelist, Arcanist, Sunkeeper, Brute, Wolf, Owl, Spider and Ooze join
+the three-token reference. Every character gets one short, playful sentence.
+All twelve use the same three shape-coded affiliation frames and monochrome
+companions. The new **The Crooked Company** sample (`folio-crooked-company`)
+places the complete kit in the furnished roadside refuge, with a separate
+hidden lookout. The original Lantern Watch composition remains available.
+
+**Owner-requested revision:** After reviewing the expansion, the owner asked
+for new or revised **Drake, Ranger, Duelist, Brute, Owl and Ooze** artwork.
+The redraw favors a smoother dragon profile, a hooded bow carrier, a masked
+fencer, a broad ogre bust, a compact perched owl and a faceless puddle of slime.
+The other six silhouettes, all frames and all one-line descriptions stay
+unchanged by this revision.
+
+**Portrait follow-up:** The owner narrowed the remaining feedback to Ranger
+and Duelist. Both now use upper-body portraits rather than full-body poses:
+Ranger has a hood and quiver; Duelist has a feathered hat and rapier.
+The other ten assets, frames and one-liners are unchanged by this follow-up.
+The owner then accepted Duelist and requested simpler Ranger and Sunkeeper
+symbols. Ranger now uses a bow-and-quiver emblem and Sunkeeper a sun medallion,
+with no figures. The other ten assets, frames and all one-liners remain
+unchanged by that revision.
+
+**Further simplification:** The owner next requested Warden as a shield,
+Brute as just a head/face, Duelist as a hat and sword, and Arcanist as a
+wizard hat and staff. Those four now use the requested symbols with no
+bodies, while the other eight assets, frames and captions stay unchanged.
+**Owner artwork approval, September 14, 2026:** After reviewing the final
+catalog at `0a1bf97`, the owner said, "Okay good, move forward with these."
+This approves all twelve designs, their affiliation frames and one-line
+captions, including the final four simplifications. The dated approval
+supersedes pending-review notes in earlier iterations. It does not waive
+participant, physical-device, printer or performance qualification.
+
+The approved pack is `1.0.0`, render version 1, with the final `0.2.4` artwork,
+IDs, scales and source fingerprints unchanged. The requested
+Drake redraw deliberately updates its existing draft ID; its earlier SVG
+remains in Git history and the original reference screenshots. No released
+legacy icon, project/session schema or dependency changes. The twelve source
+SVGs total 5,989 bytes and 2,132 bytes gzip. At most 21 bundled paths are
+retained, independent of token count, with no raster atlas. Wide Spider/Ooze
+figures use pack-defined glyph sizing so they do not crowd affiliation frames.
+
+The expanded placement journey exposed an existing React batching defect:
+token IDs were incremented only if a state updater ran synchronously.
+Consecutive picker placements could reuse an ID, so deleting one removed
+several tokens. Placement now reserves and returns a unique ID before
+dispatch, validates the footprint, and retains the generation guard. Focused
+StrictMode regressions cover queued placement, independent deletion,
+undo/redo and the legacy icon path.
+
+The renderer covers 36 silhouette/frame combinations at four cell sizes and
+three footprints, 432 comparisons per engine. The original raster bounds,
+browser timeouts and performance gates are unchanged. The catalog journey
+adds all nine new assets through the picker, checks distinct identities,
+reload/backup, independent deletion, and desktop/phone player output.
+This is not physical-device, printer, participant or F05 qualification.
+
+Approved artwork: [all twelve tokens](./media/ux07-token-catalog/reference.png),
+[color/grayscale/print affiliations](./media/ux07-token-catalog/affiliations.png),
+[composed maps](./media/ux07-token-catalog/maps.png),
+[production editor](./media/ux07-token-catalog/editor.png), and
+[phone player view](./media/ux07-token-catalog/player-phone.png).
+
 **Deliverables:** ART-01 through ART-04, ART-06 through ART-08 for the initial release, plus asset manifest/provenance, pack/version selection, previews, deterministic variants, caching, and fallbacks. ART-05/09 extend after the dungeon slice is approved.
 
 **Implementation anchors:** `src/themes/*`, existing art utilities/catalogs, `artStylePresets.ts`, `MapCanvas.tsx`, `renderMap.ts`, `export.ts`, new versioned asset directories.
@@ -1055,7 +1168,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; current production journey passes Chromium, Firefox and WebKit in UX-09 | [Original policy and evidence](./UX-05-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
-| UX-07 | Foundation/materials merged in #167/#168; eight-piece furnishing palette approved in #169; expanded 24-piece catalog approved September 12 in #177 | [Approved expanded catalog](./media/ux07-catalog/catalog.png); token sets and remaining art packages stay open |
+| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; complete twelve-token catalog and copy approved September 14 in #178 | [Approved token catalog](./media/ux07-token-catalog/reference.png); remaining art packages and human/device release gates stay open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; browser/CI, keyboard and F05 diagnostics merged in #171/#172/#174; bounded edge-strip cache implemented | [Cache limits, final F05 results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone); painting/token latency, human screen-reader and reference-device performance acceptance remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |

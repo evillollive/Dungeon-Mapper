@@ -3,6 +3,8 @@ import { TOKEN_KIND_COLORS } from '../types/map';
 import type { TileTheme } from '../themes/index';
 import { getPaperTint } from '../themes/index';
 import { ICON_BY_ID } from './iconLibrary';
+import { folioTokenSVG } from './folioTokenRender';
+import { sanitizeColor } from './svgColor';
 import { getStampDef } from './stampCatalog';
 import { folioStampShadowSVG } from './folioFurnishingRender';
 import { getFolioFurnishing } from '../assets/folio-furnishings-v1/catalog';
@@ -397,6 +399,11 @@ export function buildMapSVG(
   for (const token of map.tokens ?? []) {
     if (isPlayerView && isTokenFogged(token, fog, dynamicFogActive ? new Set<string>() : undefined, map.explored)) continue;
     const sz = Math.max(1, Math.floor(token.size ?? 1));
+    const folio = folioTokenSVG(token);
+    if (folio) {
+      svg += `<g transform="translate(${token.x * tileSize} ${token.y * tileSize}) scale(${tileSize * sz / 512})">${folio}</g>`;
+      continue;
+    }
     const tcx = token.x * tileSize + (tileSize * sz) / 2;
     const tcy = token.y * tileSize + (tileSize * sz) / 2;
     const r = tileSize * sz * 0.42;
@@ -484,16 +491,6 @@ function escapeXML(s: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
-}
-
-function sanitizeColor(value: string | undefined, fallback: string): string {
-  if (!value) return fallback;
-  const trimmed = value.trim();
-  if (/^#[0-9a-f]{3,8}$/i.test(trimmed)) return trimmed;
-  if (/^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)$/i.test(trimmed)) {
-    return escapeXML(trimmed);
-  }
-  return fallback;
 }
 
 function sanitizeImageDataUrl(value: string): string | null {

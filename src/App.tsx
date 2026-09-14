@@ -339,6 +339,7 @@ function App() {
   // Icon picker dialog state. When a token is placed and the user should
   // pick an icon, we store the pending token details and show the picker.
   const [showIconPicker, setShowIconPicker] = useState(false);
+  const [tokenIconKind, setTokenIconKind] = useState<TokenKind>('player');
   const pendingTokenRef = useRef<{
     kind: TokenKind; x: number; y: number; label?: string; size?: number;
   } | null>(null);
@@ -598,6 +599,7 @@ function App() {
       }
       // Store the pending token and open the icon picker.
       pendingTokenRef.current = { kind, x, y, label, size };
+      setTokenIconKind(kind);
       setShowIconPicker(true);
     },
     [viewMode]
@@ -1592,6 +1594,7 @@ function App() {
         />
       )}
       <IconPicker
+        kind={tokenIconKind}
         open={showIconPicker}
         onSelect={handleIconSelected}
         onCancel={handleIconPickerCancel}

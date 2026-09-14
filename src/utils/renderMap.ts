@@ -13,6 +13,7 @@ import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from './tokenVisibility';
 import { ICON_BY_ID } from './iconLibrary';
+import { drawFolioToken } from './folioTokenRender';
 import { getStampDef } from './stampCatalog';
 import { drawFolioStampShadow, stampPath, stampPaths } from './folioFurnishingRender';
 import { getSemanticTileType, getThemeWithCustom } from './customThemes';
@@ -398,7 +399,7 @@ function renderMapDataToCanvas(
     ? tokens.filter(t => !isTokenFogged(t, fog, dynamicFogActive ? new Set<string>() : undefined, map.explored))
     : tokens;
   for (const token of visibleTokens) {
-    renderToken(ctx, token, tileSize);
+    renderToken(ctx, token, tileSize, printMode);
   }
 
   // Fog overlay
@@ -494,7 +495,9 @@ function renderToken(
   ctx: CanvasRenderingContext2D,
   token: Token,
   tileSize: number,
+  printMode: boolean,
 ) {
+  if (drawFolioToken(ctx, token, tileSize, printMode)) return;
   const size = Math.max(1, Math.floor(token.size ?? 1));
   const px = token.x * tileSize + (tileSize * size) / 2;
   const py = token.y * tileSize + (tileSize * size) / 2;

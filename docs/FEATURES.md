@@ -29,7 +29,7 @@ If you want the full tour in one place, this is it. Dungeon Mapper starts fast, 
 - **Procedural map generation** - the **Generate Hub** (`G`) opens a unified window with four algorithms (Rooms & Corridors, Open Terrain, Cavern, Village), a deterministic seed, a density slider, per-generator tile-mix sliders, corridor strategy and shape controls, optional theme room labels with procedural names, and an opt-in **Generate into selection** mode that stamps a generated map into an active selection rectangle without disturbing the rest of the map (see [Map Generation](#map-generation) below)
 - **Edit / Present views** - header **👁 Present** toggle swaps to a player-safe toolbar with a freehand drawing pen, an eraser, fog-of-war controls, and token tools (see [Present View](#present-view) below)
 - **Fog of war** - per-cell hidden / revealed flags with a Defog brush, Reveal `V` / Hide `H` drag-rectangles, Reset Fog (re-cover the map), Clear Fog (reveal everything), an optional GM **🌫 Show Fog** preview overlay, fog edge feathering, and **Dynamic Fog** mode that auto-reveals cells visible from player tokens with 3-state rendering (hidden / explored / visible)
-- **Tokens with icon library** - drop Player, NPC, and Monster tokens (small 1×1, medium 2×2, large 3×3) onto the map with a searchable icon picker (30+ icons in 6 categories); Move Token to drag, Remove Token to delete
+- **Tokens with icon library** - drop Player, NPC, and Monster tokens (small 1×1, medium 2×2, large 3×3) onto the map with a searchable icon picker (legacy icons plus twelve opt-in Folio silhouettes); Move Token to drag, Remove Token to delete
 - **Initiative panel** - a turn-order list with selectable entries, visible Up/Down controls, Alt+Arrow and drag reordering, inline renaming and Clear (see [Initiative](#initiative) below)
 - **Shape / area markers** - place colored shape overlays (circle, square, diamond) on the map for marking spell areas, hazard zones, and tactical effects; 8 color options with adjustable radius (see [Markers](#markers) below)
 - **Measure tool** - measure distances between cells in four shapes (ruler, circle, cone, line) with configurable feet-per-cell scale (default 5 ft); overlays are drawn in cyan with a distance readout pill (see [Measure](#measure) below)
@@ -143,7 +143,8 @@ Sometimes you just need to sketch on the map and keep moving. The Present toolba
 Tokens are meant to be fast to place, easy to read, and flexible enough for a real encounter. Drop in heroes, NPCs, and monsters, give them icons, then move them around without breaking the flow of the session.
 
 - **Player**, **NPC**, and **Monster** tokens. Monster tokens come in three footprints - Monster S (1×1), Monster M (2×2), and Monster L (3×3) - for varying creature sizes.
-- **Icon picker** - when placing a token, a searchable icon picker dialog opens with 30+ icons across 6 categories (Characters, Weapons, Magic, Creatures, Items, Environment). Choose an icon to display on the token, or cancel to use the default letter/emoji fallback.
+- **Icon picker** - when placing a token, a searchable icon picker opens with legacy categories (Characters, Weapons, Magic, Creatures, Items, Environment) and an opt-in **Folio tokens** category. Choose an icon, choose **No Icon** for the letter fallback, or **Cancel** to abandon placement.
+- **Folio tokens** - twelve tiny troublemakers, one very unlucky dungeon. Warden, Wayfinder, Drake, Ranger, Duelist, Arcanist, Sunkeeper, Brute, Wolf, Owl, Spider and Ooze each work with all three affiliation frames. Kind selects the party shield, NPC round seal or hostile hexagon; shapes and marks remain distinct in print. Open **The Crooked Company** for the full furnished catalog, or **The Lantern Watch** for the original small scene. Legacy icons stay unchanged. The complete v1 catalog and one-line copy received owner approval on September 14, 2026.
 - **Move Token** - click and drag a token to relocate it.
 - **Remove** - click a token to delete it.
 
@@ -567,8 +568,9 @@ than cropped from an enormous full-map canvas. PNG files carry physical DPI
 metadata; print at **100% / actual size**, not fit to page. Browser permission
 may be required for multiple downloads.
 
-Ink-friendly PNG styling simplifies map geometry and Folio furnishings; token
-colors and embedded artwork can remain colored. SVG retains the map's color
+Ink-friendly PNG styling simplifies map geometry, Folio furnishings and Folio
+token frames/silhouettes; legacy token colors and embedded artwork can remain
+colored. SVG retains the map's color
 art treatment. Missing or undecodable optional artwork is explained in the
 preview and uses a base color or placeholder. External images are not fetched.
 Review embedded images for secrets before sharing. Cancelling or failing an

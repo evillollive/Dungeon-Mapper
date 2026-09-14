@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Twelve original, owner-approved Folio token designs with shape-coded affiliation frames, monochrome print companions and two furnished sample scenes.
+
+### Fixed
+- Reserve unique token IDs before queued React updates so consecutive placements remain independently selectable and removable.
+
 ### Changed
 - Avoid full map/art repaints when only cursor coordinates change, while retaining live tool previews. Added repeatable F05 dense-map diagnostics; painting and representative-device performance qualification remain open.
 - Refreshed `README.md` as a shareable landing page while preserving the detailed tool reference in `docs/FEATURES.md`.

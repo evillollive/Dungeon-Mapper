@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/Dungeon-Mapper/favicon.svg" type="image/svg+xml">
+    <title>Dungeon Folio | Token catalog</title>
+  </head>
+  <body>
+    <p>Rounding up twelve tiny troublemakers.</p>
+    <script type="module">
+      import { showTokenReview } from '../../../src/test/folioTokens.render.ts';
+      await showTokenReview();
+      const links = document.createElement('p');
+      for (const [label, href] of [
+        ['Phone player preview', '../../media/ux07-token-catalog/player-phone.png'],
+        ['Production editor preview', '../../media/ux07-token-catalog/editor.png'],
+        ['Open Dungeon Mapper', '../../../'],
+      ]) {
+        const link = document.createElement('a');
+        link.textContent = label;
+        link.href = href;
+        link.style.cssText = 'color:#c0e1fa;margin-right:24px;display:inline-block;margin-top:16px';
+        links.append(link);
+      }
+      document.body.append(links);
+    </script>
+  </body>
+</html>
