@@ -335,8 +335,11 @@ The other cases cover physical placement, clipping, caller state and F05
 allocation/reuse. Floor art above 128 physical pixels uses the direct renderer,
 not lower-resolution sprites. Existing export renderers remain uncached.
 
-The hard per-editor bounds are twelve entries and 512 KiB raw raster, in
+The hard per-editor bounds are twelve entries and 1 MiB raw raster, in
 addition to the edge cache. Unit/component coverage includes material keys,
-budget overflow, unsupported-state fallback, size/DPR invalidation, sprite
+complete-variant memory bounds, unsupported-state fallback, size/DPR invalidation, sprite
 allocation failure, project/theme/audience/print changes and disposal.
+Uniform 132-pixel backing surfaces avoid small-surface raster differences;
+whole-source copies reuse a padded-tile clip rather than sampling a cropped
+source. Unit coverage also fixes the backing dimensions and clip reuse.
 See [measured results and limitations](./UX-09-HANDOFF.md#bounded-folio-floor-sprite-milestone).

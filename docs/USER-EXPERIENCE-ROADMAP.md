@@ -10,12 +10,12 @@
 
 **Latest performance implementation:** UX-09's bounded edge-strip cache reduces local Chromium dense-map paint/token latency by approximately 40%, with a 16 MiB raw raster ceiling per editor and no reduced detail. Painting remains above target in Chromium/Firefox, and the high-end development Mac is not representative hardware. See [memory limits, measured results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone). The keyboard milestone and UX-08's [export/offline contract](./UX-08-HANDOFF.md) are unchanged. Remaining art, participant, physical-device, screen-reader and performance acceptance gates stay open.
 
-**Floor-rendering follow-up, 2026-09-14:** A twelve-sprite, 512 KiB per-editor
+**Floor-rendering follow-up, 2026-09-14:** A twelve-sprite, 1 MiB per-editor
 cache reuses immutable Folio floor materials without caching map state or
-changing exports. Comparable local Chromium paint/token p95 is approximately
-19-23% lower than the current edge-cache baseline. Walls, water, symbols and
+changing exports. Comparable local Chromium paint p95 is approximately
+17-22% lower and token p95 is 12-21% lower than the current edge-cache baseline. Walls, water, symbols and
 tiles above 128 physical pixels retain direct drawing. The Chromium warm-ready
-proxy increased despite similar first-draw completion; loading acceptance is
+proxy remains variable despite similar first-draw completion; loading acceptance is
 not claimed. See [floor-cache limits and measured results](./UX-09-HANDOFF.md#bounded-folio-floor-sprite-milestone).
 The full renderer redesign and reference-device gates remain outside this slice.
 

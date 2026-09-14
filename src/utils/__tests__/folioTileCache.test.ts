@@ -62,7 +62,7 @@ describe('bounded Folio floor sprites', () => {
     expect(cache.stats.hits).toBe(2);
   });
 
-  it('falls back at the raster budget without reallocating on unchanged traversals', () => {
+  it('keeps every admitted variant within the raster budget without warm allocations', () => {
     cache.prepare(ctx, 128);
     const traverse = () => {
       for (const value of [undefined, 'folio-worn-wood-v1', 'folio-earth-v1']) {
@@ -70,14 +70,14 @@ describe('bounded Folio floor sprites', () => {
       }
     };
     traverse();
-    expect(cache.stats.entries).toBe(7);
-    expect(cache.stats.overflow).toBe(5);
+    expect(cache.stats.entries).toBe(12);
+    expect(cache.stats.overflow).toBe(0);
     expect(cache.stats.rasterBytes).toBeLessThanOrEqual(FOLIO_TILE_CACHE_MAX_BYTES);
     const allocated = cache.stats.rasterBytes;
     const creation = vi.spyOn(document, 'createElement');
     traverse();
     expect(creation).not.toHaveBeenCalled();
-    expect(cache.stats).toMatchObject({ misses: 7, hits: 7, overflow: 10, rasterBytes: allocated });
+    expect(cache.stats).toMatchObject({ misses: 12, hits: 12, overflow: 0, rasterBytes: allocated });
   });
 
   it('uses full-detail direct drawing above the physical sprite size limit', () => {
@@ -87,6 +87,22 @@ describe('bounded Folio floor sprites', () => {
     cache.draw(ctx, 'floor', 0, 0, 129, context);
     expect(direct).toHaveBeenCalledWith(ctx, 'floor', 0, 0, 129, context);
     expect(cache.stats.rasterBytes).toBe(0);
+  });
+
+  it('uses uniform backing surfaces and reuses the padded copy clip', () => {
+    const images = vi.spyOn(ctx, 'drawImage');
+    const clips = vi.spyOn(ctx, 'clip');
+    const rectangles = vi.spyOn(Path2D.prototype, 'rect');
+    cache.prepare(ctx, 8);
+    cache.draw(ctx, 'floor', 0, 0, 8, material());
+    expect(images.mock.calls[0][0]).toMatchObject({ width: 132, height: 132 });
+    expect(rectangles).toHaveBeenCalledWith(0, 0, 12, 12);
+    const clip = clips.mock.calls[0][0];
+    rectangles.mockClear();
+    cache.draw(ctx, 'floor', 0, 0, 8, material());
+    expect(rectangles).not.toHaveBeenCalled();
+    expect(clips.mock.calls[1][0]).toBe(clip);
+    expect(cache.stats).toMatchObject({ entries: 1, misses: 1, hits: 1, rasterBytes: 132 * 132 * 4 });
   });
 
   it.each(['size', 'DPR', 'clear'] as const)('releases all backing surfaces on %s changes', change => {

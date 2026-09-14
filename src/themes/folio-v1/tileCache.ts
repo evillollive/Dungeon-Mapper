@@ -3,13 +3,16 @@ import { isFloorMaterialId, type TileType } from '../../types/map';
 import { folioVariant } from './art';
 import { folioTheme } from './theme';
 
-export const FOLIO_TILE_CACHE_MAX_BYTES = 512 * 1024;
+export const FOLIO_TILE_CACHE_MAX_BYTES = 1024 * 1024;
 export const FOLIO_TILE_CACHE_MAX_ENTRIES = 12;
 export const FOLIO_TILE_CACHE_MAX_PIXELS = 128;
+const MIN_BACKING_SIZE = FOLIO_TILE_CACHE_MAX_PIXELS + 4;
+
+type Sprite = { canvas: HTMLCanvasElement; clip: Path2D };
 
 /** Four variants of three immutable floor materials, not map contents or fog. */
 export class FolioTileCache {
-  private entries = new Map<string, HTMLCanvasElement>();
+  private entries = new Map<string, Sprite>();
   private context: CanvasRenderingContext2D | null = null;
   private size = 0;
   private scale = 0;
@@ -26,7 +29,7 @@ export class FolioTileCache {
   }
 
   clear(): void {
-    for (const canvas of this.entries.values()) canvas.width = canvas.height = 0;
+    for (const { canvas } of this.entries.values()) canvas.width = canvas.height = 0;
     this.entries.clear();
     this.context = null;
     this.size = this.scale = this.rasterBytes = this.hits = this.misses = this.overflow = 0;
@@ -65,30 +68,36 @@ export class FolioTileCache {
       this.hits++;
     } else {
       const extent = pixels + 2 * padding;
-      const bytes = extent * extent * 4;
+      // Small backing surfaces use a different raster path in Linux WebKit.
+      const backingSize = Math.max(MIN_BACKING_SIZE, extent);
+      const bytes = backingSize * backingSize * 4;
       if (this.entries.size >= FOLIO_TILE_CACHE_MAX_ENTRIES || this.rasterBytes + bytes > FOLIO_TILE_CACHE_MAX_BYTES) {
         this.overflow++;
         folioTheme.drawTile(ctx, type, x, y, size, context);
         return;
       }
-      sprite = document.createElement('canvas');
-      sprite.width = sprite.height = extent;
-      const target = sprite.getContext('2d');
+      const canvas = document.createElement('canvas');
+      canvas.width = canvas.height = backingSize;
+      const target = canvas.getContext('2d');
       if (!target) {
-        sprite.width = sprite.height = 0;
+        canvas.width = canvas.height = 0;
         this.context = null;
         folioTheme.drawTile(ctx, type, x, y, size, context);
         return;
       }
       target.setTransform(this.scale, 0, 0, this.scale, padding - x * pixels, padding - y * pixels);
       folioTheme.drawTile(target, type, x, y, size, context);
+      const clip = new Path2D();
+      clip.rect(0, 0, extent, extent);
+      sprite = { canvas, clip };
       this.entries.set(key, sprite);
       this.rasterBytes += bytes;
       this.misses++;
     }
     ctx.save();
-    ctx.resetTransform();
-    ctx.drawImage(sprite, x * pixels + this.offsetX - padding, y * pixels + this.offsetY - padding);
+    ctx.setTransform(1, 0, 0, 1, x * pixels + this.offsetX - padding, y * pixels + this.offsetY - padding);
+    ctx.clip(sprite.clip);
+    ctx.drawImage(sprite.canvas, 0, 0);
     ctx.restore();
   }
 }

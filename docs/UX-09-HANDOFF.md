@@ -505,20 +505,20 @@ furnishings, lighting and gesture/undo implementation are unchanged.
 
 ### Admission, memory and fidelity
 
-Each editor owns at most twelve sprites and **512 KiB of raw RGBA raster**.
+Each editor owns at most twelve sprites and **1 MiB of raw RGBA raster**.
 Sprites retain native device-pixel resolution, including a padded fringe for
-wood joints. The F05 fixture retains 62,208 / 221,952 / 480,000 bytes at
+wood joints. The F05 fixture retains 836,352 bytes at each of
 DPR 1 / 2 / 3, with twelve allocations followed by allocation-free traversals.
 Together with the existing edge-strip allowance, the two caches have a
-16.5 MiB raw raster ceiling per editor. This excludes browser/GPU copies,
+17 MiB raw raster ceiling per editor. This excludes browser/GPU copies,
 Canvas-object overhead, the main canvas, paper texture and other application
 memory. There are no full-map snapshots or static/dynamic layer changes.
 
 Only uniform, integer-aligned device-pixel placement with ordinary source-over
 compositing is admitted. Tiles above 128 physical pixels, unsupported drawing
 state, unavailable sprite contexts, and budget overflow use full-detail direct
-drawing. A 128-pixel tile fills the byte budget after seven variants; remaining
-variants draw directly without eviction/reallocation churn. Size/DPR changes,
+drawing. All twelve admitted variants fit within that bound without
+eviction/reallocation churn. Size/DPR changes,
 project/level changes, dimensions, themes, audience changes, print mode and
 unmount release retained backing surfaces. Token movement, fog, painting and
 undo reuse immutable artwork rather than cached map state.
@@ -529,6 +529,17 @@ Restricting admission to floors preserves those contours on the original
 renderer. Larger translated curves also exposed WebKit raster differences,
 so sprites above 128 physical pixels are not admitted on any engine. Neither
 case reduces detail or introduces a browser-specific branch.
+
+**Linux surface follow-up:** CI run `34837437995` at `0ce50af` passed build/test,
+Chromium, Firefox, all nineteen other WebKit browser cases and UX-08, but the
+new floor pixel matrix exposed Linux WebKit small-surface differences up to
+14/255. The previously admitted 132-pixel backing surfaces stayed within the
+existing one-step bound. All sprites now use that uniform backing size, with
+a retained rectangle-only clip around the actual padded tile during whole-source
+copies. This avoids both tiny-surface rasterization and cropped-source sampling.
+The revised 1 MiB ceiling replaces the initial 512 KiB budget; it does not admit
+larger or lower-resolution artwork. The pixel bounds and complete matrix are
+unchanged. A unit regression fixes backing dimensions and clip reuse.
 
 The new blocking browser matrix compares direct and cached rendering for
 210 combinations per engine: 8/32/64-pixel cells, DPR 1/1.25/1.5/2/3,
@@ -550,32 +561,39 @@ not pooled statistics or representative-device acceptance.
 
 | Engine | Paint p95 before / after (ms) | Token p95 before / after (ms) | Warm-ready before / after (s) |
 | --- | --- | --- | --- |
-| Chromium | 153.2-161.7 / 124.3-125.2 | 151.8-157.4 / 120.1-122.8 | 1.49-1.54 / 1.99-2.02 |
-| Firefox | 158-193 / 111-115 | 164-204 / 107-107 | 1.25-1.27 / 1.20-1.24 |
-| WebKit | 91-99 / 68-75 | 84-98 / 67-68 | 1.49-1.54 / 1.43-1.48 |
+| Chromium | 153.2-161.7 / 126.6-127.9 | 151.8-157.4 / 124.4-135.3 | 1.49-1.54 / 1.44-1.96 |
+| Firefox | 158-193 / 113-116 | 164-204 / 110-114 | 1.25-1.27 / 1.21-1.24 |
+| WebKit | 91-99 / 73-90 | 84-98 / 75-76 | 1.49-1.54 / 1.43-1.48 |
 
 Chromium repetition one is profiled in both runs; its paint/token p95 changes
-from 157.3/157.4 to 124.6/121.0 ms. The two unprofiled repetitions change from
-161.7/151.8 and 153.2/153.1 to 125.2/120.1 and 124.3/122.8 ms.
-This is roughly 19-23% less interaction latency in Chromium, not a 100 ms
+from 157.3/157.4 to 127.9/124.4 ms. The two unprofiled repetitions change from
+161.7/151.8 and 153.2/153.1 to 126.6/133.8 and 127.6/135.3 ms.
+This is roughly 17-22% less paint latency and 12-21% less token latency in
+Chromium, not a 100 ms
 desktop-target pass.
 
-Chromium's warm-ready proxy increased by about half a second. The recorded
-first draw still ends at 1.41-1.44 seconds, versus 1.41-1.45 before; the
-additional interval follows drawing and includes the harness's readiness
-assertions. This does not establish a startup improvement or dismiss the
-readiness difference as noise. Loading acceptance remains open.
+Chromium's warm-ready proxy remained variable: two repetitions report
+1.44-1.46 seconds, while one reports 1.96 seconds. Its first draw ends at
+1.39-1.43 seconds, versus 1.41-1.45 before. The extra interval in the slow
+repetition follows drawing and includes the harness's readiness assertions.
+Earlier candidates also recorded that interval. This does not establish a
+startup improvement or dismiss the readiness difference as noise. Loading
+acceptance remains open.
 
 Local evidence includes 91 focused unit/component cases, strict harness
 type-checking, lint and build, all eight production workflows and the existing
 edge-cache cases on three engines, the final nine floor-cache browser cases,
-and all twelve final F05 cases. The broader candidate run exposed the
+and all twelve final F05 cases. After the surface correction, the 34 directly
+affected unit/component cases, all nine floor cases and all twelve F05 cases
+pass again locally, alongside build/lint. The broader candidate run exposed the
 high-resolution WebKit issue above; the final floor matrix confirms its direct
 fallback. No existing pixel bounds, F05 samples, timing targets, retries or
 timeouts changed. The new spec is included in the existing blocking CI runner.
 
 Artifacts are in this session's `files/perf-baseline`, `files/perf-candidate`,
-`files/floor-final` and `files/perf-final`. Exact-head remote CI remains the
+`files/floor-final`, `files/perf-final`, `files/ci-webkit`,
+`files/floor-surface-fix` and `files/perf-surface-fix`. The surface-fix measurements
+supersede the earlier candidate figures. Exact-head remote CI remains the
 landing gate. UX-09 and the human/device release gates remain open.
 
 ### Next bounded performance work
