@@ -30,7 +30,15 @@ test('Folio token silhouettes and affiliation frames preserve raster, SVG and pr
     await page.getByRole('button', { name: section, exact: false }).click();
     await page.screenshot({ path: info.outputPath(`${section}.png`), fullPage: true });
   }
-  assert.equal(result.length, 108);
+  assert.equal(result.length, 432);
+  assert.equal(new Set(result.map(sample => sample.icon)).size, 12);
+  await page.getByRole('button', { name: 'Reference', exact: true }).click();
+  const blurbs = await page.locator('#reference .card p').allTextContents();
+  assert.equal(blurbs.length, 12);
+  for (const blurb of blurbs) {
+    assert.match(blurb, /^[^.!?]+[.]$/, 'Each character gets one sentence');
+    assert(blurb.split(/\s+/).length <= 10, 'Keep character copy short');
+  }
   for (const sample of result) {
     for (const field of ['editor', 'print']) {
       assert(sample[field].maximum <= 2 && sample[field].mean < 0.01,

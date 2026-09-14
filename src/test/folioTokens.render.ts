@@ -1,7 +1,7 @@
 import type { DungeonMap, Token, TokenKind } from '../types/map';
 import { FOLIO_TOKENS } from '../assets/folio-tokens-v1/catalog';
 import { drawFolioToken, FOLIO_TOKEN_FRAMES } from '../utils/folioTokenRender';
-import { buildFolioTokenReference } from '../utils/folioTokenReference';
+import { buildFolioTokenReference, buildFolioTokenCatalogReference, FOLIO_TOKEN_CATALOG_NAME } from '../utils/folioTokenReference';
 import { renderMapToCanvas } from '../utils/renderMap';
 import { buildMapSVG } from '../utils/export';
 import { getTheme } from '../themes';
@@ -10,9 +10,10 @@ const kinds: TokenKind[] = ['player', 'npc', 'monster'];
 
 function matrixMap(tileSize: number, size: number): DungeonMap {
   const map = buildFolioTokenReference().levels[0];
+  const height = FOLIO_TOKENS.length * 3;
   return {
-    ...map, meta: { ...map.meta, width: 9, height: 9, tileSize },
-    tiles: Array.from({ length: 9 }, () => Array.from({ length: 9 }, () => ({ type: 'floor' }))),
+    ...map, meta: { ...map.meta, width: 9, height, tileSize },
+    tiles: Array.from({ length: height }, () => Array.from({ length: 9 }, () => ({ type: 'floor' }))),
     notes: [], stamps: [], fogEnabled: false, initiative: [],
     tokens: FOLIO_TOKENS.flatMap((icon, row) => kinds.map((kind, column) => ({
       id: row * 3 + column, kind, label: icon.name, icon: icon.id, x: column * 3, y: row * 3, size,
@@ -88,7 +89,7 @@ function captioned(title: string, canvas: HTMLCanvasElement) {
 }
 
 export async function showTokenReview() {
-  document.title = 'Dungeon Folio | Token reference';
+  document.title = 'Dungeon Folio | Token catalog';
   const style = document.createElement('style');
   style.textContent = `
     *{box-sizing:border-box}body{margin:0;padding:40px;background:#17232c;color:#fff4da;font:16px "Avenir Next",sans-serif}
@@ -112,10 +113,10 @@ export async function showTokenReview() {
   document.head.append(style);
   document.body.replaceChildren();
   const eyebrow = document.createElement('div');
-  eyebrow.className = 'eyebrow'; eyebrow.textContent = 'DUNGEON FOLIO / TOKEN STUDY 01';
+  eyebrow.className = 'eyebrow'; eyebrow.textContent = 'DUNGEON FOLIO / TWELVE TOKENS';
   const title = document.createElement('h1'); title.textContent = 'A face for every encounter.';
   const description = document.createElement('p');
-  description.textContent = 'Three tiny troublemakers, one very unlucky dungeon.';
+  description.textContent = 'Twelve tiny troublemakers, one very unlucky dungeon.';
   const nav = document.createElement('nav'); nav.setAttribute('aria-label', 'Review sections');
   const sections = ['reference', 'affiliations', 'maps', 'scales'];
   for (const section of sections) {
@@ -130,21 +131,16 @@ export async function showTokenReview() {
   }
   document.body.append(eyebrow, title, description, nav);
   const reference = document.createElement('section'); reference.id = 'reference'; reference.className = 'cards';
-  const stories = [
-    'Brings a shield to every argument.',
-    'Definitely knows a shortcut.',
-    'Small token, big fire hazard.',
-  ];
-  FOLIO_TOKENS.forEach((icon, index) => {
+  FOLIO_TOKENS.forEach(icon => {
     const card = document.createElement('article'); card.className = 'card';
-    const hero = document.createElement('div'); hero.className = 'hero'; hero.append(tokenCanvas(icon.id, kinds[index], 160));
+    const hero = document.createElement('div'); hero.className = 'hero'; hero.append(tokenCanvas(icon.id, icon.previewKind, 160));
     const heading = document.createElement('h2'); heading.textContent = icon.name.replace('Folio ', '');
-    const story = document.createElement('p'); story.textContent = stories[index];
+    const story = document.createElement('p'); story.textContent = icon.blurb;
     const sizes = document.createElement('div'); sizes.className = 'sizes';
     const label = document.createElement('span'); label.textContent = '32 / 24 / 16 px';
-    sizes.append(tokenCanvas(icon.id, kinds[index], 32), tokenCanvas(icon.id, kinds[index], 24), tokenCanvas(icon.id, kinds[index], 16), label);
+    sizes.append(tokenCanvas(icon.id, icon.previewKind, 32), tokenCanvas(icon.id, icon.previewKind, 24), tokenCanvas(icon.id, icon.previewKind, 16), label);
     const print = document.createElement('div'); print.className = 'print';
-    print.append('Print companion', tokenCanvas(icon.id, kinds[index], 56, true));
+    print.append('Print companion', tokenCanvas(icon.id, icon.previewKind, 56, true));
     card.append(hero, heading, story, sizes, print); reference.append(card);
   });
   const affiliations = document.createElement('section'); affiliations.id = 'affiliations'; affiliations.className = 'matrix'; affiliations.hidden = true;
@@ -156,11 +152,11 @@ export async function showTokenReview() {
     pair.append(tokenCanvas(icon.id, kind, 96), gray, tokenCanvas(icon.id, kind, 96, true));
     figure.append(caption, pair); affiliations.append(figure);
   }
-  const map = buildFolioTokenReference().levels[0];
+  const map = buildFolioTokenCatalogReference().levels[0];
   const options = { tileSize: 32, themeId: map.meta.theme };
   const maps = document.createElement('section'); maps.id = 'maps'; maps.className = 'maps'; maps.hidden = true;
   maps.append(
-    captioned('The Lantern Watch / DM', renderMapToCanvas(map, options)),
+    captioned(`${FOLIO_TOKEN_CATALOG_NAME} / DM`, renderMapToCanvas(map, options)),
     captioned('Player / hidden lookout excluded', renderMapToCanvas(map, { ...options, viewMode: 'player' })),
     captioned('Print / player-safe monochrome', renderMapToCanvas(map, { ...options, printMode: true, viewMode: 'player' })),
     captioned('SVG / player output', await svgCanvas(map)),

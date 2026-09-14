@@ -16,7 +16,8 @@ import { generateRiversForMap, getGeneratedRiverType } from './generators/riverG
 import { makeRng, seedFromString } from './generators/random';
 import { buildFolioReference, FOLIO_REFERENCE_ID, FOLIO_REFERENCE_NAME, buildFolioMaterialsReference, FOLIO_MATERIALS_REFERENCE_ID, FOLIO_MATERIALS_REFERENCE_NAME } from './folioReference';
 import { FOLIO_THEME_ID } from '../themes/folio-v1/art';
-import { buildFolioTokenReference, FOLIO_TOKEN_REFERENCE_ID, FOLIO_TOKEN_REFERENCE_NAME } from './folioTokenReference';
+import { buildFolioTokenReference, FOLIO_TOKEN_REFERENCE_ID, FOLIO_TOKEN_REFERENCE_NAME,
+  buildFolioTokenCatalogReference, FOLIO_TOKEN_CATALOG_ID, FOLIO_TOKEN_CATALOG_NAME } from './folioTokenReference';
 import { buildFolioFurnishingReference, FOLIO_FURNISHING_REFERENCE_ID, FOLIO_FURNISHING_REFERENCE_NAME,
   buildFolioCatalogReference, FOLIO_CATALOG_REFERENCE_ID, FOLIO_CATALOG_REFERENCE_NAME } from './folioFurnishingReference';
 
@@ -1300,7 +1301,16 @@ export const PREMADE_MAP_SUMMARIES: PremadeMapSummary[] = [...PREMADE_MAP_SPECS.
   archetype: 'Token art reference',
   sizeLabel: '16 x 16',
   levelCount: 1,
-  description: 'A Warden, Wayfinder and Drake in the furnished keeper hall. Three opt-in silhouettes with shape-coded affiliation frames. Artwork pending visual approval.',
+  description: 'The original three troublemakers, before the company got out of hand.',
+}, {
+  id: FOLIO_TOKEN_CATALOG_ID,
+  name: FOLIO_TOKEN_CATALOG_NAME,
+  themeId: FOLIO_THEME_ID,
+  themeLabel: 'Dungeon Folio v1',
+  archetype: 'Twelve-token catalog',
+  sizeLabel: '24 x 24',
+  levelCount: 1,
+  description: 'Twelve unlikely guests check into a refuge with a very optimistic damage deposit.',
 }];
 
 export function buildPremadeProject(id: string): DungeonProject {
@@ -1309,6 +1319,7 @@ export function buildPremadeProject(id: string): DungeonProject {
   if (id === FOLIO_FURNISHING_REFERENCE_ID) return buildFolioFurnishingReference();
   if (id === FOLIO_CATALOG_REFERENCE_ID) return buildFolioCatalogReference();
   if (id === FOLIO_TOKEN_REFERENCE_ID) return buildFolioTokenReference();
+  if (id === FOLIO_TOKEN_CATALOG_ID) return buildFolioTokenCatalogReference();
   const spec = PREMADE_MAP_SPECS.find(item => item.id === id);
   if (!spec) throw new Error(`Unknown premade map: ${id}`);
 

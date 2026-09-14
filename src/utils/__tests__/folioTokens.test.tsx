@@ -6,7 +6,8 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { FOLIO_TOKENS, FOLIO_TOKEN_MANIFEST } from '../../assets/folio-tokens-v1/catalog';
 import { FOLIO_TOKEN_FRAMES, FOLIO_TOKEN_INK, FOLIO_TOKEN_PAPER, drawFolioToken, folioTokenPaths, folioTokenSVG } from '../folioTokenRender';
 import { ICONS, ICON_BY_ID } from '../iconLibrary';
-import { buildFolioTokenReference, FOLIO_TOKEN_REFERENCE_ID } from '../folioTokenReference';
+import { buildFolioTokenReference, FOLIO_TOKEN_REFERENCE_ID,
+  buildFolioTokenCatalogReference, FOLIO_TOKEN_CATALOG_ID } from '../folioTokenReference';
 import { buildFolioFurnishingReference } from '../folioFurnishingReference';
 import { buildPremadeProject } from '../premadeMaps';
 import { decodeProject, encodeProject } from '../projectSchema';
@@ -21,9 +22,9 @@ import type { TokenKind } from '../../types/map';
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const kinds: TokenKind[] = ['player', 'npc', 'monster'];
 
-describe('Folio token reference', () => {
-  it('registers only three original versioned silhouettes, with matching editable SVG sources', () => {
-    expect(FOLIO_TOKENS).toHaveLength(3);
+describe('Folio token catalog', () => {
+  it('registers twelve original versioned silhouettes, with matching editable SVG sources', () => {
+    expect(FOLIO_TOKENS).toHaveLength(12);
     expect(new Set(ICONS.map(icon => icon.id)).size).toBe(ICONS.length);
     const sources = FOLIO_TOKEN_MANIFEST.assets.map(asset => {
       const source = readFileSync(asset.source, 'utf8');
@@ -36,8 +37,28 @@ describe('Folio token reference', () => {
       expect(source).not.toMatch(/<script|<image|onload|href=/);
       return source;
     });
-    expect(gzipSync(sources.join('')).byteLength).toBeLessThan(2048);
+    expect(gzipSync(sources.slice(0, 3).join('')).byteLength).toBeLessThan(2048);
+    expect(gzipSync(sources.join('')).byteLength).toBeLessThan(6 * 1024);
     expect(FOLIO_TOKEN_MANIFEST.license).toBe('AGPL-3.0-or-later');
+  });
+
+  it('preserves unaffected approved sources and gives every character one short sentence', () => {
+    expect(FOLIO_TOKEN_MANIFEST.assets.slice(0, 2).map(asset => asset.sourceHash)).toEqual([
+      'sha256:4ea371810f55dc338f9d73d1b4004105b079c21aaaa03ccacb179b469fc905a2',
+      'sha256:8a1ea6841143bbcc55395f8c78cbee72822f29c1adf423be093126e339806e61',
+    ]);
+    expect(FOLIO_TOKENS.slice(0, 3).map(icon => icon.blurb)).toEqual([
+      'Brings a shield to every argument.', 'Definitely knows a shortcut.', 'Small token, big fire hazard.',
+    ]);
+    for (const icon of FOLIO_TOKENS) {
+      expect(icon.blurb).toMatch(/^[^.!?]+[.]$/);
+      expect(icon.blurb.split(/\s+/).length).toBeLessThanOrEqual(10);
+      expect(kinds).toContain(icon.previewKind);
+    }
+    for (const icon of FOLIO_TOKENS.slice(0, 3)) {
+      expect(folioTokenPaths({ icon: icon.id, kind: icon.previewKind })![2].transform)
+        .toEqual({ x: 87.04, y: 92.16, scale: 0.66 });
+    }
   });
 
   it('keeps affiliation independent of silhouette, with three distinct outlines and marks in print', () => {
@@ -52,6 +73,30 @@ describe('Folio token reference', () => {
       expect(print.filter(path => path.stroke).every(path => path.stroke === '#000000')).toBe(true);
     }
     expect(contrastRatio(parseHexColor(FOLIO_TOKEN_INK)!, parseHexColor(FOLIO_TOKEN_PAPER)!)).toBeGreaterThan(12);
+    const paths = FOLIO_TOKENS.flatMap(icon => kinds.flatMap(kind =>
+      folioTokenPaths({ icon: icon.id, kind })!.map(path => path.path)));
+    expect(new Set(paths).size).toBe(21);
+  });
+
+  it('adds a fresh full-catalog sample without changing the original three-token reference', () => {
+    const original = buildFolioTokenReference();
+    expect(original.levels[0].tokens).toHaveLength(4);
+    expect(original.levels[0].tokens!.slice(0, 3).map(token => [token.icon, token.x, token.y])).toEqual([
+      ['folio-token-v1-warden', 6, 11], ['folio-token-v1-wayfinder', 8, 5], ['folio-token-v1-drake', 10, 8],
+    ]);
+    const project = buildPremadeProject(FOLIO_TOKEN_CATALOG_ID);
+    expect(project).toEqual(buildFolioTokenCatalogReference());
+    expect(decodeProject(encodeProject(project))).toEqual(project);
+    const map = project.levels[0];
+    const visible = projectForAudience(map).map.tokens!;
+    expect(visible).toHaveLength(12);
+    expect(new Set(visible.map(token => token.icon))).toEqual(new Set(FOLIO_TOKENS.map(icon => icon.id)));
+    expect(new Set(visible.map(token => `${token.x},${token.y}`)).size).toBe(12);
+    expect(visible.every(token => map.tiles[token.y][token.x].type === 'floor')).toBe(true);
+    expect(visible.some(token => token.label === 'Hidden lookout')).toBe(false);
+    map.tokens![0].x = 0;
+    expect(buildFolioTokenReference()).toEqual(original);
+    expect(buildFolioTokenCatalogReference().levels[0].tokens![0].x).toBe(10);
   });
 
   it('keeps existing tokens and samples unchanged and does not reinterpret unknown IDs', () => {
@@ -116,6 +161,7 @@ describe('Folio token reference', () => {
     render(<IconPicker open kind="monster" onSelect={select} onCancel={cancel} />);
     fireEvent.click(screen.getByRole('button', { name: 'Folio tokens', exact: true }));
     expect(screen.getByText(/Hostile hexagon/)).toBeInTheDocument();
+    for (const icon of FOLIO_TOKENS) expect(screen.getByRole('button', { name: icon.name, exact: true })).toBeInTheDocument();
     fireEvent.change(screen.getByRole('textbox', { name: 'Search icons' }), { target: { value: 'warden' } });
     const button = screen.getByRole('button', { name: 'Folio Warden', exact: true });
     expect(button.querySelector('path')?.getAttribute('d')).toBe(FOLIO_TOKEN_FRAMES.monster.outline);

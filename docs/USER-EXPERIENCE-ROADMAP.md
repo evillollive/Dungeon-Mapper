@@ -871,8 +871,10 @@ SVG mean is below 2/255 within the actual token footprint, not diluted by
 empty surroundings. These are artwork/compatibility observations, not
 physical-device, printer, participant or F05 performance qualification.
 
-**Owner visual approval is pending. Do not expand to twelve on the basis of
-implementation or browser results alone.** Review the
+**Owner template approval, September 14, 2026:** The owner approved the short,
+playful copy and the reference direction: "Yes, perfect, use these as the
+template for the rest." The later six-artwork revision request below
+supersedes the original Drake approval. Historical reference evidence:
 [reference trio](./media/ux07-tokens/reference.png),
 [all affiliations in color, grayscale and print](./media/ux07-tokens/affiliations.png),
 [furnished DM/player/print/SVG maps](./media/ux07-tokens/maps.png),
@@ -880,6 +882,51 @@ implementation or browser results alone.** Review the
 [phone player preview](./media/ux07-tokens/player-phone.png).
 The [development guide](./DEVELOPMENT.md#folio-token-reference-qualification)
 documents the interactive review and reproduction commands.
+
+**Sixth bounded milestone, September 14, 2026: full twelve-token catalog**
+
+Ranger, Duelist, Arcanist, Sunkeeper, Brute, Wolf, Owl, Spider and Ooze join
+the three-token reference. Every character gets one short, playful sentence.
+All twelve use the same three shape-coded affiliation frames and monochrome
+companions. The new **The Crooked Company** sample (`folio-crooked-company`)
+places the complete kit in the furnished roadside refuge, with a separate
+hidden lookout. The original Lantern Watch composition remains available.
+
+**Owner-requested revision:** After reviewing the expansion, the owner asked
+for new or revised **Drake, Ranger, Duelist, Brute, Owl and Ooze** artwork.
+The redraw favors a smoother dragon profile, a hooded bow carrier, a masked
+fencer, a broad ogre bust, a compact perched owl and a faceless puddle of slime.
+The other six silhouettes, all frames and all one-line descriptions stay
+unchanged by this revision. These six redraws still need owner visual review.
+
+This unreleased candidate is pack `0.2.1`, render version 1. The requested
+Drake redraw deliberately updates its existing draft ID; its earlier SVG
+remains in Git history and the original reference screenshots. No released
+legacy icon, project/session schema or dependency changes. The twelve source
+SVGs total 6,584 bytes and 2,412 bytes gzip. At most 21 bundled paths are
+retained, independent of token count, with no raster atlas. Wide Spider/Ooze
+figures use pack-defined glyph sizing so they do not crowd affiliation frames.
+
+The expanded placement journey exposed an existing React batching defect:
+token IDs were incremented only if a state updater ran synchronously.
+Consecutive picker placements could reuse an ID, so deleting one removed
+several tokens. Placement now reserves and returns a unique ID before
+dispatch, validates the footprint, and retains the generation guard. Focused
+StrictMode regressions cover queued placement, independent deletion,
+undo/redo and the legacy icon path.
+
+The renderer covers 36 silhouette/frame combinations at four cell sizes and
+three footprints, 432 comparisons per engine. The original raster bounds,
+browser timeouts and performance gates are unchanged. The catalog journey
+adds all nine new assets through the picker, checks distinct identities,
+reload/backup, independent deletion, and desktop/phone player output.
+This is not physical-device, printer, participant or F05 qualification.
+
+Current review: [all twelve tokens](./media/ux07-token-catalog/reference.png),
+[color/grayscale/print affiliations](./media/ux07-token-catalog/affiliations.png),
+[composed maps](./media/ux07-token-catalog/maps.png),
+[production editor](./media/ux07-token-catalog/editor.png), and
+[phone player view](./media/ux07-token-catalog/player-phone.png).
 
 **Deliverables:** ART-01 through ART-04, ART-06 through ART-08 for the initial release, plus asset manifest/provenance, pack/version selection, previews, deterministic variants, caching, and fallbacks. ART-05/09 extend after the dungeon slice is approved.
 
@@ -1100,7 +1147,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; current production journey passes Chromium, Firefox and WebKit in UX-09 | [Original policy and evidence](./UX-05-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
-| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; three-token reference implemented September 14, pending visual approval | [Token reference](./media/ux07-tokens/reference.png); twelve-token expansion and remaining art packages stay open |
+| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; token template approved; twelve-token catalog implemented with six requested redraws | [Current token catalog](./media/ux07-token-catalog/reference.png); final artwork review and remaining art packages stay open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; browser/CI, keyboard and F05 diagnostics merged in #171/#172/#174; bounded edge-strip cache implemented | [Cache limits, final F05 results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone); painting/token latency, human screen-reader and reference-device performance acceptance remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |

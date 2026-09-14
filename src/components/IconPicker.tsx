@@ -140,7 +140,7 @@ const IconPickerContents: React.FC<Omit<IconPickerProps, 'open'>> = ({ onSelect,
 
         {selectedCategory === 'Folio tokens' && (
           <p style={{ margin: 0, fontSize: '0.85rem', lineHeight: 1.5 }}>
-            Three original Folio silhouettes. Frame for this token: {FOLIO_TOKEN_FRAMES[kind].label}.
+            Twelve Folio troublemakers. Frame for this token: {FOLIO_TOKEN_FRAMES[kind].label}.
             {' '}Frames follow token kind, not ownership. Artwork preview.
           </p>
         )}

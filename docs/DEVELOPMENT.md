@@ -187,9 +187,12 @@ or dense-map performance. See the UX roadmap for the owner-approval status.
 
 ## Folio token reference qualification
 
-ART-04's three-token reference has a production journey in
-`ux07Tokens.browser.mjs` and a renderer matrix in `ux07Tokens.spec.mjs`,
-both included in the existing three-engine blocking browser suite:
+ART-04's original scene has a production journey in `ux07Tokens.browser.mjs`.
+`ux07TokenCatalog.browser.mjs` covers the full twelve-token scene and nine
+new picker placements, including unique IDs, independent affiliations,
+undo/redo, reload, deletion and player-safe exports. The shared renderer
+matrix in `ux07Tokens.spec.mjs` covers all twelve silhouettes. All three
+cases run in the existing three-engine blocking browser suite:
 
 ```bash
 QA_OUTPUT=/absolute/path/to/tokens npm run test:browser -- --grep='Folio token'
@@ -197,8 +200,10 @@ QA_OUTPUT=/absolute/path/to/tokens npm run test:browser -- --grep='Folio token'
 
 The journey covers sample creation, choosing a silhouette independently of
 affiliation, cancellation, coordinate changes, undo/redo, reload, backup and
-player output at desktop/phone viewports. The matrix compares all nine
-silhouette/frame combinations at four cell sizes and three token footprints.
+player output at desktop/phone viewports. The matrix compares all 36
+silhouette/frame combinations at four cell sizes and three token footprints,
+432 comparisons per browser. Short-copy assertions cap each biography at
+one sentence and ten words.
 It compares the shared editor drawing path with the actual map export and
 monochrome renderers, plus native SVG rasterization within each token footprint.
 Reference, affiliation, composed-map and scale sheets are saved with browser
@@ -208,7 +213,9 @@ readability, printer acceptance or dense-map responsiveness.
 For interactive visual review, run `npm run dev` and open
 `/Dungeon-Mapper/docs/prototypes/ux07-tokens/index.html` on that server.
 This source-driven review is not a production application route.
-The three-token expansion gate is recorded in the UX roadmap.
+The template approval and subsequent six-artwork revision request are recorded
+in the UX roadmap. Screenshots in `docs/media/ux07-tokens` preserve the original
+reference; `docs/media/ux07-token-catalog` contains the current complete kit.
 
 ## Dense-map performance diagnostics (F05)
 

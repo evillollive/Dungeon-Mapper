@@ -39,15 +39,17 @@ export function folioTokenPaths(token: Pick<Token, 'icon' | 'kind' | 'color'>, p
   const frame = FOLIO_TOKEN_FRAMES[token.kind];
   const ink = printMode ? '#000000' : FOLIO_TOKEN_INK;
   const paper = printMode ? '#ffffff' : FOLIO_TOKEN_PAPER;
+  const scale = icon.glyphScale ?? 0.66;
+  const inset = Math.round(256 * (1 - scale) * 100) / 100;
   return [
     { path: frame.outline, fill: printMode ? '#ffffff' : sanitizeColor(token.color, frame.color), stroke: ink, strokeWidth: 14 },
     { path: frame.field, fill: paper, stroke: ink, strokeWidth: 8 },
-    { path: icon.path, fill: ink, transform: { x: 87.04, y: 92.16, scale: 0.66 } },
+    { path: icon.path, fill: ink, transform: { x: inset, y: Math.round((inset + 5.12) * 100) / 100, scale } },
     { path: frame.mark, fill: ink },
   ];
 }
 
-// Only bundled paths are admitted, so the cache is bounded by the three
+// Only bundled paths are admitted, so the cache is bounded by the twelve
 // silhouettes and nine frame paths, independent of token count and colors.
 const compiledPaths = new Map<string, Path2D>();
 function compiled(path: string): Path2D {
