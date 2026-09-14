@@ -903,13 +903,16 @@ unchanged by this revision.
 and Duelist. Both now use upper-body portraits rather than full-body poses:
 Ranger has a hood and quiver; Duelist has a feathered hat and rapier.
 The other ten assets, frames and one-liners are unchanged by this follow-up.
-The two portraits await owner review.
+The owner then accepted Duelist and requested simpler Ranger and Sunkeeper
+symbols. Ranger now uses a bow-and-quiver emblem and Sunkeeper a sun medallion,
+with no figures. The other ten assets, frames and all one-liners remain
+unchanged. The two simplified emblems await owner review.
 
-This unreleased candidate is pack `0.2.2`, render version 1. The requested
+This unreleased candidate is pack `0.2.3`, render version 1. The requested
 Drake redraw deliberately updates its existing draft ID; its earlier SVG
 remains in Git history and the original reference screenshots. No released
 legacy icon, project/session schema or dependency changes. The twelve source
-SVGs total 6,994 bytes and 2,579 bytes gzip. At most 21 bundled paths are
+SVGs total 6,702 bytes and 2,457 bytes gzip. At most 21 bundled paths are
 retained, independent of token count, with no raster atlas. Wide Spider/Ooze
 figures use pack-defined glyph sizing so they do not crowd affiliation frames.
 
@@ -1153,7 +1156,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; current production journey passes Chromium, Firefox and WebKit in UX-09 | [Original policy and evidence](./UX-05-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
-| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; twelve-token catalog implemented; Ranger/Duelist portraits revised after narrowed feedback | [Current token catalog](./media/ux07-token-catalog/reference.png); two-portrait review and remaining art packages stay open |
+| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; twelve-token catalog implemented; Duelist accepted; Ranger/Sunkeeper simplified to emblems | [Current token catalog](./media/ux07-token-catalog/reference.png); two-emblem review and remaining art packages stay open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; browser/CI, keyboard and F05 diagnostics merged in #171/#172/#174; bounded edge-strip cache implemented | [Cache limits, final F05 results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone); painting/token latency, human screen-reader and reference-device performance acceptance remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |
