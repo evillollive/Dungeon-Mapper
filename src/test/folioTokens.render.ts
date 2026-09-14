@@ -99,7 +99,7 @@ export async function showTokenReview() {
     button{font:inherit;background:transparent;border:1px solid #65757e;border-radius:6px;padding:10px 18px;color:#fff4da;cursor:pointer}
     button[aria-pressed=true]{background:#fff4da;color:#17232c}button:focus-visible{outline:3px solid #79bcf0;outline-offset:3px}
     .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}.card{padding:24px;background:#22323e;border:1px solid #50616b;border-radius:12px}
-    .hero{display:flex;justify-content:center;padding:12px 0 20px}.card p{font-size:14px;min-height:68px}
+    .hero{display:flex;justify-content:center;padding:12px 0 20px}.card p{font-size:14px}
     .sizes{display:flex;gap:12px;align-items:center;margin-top:20px}.sizes span{font-size:12px;color:#bfcad0}
     .print{display:flex;align-items:center;justify-content:space-between;padding:12px;background:#fff;color:#17232c;border-radius:6px;margin-top:20px}
     figure{margin:0}figcaption{font-size:14px;margin:0 0 12px;color:#c9d5d9}.maps{display:grid;grid-template-columns:1fr 1fr;gap:24px}
@@ -107,7 +107,7 @@ export async function showTokenReview() {
     .matrix figure{padding:20px;background:#22323e;border-radius:8px;text-align:center}
     .matrix .pair{display:flex;justify-content:center;gap:12px;flex-wrap:wrap}.gray{filter:grayscale(1);background:#eee;border-radius:6px}
     .scales figure{margin:28px 0}.scales canvas{max-width:100%;height:auto}
-    @media(max-width:700px){body{padding:22px}h1{font-size:36px}.cards,.maps,.matrix{grid-template-columns:1fr}.card p{min-height:0}}
+    @media(max-width:700px){body{padding:22px}h1{font-size:36px}.cards,.maps,.matrix{grid-template-columns:1fr}}
   `;
   document.head.append(style);
   document.body.replaceChildren();
@@ -115,7 +115,7 @@ export async function showTokenReview() {
   eyebrow.className = 'eyebrow'; eyebrow.textContent = 'DUNGEON FOLIO / TOKEN STUDY 01';
   const title = document.createElement('h1'); title.textContent = 'A face for every encounter.';
   const description = document.createElement('p');
-  description.textContent = 'Three original silhouettes, cut in dark ink against warm ivory. Shape carries affiliation; color reinforces it. This is a visual reference for approval, not the full twelve-token kit.';
+  description.textContent = 'Three tiny troublemakers, one very unlucky dungeon.';
   const nav = document.createElement('nav'); nav.setAttribute('aria-label', 'Review sections');
   const sections = ['reference', 'affiliations', 'maps', 'scales'];
   for (const section of sections) {
@@ -131,9 +131,9 @@ export async function showTokenReview() {
   document.body.append(eyebrow, title, description, nav);
   const reference = document.createElement('section'); reference.id = 'reference'; reference.className = 'cards';
   const stories = [
-    'A split visor and broad shield. Solid, upright proportions keep the defender readable in a crowded room.',
-    'An open hood, traveling cloak and hooked staff. A quiet human figure for guides, travelers and spellcasters.',
-    'Swept horns, a hooked jaw and a serrated neck. An asymmetric creature profile, not another humanoid badge.',
+    'Brings a shield to every argument.',
+    'Definitely knows a shortcut.',
+    'Small token, big fire hazard.',
   ];
   FOLIO_TOKENS.forEach((icon, index) => {
     const card = document.createElement('article'); card.className = 'card';
