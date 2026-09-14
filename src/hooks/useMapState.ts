@@ -433,14 +433,22 @@ export function useMapState() {
   // ── Tokens ────────────────────────────────────────────────────────────
 
   const addToken = useCallback((kind: TokenKind, x: number, y: number, label?: string, size?: number, icon?: string): number | null => {
-    const newId = nextTokenIdRef.current;
-    let placed = false;
+    const sz = Math.max(1, Math.floor(size ?? 1));
+    if (!Number.isInteger(x) || !Number.isInteger(y) || !Number.isFinite(sz) ||
+        x < 0 || y < 0 || x + sz > map.meta.width || y + sz > map.meta.height) {
+      window.alert('Place the complete token within the current level.');
+      return null;
+    }
+    // Reserve identity before dispatch: React can defer or replay the updater.
+    const newId = Math.max(nextTokenIdRef.current, nextIdAfter(map.tokens));
+    nextTokenIdRef.current = newId + 1;
     setProject(prev => {
       const prevMap = prev.levels[activeLevelIndex];
-      const sz = Math.max(1, Math.floor(size ?? 1));
-      if (x < 0 || y < 0 || x + sz > prevMap.meta.width || y + sz > prevMap.meta.height) return prev;
+      if (x + sz > prevMap.meta.width || y + sz > prevMap.meta.height) {
+        window.alert('The level changed before this token could be placed. Choose a position within the level.');
+        return prev;
+      }
       pushHistory(prevMap, activeLevelIndex);
-      placed = true;
       const token: Token = { id: newId, x, y, kind, label: label ?? `${kind[0].toUpperCase()}${newId}`, ...(sz > 1 ? { size: sz } : {}), ...(icon ? { icon } : {}) };
       const updated = updateActiveLevel(prev, activeLevelIndex, m => ({
         ...m, tokens: [...(m.tokens ?? []), token], initiative: [...(m.initiative ?? []), newId],
@@ -448,9 +456,8 @@ export function useMapState() {
       debouncedSave(updated);
       return updated;
     });
-    if (placed) { nextTokenIdRef.current = newId + 1; return newId; }
-    return null;
-  }, [setProject, activeLevelIndex, pushHistory, debouncedSave]);
+    return newId;
+  }, [setProject, activeLevelIndex, pushHistory, debouncedSave, map.meta.width, map.meta.height, map.tokens]);
 
   const moveToken = useCallback((id: number, x: number, y: number) => {
     setProject(prev => {
