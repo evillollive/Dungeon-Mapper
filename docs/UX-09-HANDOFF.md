@@ -490,10 +490,99 @@ Evidence is in `logs/ci-clipped-ubuntu-34702635983`,
 in the follow-up worktree. The exact production-head Ubuntu checks remain
 pending after push; no assertions, F05 samples, CI settings or timeouts changed.
 
+## Bounded Folio floor-sprite milestone
+
+September 14, 2026, based on `e6c0b11`. The unchanged F05 Chromium profile
+identified repeated Folio tile drawing as the largest remaining art cost:
+approximately 1,977 ms inclusive across the profiled interaction sequence,
+including 1,821 ms in shape drawing and its native Canvas calls.
+
+`src/themes/folio-v1/tileCache.ts` now reuses only the four variants of
+flagstone, worn wood and earth floors in `MapCanvas`. Walls, water, symbols,
+other themes and all export renderers keep their direct drawing paths. The
+versioned artwork, source fingerprints, map schema, fog policy, derived geometry,
+furnishings, lighting and gesture/undo implementation are unchanged.
+
+### Admission, memory and fidelity
+
+Each editor owns at most twelve sprites and **512 KiB of raw RGBA raster**.
+Sprites retain native device-pixel resolution, including a padded fringe for
+wood joints. The F05 fixture retains 62,208 / 221,952 / 480,000 bytes at
+DPR 1 / 2 / 3, with twelve allocations followed by allocation-free traversals.
+Together with the existing edge-strip allowance, the two caches have a
+16.5 MiB raw raster ceiling per editor. This excludes browser/GPU copies,
+Canvas-object overhead, the main canvas, paper texture and other application
+memory. There are no full-map snapshots or static/dynamic layer changes.
+
+Only uniform, integer-aligned device-pixel placement with ordinary source-over
+compositing is admitted. Tiles above 128 physical pixels, unsupported drawing
+state, unavailable sprite contexts, and budget overflow use full-detail direct
+drawing. A 128-pixel tile fills the byte budget after seven variants; remaining
+variants draw directly without eviction/reallocation churn. Size/DPR changes,
+project/level changes, dimensions, themes, audience changes, print mode and
+unmount release retained backing surfaces. Token movement, fog, painting and
+undo reuse immutable artwork rather than cached map state.
+
+The initial all-tile prototype was rejected: water contours cross cell
+boundaries, and compositing them through sprites changed their pixels.
+Restricting admission to floors preserves those contours on the original
+renderer. Larger translated curves also exposed WebKit raster differences,
+so sprites above 128 physical pixels are not admitted on any engine. Neither
+case reduces detail or introduces a browser-specific branch.
+
+The new blocking browser matrix compares direct and cached rendering for
+210 combinations per engine: 8/32/64-pixel cells, DPR 1/1.25/1.5/2/3,
+transparent and paper backgrounds, cold/warm traversal, paint/undo, materials,
+derived room/river geometry and a dense floor grid. Alpha must match exactly;
+RGB allows one 8-bit rounding step, with mean error at most 0.01/255.
+Final maxima are 0/0/1 for Chromium/Firefox/WebKit; WebKit's largest mean
+difference is 0.001953125/255. Eight additional scenarios per engine cover
+physical translation, clipping, caller state and cold/warm copies.
+
+### Comparable local observations
+
+Both baseline and final runs use the unchanged F05 diagnostic, three
+independent repetitions per engine, identical samples and persistence/undo
+assertions, 1440 x 900, DPR 1, and no CPU throttling. Host: Apple M5 Max,
+64 GiB, macOS kernel 25.6.0. Browsers: Chromium 151.0.7922.34,
+Firefox 153.0 and WebKit 26.5. These are ranges of repetition p95 values,
+not pooled statistics or representative-device acceptance.
+
+| Engine | Paint p95 before / after (ms) | Token p95 before / after (ms) | Warm-ready before / after (s) |
+| --- | --- | --- | --- |
+| Chromium | 153.2-161.7 / 124.3-125.2 | 151.8-157.4 / 120.1-122.8 | 1.49-1.54 / 1.99-2.02 |
+| Firefox | 158-193 / 111-115 | 164-204 / 107-107 | 1.25-1.27 / 1.20-1.24 |
+| WebKit | 91-99 / 68-75 | 84-98 / 67-68 | 1.49-1.54 / 1.43-1.48 |
+
+Chromium repetition one is profiled in both runs; its paint/token p95 changes
+from 157.3/157.4 to 124.6/121.0 ms. The two unprofiled repetitions change from
+161.7/151.8 and 153.2/153.1 to 125.2/120.1 and 124.3/122.8 ms.
+This is roughly 19-23% less interaction latency in Chromium, not a 100 ms
+desktop-target pass.
+
+Chromium's warm-ready proxy increased by about half a second. The recorded
+first draw still ends at 1.41-1.44 seconds, versus 1.41-1.45 before; the
+additional interval follows drawing and includes the harness's readiness
+assertions. This does not establish a startup improvement or dismiss the
+readiness difference as noise. Loading acceptance remains open.
+
+Local evidence includes 91 focused unit/component cases, strict harness
+type-checking, lint and build, all eight production workflows and the existing
+edge-cache cases on three engines, the final nine floor-cache browser cases,
+and all twelve final F05 cases. The broader candidate run exposed the
+high-resolution WebKit issue above; the final floor matrix confirms its direct
+fallback. No existing pixel bounds, F05 samples, timing targets, retries or
+timeouts changed. The new spec is included in the existing blocking CI runner.
+
+Artifacts are in this session's `files/perf-baseline`, `files/perf-candidate`,
+`files/floor-final` and `files/perf-final`. Exact-head remote CI remains the
+landing gate. UX-09 and the human/device release gates remain open.
+
 ### Next bounded performance work
 
-Profile the remaining full tile, furnishing and lighting redraws before choosing
-another bounded optimization. A static/dynamic-layer and dirty-region redesign
+Re-profile the remaining non-floor tile, furnishing, edge and lighting redraws
+before choosing another bounded optimization. Investigate the Chromium
+warm-readiness interval separately from first-draw time. A static/dynamic-layer and dirty-region redesign
 is a separate, larger scope requiring explicit agreement on invalidation and
 memory budgets. Preserve fog, derived geometry, cursor previews, undo and export
 behavior; do not silently reduce detail or add unbounded full-map bitmaps.

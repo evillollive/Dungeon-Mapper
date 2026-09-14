@@ -14,6 +14,7 @@ export default defineConfig([
       'src/test/ux09Keyboard.browser.mjs',
       'src/test/ux09Performance.spec.mjs',
       'src/test/ux09EdgeBlend.spec.mjs',
+      'src/test/ux09FolioTiles.spec.mjs',
       'src/test/denseMapFixture.mjs',
       'src/test/ux02Creation.browser.mjs',
       'src/test/ux03Shell.browser.mjs',

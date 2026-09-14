@@ -316,3 +316,27 @@ Keep the performance probe's four cases, these two renderer cases and the five
 workflow journeys in every engine job. Read
 [the cache milestone](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone)
 for final measurements, startup costs, memory exclusions and remaining gates.
+
+### Bounded Folio floor-sprite regressions
+
+`ux09FolioTiles.spec.mjs` uses an in-memory Vite bundle of
+`src/test/folioTiles.render.ts`, with no production debug route. The existing
+blocking runner discovers all three cases on every engine:
+
+```bash
+QA_OUTPUT=/absolute/path/to/floor-cache npm run test:browser -- src/test/ux09FolioTiles.spec.mjs
+```
+
+The pixel matrix covers 210 combinations per engine, including cold/warm
+reuse, materials, paint/undo, derived geometry, dense floors, two backgrounds,
+three cell sizes and five DPRs. Alpha equality is exact; RGB may differ by at
+most 1/255 with mean error at most 0.01/255 due to small-surface rounding.
+The other cases cover physical placement, clipping, caller state and F05
+allocation/reuse. Floor art above 128 physical pixels uses the direct renderer,
+not lower-resolution sprites. Existing export renderers remain uncached.
+
+The hard per-editor bounds are twelve entries and 512 KiB raw raster, in
+addition to the edge cache. Unit/component coverage includes material keys,
+budget overflow, unsupported-state fallback, size/DPR invalidation, sprite
+allocation failure, project/theme/audience/print changes and disposal.
+See [measured results and limitations](./UX-09-HANDOFF.md#bounded-folio-floor-sprite-milestone).

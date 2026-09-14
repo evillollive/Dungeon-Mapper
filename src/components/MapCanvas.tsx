@@ -16,6 +16,8 @@ import { deriveRenderableTilesFromBase } from '../utils/derivedRenderMap';
 import { drawRiverBanks, drawRiverEndpointMarkers } from '../utils/riverPolish';
 import { getPaperTint } from '../themes';
 import type { TileDrawContext } from '../themes';
+import { folioTheme } from '../themes/folio-v1/theme';
+import { FolioTileCache } from '../themes/folio-v1/tileCache';
 import { bresenhamLine, pointNearPolyline, rectCells, rectOutline, snapToGridIntersection } from '../utils/canvasGeometry';
 import { polygonBoundingBox } from '../utils/roomRasterizer';
 import { useCanvasEditingDraft } from '../hooks/useCanvasDraft';
@@ -1260,8 +1262,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     (activeTool === 'select' && hasClipboard && clipboardSize) ? mousePos : null;
 
   const [edgeBlendCache] = useState(() => new EdgeBlendCache());
+  const [folioTileCache] = useState(() => new FolioTileCache());
   useEffect(() => () => edgeBlendCache.clear(),
     [edgeBlendCache, viewportKey, meta.width, meta.height, themeId, customThemes, isPlayerView]);
+  useEffect(() => () => folioTileCache.clear(),
+    [folioTileCache, viewportKey, meta.width, meta.height, themeId, customThemes, isPlayerView, printMode]);
 
   // Main render
   useEffect(() => {
@@ -1322,6 +1327,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         return type ? getSemanticTileType(type, customThemes) : undefined;
       },
     };
+    if (printMode) folioTileCache.clear();
+    else folioTileCache.prepare(ctx, tileSize);
 
     for (let y = 0; y < meta.height; y++) {
       for (let x = 0; x < meta.width; x++) {
@@ -1337,7 +1344,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
             // "preserve tiles when switching themes" mode) so mixed-style
             // maps render each tile in its original theme.
             const tileTheme = tile.theme ? getThemeWithCustom(tile.theme, customThemes) : theme;
-            tileTheme.drawTile(ctx, tile.type, x, y, tileSize, tileDrawContext);
+            if (tileTheme === folioTheme) folioTileCache.draw(ctx, tile.type, x, y, tileSize, tileDrawContext);
+            else tileTheme.drawTile(ctx, tile.type, x, y, tileSize, tileDrawContext);
             // Draw print-mode-inspired glyph overlay for quick identification.
             if (isBuiltInTileType(tile.type) && !tileTheme.includesTileGlyphs) {
               drawTileOverlay(ctx, tile.type, x, y, tileSize, tileTheme.tileColors[tile.type]);
@@ -2052,7 +2060,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       ctx.setLineDash([]);
       ctx.restore();
     }
-  }, [map, tiles, renderTiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, rivers, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, polyVertices, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, previewMousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType, edgeBlendCache, viewportKey]);
+  }, [map, tiles, renderTiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, rivers, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, polyVertices, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, previewMousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType, edgeBlendCache, folioTileCache, viewportKey]);
 
   // Minimap render
   useEffect(() => {
