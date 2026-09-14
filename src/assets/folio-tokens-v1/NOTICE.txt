@@ -1,4 +1,4 @@
-Dungeon Folio token catalog, version 0.2.3, render version 1
+Dungeon Folio token catalog, version 0.2.4, render version 1
 Original artwork by Dungeon Mapper contributors, 2026.
 SPDX-License-Identifier: AGPL-3.0-or-later
 
@@ -22,5 +22,9 @@ The owner then accepted Duelist and requested simpler Ranger and Sunkeeper
 symbols. Ranger now uses a bow and quiver; Sunkeeper uses a sun medallion.
 Both replace figures without changing their IDs, frames or one-line copy.
 The other ten assets, including Duelist, are unchanged by this emblem revision.
+
+The next owner request simplifies Warden to a shield, Brute to a head,
+Duelist to a hat and sword, and Arcanist to a wizard hat and staff.
+Those four changes retain IDs and copy; the other eight assets are unchanged.
 Versioned icon IDs preserve existing choices.
 Affiliation uses existing player/npc/monster kinds, not ownership or rules.

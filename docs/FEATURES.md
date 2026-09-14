@@ -144,7 +144,7 @@ Tokens are meant to be fast to place, easy to read, and flexible enough for a re
 
 - **Player**, **NPC**, and **Monster** tokens. Monster tokens come in three footprints - Monster S (1×1), Monster M (2×2), and Monster L (3×3) - for varying creature sizes.
 - **Icon picker** - when placing a token, a searchable icon picker opens with legacy categories (Characters, Weapons, Magic, Creatures, Items, Environment) and an opt-in **Folio tokens** category. Choose an icon, choose **No Icon** for the letter fallback, or **Cancel** to abandon placement.
-- **Folio tokens** - twelve tiny troublemakers, one very unlucky dungeon. Warden, Wayfinder, Drake, Ranger, Duelist, Arcanist, Sunkeeper, Brute, Wolf, Owl, Spider and Ooze each work with all three affiliation frames. Kind selects the party shield, NPC round seal or hostile hexagon; shapes and marks remain distinct in print. Open **The Crooked Company** for the full furnished catalog, or **The Lantern Watch** for the original small scene. Legacy icons stay unchanged; the latest Ranger bow-and-quiver and Sunkeeper sun emblems await final review.
+- **Folio tokens** - twelve tiny troublemakers, one very unlucky dungeon. Warden, Wayfinder, Drake, Ranger, Duelist, Arcanist, Sunkeeper, Brute, Wolf, Owl, Spider and Ooze each work with all three affiliation frames. Kind selects the party shield, NPC round seal or hostile hexagon; shapes and marks remain distinct in print. Open **The Crooked Company** for the full furnished catalog, or **The Lantern Watch** for the original small scene. Legacy icons stay unchanged; the latest shield, head and equipment-symbol simplifications await final review.
 - **Move Token** - click and drag a token to relocate it.
 - **Remove** - click a token to delete it.
 

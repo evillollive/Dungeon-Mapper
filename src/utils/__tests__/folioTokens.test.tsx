@@ -43,8 +43,7 @@ describe('Folio token catalog', () => {
   });
 
   it('preserves unaffected approved sources and gives every character one short sentence', () => {
-    expect(FOLIO_TOKEN_MANIFEST.assets.slice(0, 2).map(asset => asset.sourceHash)).toEqual([
-      'sha256:4ea371810f55dc338f9d73d1b4004105b079c21aaaa03ccacb179b469fc905a2',
+    expect(FOLIO_TOKEN_MANIFEST.assets.filter(asset => asset.id === 'folio-token-v1-wayfinder').map(asset => asset.sourceHash)).toEqual([
       'sha256:8a1ea6841143bbcc55395f8c78cbee72822f29c1adf423be093126e339806e61',
     ]);
     expect(FOLIO_TOKENS.slice(0, 3).map(icon => icon.blurb)).toEqual([
