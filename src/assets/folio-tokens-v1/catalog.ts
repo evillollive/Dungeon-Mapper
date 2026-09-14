@@ -130,9 +130,9 @@ const SOURCE_HASHES: Record<string, string> = {
 export const FOLIO_TOKEN_MANIFEST = {
   schemaVersion: 1,
   packId: 'dungeon-folio-tokens',
-  version: '0.2.4',
+  version: '1.0.0',
   renderVersion: 1,
-  approval: 'Latest Warden, Brute, Duelist and Arcanist simplifications await owner review.',
+  approval: 'Complete catalog, affiliation frames and one-line copy approved September 14, 2026.',
   author: 'Dungeon Mapper contributors',
   attribution: 'Original vector silhouettes and affiliation frames for Dungeon Mapper, 2026.',
   license: 'AGPL-3.0-or-later',

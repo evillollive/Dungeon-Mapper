@@ -42,10 +42,21 @@ describe('Folio token catalog', () => {
     expect(FOLIO_TOKEN_MANIFEST.license).toBe('AGPL-3.0-or-later');
   });
 
-  it('preserves unaffected approved sources and gives every character one short sentence', () => {
-    expect(FOLIO_TOKEN_MANIFEST.assets.filter(asset => asset.id === 'folio-token-v1-wayfinder').map(asset => asset.sourceHash)).toEqual([
-      'sha256:8a1ea6841143bbcc55395f8c78cbee72822f29c1adf423be093126e339806e61',
-    ]);
+  it('preserves the approved v1 source fingerprints and gives every character one short sentence', () => {
+    expect(Object.fromEntries(FOLIO_TOKEN_MANIFEST.assets.map(asset => [asset.id, asset.sourceHash]))).toEqual({
+      'folio-token-v1-warden': 'sha256:b5d2069fd29343bcf94704554df8643e4a0d4d858ca7f2f2b9bb7c59364f49b0',
+      'folio-token-v1-wayfinder': 'sha256:8a1ea6841143bbcc55395f8c78cbee72822f29c1adf423be093126e339806e61',
+      'folio-token-v1-drake': 'sha256:30aef312b63e5f98e191d93fcaf474852181977a4c07f8fc4cacd4b8107684f3',
+      'folio-token-v1-ranger': 'sha256:0ee6ad28cd4d44d5b14b47e63066a9a04c22a801b6a53d4762230a6d7cada503',
+      'folio-token-v1-duelist': 'sha256:dba9827e610da9b11034817e2456a21e6c864b6bc81e2acc3c2dea71c58249a3',
+      'folio-token-v1-arcanist': 'sha256:af165daa2dc63bd52c2596a495cf8824692409a2df2e230ab06d05d405b966ab',
+      'folio-token-v1-sunkeeper': 'sha256:a82d4444bcde26ed18f986e443d93a5c0c429002725a0ee2b261488f1b4a0e5c',
+      'folio-token-v1-brute': 'sha256:28acb08e0778b5ab148735ecb979d6a5bcd308a68d5689f2c9b1f814f15d9eb6',
+      'folio-token-v1-wolf': 'sha256:ae61963e8f65b1a1ae88372909c17424bd3b9d79c48c52b57f567cac6721e4d3',
+      'folio-token-v1-owl': 'sha256:7876b9ce5ad8cca1e25b5490667c8acabe82523139c5d2369156828c33cd93d0',
+      'folio-token-v1-spider': 'sha256:a9cfa2886b097963ac4d80673037164b8db6c876318053ee8e3311f8b81fdae0',
+      'folio-token-v1-ooze': 'sha256:4b8b7c2e83db14ec43ca6351fdc470b6e646bcc577746c05c0b3a5b1f063a672',
+    });
     expect(FOLIO_TOKENS.slice(0, 3).map(icon => icon.blurb)).toEqual([
       'Brings a shield to every argument.', 'Definitely knows a shortcut.', 'Small token, big fire hazard.',
     ]);

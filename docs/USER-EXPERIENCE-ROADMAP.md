@@ -912,9 +912,15 @@ unchanged by that revision.
 Brute as just a head/face, Duelist as a hat and sword, and Arcanist as a
 wizard hat and staff. Those four now use the requested symbols with no
 bodies, while the other eight assets, frames and captions stay unchanged.
-The latest four simplifications await owner review.
+**Owner artwork approval, September 14, 2026:** After reviewing the final
+catalog at `0a1bf97`, the owner said, "Okay good, move forward with these."
+This approves all twelve designs, their affiliation frames and one-line
+captions, including the final four simplifications. The dated approval
+supersedes pending-review notes in earlier iterations. It does not waive
+participant, physical-device, printer or performance qualification.
 
-This unreleased candidate is pack `0.2.4`, render version 1. The requested
+The approved pack is `1.0.0`, render version 1, with the final `0.2.4` artwork,
+IDs, scales and source fingerprints unchanged. The requested
 Drake redraw deliberately updates its existing draft ID; its earlier SVG
 remains in Git history and the original reference screenshots. No released
 legacy icon, project/session schema or dependency changes. The twelve source
@@ -937,7 +943,7 @@ adds all nine new assets through the picker, checks distinct identities,
 reload/backup, independent deletion, and desktop/phone player output.
 This is not physical-device, printer, participant or F05 qualification.
 
-Current review: [all twelve tokens](./media/ux07-token-catalog/reference.png),
+Approved artwork: [all twelve tokens](./media/ux07-token-catalog/reference.png),
 [color/grayscale/print affiliations](./media/ux07-token-catalog/affiliations.png),
 [composed maps](./media/ux07-token-catalog/maps.png),
 [production editor](./media/ux07-token-catalog/editor.png), and
@@ -1162,7 +1168,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; current production journey passes Chromium, Firefox and WebKit in UX-09 | [Original policy and evidence](./UX-05-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
-| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; twelve-token catalog implemented; latest Warden/Brute/Duelist/Arcanist simplifications delivered | [Current token catalog](./media/ux07-token-catalog/reference.png); artwork review and remaining art packages stay open |
+| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; complete twelve-token catalog and copy approved September 14 in #178 | [Approved token catalog](./media/ux07-token-catalog/reference.png); remaining art packages and human/device release gates stay open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; browser/CI, keyboard and F05 diagnostics merged in #171/#172/#174; bounded edge-strip cache implemented | [Cache limits, final F05 results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone); painting/token latency, human screen-reader and reference-device performance acceptance remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |
