@@ -4,6 +4,14 @@
 
 **Status:** Implemented and browser-qualified within the bounds below. Exact-head CI and the app's Agent Merge readiness conditions remain required before landing.
 
+**September 16, 2026 follow-up:** Critical object paths now run as thirteen
+independent required production cases in `ux09Editing.browser.mjs`. The
+[A-EDIT milestone](./UX-09-HANDOFF.md#a-edit-production-editing-milestone)
+records current three-engine evidence, keyboard/reflow coverage and fixes
+for short-window inspector clipping and Firefox fractional-number rounding.
+Use the [current runner commands](./DEVELOPMENT.md#critical-editing-regression-journeys)
+instead of the historical external-SDK invocation described below.
+
 **Research:** Participant research remains explicitly deferred with **zero participants**. Browser automation is not participant usability acceptance, physical-device certification, or a waiver of UX-09.
 
 ## Production editing

@@ -760,7 +760,101 @@ repository probes or every failure mode of physical storage. The same-tab
 unexpected-pending branch is unit-level evidence, not fabricated UI activity
 through disabled controls. Cross-version updates, release publication,
 performance, art approval, physical printing and broader device/participant
-acceptance remain open. The next ordered implementation slice is A-EDIT.
+acceptance remain open. A-EDIT's subsequent milestone is recorded below.
+
+## A-EDIT production editing milestone
+
+September 16, 2026. Implementation and browser cases:
+`4f3fad334852da61af3af2f8e48815aa4e1f6686`, based on merged A-DATA `72f32e1`.
+Responsible reviewer: Copilot, using source inspection, production browser
+journeys, native storage observations and focused screenshot review.
+Disposition: **passed for the bounded local cases below**. Required exact-head
+Linux CI remains the landing gate.
+
+`ux09Editing.browser.mjs` brings critical paths from the standalone
+`ux04Editing.browser.mjs` into thirteen independent required cases. It reuses
+the existing native IndexedDB reader, Library/backup helpers, keyboard traversal
+and contrast calculation. No additional runner, dependency, retry, test timeout
+or suite budget is introduced.
+
+| Cases | Production assertions |
+| --- | --- |
+| Six object variants | Rectangle/ellipse room, polygon, river, note, token and stamp placement; actual keyboard primary-property edit, Apply and Cancel; complete atomic Undo/Redo; no-op Apply; deletion/Undo without stale selection; reload retains content and IDs |
+| Object-specific guards | Token picker cancellation creates nothing; note movement maintains tile references; polygon material edits preserve vertices; exact fractional river edits and point removal/Undo; locked stamps require committed unlocking before transforms |
+| Overlapping regions | Tiles, notes and stamps move together with retained IDs; unrelated rooms/rivers remain exact; fill/erase/Undo cover the whole selection; edge move controls are disabled |
+| Gestures | Native mouse stroke and one-step history; dispatched pointercancel/blur and real Escape discard unsaved previews; visible polygon completion; first token drag does not open a layout-shifting inspector before release |
+| Scope and viewport | Exact pan/zoom on Library return and same-tab reload; dirty forms cannot cross levels with equal object IDs, DM view or Library return |
+| Preferences | Stamp search/favorites survive reload; an injected localStorage write fault is announced, affects only current-visit favorites and does not block project editing or saving |
+| Invalid fields and save failure | Native required/range validation retains the original; quota failure rolls back every storage record; a real backup keeps applied unsaved object content and references; retry, Undo/Redo and reload preserve the intended project |
+| Two keyboard layout cases | Note chooser, multiline inspector edits, Apply, Cancel and dirty/clean Escape through real key navigation at 100% and 200% interface text; focus, clipping, hit testing, target size and contrast at seven viewport sizes |
+
+The layout matrix is 1440x900, 1024x768, 768x1024, 390x844, 844x390,
+390x460 and 720x450 at DPR 1. The last two are reduced-height and reflow
+equivalents, not an OS keyboard or native browser zoom. Each engine records
+14 layout observations. Apply has at least a 44x44 CSS-pixel target, an
+unobscured solid focus ring of at least 2 pixels, no document horizontal
+overflow, and no clipping ancestor or covering hit target. Measured focus
+width was 3 pixels; minimum sampled inspector label/help/action text contrast
+was 8.39:1 against the 4.5:1 assertion. These are scoped critical-control
+measurements, not full interface or WCAG conformance acceptance.
+
+### Defects found and fixed
+
+The legacy inspector had a nested shrinking scroll area inside the contextual
+panel. At 844x390 with 200% interface text, keyboard focus reached Apply but
+the action was clipped and covered. The inspector now uses the contextual
+panel's single scroll area, as notes and initiative already do. In short
+viewports its action row is non-sticky, so the focused action can scroll fully
+into view. Before/after short-window and reduced-height screenshots were
+inspected; the production focus/hit-test assertion reproduces the original
+failure without weakening its threshold.
+
+Firefox 153's native `input.valueAsNumber` converts the exact input string
+`0.3333333333333333` to `0.333333333333333`. An isolated native input reproduced
+the difference. The shared inspector NumberField now parses the original
+number string, retaining JavaScript numeric precision while keeping blank
+required fields invalid rather than coercing them to zero. Two focused
+component regressions cover native-rounding independence and blank-field
+validation/cancellation. The same exact fractional browser assertion passes
+on all three engines; it was not replaced with a tolerance.
+
+### Revision-linked local evidence
+
+Production assets at `/Dungeon-Mapper/`, macOS 26.6.2, locked headless engines:
+
+| Engine | Browser version | New editing cases | Related existing cases | Duration of selected runner |
+| --- | --- | --- | --- | --- |
+| Chromium | 151.0.7922.34 | 13 passed | 4 passed | 184.3 seconds |
+| Firefox | 153.0 | 13 passed | 4 passed | 180.3 seconds |
+| WebKit | 26.5 | 13 passed | 4 passed | 213.2 seconds |
+
+The 51 passing case/engine combinations include the existing shell,
+keyboard-critical, publication/preview and two-window session journeys.
+The unchanged UX-08 export/offline/controlled-worker journeys also passed
+all three engines, retaining player-export sentinels and real downloads.
+The production build, zero-warning lint and 41 focused editing/gesture
+component cases passed.
+
+Evidence is retained in session `20233d90-7a79-4423-a564-f75af5b08662`,
+`files/editing-final-chromium`, `files/editing-final-firefox`,
+`files/editing-final-webkit` and `files/editing-final-exports`. The three
+runner reports and journey attachments record the implementation revision
+above, browser version, results, per-layout measurements and page errors.
+Their preview servers used separate strict ports; each runner retained one
+worker and no retries. Earlier `editing-keyboard-4` and `editing-firefox`
+artifacts retain the pre-fix product failures. Other earlier runs include
+harness corrections for native select typeahead, textarea accessible-name
+lookup, responsive-mode timing and absent-versus-undefined optional keys.
+Content equality uses the portable JSON contract; no-write assertions still
+compare raw native records and revisions.
+
+This closes the bounded A-EDIT production gap, not every legacy scenario,
+all input devices or full accessibility qualification. Chromium pen/two-touch
+dispatch, physical touch/pen, assistive technologies, native zoom, forced-color
+qualification beyond existing styling, and participant acceptance are not
+promoted to passed by these cases. No project schema, renderer, audience
+policy or display/export contract changes. Continue with A-UPDATE's real
+application-version upgrade/recovery milestone.
 
 ## Remaining release gates
 
@@ -781,9 +875,9 @@ recorded in the [art closeout ledger](./USER-EXPERIENCE-ROADMAP.md#initial-relea
 ART-05/09 are deferred expansions, not launch dependencies. UX-00 participant
 research remains deferred with zero participants under UX-09C.
 
-The bounded A-DATA preservation journeys are covered above. UX-09A still
-requires the remaining critical editing journeys,
-real application-version upgrade and rollback evidence, a measured desktop
+The bounded A-DATA preservation and A-EDIT editing journeys are covered above.
+UX-09A still requires exact-head CI, real application-version upgrade and
+rollback evidence, a measured desktop
 performance/support scope, accurate public workflow guidance, owner art
 closeout and exact-revision release handling. **Physical printing also blocks
 UX-09A:** digital DPI/layout evidence cannot replace A4/Letter paper measurement,

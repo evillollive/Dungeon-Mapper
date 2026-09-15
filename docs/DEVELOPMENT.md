@@ -215,6 +215,43 @@ the guided creation journey and UX-08 production export/offline coverage.
 This evidence does not constitute owner artwork approval, physical printing,
 participant acceptance or performance qualification.
 
+### Critical editing regression journeys
+
+`ux09Editing.browser.mjs` registers thirteen independent production cases in
+the required three-engine runner, replacing external-SDK invocation for the
+critical object paths from `ux04Editing.browser.mjs`. The older standalone
+script remains historical input/device evidence, not the current CI entry
+point.
+
+```bash
+QA_OUTPUT=/absolute/path/to/editing npm run test:browser -- --grep='Editing:'
+# Include related keyboard, shell, publication and two-window display cases:
+QA_OUTPUT=/absolute/path/to/editing npm run test:browser -- \
+  --grep='Editing:|keyboard critical|editor navigation|publication and|session recovery'
+```
+
+Coverage includes six object variants, atomic history, invalid/cancelled
+drafts, failed-save backup/retry, favorite persistence/failure, overlapping
+regions, mouse cancellation, viewport/selection scope and inspector
+keyboard/reflow checks. The keyboard helper follows actual Tab navigation,
+including macOS WebKit Option+Tab, and native select typeahead. Fixtures and
+secondary property setup can use pointer controls; keyboard access is asserted
+for each primary property and Apply/Cancel, plus the complete note inspector
+layout matrix. Numeric input preserves fractional precision without relying
+on Firefox's rounding `valueAsNumber`.
+
+Each text-scale case records seven viewport sizes at 100% or 200% interface
+text, with screenshots, measured focus/clipping/hit targets and sampled text
+contrast. This is not native page zoom, physical keyboard/device acceptance,
+screen-reader qualification or full WCAG conformance. Quota and preference
+faults are page-scoped native-method injections restored in `finally`, not
+physical disk failures. Negative persistence assertions wait beyond the
+production save debounce and compare raw native records; content/history
+equality ignores absent-versus-undefined optional keys through the portable
+JSON contract.
+
+See [A-EDIT scope, evidence and remaining gates](./UX-09-HANDOFF.md#a-edit-production-editing-milestone).
+
 ### Library and recovery regression journeys
 
 `ux09Library.browser.mjs` adds nine independent production cases to the
