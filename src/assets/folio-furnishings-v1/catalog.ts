@@ -110,7 +110,7 @@ export const FOLIO_FURNISHINGS: FolioFurnishing[] = sources.map(source => {
     printPaths: paths.map(path => ({
       path: path.path,
       fill: path.fill ? '#ffffff' : undefined,
-      stroke: '#202820',
+      stroke: '#202020',
       strokeWidth: path.strokeWidth ?? 0.7,
     })),
   };

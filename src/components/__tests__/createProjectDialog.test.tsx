@@ -34,6 +34,22 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('guided creation', () => {
+  it('uses a player-safe launch preview but passes the complete independent encounter on acceptance', async () => {
+    const onCreate = vi.fn(() => true);
+    render(<CreateProjectDialog onCancel={vi.fn()} onCreate={onCreate} />);
+    fireEvent.change(screen.getByLabelText('Ready-to-play sample'), { target: { value: 'launch-lantern-crypt' } });
+    await preview();
+    const [candidate, , audience] = vi.mocked(renderCreationPreviews).mock.calls[0];
+    expect(audience).toBe('player');
+    expect(screen.getByText(/Player-safe preview/)).toBeInTheDocument();
+    expect(screen.queryByText(/brass key/)).not.toBeInTheDocument();
+    choose('Use this map');
+    expect(onCreate.mock.calls[0][0]).toEqual(candidate);
+    expect(onCreate.mock.calls[0][0]).not.toBe(candidate);
+    expect(candidate.levels[0].tokens!.some(token => token.hidden)).toBe(true);
+    expect(candidate.levels[0].notes.some(note => note.description.includes('brass key'))).toBe(true);
+  });
+
   it('accepts the explicit sample entry point without opening or creating a project', () => {
     const onCreate = vi.fn();
     render(<CreateProjectDialog initialPath="sample" onCancel={vi.fn()} onCreate={onCreate} />);

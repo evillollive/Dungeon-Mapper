@@ -8,7 +8,7 @@ export const FOLIO_FURNISHING_REFERENCE_NAME = "The Keeper's Hall";
 export const FOLIO_CATALOG_REFERENCE_ID = 'folio-wayfarers-refuge';
 export const FOLIO_CATALOG_REFERENCE_NAME = "The Wayfarer's Refuge";
 
-function furnishingPlacer(stamps: PlacedStamp[]) {
+export function furnishingPlacer(stamps: PlacedStamp[]) {
   return (key: string, x: number, y: number, options: Partial<PlacedStamp> = {}) => {
     const def = FOLIO_FURNISHINGS.find(stamp => stamp.id === `folio-furnishings-v1-${key}`);
     if (!def) throw new Error(`Unknown reference furnishing: ${key}`);
