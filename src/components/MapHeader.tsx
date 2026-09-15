@@ -8,6 +8,8 @@ import ActionButton from './ActionButton';
 import Icon from './Icon';
 import ShellDialog from './ShellDialog';
 import OfflineStatus from './OfflineStatus';
+import type { SaveState } from '../utils/saveCoordinator';
+import { SAVE_PHASE_ICONS } from '../utils/saveStatus';
 
 interface MapHeaderProps {
   map: DungeonMap;
@@ -23,6 +25,7 @@ interface MapHeaderProps {
   onSetUIScale: (scale: number) => void;
   viewMode: 'gm' | 'player';
   saveLabel: string;
+  savePhase: SaveState['phase'];
   settingsOpen: boolean;
   onCloseSettings: () => void;
 }
@@ -38,7 +41,8 @@ function MenuAction({ id, onClose }: { id: ActionId; onClose: () => void }) {
     title={command.unavailableReason} onClick={() => {
       onClose();
       requestAnimationFrame(() => command.action());
-    }}><span>{command.label}</span>{command.shortcut && <kbd>{command.shortcut}</kbd>}</button>;
+    }}><span className="icon-label">{command.icon && <Icon name={command.icon} />}{command.label}</span>
+    {command.shortcut && <kbd>{command.shortcut}</kbd>}</button>;
 }
 
 export function ActionMenu({ title, ids, onClose, children }: {
@@ -66,10 +70,10 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>((props, ref) => {
       <button className="project-identity" onClick={event => { event.currentTarget.focus(); setMenuOpen(true); }} aria-label={`Project menu: ${project.name}`}>
         <strong>{project.name}</strong><small>{map.meta.name}</small>
       </button>
-      <ActionButton id="file.recovery"><span role="status">{props.saveLabel}</span></ActionButton>
+      <ActionButton id="file.recovery" icon={SAVE_PHASE_ICONS[props.savePhase]}><span role="status">{props.saveLabel}</span></ActionButton>
       <OfflineStatus />
       <ActionButton id="view.viewMode" icon="look">{props.viewMode === 'gm' ? 'Edit' : 'DM view'}</ActionButton>
-      <ActionButton id="view.playerPreview" icon="look">Player preview</ActionButton>
+      <ActionButton id="view.playerPreview">Player preview</ActionButton>
       <ActionButton id="session.prepare">Prepare session</ActionButton>
       <ActionButton id="help.commandPalette" icon="search">Commands</ActionButton>
       <ActionButton id="dialog.export" icon="export">Export</ActionButton>

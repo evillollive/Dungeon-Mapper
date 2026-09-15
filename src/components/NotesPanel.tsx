@@ -1,6 +1,7 @@
 import React, { useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import type { MapNote } from '../types/map';
+import Icon from './Icon';
 
 interface NotesPanelProps {
   readOnly?: boolean;
@@ -118,13 +119,13 @@ const NotesPanel: React.FC<NotesPanelProps> = ({
                       onClick={() => startEdit(note)}
                       title="Edit note"
                       aria-label={`Edit note ${note.id}: ${note.label}`}
-                    >✎</button>
+                    ><Icon name="build" /></button>
                     <button
                       className="note-delete-btn"
                       onClick={e => { e.stopPropagation(); onDeleteNote(note.id); }}
                       title="Delete note"
                       aria-label={`Delete note ${note.id}: ${note.label}`}
-                    >✕</button>
+                    ><Icon name="delete" /></button>
                   </div>}
                 {note.description && (
                   <div className="note-desc">{note.description}</div>

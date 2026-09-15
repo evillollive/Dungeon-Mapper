@@ -34,7 +34,7 @@ describe('save trust controls', () => {
       viewMode: 'gm' as const, onToggleViewMode: noop, onShowShortcuts: noop,
       onOpenExportDialog: noop, onOpenGenerateHub: noop,
       settingsOpen: true, onCloseSettings: noop, exportOpen: false, onCloseExport: noop,
-      onSetProjectName: noop, saveLabel: 'Saved on this device',
+      onSetProjectName: noop, saveLabel: 'Saved on this device', savePhase: 'saved' as const,
     };
     const { rerender } = render(<MapHeader {...props} />, { wrapper: EditorFixture });
     expect(screen.getByRole('combobox', { name: 'Map width in tiles' })).toHaveValue('40');

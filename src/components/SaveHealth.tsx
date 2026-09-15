@@ -6,8 +6,9 @@ import { projectRecoveryRecords } from '../utils/projectRepository';
 import RecoveryManager from './RecoveryManager';
 import { exportProjectJSON, importProjectJSON } from '../utils/export';
 import { previewFogRepair, type FogRepairPreview } from '../utils/projectSchema';
-import { SAVE_PHASE_LABELS } from '../utils/saveStatus';
+import { SAVE_PHASE_ICONS, SAVE_PHASE_LABELS } from '../utils/saveStatus';
 import { useOfflineStatus } from '../hooks/useOfflineStatus';
+import Icon from './Icon';
 
 interface Props {
   projectId?: string;
@@ -40,8 +41,8 @@ export default function SaveHealth({ state, project, projectId, onRefreshCheckpo
   return (
     <section className={`save-health${failed ? ' save-health-error' : ''}`} aria-label="Device save and recovery">
       <div className="save-health-summary">
-        <strong role="status" aria-live="polite">{SAVE_PHASE_LABELS[state.phase]}</strong>
-        {offline && <span>Offline</span>}
+        <strong role="status" aria-live="polite" className="icon-label"><Icon name={SAVE_PHASE_ICONS[state.phase]} />{SAVE_PHASE_LABELS[state.phase]}</strong>
+        {offline && <span className="icon-label"><Icon name="offline" />Offline</span>}
         {!blocked && <button type="button" className="header-btn" onClick={() => {
           try {
             exportProjectJSON(project);
@@ -49,8 +50,8 @@ export default function SaveHealth({ state, project, projectId, onRefreshCheckpo
           } catch (error) {
             setError(error instanceof Error ? error.message : 'Could not export the project backup.');
           }
-        }}>Export backup</button>}
-        {state.phase === 'failed' && <button type="button" className="header-btn" onClick={onRetry}>Retry save</button>}
+        }}><Icon name="save" /> Export backup</button>}
+        {state.phase === 'failed' && <button type="button" className="header-btn" onClick={onRetry}><Icon name="refresh" /> Retry save</button>}
         {original !== undefined && <button type="button" className="header-btn" onClick={() => downloadRecoveryData(original)}>Download original</button>}
         {state.phase === 'restore-failed' && original !== undefined && <button type="button" className="header-btn"
           disabled={recovering} onClick={() => {

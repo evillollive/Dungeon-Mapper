@@ -15,6 +15,7 @@
 .export-intents { border: 0; padding: 0; margin: 22px 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .export-intents legend { padding: 0 0 12px; font-weight: 600; }
 .export-intents button { text-align: left; display: flex; flex-direction: column; gap: 6px; padding: 16px; }
+.export-intent-mark { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 12px; }
 .export-intents button > span:last-child { font-size: 13px; color: #53574e; }
 .export-intents button[aria-pressed="true"] { border: 2px solid #405b40; padding: 15px; background: #e5ecdd; }
 .export-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }

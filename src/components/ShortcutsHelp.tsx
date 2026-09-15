@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { KeyBinding, ShortcutCategory } from '../hooks/keyBindings';
+import Icon from './Icon';
 
 interface ShortcutsHelpProps {
   bindings: KeyBinding[];
@@ -44,7 +45,7 @@ const ShortcutsHelp: React.FC<ShortcutsHelpProps> = ({ bindings, onClose }) => {
       <div className="generate-dialog" style={{ maxWidth: 640 }}>
         <div className="generate-dialog-title-row">
           <h2 id="shortcuts-help-title" className="generate-dialog-title">
-            ❓ Keyboard Shortcuts
+            <Icon name="help" /> Keyboard Shortcuts
           </h2>
           <button
             type="button"
@@ -52,7 +53,7 @@ const ShortcutsHelp: React.FC<ShortcutsHelpProps> = ({ bindings, onClose }) => {
             title="Close"
             aria-label="Close keyboard shortcuts"
           >
-            ✕
+            <Icon name="close" />
           </button>
         </div>
         <div className="shortcuts-help-body">

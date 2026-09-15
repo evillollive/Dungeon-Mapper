@@ -5,6 +5,7 @@ import { TOKEN_KIND_COLORS } from '../types/map';
 import { ICON_BY_ID } from '../utils/iconLibrary';
 import { FOLIO_TOKEN_BY_ID } from '../assets/folio-tokens-v1/catalog';
 import FolioTokenIcon from './FolioTokenIcon';
+import Icon from './Icon';
 
 /**
  * Right-hand-side panel showing the active turn order. Tokens are listed in
@@ -216,7 +217,7 @@ const InitiativePanel: React.FC<InitiativePanelProps> = ({
                   onClick={e => { e.stopPropagation(); startEdit(token); }}
                   title="Rename"
                   aria-label={`Rename ${token.label}`}
-                >✎</button>
+                ><Icon name="build" /></button>
                 </div>
               )}
             </div>

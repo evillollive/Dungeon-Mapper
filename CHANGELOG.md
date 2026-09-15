@@ -5,6 +5,7 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- A consistent family of 32 original line icons for navigation, project actions, save/offline status, export and player-display controls, with text-scaled SVG artwork and unchanged accessible control names.
 - Twelve original, owner-approved Folio token designs with shape-coded affiliation frames, monochrome print companions and two furnished sample scenes.
 
 ### Fixed

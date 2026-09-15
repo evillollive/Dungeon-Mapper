@@ -1,0 +1,38 @@
+// Original Dungeon Mapper interface artwork. SPDX-License-Identifier: AGPL-3.0-or-later
+// Editable SVG paths share a 24-unit canvas and a 1.6-unit rounded stroke.
+export const INTERFACE_ICON_PATHS = {
+  build: 'M3 21 5 14 16 3 21 8 10 19 3 21ZM13 6l5 5M5 14l5 5',
+  decorate: 'm12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5L12 3Z',
+  look: 'M3 12s3-7 9-7 9 7 9 7-3 7-9 7-9-7-9-7Zm9-3a3 3 0 1 0 0 6 3 3 0 0 0 0-6',
+  levels: 'm3 7 9-4 9 4-9 4-9-4Zm0 5 9 4 9-4M3 17l9 4 9-4',
+  tactical: 'M12 3v18M3 12h18M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12',
+  notes: 'M5 3h14v18H5V3Zm3 5h8M8 12h8M8 16h5',
+  encounter: 'M8 4a3 3 0 1 0 0 6 3 3 0 0 0 0-6ZM3 21v-4a5 5 0 0 1 10 0v4M16 4a3 3 0 0 1 0 6M17 13a4 4 0 0 1 4 4v4',
+  info: 'M12 10v7M12 6v1M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18',
+  menu: 'M4 6h16M4 12h16M4 18h16',
+  close: 'm6 6 12 12M6 18 18 6',
+  search: 'M10 3a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm5 12 6 6',
+  export: 'M12 3v12m-5-5 5 5 5-5M4 15v6h16v-6',
+  library: 'M3 4h5v16H3V4Zm5 0h5v16H8V4Zm7 1 4-1 3 15-4 1-3-15Z',
+  settings: 'M4 6h16M4 12h16M4 18h16M8 3v6M16 9v6M10 15v6',
+  undo: 'm9 4-5 5 5 5M4 9h9a6 6 0 0 1 0 12h-2',
+  redo: 'm15 4 5 5-5 5M20 9h-9a6 6 0 0 0 0 12h2',
+  create: 'M13 3H5v18h14V9l-6-6Zm0 0v6h6M8 14h8m-4-4v8',
+  import: 'M14 3h5v18H5v-5M3 9h10M9 5l4 4-4 4',
+  save: 'M3 3h14l4 4v14H3V3Zm4 0v6h9V3M7 21v-7h10v7',
+  saved: 'm7 12 3 3 7-7M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18',
+  warning: 'M12 3 2 21h20L12 3Zm0 6v5m0 3v1',
+  offline: 'm3 3 18 18M3 8a15 15 0 0 1 2-1m4-2a15 15 0 0 1 12 3M6 12a10 10 0 0 1 3-2m5 0a10 10 0 0 1 4 2M9 16a5 5 0 0 1 4-1m-1 4v1',
+  print: 'M7 8V3h10v5M7 17H3V8h18v9h-4M7 14h10v7H7v-7Zm10-3h1',
+  display: 'M3 4h18v13H3V4Zm9 13v4m-5 0h10M10 14V7h2.5a2.5 2.5 0 0 1 0 5H10',
+  hidden: 'm3 3 18 18M6 6a12 12 0 0 0-3 6s3 7 9 7a11 11 0 0 0 6-2M10 5a12 12 0 0 1 2 0c6 0 9 7 9 7a16 16 0 0 1-2 3M9 9a4 4 0 0 0 6 6',
+  play: 'm7 3 14 9-14 9V3Z',
+  pause: 'M6 4h4v16H6V4Zm8 0h4v16h-4V4Z',
+  delete: 'M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7m4-7v7',
+  copy: 'M9 9h12v12H9V9Zm6-4V3H3v12h2',
+  refresh: 'M20 9a8 8 0 0 0-14-4L3 8m0-5v5h5M4 15a8 8 0 0 0 14 4l3-3m0 5v-5h-5',
+  help: 'M9 8a3 3 0 1 1 5 3c-2 1-2 2-2 3m0 3v1M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18',
+  image: 'M3 3h18v18H3V3Zm0 14 6-6 4 4 3-3 5 5M15 6a2 2 0 1 0 0 4 2 2 0 0 0 0-4',
+} as const;
+
+export type IconName = keyof typeof INTERFACE_ICON_PATHS;

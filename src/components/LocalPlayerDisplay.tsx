@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import PlayerPreview from './PlayerPreview';
+import Icon from './Icon';
 import { blankDisplay, displayChannel, DISPLAY_LEASE_MS, isDisplayMessage, receiveDisplay, type DisplayMessage } from '../utils/displayProtocol';
 import '../player-preview.css';
 import '../session-workspace.css';
@@ -58,7 +59,7 @@ export default function LocalPlayerDisplay({ sessionId, displayId }: { sessionId
     <h1>Waiting at the table</h1>
     <p role="status">{message}</p>
     {(!displayId || typeof BroadcastChannel === 'undefined') && <p role="alert">Local display is unavailable. Ask the DM to use the same-window player preview.</p>}
-    <button type="button" onClick={() => { current.current = blankDisplay(); setState(current.current); setAttempt(a => a + 1); }}>Reconnect display</button>
+    <button type="button" onClick={() => { current.current = blankDisplay(); setState(current.current); setAttempt(a => a + 1); }}><Icon name="refresh" /> Reconnect display</button>
     <p>This read-only window receives only the shared map. No online multiplayer.</p>
   </main>;
 }

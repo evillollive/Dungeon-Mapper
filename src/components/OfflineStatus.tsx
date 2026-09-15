@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useOfflineStatus } from '../hooks/useOfflineStatus';
 import { applySavedUpdate, workerRequest } from '../utils/appUpdate';
+import Icon from './Icon';
 import './OfflineStatus.css';
 
 let registrationPromise: Promise<ServiceWorkerRegistration> | undefined;
@@ -86,9 +87,10 @@ export default function OfflineStatus({ blocked = false }: { blocked?: boolean }
     finally { setBusy(false); }
   }
   return <details className="offline-status">
-    <summary>{waiting ? 'Update ready' : offline ? 'Offline' : 'Offline & updates'}</summary>
+    <summary><span className="icon-label"><Icon name={waiting ? 'refresh' : offline ? 'offline' : 'refresh'} />
+      {waiting ? 'Update ready' : offline ? 'Offline' : 'Offline & updates'}</span></summary>
     <div aria-label="Offline and app updates">
-    <span role="status">{offline ? 'Offline. ' : ''}{ready ? 'App and built-in art cached.' : 'Offline cache not ready.'}</span>
+    <span role="status"><Icon name={ready ? 'saved' : 'warning'} /> {offline ? 'Offline. ' : ''}{ready ? 'App and built-in art cached.' : 'Offline cache not ready.'}</span>
     <span>Device storage is not a backup.</span>
     {waiting ? <button type="button" disabled={busy || blocked} onClick={() => void applyUpdate()}>Update saved workspace</button>
       : <button type="button" disabled={busy || offline} onClick={() => void checkUpdates()}>{registration ? 'Check for updates' : 'Retry offline setup'}</button>}

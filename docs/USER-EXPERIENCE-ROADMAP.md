@@ -8,6 +8,13 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
+**Interface artwork follow-up, September 15, 2026:** ART-01 now has 32 original
+stroke icons integrated across the shell, project actions, save/offline status,
+export and session display controls. The owner approved the family and requested
+a small P inside the player-display monitor. That revision is implemented and
+shown for review; the other 31 designs are unchanged. Remaining launch artwork,
+human/device acceptance and UX-09 performance gates stay open.
+
 **Latest performance implementation:** UX-09's bounded edge-strip cache reduces local Chromium dense-map paint/token latency by approximately 40%, with a 16 MiB raw raster ceiling per editor and no reduced detail. Painting remains above target in Chromium/Firefox, and the high-end development Mac is not representative hardware. See [memory limits, measured results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone). The keyboard milestone and UX-08's [export/offline contract](./UX-08-HANDOFF.md) are unchanged. Remaining art, participant, physical-device, screen-reader and performance acceptance gates stay open.
 
 **Floor-rendering follow-up, 2026-09-14:** A per-editor cache reuses twelve
@@ -958,6 +965,50 @@ Approved artwork: [all twelve tokens](./media/ux07-token-catalog/reference.png),
 [composed maps](./media/ux07-token-catalog/maps.png),
 [production editor](./media/ux07-token-catalog/editor.png), and
 [phone player view](./media/ux07-token-catalog/player-phone.png).
+
+**Seventh bounded milestone, September 15, 2026: interface icon family**
+
+The owner selected ART-01 before the remaining illustrations, launch samples
+and print companions. The original 16 shell icons are refined and extended to
+32 matching line designs. All share a 24-unit viewBox, 1.6-unit rounded stroke,
+`currentColor` and text-relative sizing. They need no fonts, remote assets,
+raster cache or animation.
+
+The typed action registry supplies the same icon to header/tool actions,
+Project menu, mobile All actions and Commands. Library creation/import, the
+export intent choices, Prepare/Run/display controls and save/offline states
+use the family too. Exposed note/initiative/template edit/delete actions and
+generator/theme/help dialog symbols replace their mixed text/emoji artwork.
+Hidden legacy parameter slots, meaningful tile swatches, map markers and
+the approved furnishing/token packs are not changed.
+
+Save and recovery icons follow the actual phase. Only a completed device save
+gets the saved mark; pending/failed/conflicted/restoring states remain distinct.
+Offline status does not imply save failure. The player's monitor contains an
+original path-drawn P, not a font-dependent text glyph. Every SVG is decorative
+and non-focusable; visible labels and accessible action names remain intact.
+The offline summary retains a 44-pixel target and the existing 64-pixel desktop
+header budget after its new icon is added.
+
+**Owner direction, September 15, 2026:** The owner called the family "great"
+and requested a P inside Player display, like the i and question mark in the
+information/help symbols. That addition is implemented; its final appearance
+is shown for review. This accepts the overall family and the other 31 designs,
+not the remaining UX-07 packages or human/device release gates.
+
+Editable source and provenance are in `src/assets/interfaceIcons.ts`; no map
+schema or saved artwork ID changes. The source-driven review and reproduction
+command are documented in [Development](./DEVELOPMENT.md#interface-icon-artwork-review).
+The complete editable source is 2,345 bytes, or 1,190 bytes gzip, measured
+independently of application chunk overhead.
+Review sheets: [32-icon family](./media/ux07-interface-icons/catalog.png),
+[player-display P revision](./media/ux07-interface-icons/player-display.png),
+and [dark-interface states](./media/ux07-interface-icons/states.png).
+The existing three-engine browser runner covers all 32 icons at 16/20/24 pixels,
+stroke bounds, control names, disabled tab skipping, text scaling and forced
+colors. The affected creation, shell, keyboard, session and export/offline
+journeys remain the integration gates. Initial review-harness and header-height
+failures were corrected without weakening a product assertion.
 
 **Deliverables:** ART-01 through ART-04, ART-06 through ART-08 for the initial release, plus asset manifest/provenance, pack/version selection, previews, deterministic variants, caching, and fallbacks. ART-05/09 extend after the dungeon slice is approved.
 

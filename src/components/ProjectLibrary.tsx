@@ -7,6 +7,7 @@ import { exportProjectJSON, importProjectJSON } from '../utils/export';
 import { renderMapToCanvas } from '../utils/renderMap';
 import './ProjectLibrary.css';
 import OfflineStatus from './OfflineStatus';
+import Icon from './Icon';
 
 export function ProjectThumbnail({ item }: { item: ProjectSummary }) {
   const [attempt, setAttempt] = useState(0);
@@ -106,11 +107,11 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
         <p className="library-muted">No account needed. Library search and saved projects work locally. Backups and previews include DM-only content.</p></div>
       <div className="library-actions">
         {recent && <div className="library-continue"><button className="library-primary" disabled={locked} aria-describedby="library-recent-name"
-          onClick={() => void run(async () => { await recordProjectOpened(recent.id); await onOpen(recent.id); })}>Continue last map</button>
+          onClick={() => void run(async () => { await recordProjectOpened(recent.id); await onOpen(recent.id); })}><Icon name="play" /> Continue last map</button>
           <span id="library-recent-name">{recent.name}</span></div>}
-        <button className="library-primary" disabled={locked} onClick={() => onCreate()}>Create map</button>
-        <button disabled={locked} onClick={() => onCreate(true)}>Open a sample</button>
-        <label className={`library-file ${locked ? 'disabled' : ''}`}>Import project
+        <button className="library-primary" disabled={locked} onClick={() => onCreate()}><Icon name="create" /> Create map</button>
+        <button disabled={locked} onClick={() => onCreate(true)}><Icon name="image" /> Open a sample</button>
+        <label className={`library-file ${locked ? 'disabled' : ''}`}><span className="icon-label"><Icon name="import" />Import project</span>
           <input type="file" accept=".json,application/json" aria-label="Import project" disabled={locked} onChange={async event => {
             const file = event.target.files?.[0]; event.target.value = '';
             if (!file) return;
