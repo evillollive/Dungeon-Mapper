@@ -10,6 +10,7 @@ import furnishings from './ux07Furnishings.browser.mjs';
 import tokens from './ux07Tokens.browser.mjs';
 import tokenCatalog from './ux07TokenCatalog.browser.mjs';
 import libraryJourneys from './ux09Library.browser.mjs';
+import preservationJourneys from './ux09Preservation.browser.mjs';
 
 const journeys = [
   ['guided creation and library continuity', creation],
@@ -21,6 +22,7 @@ const journeys = [
   ['Folio token placement, affiliation and player export', tokens],
   ['Folio token catalog placement, persistence and player export', tokenCatalog],
   ...libraryJourneys,
+  ...preservationJourneys,
 ];
 
 for (const [name, journey] of journeys) {

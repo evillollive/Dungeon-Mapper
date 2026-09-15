@@ -136,7 +136,12 @@ export class SaveCoordinator {
       }
       this.initialize(loaded.revision, true, loaded.projectId, loaded.checkpointCount);
     } catch (error) {
-      this.publish(error instanceof StorageConflictError ? { phase: 'conflict', message: error.message } : prior);
+      if (error instanceof StorageConflictError) {
+        // A failed startup has no editable project to expose unless new work arrived.
+        this.publish(this.pending || this.generation !== generation
+          ? { phase: 'conflict', message: error.message }
+          : { ...prior, message: 'The saved source changed during recovery. Retry restore to load the current record. Your original source is still available to download.' });
+      } else this.publish(prior);
       throw error;
     } finally {
       this.writing = false;
