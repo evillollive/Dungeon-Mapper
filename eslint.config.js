@@ -12,6 +12,7 @@ export default defineConfig([
       'playwright.config.mjs',
       'src/test/ux09.spec.mjs',
       'src/test/interfaceIcons.spec.mjs',
+      'src/test/firstUseIllustrations.spec.mjs',
       'src/test/ux09Keyboard.browser.mjs',
       'src/test/ux09Performance.spec.mjs',
       'src/test/ux09EdgeBlend.spec.mjs',

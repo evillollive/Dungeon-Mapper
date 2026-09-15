@@ -1,0 +1,38 @@
+.first-use-illustration {
+  --illustration-paper: #f4eddd;
+  --illustration-wash: #ded8c6;
+  --illustration-accent: #dfa46f;
+  --illustration-ink: #463e37;
+  display: block;
+  width: 240px;
+  max-width: 100%;
+  height: auto;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+.first-use-illustration path { stroke: var(--illustration-ink); }
+.first-use-illustration .illustration-paper { fill: var(--illustration-paper); }
+.first-use-illustration .illustration-wash { fill: var(--illustration-wash); }
+.first-use-illustration .illustration-accent { fill: var(--illustration-accent); }
+.first-use-illustration .illustration-detail { stroke-width: 1.8; }
+.first-use-illustration :is(.illustration-route, .illustration-connector) { stroke-dasharray: 4 6; stroke-width: 2.6; }
+.first-use-illustration :is(.illustration-connector, .illustration-guide) { stroke: currentColor; }
+.first-use-illustration .illustration-guide { stroke-width: 2.6; }
+@media print {
+  .first-use-illustration {
+    --illustration-paper: white;
+    --illustration-wash: #eee;
+    --illustration-accent: #ddd;
+    --illustration-ink: black;
+    color: black;
+  }
+}
+@media (forced-colors: active) {
+  .first-use-illustration {
+    --illustration-paper: Canvas;
+    --illustration-wash: Canvas;
+    --illustration-accent: Canvas;
+    --illustration-ink: CanvasText;
+    color: CanvasText;
+  }
+}

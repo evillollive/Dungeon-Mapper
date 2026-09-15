@@ -8,6 +8,7 @@ import { projectForAudience } from '../utils/audienceProjection';
 import { loadExportAssets } from '../utils/exportAssets';
 import ExportPreview from './ExportPreview';
 import Icon, { type IconName } from './Icon';
+import FirstUseIllustration from './FirstUseIllustration';
 import './ExportDialog.css';
 
 export type ExportChoice = 'share' | 'share-svg' | 'backup' | 'print' | 'image' | 'image-svg';
@@ -133,9 +134,12 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
           </p>
           {!isBackup && <p>Review embedded artwork before sharing. Secrets drawn into an image cannot be automatically removed.</p>}
           {isBackup ? <div className="export-backup">
-            <h3>Editable project JSON</h3>
-            <p><strong>{project?.name ?? 'Project unavailable'}</strong></p>
-            <p>{project?.levels.length ?? 0} levels, including reusable assets and stair links.</p>
+            <div className="export-backup-heading">
+              <FirstUseIllustration scene="backup" />
+              <div><h3>Editable project JSON</h3>
+                <p><strong>{project?.name ?? 'Project unavailable'}</strong></p>
+                <p>{project?.levels.length ?? 0} levels, including reusable assets and stair links.</p></div>
+            </div>
             <p>Import this file to make an editable copy. Device recovery history and separate play-session records are not included.</p>
             <p>Local autosave is not a backup. Keep this file outside browser storage.</p>
           </div> : <fieldset className="export-fields" disabled={busy}><legend>Output settings</legend>

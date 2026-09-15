@@ -12,6 +12,7 @@ import { computePlayerFOV, mergeExplored } from '../utils/dynamicFog';
 import { computeLightVisible } from '../utils/lightSources';
 import PlayerPreview from './PlayerPreview';
 import Icon from './Icon';
+import FirstUseIllustration from './FirstUseIllustration';
 import '../player-preview.css';
 import '../session-workspace.css';
 
@@ -67,8 +68,11 @@ export default function SessionWorkspace({ sessionId, sourceId }: { sessionId: s
     {!project && !error && <p role="status">Loading saved map and sessions...</p>}
     {project && map && projection && <>
       <section className="session-card">
-        <p className="session-eyebrow">SOURCE MAP</p><h2>{project.name}</h2>
-        <p>Start from the saved revision of {map.meta.name}. Session actions save separately. Your authored geometry stays untouched.</p>
+        <div className="prepare-intro">
+          <FirstUseIllustration scene="display" />
+          <div><p className="session-eyebrow">SOURCE MAP</p><h2>{project.name}</h2>
+            <p>Start from the saved revision of {map.meta.name}. Session actions save separately. Your authored geometry stays untouched.</p></div>
+        </div>
         <ul className="prepare-checklist">
           <li><strong>Starting visibility:</strong> {projection.map.fog?.every(row => row.every(Boolean)) ? 'No known starting area. Reveal in Run before sharing.' : 'A starting area is visible.'}</li>
           <li><strong>Party sight:</strong> {(map.tokens ?? []).some(t => t.kind === 'player' && !t.hidden) ? 'Party sight source present.' : 'No visible party sight source. Manual reveal is available.'}</li>

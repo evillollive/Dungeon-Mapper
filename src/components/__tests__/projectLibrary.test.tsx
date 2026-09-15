@@ -23,6 +23,27 @@ describe('Your maps library', () => {
     vi.mocked(listProjects).mockResolvedValue([item('a', 'Crypt', ['undead']), item('b', 'Forest', ['travel'])]);
     vi.mocked(renderMapToCanvas).mockReturnValue({ toDataURL: () => 'data:image/png;base64,test' } as HTMLCanvasElement);
   });
+  it('shows creation artwork only for an empty active collection, not search or trash', async () => {
+    vi.mocked(listProjects).mockResolvedValue([]);
+    const handlers = props();
+    const { container } = render(<ProjectLibrary {...handlers} />);
+    await screen.findByRole('heading', { name: 'A new adventure starts here' });
+    expect(container.querySelector('[data-scene="create"]')).not.toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Create map', exact: true }));
+    expect(handlers.onCreate).toHaveBeenCalledOnce();
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: 'missing' } });
+    expect(container.querySelector('[data-scene]')).toBeNull();
+    fireEvent.change(screen.getByRole('searchbox'), { target: { value: '' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Trash', exact: true }));
+    expect(container.querySelector('[data-scene]')).toBeNull();
+  });
+  it('does not dress a failed collection load as a successful empty-state illustration', async () => {
+    vi.mocked(listProjects).mockRejectedValue(new Error('Storage unavailable'));
+    const { container } = render(<ProjectLibrary {...props()} />);
+    await screen.findByRole('alert');
+    expect(container.querySelector('[data-scene]')).toBeNull();
+    expect(screen.getByRole('alert')).toHaveTextContent('Storage unavailable');
+  });
   it('searches names and tags locally and opens a result directly', async () => {
     const handlers = props();
     render(<ProjectLibrary {...handlers} />);

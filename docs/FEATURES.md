@@ -7,6 +7,7 @@ This page preserves the detailed feature tour from the README so the landing pag
 If you want the full tour in one place, this is it. Dungeon Mapper starts fast, then keeps unfolding as your map gets more ambitious. Every tool below is here to help you go from rough sketch to table-ready encounter without bouncing between five different apps.
 
 - **Consistent interface icons** - 32 original SVG line icons accompany navigation, project actions, save/offline status, export choices and player-display controls. Icons scale with interface text, inherit control colors and do not replace accessible names. Map symbols and token artwork are separate.
+- **First-use illustrations** - small original Folio scenes accompany the empty map collection, private backup guidance, session preparation and blank local player display. These are decorative drawings, not project previews, storage status or interactive controls.
 - **Grid editor** - configurable map from 8×8 up to 128×128 (selectable widths/heights: 8, 16, 24, 32, 48, 64, 96, 128), default 32×32
 - **Tile size** - selectable tile size (12, 16, 20, 24, 32 px), default 20 px
 - **20 paintable tile types** - Floor, Wall, Door (H/V), Secret Door, Locked Door (H/V), Trapped Door (H/V), Portcullis, Archway, Barricade, Stairs Up/Down, Water, Pillar, Trap, Treasure, Start, plus project-scoped custom tiles (use the Erase tool to clear a tile back to empty)

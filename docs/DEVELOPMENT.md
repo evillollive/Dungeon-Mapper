@@ -163,6 +163,36 @@ See [UX-09 qualification status](./UX-09-HANDOFF.md) for actual coverage and
 remaining human/device/performance gates. Passing these jobs is not an
 accessibility conformance or full-release certification.
 
+## First-use illustration review
+
+ART-07's three scenes are editable SVG path data in
+`src/assets/firstUseIllustrations.ts`, rendered by `FirstUseIllustration.tsx`.
+They take only a scene name, never map data, project identity or storage state.
+The drawings are decorative, non-focusable and do not introduce controls,
+images, fonts, external requests or animation. Print and forced colors use
+explicit CSS treatments; the monochrome drawings do not replace ART-08's
+map-rendering print companion scope.
+
+```bash
+QA_OUTPUT=/absolute/path/to/illustrations npm run test:browser -- --grep='first-use illustrations'
+```
+
+The existing three-engine runner executes two cases: a source-driven art
+review and a production Library -> sample -> private backup -> Prepare -> blank
+player display journey. The latter keeps real download, local storage and
+two-window behavior, plus phone, short-landscape and enlarged-text checks.
+Creation artwork is absent from search misses, trash and storage failures.
+The player window still receives no source-project data and has no map canvas
+while blank; its neutral drawing is not the published scene.
+
+The runner stores `review.html`, `contact-sheet.png`, individual scene images,
+forced-color/phone sheets and in-app screenshots in each engine's
+`browser-results` directory. The review HTML is self-contained. The in-memory
+React harness is not a production route. Geometry bounds, grayscale fill/stroke
+colors and inherited system colors are asserted without weakening existing
+workflow gates. The creation, keyboard, session and UX-08 export/offline
+journeys remain relevant integration coverage.
+
 ## Interface icon artwork review
 
 ART-01 uses the original SVG path sources in `src/assets/interfaceIcons.ts`

@@ -63,11 +63,14 @@
 .session-preview-label { margin: 16px 0; }
 .session-workspace > .player-preview { height: auto; min-height: 60vh; }
 .prepare-workspace { max-width: 1200px; margin: auto; }
+.prepare-intro { display: flex; align-items: center; gap: 24px; }
+.prepare-intro > div { min-width: 0; overflow-wrap: anywhere; }
+.prepare-intro .first-use-illustration { width: 180px; }
 .prepare-checklist { padding-left: 20px; margin: 20px 0; }
 .prepare-checklist li { margin: 12px 0; }
 .session-card .session-confirm { display: flex; align-items: center; margin: 24px 0; }
 .session-confirm input { flex-shrink: 0; width: 24px; }
-.display-neutral { display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px; text-align: center; }
+.display-neutral { display: flex; flex-direction: column; justify-content: safe center; align-items: center; gap: 20px; text-align: center; }
 .display-neutral h1 { font-size: clamp(2rem, 5vw, 4rem); letter-spacing: -.04em; }
 .display-neutral p { max-width: 48ch; color: var(--text-secondary); }
 @media (max-width: 1150px) {
@@ -75,6 +78,8 @@
   .session-encounter { grid-column: 1 / -1; }
 }
 @media (max-width: 700px) {
+  .prepare-intro { flex-direction: column; align-items: flex-start; gap: 8px; }
+  .prepare-intro .first-use-illustration { width: 100px; }
   .session-run-grid { display: flex; flex-direction: column; }
   .session-run-grid > * { width: 100%; }
   .session-map-panel { order: -1; }
@@ -83,4 +88,7 @@
   .session-heading .session-blank { flex: 1 1 100%; }
   .session-save-line button { margin-left: 0; }
   .session-card { padding: 16px; }
+}
+@media (max-height: 500px) {
+  .display-neutral .first-use-illustration { width: 140px; }
 }

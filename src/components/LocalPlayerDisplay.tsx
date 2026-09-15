@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { flushSync } from 'react-dom';
 import PlayerPreview from './PlayerPreview';
 import Icon from './Icon';
+import FirstUseIllustration from './FirstUseIllustration';
 import { blankDisplay, displayChannel, DISPLAY_LEASE_MS, isDisplayMessage, receiveDisplay, type DisplayMessage } from '../utils/displayProtocol';
 import '../player-preview.css';
 import '../session-workspace.css';
@@ -55,6 +56,7 @@ export default function LocalPlayerDisplay({ sessionId, displayId }: { sessionId
   }, [sessionId, displayId, attempt]);
   if (state.projection) return <div className="player-preview-host"><PlayerPreview projection={state.projection} /></div>;
   return <main className="display-neutral">
+    <FirstUseIllustration scene="display" />
     <p className="session-eyebrow">LOCAL PLAYER DISPLAY</p>
     <h1>Waiting at the table</h1>
     <p role="status">{message}</p>

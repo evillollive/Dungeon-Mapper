@@ -8,6 +8,14 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
+**First-use artwork follow-up, September 15, 2026:** The owner approved
+ART-07's revised three-scene set for creating a map, keeping a separate backup
+and opening the local player display. The original vector scenes are integrated
+without adding workflow steps. The revision removes surrounding flourishes,
+uses solid monitor stands and stronger dashed connectors, and places the
+creation sparkle above the left paper fold. ART-06 launch samples, ART-08
+map print companions and human/device/performance acceptance remain open.
+
 **Interface artwork follow-up, September 15, 2026:** ART-01 now has 32 original
 stroke icons integrated across the shell, project actions, save/offline status,
 export and session display controls. The owner approved the family and requested
@@ -1010,6 +1018,52 @@ colors. The affected creation, shell, keyboard, session and export/offline
 journeys remain the integration gates. Initial review-harness and header-height
 failures were corrected without weakening a product assertion.
 
+**Eighth bounded milestone, September 15, 2026: first-use illustrations**
+
+The owner selected three small first-use illustrations after the interface
+icon family: map creation, a separate backup file and the local player display.
+The original Folio scenes reuse warm paper, muted orange and rounded outlines.
+The player-screen illustration carries the same P motif requested for ART-01.
+
+| Scene | Existing surface | Preserved contract |
+| --- | --- | --- |
+| A place to begin | Empty active collection in Your maps | Create and import remain existing actions; no drawing on a failed load, search miss or empty trash/archive |
+| A copy to keep | Editable project JSON in Export | DM-only warning, real download and instruction to keep a file outside browser storage remain visible |
+| A seat at the table | Prepare introduction and neutral local player window | Display starts blank; illustration uses no map data; publication and reconnect behavior are unchanged |
+
+**Owner revision and approval:** The owner asked to remove thin lines and
+flourishes outside the drawings, make retained monitor stands match the solid
+illustrations, strengthen dashed lines and move the creation sparkle above the
+left paper fold. Those changes are implemented. On September 15, 2026 the owner
+selected "Approve the revised illustrations." This accepts the revised ART-07
+set, not all remaining UX-07 work or a merge/release.
+
+Source and provenance live in `src/assets/firstUseIllustrations.ts`, with
+240 x 144 viewBoxes, 2.2-unit main outlines and 2.6-unit dashed connectors.
+The three-scene source totals 2,680 bytes, or 1,120 bytes gzip, independently of
+component/CSS chunk overhead. There are no raster surfaces, SVG IDs, external
+assets, fonts or animation. `FirstUseIllustration.tsx` takes only a typed scene
+name. SVG content stays decorative and non-focusable; guidance, warnings and
+actions remain text. Monochrome and forced-color treatments preserve outlines.
+Small Prepare screens stack the artwork above the text rather than squeezing
+guidance into a narrow column. Safe centering keeps the blank display's heading
+reachable in short viewports with enlarged text.
+
+Review: [approved three-scene contact sheet](./media/ux07-first-use/contact-sheet.png),
+[creation](./media/ux07-first-use/create.png),
+[backup](./media/ux07-first-use/backup.png), and
+[player display](./media/ux07-first-use/display.png).
+The source-driven review and reproduction command are in
+[Development](./DEVELOPMENT.md#first-use-illustration-review).
+
+Local coverage: 32 targeted unit/component cases across the illustration,
+Library and creation dialog files; six new art/workflow cases across Chromium,
+Firefox and WebKit; and the existing three-engine creation, keyboard, session
+and UX-08 export/offline journeys. Build, lint and strict standalone-harness
+type checking pass. This is not physical-device, participant or printer
+acceptance. In particular, the illustrations' monochrome CSS is not ART-08's
+map print companion set. ART-06/08 and UX-09 remain open.
+
 **Deliverables:** ART-01 through ART-04, ART-06 through ART-08 for the initial release, plus asset manifest/provenance, pack/version selection, previews, deterministic variants, caching, and fallbacks. ART-05/09 extend after the dungeon slice is approved.
 
 **Implementation anchors:** `src/themes/*`, existing art utilities/catalogs, `artStylePresets.ts`, `MapCanvas.tsx`, `renderMap.ts`, `export.ts`, new versioned asset directories.
@@ -1229,7 +1283,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; current production journey passes Chromium, Firefox and WebKit in UX-09 | [Original policy and evidence](./UX-05-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
-| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; complete twelve-token catalog and copy approved September 14 in #178 | [Approved token catalog](./media/ux07-token-catalog/reference.png); remaining art packages and human/device release gates stay open |
+| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; twelve-token catalog approved in #178; interface icon family and revised first-use illustrations implemented in draft #180 | [Approved first-use set](./media/ux07-first-use/contact-sheet.png); ART-06 launch samples, ART-08 map print companions and human/device release gates stay open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; browser/CI, keyboard and F05 diagnostics merged in #171/#172/#174; bounded edge-strip and native floor-path caches implemented | [Floor-cache limits and final F05 results](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone); painting/token latency, loading, human screen-reader and reference-device performance acceptance remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |

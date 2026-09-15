@@ -8,6 +8,7 @@ import { renderMapToCanvas } from '../utils/renderMap';
 import './ProjectLibrary.css';
 import OfflineStatus from './OfflineStatus';
 import Icon from './Icon';
+import FirstUseIllustration from './FirstUseIllustration';
 
 export function ProjectThumbnail({ item }: { item: ProjectSummary }) {
   const [attempt, setAttempt] = useState(0);
@@ -140,8 +141,11 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
       </div>
     </div>
     <p role="status">{busy ? 'Reading local projects...' : `${visible.length} ${visible.length === 1 ? 'project' : 'projects'}`}</p>
-    {!busy && visible.length === 0 && <section className="library-empty"><h2>{query ? 'No matching maps' : status === 'active' ? 'A new adventure starts here' : 'Nothing here yet'}</h2>
-      <p>{query ? 'Try another name or tag, or change the collection filter.' : 'Create a map or import an editable JSON backup. Nothing is automatically deleted.'}</p></section>}
+    {!busy && visible.length === 0 && <section className="library-empty">
+      {!query && status === 'active' && !error && <FirstUseIllustration scene="create" />}
+      <div><h2>{query ? 'No matching maps' : status === 'active' ? 'A new adventure starts here' : 'Nothing here yet'}</h2>
+        <p>{query ? 'Try another name or tag, or change the collection filter.' : 'Create a map or import an editable JSON backup. Nothing is automatically deleted.'}</p></div>
+    </section>}
     <div className="library-grid">{visible.map(item => <article className="library-card" key={item.id} aria-label={item.name}>
       <ProjectThumbnail item={item} />
       <div className="library-card-body"><h2>{item.name || 'Untitled project'}</h2>
