@@ -89,7 +89,7 @@ QA_OUTPUT=/absolute/path/to/qualification npm run test:browser
 QA_OUTPUT=/absolute/path/to/qualification npm run test:browser -- --project=webkit --grep=publication
 ```
 
-The six journeys cover guided creation and Library continuity, editor
+The workflow journeys cover guided creation and Library continuity, editor
 navigation/focus/layout, player publication/preview, session recovery with a
 real second window, critical keyboard workflows, and furnishing catalog
 placement/transforms/player export. Each test owns fresh browser storage, and the runner closes
@@ -134,14 +134,14 @@ The strict-port preview server defaults to port 5309 (`QA_PORT` overrides it);
 an existing server is not reused. Tests run serially, with no retries, a
 three-minute test timeout and a twenty-minute suite timeout. `test.only` and
 empty test selection fail. `--grep` and `--project` are local selectors; CI
-always runs all six journeys for each engine.
+always runs every registered journey for each engine.
 
 After building once, `npm run test:browser:run` and `npm run test:ux08:run`
 reuse `dist`. Only the latter uses `QA_ENGINES` and defaults to port 5308.
 The UX-08 runner owns its server so it can stop the sole origin and control
 worker updates. Do not run both suites concurrently on the same custom port.
 
-CI runs all six journeys plus UX-08 for Chromium, Firefox and WebKit, with
+CI runs every registered journey plus UX-08 for Chromium, Firefox and WebKit, with
 independent engine jobs, no fail-fast cancellation and fourteen-day artifacts.
 It also runs the F05 diagnostic, its delayed-draw probe, and the two edge-cache
 pixel/allocation cases described below. Their behavior assertions block CI, but their latency values do not
@@ -214,6 +214,41 @@ creation/export unit cases, the existing furnishing/token renderer matrices,
 the guided creation journey and UX-08 production export/offline coverage.
 This evidence does not constitute owner artwork approval, physical printing,
 participant acceptance or performance qualification.
+
+### Library and recovery regression journeys
+
+`ux09Library.browser.mjs` adds nine independent production cases to the
+existing `ux09.spec.mjs` runner. Run the selected milestone with:
+
+```bash
+QA_OUTPUT=/absolute/path/to/library-recovery npm run test:browser -- --grep='Library recovery:'
+# Include guided creation when changing their shared native storage reader:
+QA_OUTPUT=/absolute/path/to/library-and-creation npm run test:browser -- --grep='Library recovery:|guided creation and library continuity'
+```
+
+The cases cover rich two-level duplication and backup equality, copied tags
+without copied checkpoints, source isolation, archive/Trash cancellation and
+restoration across reload, isolated permanent deletion, competing Library
+metadata/duplicate actions, stale editor saves after rename/archive/Trash/delete,
+durable duplicates after opening fails, and failed-save backup/retry with newer
+in-memory edits. Recovery predecessors are created through the recovery UI,
+not fabricated records. The shared creation reader observes real IndexedDB;
+actions use the built application's controls, not development-only module imports.
+
+Two failure cases temporarily intercept native IndexedDB `get` or `put` in
+the test page, count the injected failures, and restore the methods in `finally`.
+They establish handled read failures and atomic quota-abort behavior, not
+physical disk exhaustion or natural browser eviction. Every case has fresh
+runner-owned storage, traces, all-tab page-error capture and the unchanged
+three-minute timeout. Existing required CI automatically includes them without
+retries, optional checks, or larger timeout budgets.
+
+This promotes selected invariants from the standalone
+`ux02Library.browser.mjs` suite, not that entire suite. Its development-server
+repository probes, failed-startup recovery race matrix, legacy migration
+tombstones, thumbnail failures, and dedicated Library keyboard/reflow checks
+remain separate coverage. Human/device, cross-schema upgrade, and performance
+release gates remain open.
 
 ## First-use illustration review
 

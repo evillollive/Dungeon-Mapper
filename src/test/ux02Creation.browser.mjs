@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict';
 import { join } from 'node:path';
 
-const records = page => page.evaluate(() => new Promise((resolve, reject) => {
+export const records = page => page.evaluate(() => new Promise((resolve, reject) => {
   const request = indexedDB.open('dungeon-mapper', 1);
   request.onerror = () => reject(request.error);
   request.onsuccess = () => {
