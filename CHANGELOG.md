@@ -5,6 +5,8 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- Three owner-approved Folio first-use illustrations for the empty map collection, private project backup and local player display, with solid monitor stands, clear dashed connectors and monochrome/forced-color treatments.
+- A consistent family of 32 original line icons for navigation, project actions, save/offline status, export and player-display controls, with text-scaled SVG artwork and unchanged accessible control names.
 - Twelve original, owner-approved Folio token designs with shape-coded affiliation frames, monochrome print companions and two furnished sample scenes.
 
 ### Fixed

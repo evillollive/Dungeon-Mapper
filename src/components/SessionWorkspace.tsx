@@ -11,6 +11,8 @@ import { deriveRenderableTiles } from '../utils/derivedRenderMap';
 import { computePlayerFOV, mergeExplored } from '../utils/dynamicFog';
 import { computeLightVisible } from '../utils/lightSources';
 import PlayerPreview from './PlayerPreview';
+import Icon from './Icon';
+import FirstUseIllustration from './FirstUseIllustration';
 import '../player-preview.css';
 import '../session-workspace.css';
 
@@ -66,8 +68,11 @@ export default function SessionWorkspace({ sessionId, sourceId }: { sessionId: s
     {!project && !error && <p role="status">Loading saved map and sessions...</p>}
     {project && map && projection && <>
       <section className="session-card">
-        <p className="session-eyebrow">SOURCE MAP</p><h2>{project.name}</h2>
-        <p>Start from the saved revision of {map.meta.name}. Session actions save separately. Your authored geometry stays untouched.</p>
+        <div className="prepare-intro">
+          <FirstUseIllustration scene="display" />
+          <div><p className="session-eyebrow">SOURCE MAP</p><h2>{project.name}</h2>
+            <p>Start from the saved revision of {map.meta.name}. Session actions save separately. Your authored geometry stays untouched.</p></div>
+        </div>
         <ul className="prepare-checklist">
           <li><strong>Starting visibility:</strong> {projection.map.fog?.every(row => row.every(Boolean)) ? 'No known starting area. Reveal in Run before sharing.' : 'A starting area is visible.'}</li>
           <li><strong>Party sight:</strong> {(map.tokens ?? []).some(t => t.kind === 'player' && !t.hidden) ? 'Party sight source present.' : 'No visible party sight source. Manual reveal is available.'}</li>
@@ -75,7 +80,7 @@ export default function SessionWorkspace({ sessionId, sourceId }: { sessionId: s
           <li><strong>Content:</strong> {projection.map.notes.length} public notes; {projection.map.tokens?.length ?? 0} visible tokens. Review Audience & secrets in Edit for publication changes.</li>
           <li><strong>Player window:</strong> Starts blank. Only Show this level publishes. Local trusted browser, not remote multiplayer.</li>
         </ul>
-        <button onClick={() => setPreview(p => !p)}>{preview ? 'Close player preview' : 'Player preview'}</button>
+        <button onClick={() => setPreview(p => !p)}><Icon name={preview ? 'close' : 'display'} /> {preview ? 'Close player preview' : 'Player preview'}</button>
         <label className="session-confirm"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />I reviewed visibility and public content. Manual-fog play is intentional if no sight source exists.</label>
         <button className="session-primary" disabled={!confirmed || busy || !!error} onClick={async () => {
           if (startLock.current || !source?.projectId || !source.revision) return;
@@ -86,7 +91,7 @@ export default function SessionWorkspace({ sessionId, sourceId }: { sessionId: s
             const saved = await saveSession(record, null);
             navigate({ session: saved.id });
           } catch (failure) { setOriginal(record); setError(errorMessage(failure)); setBusy(false); startLock.current = false; }
-        }}>{busy ? 'Starting session...' : 'Start session'}</button>
+        }}><Icon name="play" /> {busy ? 'Starting session...' : 'Start session'}</button>
       </section>
       {preview && <PlayerPreview projection={projection} />}
       <section className="session-card"><h2>Continue a session</h2>
@@ -242,20 +247,20 @@ function RunSession({ initial }: { initial: SessionRecord }) {
     <header className="session-heading">
       <div><p className="session-eyebrow">RUN / TRUSTED DM WORKSPACE</p><h1>{project.name}</h1></div>
       <div className="session-actions">
-        <button className="session-blank" onClick={pause}>Pause / blank now</button>
-        <button onClick={open}>Open player display</button>
-        <button onClick={() => setPreview(p => !p)}>{preview ? 'Close player preview' : 'Player preview'}</button>
+        <button className="session-blank" onClick={pause}><Icon name="pause" /> Pause / blank now</button>
+        <button onClick={open}><Icon name="display" /> Open player display</button>
+        <button onClick={() => setPreview(p => !p)}><Icon name={preview ? 'close' : 'display'} /> {preview ? 'Close player preview' : 'Player preview'}</button>
       </div>
     </header>
     <section className={`session-display-bar ${live ? 'is-live' : ''}`} aria-label="Display status">
-      <strong>{live ? 'LIVE' : 'BLANK'}</strong><p role="status">{status}</p>
+      <strong className="icon-label"><Icon name={live ? 'display' : 'pause'} />{live ? 'LIVE' : 'BLANK'}</strong><p role="status">{status}</p>
       <p>{published === null ? 'No level published.' : `Publication target: ${project.levels[published].meta.name}`}</p>
       <button className="session-primary" disabled={disabled} onClick={() => {
         commit({ ...record, progress: { ...record.progress, publishedLevel: level } });
         publish(previewProjection, true);
-      }}>Show this level</button>
+      }}><Icon name="display" /> Show this level</button>
     </section>
-    <div className="session-save-line"><span role="status">{busy ? 'Saving session...' : error ? 'Session save failed. Recovery available.' : 'Session saved on this device.'}</span>
+    <div className="session-save-line"><span role="status"><Icon name={busy ? 'save' : error ? 'warning' : 'saved'} /> {busy ? 'Saving session...' : error ? 'Session save failed. Recovery available.' : 'Session saved on this device.'}</span>
       <span>Authored map unchanged. Undo lasts for this visit only.</span>
       <button onClick={() => downloadRecoveryData(recordRef.current, 'dm-session-recovery.json')}>Download session recovery</button>
     </div>
@@ -266,7 +271,7 @@ function RunSession({ initial }: { initial: SessionRecord }) {
     {record.status !== 'active' ? <section className="session-card">
       <h2>{record.status === 'saved' ? 'Session progress saved' : 'Session changes discarded'}</h2>
       <p>The authored project is unchanged. The source checkpoint and last end checkpoint are retained.</p>
-      <button disabled={busy || !!error} onClick={() => { history.clear(); commit({ ...record, status: 'active' }); }}>Resume session</button>
+      <button disabled={busy || !!error} onClick={() => { history.clear(); commit({ ...record, status: 'active' }); }}><Icon name="play" /> Resume session</button>
       <button disabled={busy || !!error} onClick={() => navigate({ prepare: record.sourceProjectId })}>Back to Prepare</button>
     </section> : <>
       <section className="session-inspection">

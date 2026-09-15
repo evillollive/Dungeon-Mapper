@@ -1,5 +1,6 @@
 import type { BindingId, KeyBinding } from '../hooks/keyBindings';
 import type { ToolType, ViewMode } from '../types/map';
+import type { IconName } from '../assets/interfaceIcons';
 
 export type EditorPanel = 'build' | 'decorate' | 'look' | 'levels' | 'tactical' | 'notes' | 'encounter' | 'info';
 export type ActionId = BindingId | `panel.${EditorPanel}` | `theme.${string}`
@@ -66,6 +67,7 @@ export interface EditorAction {
   id: ActionId;
   label: string;
   category: string;
+  icon?: IconName;
   shortcut?: string;
   enabled: boolean;
   unavailableReason?: string;
@@ -103,6 +105,22 @@ const LABELS: Partial<Record<ActionId, string>> = {
   'view.uiScaleDown': 'Decrease interface text size',
 };
 
+const ACTION_ICONS: Partial<Record<ActionId, IconName>> = {
+  'panel.build': 'build', 'panel.decorate': 'decorate', 'panel.look': 'look',
+  'panel.levels': 'levels', 'panel.tactical': 'tactical', 'panel.notes': 'notes',
+  'panel.encounter': 'encounter', 'panel.info': 'info',
+  'file.library': 'library', 'file.new': 'create', 'file.open': 'import',
+  'file.samples': 'image', 'file.generate': 'decorate', 'file.clear': 'delete',
+  'file.recovery': 'save', 'file.exportJson': 'save', 'file.exportPng': 'image',
+  'file.exportSvg': 'image', 'file.printExport': 'print',
+  'file.playerPng': 'image', 'file.playerSvg': 'image',
+  'edit.undo': 'undo', 'edit.redo': 'redo', 'edit.copy': 'copy',
+  'dialog.settings': 'settings', 'dialog.templates': 'copy', 'dialog.customTheme': 'decorate',
+  'dialog.export': 'export', 'dialog.audience': 'hidden',
+  'view.playerPreview': 'display', 'session.prepare': 'encounter',
+  'help.shortcuts': 'help', 'help.commandPalette': 'search',
+};
+
 export function buildEditorActions(bindings: KeyBinding[], extras: ExtraAction[], state: ActionState): EditorAction[] {
   const inputs = [
     ...bindings.filter(b => b.id !== 'canvas.pan').map(binding => ({
@@ -124,7 +142,7 @@ export function buildEditorActions(bindings: KeyBinding[], extras: ExtraAction[]
     if (item.id === 'view.prevLevel' && !state.canPreviousLevel) unavailableReason = 'Already on the first level';
     if (item.id === 'session.prepare' && !state.canPrepareSession) unavailableReason = 'Save this project before preparing a session';
     return {
-      ...item, category: actionDestination(item.id), enabled: !unavailableReason, unavailableReason,
+      ...item, icon: ACTION_ICONS[item.id], category: actionDestination(item.id), enabled: !unavailableReason, unavailableReason,
       action: () => { if (!unavailableReason) item.action(); },
     };
   });

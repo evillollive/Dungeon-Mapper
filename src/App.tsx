@@ -1090,6 +1090,7 @@ function App() {
         settingsOpen={showSettings}
         onCloseSettings={() => setShowSettings(false)}
         saveLabel={`${SAVE_PHASE_LABELS[saveState.phase]}${offline ? ' / Offline' : ''}`}
+        savePhase={saveState.phase}
         viewMode={viewMode}
       />
       {(showSaveDetails || ['failed', 'conflict', 'replacing'].includes(saveState.phase)) && <div className="shell-save-details">

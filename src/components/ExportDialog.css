@@ -15,6 +15,7 @@
 .export-intents { border: 0; padding: 0; margin: 22px 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .export-intents legend { padding: 0 0 12px; font-weight: 600; }
 .export-intents button { text-align: left; display: flex; flex-direction: column; gap: 6px; padding: 16px; }
+.export-intent-mark { display: flex; align-items: center; justify-content: space-between; width: 100%; gap: 12px; }
 .export-intents button > span:last-child { font-size: 13px; color: #53574e; }
 .export-intents button[aria-pressed="true"] { border: 2px solid #405b40; padding: 15px; background: #e5ecdd; }
 .export-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 28px; align-items: start; }
@@ -27,6 +28,9 @@
 .export-warning, .export-audience { border-left: 3px solid #936222; padding: 12px 16px; background: #f3e7cd; }
 .export-audience { border-color: #405b40; background: #e5ecdd; }
 .export-summary, .export-backup { border-top: 1px solid #b3b2a4; padding-top: 12px; font-size: 14px; }
+.export-backup-heading { display: flex; align-items: center; gap: 12px; }
+.export-backup-heading > div { min-width: 0; overflow-wrap: anywhere; }
+.export-backup-heading .first-use-illustration { width: 120px; }
 .export-preview { background: #e9e5db; padding: 18px; border: 1px solid #b3b2a4; border-radius: 8px; min-width: 0; }
 .export-preview-stage { display: grid; place-items: center; min-height: 240px; background: #d8d5ca; padding: 10px; margin-bottom: 16px; }
 .export-preview-stage canvas, .export-preview-stage img { display: block; max-width: 100%; max-height: 54dvh; width: auto; height: auto; object-fit: contain; box-shadow: 0 3px 12px #0003; }
@@ -36,4 +40,5 @@
 .export-dialog .export-primary:hover:not(:disabled) { background: #213c26; }
 @media (max-width: 760px) { .export-intents { grid-template-columns: repeat(2, minmax(0, 1fr)); } .export-layout { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 420px) { .export-intents, .export-fields { grid-template-columns: minmax(0, 1fr); } .export-heading { gap: 10px; } .export-footer { align-items: stretch; flex-direction: column; } }
+@media (max-width: 420px) { .export-backup-heading { align-items: flex-start; } .export-backup-heading .first-use-illustration { width: 88px; } }
 @media (forced-colors: active) { .export-intents button[aria-pressed="true"] { outline: 3px solid Highlight; } .export-warning, .export-audience { border: 1px solid CanvasText; } }

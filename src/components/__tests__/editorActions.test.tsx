@@ -11,6 +11,7 @@ import CommandPalette from '../CommandPalette';
 import MobileToolbar from '../MobileToolbar';
 import NotesPanel from '../NotesPanel';
 import { contrastRatio, parseHexColor } from '../../utils/accessibility';
+import { ActionMenu } from '../MapHeader';
 
 const ready: ActionState = {
   viewMode: 'gm', canUndo: true, canRedo: true, hasSelection: true,
@@ -29,6 +30,27 @@ function Shortcuts({ actions, enabled = true }: { actions: EditorAction[]; enabl
 }
 
 describe('UX-03 shared action parity', () => {
+  it('shares action artwork across buttons, menus and commands without changing accessible names', () => {
+    const actions = registry();
+    const backup = actions.find(action => action.id === 'file.exportJson')!;
+    expect(backup.icon).toBe('save');
+    expect(actions.find(action => action.id === 'view.playerPreview')?.icon).toBe('display');
+    const { rerender } = render(<EditorActionsContext.Provider value={actions}>
+      <ActionButton id="file.exportJson" />
+    </EditorActionsContext.Provider>);
+    const name = backup.label;
+    expect(screen.getByRole('button', { name }).querySelector('svg')).toHaveAttribute('data-icon', 'save');
+    rerender(<EditorActionsContext.Provider value={actions}>
+      <ActionMenu title="Project menu" ids={['file.exportJson']} onClose={vi.fn()} />
+    </EditorActionsContext.Provider>);
+    expect(screen.getByRole('button', { name: new RegExp(name.replace(/[()]/g, '\\$&')) }).querySelector('svg'))
+      .toHaveAttribute('data-icon', 'save');
+    Element.prototype.scrollIntoView = vi.fn();
+    rerender(<CommandPalette open commands={[backup]} onClose={vi.fn()} />);
+    expect(screen.getByRole('option').querySelector('svg')).toHaveAttribute('data-icon', 'save');
+    expect(screen.getByRole('option')).toHaveTextContent(name);
+  });
+
   it('keeps semantic UI colors above text and focus contrast thresholds', () => {
     const css = readFileSync('src/design-tokens.css', 'utf8');
     const color = (name: string) => parseHexColor(css.match(new RegExp(`--${name}: (#[a-f0-9]+)`))![1])!;

@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import Icon, { type IconName } from './Icon';
 
 /** A single entry in the command palette. */
 export interface CommandItem {
@@ -8,6 +9,7 @@ export interface CommandItem {
   label: string;
   /** Category tag rendered as a subtle badge (e.g. "Tool", "Theme", "File"). */
   category: string;
+  icon?: IconName;
   /** Optional keyboard shortcut hint shown at the right edge. */
   shortcut?: string;
   /** Callback executed when the user selects this command. */
@@ -130,7 +132,7 @@ const CommandPaletteContents: React.FC<Omit<CommandPaletteProps, 'open'>> = ({ o
         aria-label="Command palette"
         onClick={e => e.stopPropagation()}
       >
-        <button type="button" className="palette-close" onClick={onClose}>Close commands</button>
+        <button type="button" className="palette-close" onClick={onClose}><Icon name="close" /> Close commands</button>
         <input
           ref={inputRef}
           className="command-palette-input"
@@ -170,7 +172,7 @@ const CommandPaletteContents: React.FC<Omit<CommandPaletteProps, 'open'>> = ({ o
               onPointerEnter={() => setSelectedIndex(i)}
             >
               <span className="command-palette-category">{item.category}</span>
-              <span className="command-palette-label">{item.label}
+              <span className="command-palette-label">{item.icon && <><Icon name={item.icon} /> </>}{item.label}
                 {item.unavailableReason && <small>{item.unavailableReason}</small>}
               </span>
               {item.shortcut && (

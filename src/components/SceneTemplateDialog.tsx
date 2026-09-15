@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import type { SceneTemplate } from '../types/map';
+import Icon from './Icon';
 
 interface SceneTemplateDialogProps {
   templates: SceneTemplate[];
@@ -64,8 +65,8 @@ const SceneTemplateDialog: React.FC<SceneTemplateDialogProps> = ({
       }}>
       <div className="modal-panel" style={{ minWidth: 340, maxWidth: 480 }}>
         <div className="modal-header">
-          <span>📋 Scene Templates</span>
-          <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Close">✕</button>
+          <span className="icon-label"><Icon name="copy" />Scene Templates</span>
+          <button type="button" className="modal-close-btn" onClick={onClose} aria-label="Close"><Icon name="close" /></button>
         </div>
 
         {/* Save new template from selection */}
@@ -119,8 +120,8 @@ const SceneTemplateDialog: React.FC<SceneTemplateDialogProps> = ({
                     autoFocus
                     aria-label="Rename template"
                   />
-                  <button type="button" className="tool-btn compact" onClick={handleRename} aria-label="Confirm rename">✓</button>
-                  <button type="button" className="tool-btn compact" onClick={() => setRenamingId(null)} aria-label="Cancel rename">✕</button>
+                  <button type="button" className="tool-btn compact" onClick={handleRename} aria-label="Confirm rename"><Icon name="saved" /></button>
+                  <button type="button" className="tool-btn compact" onClick={() => setRenamingId(null)} aria-label="Cancel rename"><Icon name="close" /></button>
                 </div>
               ) : (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
@@ -170,7 +171,7 @@ const SceneTemplateDialog: React.FC<SceneTemplateDialogProps> = ({
                     onClick={() => handleStartRename(t)}
                     title="Rename this template"
                     aria-label={`Rename template ${t.name}`}
-                  >✏️</button>
+                  ><Icon name="build" /></button>
                   <button
                     type="button"
                     className="tool-btn compact"
@@ -178,7 +179,7 @@ const SceneTemplateDialog: React.FC<SceneTemplateDialogProps> = ({
                     title="Delete this template"
                     aria-label={`Delete template ${t.name}`}
                     style={{ color: '#dc2626' }}
-                  >🗑</button>
+                  ><Icon name="delete" /></button>
                 </div>
               )}
             </div>

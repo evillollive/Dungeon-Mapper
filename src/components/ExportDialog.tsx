@@ -7,15 +7,17 @@ import { getThemeWithCustom } from '../utils/customThemes';
 import { projectForAudience } from '../utils/audienceProjection';
 import { loadExportAssets } from '../utils/exportAssets';
 import ExportPreview from './ExportPreview';
+import Icon, { type IconName } from './Icon';
+import FirstUseIllustration from './FirstUseIllustration';
 import './ExportDialog.css';
 
 export type ExportChoice = 'share' | 'share-svg' | 'backup' | 'print' | 'image' | 'image-svg';
 type Intent = 'share' | 'backup' | 'print' | 'image';
-const INTENTS: { id: Intent; title: string; detail: string }[] = [
-  { id: 'share', title: 'Share with players', detail: 'Published content and current fog.' },
-  { id: 'backup', title: 'Back up project', detail: 'Every level, editable and private.' },
-  { id: 'print', title: 'Print for the table', detail: 'Physical grid scale and page planning.' },
-  { id: 'image', title: 'Use in another map tool', detail: 'Grid-aligned image, not a VTT adapter.' },
+const INTENTS: { id: Intent; title: string; detail: string; icon: IconName }[] = [
+  { id: 'share', title: 'Share with players', detail: 'Published content and current fog.', icon: 'display' },
+  { id: 'backup', title: 'Back up project', detail: 'Every level, editable and private.', icon: 'save' },
+  { id: 'print', title: 'Print for the table', detail: 'Physical grid scale and page planning.', icon: 'print' },
+  { id: 'image', title: 'Use in another map tool', detail: 'Grid-aligned image, not a VTT adapter.', icon: 'image' },
 ];
 const NO_THEMES: readonly CustomThemeDefinition[] = [];
 const NO_STAMPS: readonly StampDef[] = [];
@@ -113,27 +115,31 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
       <header className="export-heading">
         <div><p className="export-eyebrow">TAKE YOUR MAP TO THE TABLE</p><h2>Export</h2>
           <p>Choose the purpose first. Review exactly what leaves this device.</p></div>
-        <button type="button" onClick={close} aria-label="Close Export">Close</button>
+        <button type="button" onClick={close} aria-label="Close Export"><Icon name="close" /> Close</button>
       </header>
       <fieldset className="export-intents" disabled={busy}><legend>What would you like to do?</legend>
         {INTENTS.map((item, index) => <button key={item.id} type="button" aria-pressed={intent === item.id}
           onClick={() => { setIntent(item.id); setError(''); setMessage(''); }}>
-          <span className="export-eyebrow">0{index + 1}</span><strong>{item.title}</strong><span>{item.detail}</span>
+          <span className="export-intent-mark"><Icon name={item.icon} size={24} /><span className="export-eyebrow">0{index + 1}</span></span>
+          <strong>{item.title}</strong><span>{item.detail}</span>
         </button>)}
       </fieldset>
       <div className="export-layout">
         <div>
           <p className={isBackup || exportView === 'gm' ? 'export-warning' : 'export-audience'}>
-            <strong>{isBackup || exportView === 'gm' ? 'Private / DM content' : 'Player-facing content'}</strong><br />
+            <strong><Icon name={isBackup || exportView === 'gm' ? 'hidden' : 'display'} /> {isBackup || exportView === 'gm' ? 'Private / DM content' : 'Player-facing content'}</strong><br />
             {isBackup ? 'Includes DM-only content, all levels, notes, custom assets and project settings. Never send this backup to players.'
               : exportView === 'gm' ? 'Includes DM-only content. Do not share this output with players.'
                 : 'Uses Player preview publication and fog policy. Private note text, hidden objects and undiscovered secrets are excluded.'}
           </p>
           {!isBackup && <p>Review embedded artwork before sharing. Secrets drawn into an image cannot be automatically removed.</p>}
           {isBackup ? <div className="export-backup">
-            <h3>Editable project JSON</h3>
-            <p><strong>{project?.name ?? 'Project unavailable'}</strong></p>
-            <p>{project?.levels.length ?? 0} levels, including reusable assets and stair links.</p>
+            <div className="export-backup-heading">
+              <FirstUseIllustration scene="backup" />
+              <div><h3>Editable project JSON</h3>
+                <p><strong>{project?.name ?? 'Project unavailable'}</strong></p>
+                <p>{project?.levels.length ?? 0} levels, including reusable assets and stair links.</p></div>
+            </div>
             <p>Import this file to make an editable copy. Device recovery history and separate play-session records are not included.</p>
             <p>Local autosave is not a backup. Keep this file outside browser storage.</p>
           </div> : <fieldset className="export-fields" disabled={busy}><legend>Output settings</legend>

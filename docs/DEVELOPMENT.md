@@ -163,6 +163,65 @@ See [UX-09 qualification status](./UX-09-HANDOFF.md) for actual coverage and
 remaining human/device/performance gates. Passing these jobs is not an
 accessibility conformance or full-release certification.
 
+## First-use illustration review
+
+ART-07's three scenes are editable SVG path data in
+`src/assets/firstUseIllustrations.ts`, rendered by `FirstUseIllustration.tsx`.
+They take only a scene name, never map data, project identity or storage state.
+The drawings are decorative, non-focusable and do not introduce controls,
+images, fonts, external requests or animation. Print and forced colors use
+explicit CSS treatments; the monochrome drawings do not replace ART-08's
+map-rendering print companion scope.
+
+```bash
+QA_OUTPUT=/absolute/path/to/illustrations npm run test:browser -- --grep='first-use illustrations'
+```
+
+The existing three-engine runner executes two cases: a source-driven art
+review and a production Library -> sample -> private backup -> Prepare -> blank
+player display journey. The latter keeps real download, local storage and
+two-window behavior, plus phone, short-landscape and enlarged-text checks.
+Creation artwork is absent from search misses, trash and storage failures.
+The player window still receives no source-project data and has no map canvas
+while blank; its neutral drawing is not the published scene.
+
+The runner stores `review.html`, `contact-sheet.png`, individual scene images,
+forced-color/phone sheets and in-app screenshots in each engine's
+`browser-results` directory. The review HTML is self-contained. The in-memory
+React harness is not a production route. Geometry bounds, grayscale fill/stroke
+colors and inherited system colors are asserted without weakening existing
+workflow gates. The creation, keyboard, session and UX-08 export/offline
+journeys remain relevant integration coverage.
+
+## Interface icon artwork review
+
+ART-01 uses the original SVG path sources in `src/assets/interfaceIcons.ts`
+and the shared `Icon.tsx` component. The 32 names are typed; controls supply
+visible words or an accessible name while the SVG remains decorative and
+non-focusable. Sizes 16/20/24 scale relative to 16-pixel text. Status icons use
+the actual save phase, not a parsed label or network state.
+
+```bash
+QA_OUTPUT=/absolute/path/to/icons npm run test:browser -- --grep='interface icon family'
+```
+
+`interfaceIcons.spec.mjs` builds the source-driven React review in memory,
+without adding a production route. It covers every icon's geometry bounds
+including stroke clearance, three display sizes, inherited color, default/
+selected/disabled/focus treatments, native disabled-button tab skipping,
+forced colors and doubled text sizing in Chromium, Firefox and WebKit.
+macOS WebKit uses Option+Tab, matching the existing keyboard journey.
+The runner keeps `review.html`, `catalog.png`, `player-display.png`,
+`states.png`, `forced-colors.png` and `mobile-text-size.png` under each
+engine's `browser-results` directory. Open the HTML locally to review the
+artwork; it has embedded CSS/SVG and no external dependencies.
+
+The review is also in the required browser suite. For changes to icon placement,
+run the affected existing creation, shell, keyboard, session and UX-08
+export/offline journeys. Do not raise layout thresholds to accommodate icons.
+This artwork coverage does not certify whole-app accessibility, human
+recognition or physical-device behavior.
+
 ## Folio furnishing catalog qualification
 
 The 24-piece catalog has a production UI journey in `ux07Furnishings.browser.mjs`

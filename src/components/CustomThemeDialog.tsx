@@ -4,6 +4,7 @@ import type { BuiltInTileType, CustomThemeDefinition, CustomTileDefinition } fro
 import { ALL_TILE_TYPES, TILE_LABELS } from '../types/map';
 import { THEME_LIST } from '../themes';
 import { getThemeWithCustom } from '../utils/customThemes';
+import Icon from './Icon';
 
 interface CustomThemeDialogProps {
   customThemes: readonly CustomThemeDefinition[];
@@ -145,8 +146,8 @@ const CustomThemeDialog: React.FC<CustomThemeDialogProps> = ({
     >
       <div className="generate-dialog custom-theme-dialog">
         <div className="generate-dialog-title-row">
-          <h2 className="generate-dialog-title">🧩 Custom Theme Builder</h2>
-          <button type="button" className="header-btn" onClick={onClose} aria-label="Close custom theme builder">✕</button>
+          <h2 className="generate-dialog-title"><Icon name="decorate" /> Custom Theme Builder</h2>
+          <button type="button" className="header-btn" onClick={onClose} aria-label="Close custom theme builder"><Icon name="close" /></button>
         </div>
 
         <p className="generate-dialog-help">

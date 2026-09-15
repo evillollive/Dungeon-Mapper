@@ -7,6 +7,8 @@ import { exportProjectJSON, importProjectJSON } from '../utils/export';
 import { renderMapToCanvas } from '../utils/renderMap';
 import './ProjectLibrary.css';
 import OfflineStatus from './OfflineStatus';
+import Icon from './Icon';
+import FirstUseIllustration from './FirstUseIllustration';
 
 export function ProjectThumbnail({ item }: { item: ProjectSummary }) {
   const [attempt, setAttempt] = useState(0);
@@ -106,11 +108,11 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
         <p className="library-muted">No account needed. Library search and saved projects work locally. Backups and previews include DM-only content.</p></div>
       <div className="library-actions">
         {recent && <div className="library-continue"><button className="library-primary" disabled={locked} aria-describedby="library-recent-name"
-          onClick={() => void run(async () => { await recordProjectOpened(recent.id); await onOpen(recent.id); })}>Continue last map</button>
+          onClick={() => void run(async () => { await recordProjectOpened(recent.id); await onOpen(recent.id); })}><Icon name="play" /> Continue last map</button>
           <span id="library-recent-name">{recent.name}</span></div>}
-        <button className="library-primary" disabled={locked} onClick={() => onCreate()}>Create map</button>
-        <button disabled={locked} onClick={() => onCreate(true)}>Open a sample</button>
-        <label className={`library-file ${locked ? 'disabled' : ''}`}>Import project
+        <button className="library-primary" disabled={locked} onClick={() => onCreate()}><Icon name="create" /> Create map</button>
+        <button disabled={locked} onClick={() => onCreate(true)}><Icon name="image" /> Open a sample</button>
+        <label className={`library-file ${locked ? 'disabled' : ''}`}><span className="icon-label"><Icon name="import" />Import project</span>
           <input type="file" accept=".json,application/json" aria-label="Import project" disabled={locked} onChange={async event => {
             const file = event.target.files?.[0]; event.target.value = '';
             if (!file) return;
@@ -139,8 +141,11 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
       </div>
     </div>
     <p role="status">{busy ? 'Reading local projects...' : `${visible.length} ${visible.length === 1 ? 'project' : 'projects'}`}</p>
-    {!busy && visible.length === 0 && <section className="library-empty"><h2>{query ? 'No matching maps' : status === 'active' ? 'A new adventure starts here' : 'Nothing here yet'}</h2>
-      <p>{query ? 'Try another name or tag, or change the collection filter.' : 'Create a map or import an editable JSON backup. Nothing is automatically deleted.'}</p></section>}
+    {!busy && visible.length === 0 && <section className="library-empty">
+      {!query && status === 'active' && !error && <FirstUseIllustration scene="create" />}
+      <div><h2>{query ? 'No matching maps' : status === 'active' ? 'A new adventure starts here' : 'Nothing here yet'}</h2>
+        <p>{query ? 'Try another name or tag, or change the collection filter.' : 'Create a map or import an editable JSON backup. Nothing is automatically deleted.'}</p></div>
+    </section>}
     <div className="library-grid">{visible.map(item => <article className="library-card" key={item.id} aria-label={item.name}>
       <ProjectThumbnail item={item} />
       <div className="library-card-body"><h2>{item.name || 'Untitled project'}</h2>

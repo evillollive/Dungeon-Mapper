@@ -7,11 +7,12 @@ export default function ActionButton({ id, children, icon, pressed, onInvoked }:
   id: ActionId; children?: ReactNode; icon?: IconName; pressed?: boolean; onInvoked?: () => void;
 }) {
   const command = useEditorAction(id);
+  const iconName = icon ?? command.icon;
   return <button type="button" className="action-button" data-action={id}
     disabled={!command.enabled} aria-pressed={pressed}
     title={command.unavailableReason ?? `${command.label}${command.shortcut ? ` [${command.shortcut}]` : ''}`}
     onClick={event => { event.currentTarget.focus(); command.action(); onInvoked?.(); }}>
-    {icon && <Icon name={icon} />}
+    {iconName && <Icon name={iconName} />}
     <span>{children ?? command.label}</span>
   </button>;
 }

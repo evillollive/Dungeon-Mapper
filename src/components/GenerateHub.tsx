@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
+import Icon from './Icon';
 import type { DungeonProject } from '../types/map';
 import { createDefaultMap } from '../hooks/mapStateUtils';
 import { createFogGrid } from '../utils/mapUtils';
@@ -154,7 +155,7 @@ const GenerateHub: React.FC<GenerateHubProps> = ({
         {/* Title row */}
         <div className="generate-dialog-title-row">
           <h2 id="generate-hub-title" className="generate-dialog-title">
-            🗺️ Generate Hub
+            <Icon name="decorate" /> Generate Hub
           </h2>
           <div className="generate-dialog-scale" role="group" aria-label="Dialog text size">
             <button type="button" onClick={scaleDown} disabled={!canShrink} title="Shrink dialog text" aria-label="Shrink dialog text">A−</button>
@@ -173,7 +174,7 @@ const GenerateHub: React.FC<GenerateHubProps> = ({
             aria-selected={activeTab === 'generate'}
             aria-controls="generate-hub-panel-generate"
           >
-            🎲 Generate
+            <Icon name="decorate" /> Generate
           </button>
           <button
             type="button"
@@ -183,7 +184,7 @@ const GenerateHub: React.FC<GenerateHubProps> = ({
             aria-selected={activeTab === 'samples'}
             aria-controls="generate-hub-panel-samples"
           >
-            📦 Sample Maps
+            <Icon name="image" /> Sample Maps
           </button>
         </div>
 
@@ -565,7 +566,7 @@ const GeneratePanel: React.FC<GeneratePanelProps> = ({
         <span>Seed</span>
         <div className="generate-dialog-seed-row">
           <input type="text" value={seedText} onChange={e => setSeedText(e.target.value)} placeholder="random" spellCheck={false} />
-          <button type="button" onClick={handleReroll} title="Generate a new random seed">🎲</button>
+          <button type="button" onClick={handleReroll} title="Generate a new random seed" aria-label="Generate a new random seed"><Icon name="refresh" /></button>
         </div>
       </label>
 

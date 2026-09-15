@@ -8,6 +8,21 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
+**First-use artwork follow-up, September 15, 2026:** The owner approved
+ART-07's revised three-scene set for creating a map, keeping a separate backup
+and opening the local player display. The original vector scenes are integrated
+without adding workflow steps. The revision removes surrounding flourishes,
+uses solid monitor stands and stronger dashed connectors, and places the
+creation sparkle above the left paper fold. ART-06 launch samples, ART-08
+map print companions and human/device/performance acceptance remain open.
+
+**Interface artwork follow-up, September 15, 2026:** ART-01 now has 32 original
+stroke icons integrated across the shell, project actions, save/offline status,
+export and session display controls. The owner approved the family and requested
+a small P inside the player-display monitor. That revision is implemented and
+shown for review; the other 31 designs are unchanged. Remaining launch artwork,
+human/device acceptance and UX-09 performance gates stay open.
+
 **Latest performance implementation:** UX-09's bounded edge-strip cache reduces local Chromium dense-map paint/token latency by approximately 40%, with a 16 MiB raw raster ceiling per editor and no reduced detail. Painting remains above target in Chromium/Firefox, and the high-end development Mac is not representative hardware. See [memory limits, measured results and remaining renderer work](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone). The keyboard milestone and UX-08's [export/offline contract](./UX-08-HANDOFF.md) are unchanged. Remaining art, participant, physical-device, screen-reader and performance acceptance gates stay open.
 
 **Floor-rendering follow-up, 2026-09-14:** A per-editor cache reuses twelve
@@ -959,6 +974,96 @@ Approved artwork: [all twelve tokens](./media/ux07-token-catalog/reference.png),
 [production editor](./media/ux07-token-catalog/editor.png), and
 [phone player view](./media/ux07-token-catalog/player-phone.png).
 
+**Seventh bounded milestone, September 15, 2026: interface icon family**
+
+The owner selected ART-01 before the remaining illustrations, launch samples
+and print companions. The original 16 shell icons are refined and extended to
+32 matching line designs. All share a 24-unit viewBox, 1.6-unit rounded stroke,
+`currentColor` and text-relative sizing. They need no fonts, remote assets,
+raster cache or animation.
+
+The typed action registry supplies the same icon to header/tool actions,
+Project menu, mobile All actions and Commands. Library creation/import, the
+export intent choices, Prepare/Run/display controls and save/offline states
+use the family too. Exposed note/initiative/template edit/delete actions and
+generator/theme/help dialog symbols replace their mixed text/emoji artwork.
+Hidden legacy parameter slots, meaningful tile swatches, map markers and
+the approved furnishing/token packs are not changed.
+
+Save and recovery icons follow the actual phase. Only a completed device save
+gets the saved mark; pending/failed/conflicted/restoring states remain distinct.
+Offline status does not imply save failure. The player's monitor contains an
+original path-drawn P, not a font-dependent text glyph. Every SVG is decorative
+and non-focusable; visible labels and accessible action names remain intact.
+The offline summary retains a 44-pixel target and the existing 64-pixel desktop
+header budget after its new icon is added.
+
+**Owner direction, September 15, 2026:** The owner called the family "great"
+and requested a P inside Player display, like the i and question mark in the
+information/help symbols. That addition is implemented; its final appearance
+is shown for review. This accepts the overall family and the other 31 designs,
+not the remaining UX-07 packages or human/device release gates.
+
+Editable source and provenance are in `src/assets/interfaceIcons.ts`; no map
+schema or saved artwork ID changes. The source-driven review and reproduction
+command are documented in [Development](./DEVELOPMENT.md#interface-icon-artwork-review).
+The complete editable source is 2,345 bytes, or 1,190 bytes gzip, measured
+independently of application chunk overhead.
+Review sheets: [32-icon family](./media/ux07-interface-icons/catalog.png),
+[player-display P revision](./media/ux07-interface-icons/player-display.png),
+and [dark-interface states](./media/ux07-interface-icons/states.png).
+The existing three-engine browser runner covers all 32 icons at 16/20/24 pixels,
+stroke bounds, control names, disabled tab skipping, text scaling and forced
+colors. The affected creation, shell, keyboard, session and export/offline
+journeys remain the integration gates. Initial review-harness and header-height
+failures were corrected without weakening a product assertion.
+
+**Eighth bounded milestone, September 15, 2026: first-use illustrations**
+
+The owner selected three small first-use illustrations after the interface
+icon family: map creation, a separate backup file and the local player display.
+The original Folio scenes reuse warm paper, muted orange and rounded outlines.
+The player-screen illustration carries the same P motif requested for ART-01.
+
+| Scene | Existing surface | Preserved contract |
+| --- | --- | --- |
+| A place to begin | Empty active collection in Your maps | Create and import remain existing actions; no drawing on a failed load, search miss or empty trash/archive |
+| A copy to keep | Editable project JSON in Export | DM-only warning, real download and instruction to keep a file outside browser storage remain visible |
+| A seat at the table | Prepare introduction and neutral local player window | Display starts blank; illustration uses no map data; publication and reconnect behavior are unchanged |
+
+**Owner revision and approval:** The owner asked to remove thin lines and
+flourishes outside the drawings, make retained monitor stands match the solid
+illustrations, strengthen dashed lines and move the creation sparkle above the
+left paper fold. Those changes are implemented. On September 15, 2026 the owner
+selected "Approve the revised illustrations." This accepts the revised ART-07
+set, not all remaining UX-07 work or a merge/release.
+
+Source and provenance live in `src/assets/firstUseIllustrations.ts`, with
+240 x 144 viewBoxes, 2.2-unit main outlines and 2.6-unit dashed connectors.
+The three-scene source totals 2,680 bytes, or 1,120 bytes gzip, independently of
+component/CSS chunk overhead. There are no raster surfaces, SVG IDs, external
+assets, fonts or animation. `FirstUseIllustration.tsx` takes only a typed scene
+name. SVG content stays decorative and non-focusable; guidance, warnings and
+actions remain text. Monochrome and forced-color treatments preserve outlines.
+Small Prepare screens stack the artwork above the text rather than squeezing
+guidance into a narrow column. Safe centering keeps the blank display's heading
+reachable in short viewports with enlarged text.
+
+Review: [approved three-scene contact sheet](./media/ux07-first-use/contact-sheet.png),
+[creation](./media/ux07-first-use/create.png),
+[backup](./media/ux07-first-use/backup.png), and
+[player display](./media/ux07-first-use/display.png).
+The source-driven review and reproduction command are in
+[Development](./DEVELOPMENT.md#first-use-illustration-review).
+
+Local coverage: 32 targeted unit/component cases across the illustration,
+Library and creation dialog files; six new art/workflow cases across Chromium,
+Firefox and WebKit; and the existing three-engine creation, keyboard, session
+and UX-08 export/offline journeys. Build, lint and strict standalone-harness
+type checking pass. This is not physical-device, participant or printer
+acceptance. In particular, the illustrations' monochrome CSS is not ART-08's
+map print companion set. ART-06/08 and UX-09 remain open.
+
 **Deliverables:** ART-01 through ART-04, ART-06 through ART-08 for the initial release, plus asset manifest/provenance, pack/version selection, previews, deterministic variants, caching, and fallbacks. ART-05/09 extend after the dungeon slice is approved.
 
 **Implementation anchors:** `src/themes/*`, existing art utilities/catalogs, `artStylePresets.ts`, `MapCanvas.tsx`, `renderMap.ts`, `export.ts`, new versioned asset directories.
@@ -1178,7 +1283,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; current production journey passes Chromium, Firefox and WebKit in UX-09 | [Original policy and evidence](./UX-05-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
-| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; complete twelve-token catalog and copy approved September 14 in #178 | [Approved token catalog](./media/ux07-token-catalog/reference.png); remaining art packages and human/device release gates stay open |
+| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; twelve-token catalog approved in #178; interface icon family and revised first-use illustrations implemented in draft #180 | [Approved first-use set](./media/ux07-first-use/contact-sheet.png); ART-06 launch samples, ART-08 map print companions and human/device release gates stay open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; browser/CI, keyboard and F05 diagnostics merged in #171/#172/#174; bounded edge-strip and native floor-path caches implemented | [Floor-cache limits and final F05 results](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone); painting/token latency, loading, human screen-reader and reference-device performance acceptance remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |
