@@ -14,9 +14,9 @@ If you want the full tour in one place, this is it. Dungeon Mapper starts fast, 
 - **13 preset theme modes** - Castle, Dungeon, Starship, Alien World, Lost Civilization, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City, Pirate, Desert - each with unique per-theme art for floors, walls, doors, water, treasure, traps, and start tiles (see [Preset Modes](#preset-modes) below)
 - **Custom themes** - project-scoped custom theme builder with editable tile colors, labels, grid color, and optional uploaded tile graphics (see [Custom Themes](#custom-themes) below)
 - **Multi-level dungeons** - create multi-floor projects with level tabs, stair links between levels, per-level undo history, and double-click stair navigation (see [Multi-Level Dungeons](#multi-level-dungeons) below)
-- **Sample maps** - 26 bundled sample projects (including 2 multi-level maps totaling 28 levels) across all 13 themes for onboarding and inspiration (see [Sample Maps](#sample-maps) below)
+- **Sample maps** - bundled encounters across all 13 themes, Folio art references and three authored launch maps: The Lantern Crypt, Alder Crossing and Kestrel Docking Bay. Launch previews are player-safe; opening a sample creates a fresh editable project (see [Sample Maps](#sample-maps) below)
 - **Themed canvas** - per-theme grid colors, deterministic tile color jitter, and wall depth/shadow effects for a rich, organic look; warm parchment background with pixel-sharp rendering
-- **Print mode** - toggle a high-contrast black-and-white renderer for printer-friendly output, with cross-hatched walls and stipple-shaded water
+- **Print mode** - monochrome material patterns, connected wall contours, drawn doors/stairs and shape-coded token affiliations; includes A4/Letter planning and a quarter-inch overview scale
 - **Navigation rail** - vertical icon strip with contextual side panel (default layout); switch between rail and classic tabbed toolbar via the LAYOUT dropdown in the header
 - **Command palette** - fuzzy-search overlay (`Ctrl/Cmd+K`) for quick access to tools, themes, file actions, view toggles, and canvas commands
 - **Selection inspector** - docked right panel showing properties of the selected stamp/token/note, or a map summary (dimensions, tile counts, theme) when nothing is selected
@@ -80,7 +80,20 @@ Every theme keeps the same underlying tile logic, but gives it a different visua
 
 ### Print mode
 
-Print mode is the practical friend in the group. It strips the map down to a crisp, high-contrast black-and-parchment look so exports stay readable on paper, at the table, or in any situation where color is more distraction than help. Flip it on when you need clarity, flip it off when you want the full atmosphere back.
+Print mode uses white paper, black map symbols and neutral charcoal furnishings.
+Flagstone, wood, earth, rock and water have distinct patterns; wall contours
+join without internal outlines. Plain doors use drawn H/V labels; lock/trap
+symbols keep clean outer orientation posts. Stairs use drawn arrows. Party,
+NPC and hostile tokens have different frames even without color, including
+legacy tokens. Emoji-only markers use a label initial in print.
+
+Choose **Export > Print for the table > Ink-friendly map styling**. The
+0.25-inch cell option fits each 24 x 24 launch sample onto one A4 or Letter
+sheet as a six-inch square overview. Choose one-inch cells for miniatures
+and download the overlapping pages. Use 100% / actual-size printing, not
+fit to page. Player output still applies fog, discovery and publication
+rules before drawing. User-supplied images and annotations should always be
+reviewed before sharing; map styling cannot remove secrets baked into artwork.
 
 ## Custom Themes
 
@@ -107,7 +120,13 @@ Some maps want to sprawl. Multi-level support keeps those bigger projects manage
 
 ## Sample Maps
 
-Need a head start or just want to see what the editor can do when everything is firing at once? The Samples tab in Generate Hub is full of ready-to-explore projects across every theme. They are great for onboarding, inspiration, or shamelessly remixing into your own encounter prep.
+Choose **Your maps > Open a sample** to preview an encounter before creating
+a fresh editable project. The launch trio is **The Lantern Crypt**, **Alder
+Crossing** and **Kestrel Docking Bay**. Each has a clear arrival, focal point,
+traversable encounter space, public scene notes and separate DM instructions.
+Their creation previews show only player-safe content; the editable copy
+includes the private encounter. Existing generated samples and Folio art
+references remain available, including through Generate Hub.
 
 ## Present View
 
@@ -364,7 +383,7 @@ Each art layer has a corresponding export toggle in the PNG/SVG export dialogs s
 Generate Hub is where the app earns its keep when you need ideas fast. You can spin up a whole map from a seed, pull in a sample, or generate inside a selection when only one part of the layout needs fresh life. It's built to help you iterate, not just dump out a random dungeon and call it done.
 
 - **Generate** - procedural map generation with four algorithms and full parameter controls.
-- **Samples** - a gallery of 26 bundled sample projects with archetype filtering (dungeon, village, cavern, terrain, multi-level).
+- **Samples** - bundled sample projects and Folio references with archetype filtering, plus three authored launch encounters.
 
 Generated maps use the standard tile types (Floor, Wall, Door, Secret Door, Locked Door, Trapped Door, Portcullis, Archway, Barricade, Stairs, Water, Pillar, Trap, Treasure, Start) so the result is rendered in whatever theme the map currently uses - switching the theme afterwards restyles the generated map without losing any tile data.
 

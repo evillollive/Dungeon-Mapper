@@ -163,6 +163,58 @@ See [UX-09 qualification status](./UX-09-HANDOFF.md) for actual coverage and
 remaining human/device/performance gates. Passing these jobs is not an
 accessibility conformance or full-release certification.
 
+## Launch art and print companion review
+
+ART-08's original geometry is `src/themes/print-companion-v1/art.ts`, with
+provenance and source fingerprints in its manifest and notice. The renderer
+reuses the Folio vector primitives, not the color kit or its caches.
+`src/utils/printTokenRender.ts` preserves Folio tokens and supplies matching
+monochrome affiliations for legacy markers. Folio furnishings retain their
+approved paths, with neutral charcoal print strokes. No extra dependencies,
+asset requests, raster atlases or persistent render caches are introduced.
+The editable tile source is 5,772 bytes (1,952 gzip), legacy token adapter
+1,486 bytes (752 gzip), and three scene compositions 9,930 bytes (3,448 gzip).
+These are individual source measurements, not application chunk sizes.
+
+ART-06's three original 24 x 24 compositions are in
+`src/utils/launchSamples.ts`. They join the existing sample entry point
+without replacing the default sample or old IDs. Only the new launch samples
+select player-safe creation previews; generation, tracing and legacy sample
+previews keep their existing behavior.
+
+The owner-approved door revision uses vector H/V overlays on plain doors.
+Lock/trap symbols keep their outer orientation posts without the rectangle
+fragments behind them. `printCompanions.test.ts` pins these shapes and the H's
+matching minimum clearance from the frame. No platform font is needed.
+
+```bash
+QA_OUTPUT=/absolute/path/to/launch-art npm run test:browser -- --grep='launch art'
+```
+
+The existing three-engine runner executes four cases per engine: one art
+matrix and one production journey for each sample. It records a self-contained
+`review.html`, the tile/material/token key, paired color/print maps, A4/Letter
+layouts and a one-inch detail crop. Production journeys preserve actual
+300-DPI PNG downloads for both paper sizes, physical metadata, monochrome
+pixels, player previews at phone width, private backups, reload and independent
+project identities. The art matrix compares 21 semantic states at four
+sizes, page windows at quarter-inch and one-inch scale, and safe creation
+previews against player rendering.
+
+Native WebKit repeats/PNG decoding can differ by one channel value. Creation
+previews are bounded to maximum 1/255 and mean below 0.0001/255; overlapping
+art windows to maximum 1/255 and mean below 0.005/255. Tile Canvas/SVG comparison
+uses a per-tile mean below 2/255. The pre-existing UX-08 pixel-identical
+downloaded-page gate and furnishing/token raster thresholds are unchanged.
+The diagonal hatch candidate and colored print-stroke trial were corrected,
+not admitted by widening the older limits.
+
+Relevant regressions include `printCompanions.test.ts`, `launchSamples.test.ts`,
+creation/export unit cases, the existing furnishing/token renderer matrices,
+the guided creation journey and UX-08 production export/offline coverage.
+This evidence does not constitute owner artwork approval, physical printing,
+participant acceptance or performance qualification.
+
 ## First-use illustration review
 
 ART-07's three scenes are editable SVG path data in

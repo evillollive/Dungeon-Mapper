@@ -1,4 +1,4 @@
-import type { BackgroundImage, DungeonMap, DungeonProject } from '../types/map';
+import type { BackgroundImage, DungeonMap, DungeonProject, ViewMode } from '../types/map';
 import { buildThemeList, getThemeWithCustom } from './customThemes';
 import { getGenerator, parseSeed, pickGeneratorForTheme } from './generators';
 import { createEmptyGrid, createFogGrid } from './mapUtils';
@@ -178,18 +178,18 @@ export async function readTraceImage(file: File, signal: AbortSignal): Promise<T
 }
 
 /** Render every level, so multilevel samples can be inspected before creation. */
-export async function renderCreationPreviews(project: DungeonProject, signal: AbortSignal): Promise<string[]> {
+export async function renderCreationPreviews(project: DungeonProject, signal: AbortSignal, viewMode: ViewMode = 'gm'): Promise<string[]> {
   const previews: string[] = [];
   for (const map of project.levels) {
     if (signal.aborted) throw aborted();
     const tileSize = Math.min(24, 1200 / Math.max(map.meta.width, map.meta.height));
     const canvas = renderMapToCanvas(map, {
-      tileSize, themeId: map.meta.theme ?? 'dungeon', viewMode: 'gm',
+      tileSize, themeId: map.meta.theme ?? 'dungeon', viewMode,
       customThemes: project.customThemes, customStamps: project.customStamps,
     });
     // The export renderer omits reference backgrounds. Trace candidates contain
     // empty tiles, so add the reference and its alignment grid explicitly.
-    if (map.backgroundImage) {
+    if (map.backgroundImage && viewMode === 'gm') {
       const bg = map.backgroundImage;
       const image = await loadImage(bg.dataUrl, signal);
       const ctx = canvas.getContext('2d');

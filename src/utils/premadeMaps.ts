@@ -20,6 +20,7 @@ import { buildFolioTokenReference, FOLIO_TOKEN_REFERENCE_ID, FOLIO_TOKEN_REFEREN
   buildFolioTokenCatalogReference, FOLIO_TOKEN_CATALOG_ID, FOLIO_TOKEN_CATALOG_NAME } from './folioTokenReference';
 import { buildFolioFurnishingReference, FOLIO_FURNISHING_REFERENCE_ID, FOLIO_FURNISHING_REFERENCE_NAME,
   buildFolioCatalogReference, FOLIO_CATALOG_REFERENCE_ID, FOLIO_CATALOG_REFERENCE_NAME } from './folioFurnishingReference';
+import { buildLaunchSample, LAUNCH_SAMPLES } from './launchSamples';
 
 export interface PremadeMapSummary {
   id: string;
@@ -1311,9 +1312,10 @@ export const PREMADE_MAP_SUMMARIES: PremadeMapSummary[] = [...PREMADE_MAP_SPECS.
   sizeLabel: '24 x 24',
   levelCount: 1,
   description: 'Twelve unlikely guests check into a refuge with a very optimistic damage deposit.',
-}];
+}, ...LAUNCH_SAMPLES];
 
 export function buildPremadeProject(id: string): DungeonProject {
+  if (LAUNCH_SAMPLES.some(sample => sample.id === id)) return buildLaunchSample(id);
   if (id === FOLIO_REFERENCE_ID) return buildFolioReference();
   if (id === FOLIO_MATERIALS_REFERENCE_ID) return buildFolioMaterialsReference();
   if (id === FOLIO_FURNISHING_REFERENCE_ID) return buildFolioFurnishingReference();

@@ -8,6 +8,13 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
+**Launch-art implementation follow-up, September 15, 2026:** ART-08's
+monochrome map companions and ART-06's three authored launch encounters are
+implemented for owner review. The owner selected these launch tasks, leaving
+ART-05/09 out of scope. This is implementation completion, not visual or
+physical-paper acceptance. See the [launch-art milestone](#launch-art-milestone-art-08-and-art-06)
+and its print/map review sheets below.
+
 **First-use artwork follow-up, September 15, 2026:** The owner approved
 ART-07's revised three-scene set for creating a map, keeping a separate backup
 and opening the local player display. The original vector scenes are integrated
@@ -1064,6 +1071,82 @@ type checking pass. This is not physical-device, participant or printer
 acceptance. In particular, the illustrations' monochrome CSS is not ART-08's
 map print companion set. ART-06/08 and UX-09 remain open.
 
+#### Launch-art milestone: ART-08 and ART-06
+
+The owner selected the remaining launch artwork rather than the broader
+ART-05 wilderness/starship kits or ART-09 theme adaptations.
+
+**ART-08 implementation:** One bundled, original 32-unit companion set covers
+all 20 paintable semantic tiles, empty space and the two saved floor materials.
+Flagstone joints, worn planks, earth stippling, rock marks and water waves use
+different patterns. Walls use continuous exposed contours and orthogonal
+crosshatching; shared wall and secret-wall edges do not acquire extra outlines.
+Doors, locks, alarms, arches, stairs, pillars, traps, treasure and entrances
+use vector symbols rather than font glyphs.
+
+**Door artwork approval, September 15, 2026:** The owner approved the revised
+six-door set after reviewing it separately. Plain doors now carry vector-drawn
+capital H/V overlays without the center line. Locked and trapped doors retain
+their solid orientation posts but omit the broken rectangle behind the symbol.
+The final H revision matches the V's minimum ink clearance; the other five
+designs are unchanged from the preceding review. This approval is limited to
+the six doors, not the remaining launch artwork or physical-print acceptance.
+See the [approved door sheet](./media/launch-art/doors.png).
+
+Editor print view, export preview and bounded PNG pages use the same geometry.
+Custom tiles still resolve through their semantic base type. Unknown material
+versions retain their stored ID and use the flagstone fallback. Existing
+theme/preset IDs, movement, sight, notes and project schemas are unchanged.
+The approved token and furnishing geometry is preserved. Furnishing print
+strokes are neutral charcoal instead of green-tinted ink; legacy tokens now
+use the approved party shield, NPC seal and hostile hexagon in print too.
+Emoji-only legacy markers use a label initial. Print fog uses neutral gray
+and crisp boundaries instead of decorative gradients.
+
+The original diagonal hatch candidate exposed native Canvas clipping drift
+across cropped windows. Orthogonal crosshatching removed that drift without
+extra raster buffers or changing existing export bounds. A pure-black
+furnishing trial exceeded the existing WebKit small-scale raster limit;
+neutral charcoal preserves that limit. No existing threshold was raised.
+
+**ART-06 implementation:** **Your maps > Open a sample** now includes:
+
+| Sample | Setting | Composition |
+| --- | --- | --- |
+| The Lantern Crypt | Dungeon Folio v1 | Lantern stair, memorial basin, keeper study and sealed burial chamber |
+| Alder Crossing | Existing Wilderness theme | Broad timber crossing, sheltered camp, stream and rocky lookout |
+| Kestrel Docking Bay | Existing Starship theme | Aft airlock, open cargo deck, coolant core, crew and control compartments |
+
+Each is a hand-authored 24 x 24 map with connected traversal, two public
+notes, separate useful DM instructions and a hidden encounter actor. The
+crypt cache and ship service entrance start under fog. The creation preview
+uses player projection; accepting it keeps the full private encounter in a
+new, independent editable project. Existing samples and the default Sunken
+Crypt selection are preserved. These compositions reuse current setting art;
+they do not claim completion of ART-05.
+
+**Paper scale:** Export's **Print for the table > Ink-friendly map styling**
+uses the companion. The new 0.25-inch option fits the 24-cell samples on one
+A4 or Letter page at a six-inch square map size. The existing one-inch cell
+option remains the miniature scale with overlapping pages. At 300 DPI,
+A4 is 2480 x 3508 pixels and Letter is 2550 x 3300 pixels, with physical
+resolution metadata. Print at actual size, not fit to page.
+
+Review: [print key](./media/launch-art/companions.png),
+[crypt](./media/launch-art/launch-lantern-crypt.png),
+[woodland crossing](./media/launch-art/launch-alder-crossing.png),
+[ship compartment](./media/launch-art/launch-kestrel-bay.png),
+[A4/Letter layouts](./media/launch-art/paper.png), and
+[one-inch detail](./media/launch-art/tactical.png).
+Editable source, provenance, source fingerprints and reproduction instructions
+are documented in [Development](./DEVELOPMENT.md#launch-art-and-print-companion-review).
+
+**Acceptance still open:** Owner approval of the remaining new artwork and sample sheets, physical
+A4/Letter printing, participant/device/screen-reader qualification and UX-09
+performance gates. Earlier "ART-06/08 remain open" entries describe their
+historical milestones; this section supersedes their implementation status,
+not their outstanding human acceptance. ART-05/09 remain separate work.
+
 **Deliverables:** ART-01 through ART-04, ART-06 through ART-08 for the initial release, plus asset manifest/provenance, pack/version selection, previews, deterministic variants, caching, and fallbacks. ART-05/09 extend after the dungeon slice is approved.
 
 **Implementation anchors:** `src/themes/*`, existing art utilities/catalogs, `artStylePresets.ts`, `MapCanvas.tsx`, `renderMap.ts`, `export.ts`, new versioned asset directories.
@@ -1283,7 +1366,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; current production journey passes Chromium, Firefox and WebKit in UX-09 | [Original policy and evidence](./UX-05-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
-| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; twelve-token catalog approved in #178; interface icon family and revised first-use illustrations implemented in draft #180 | [Approved first-use set](./media/ux07-first-use/contact-sheet.png); ART-06 launch samples, ART-08 map print companions and human/device release gates stay open |
+| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; tokens approved in #178; icons/first-use art merged in #180; ART-06/08 implemented for review | [Launch-art sheets](#launch-art-milestone-art-08-and-art-06) await owner and physical-paper acceptance; ART-05/09 and human/device release gates remain open |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; browser/CI, keyboard and F05 diagnostics merged in #171/#172/#174; bounded edge-strip and native floor-path caches implemented | [Floor-cache limits and final F05 results](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone); painting/token latency, loading, human screen-reader and reference-device performance acceptance remain open |
 | UX-10 | Deferred | Explicit approval of remote scope |

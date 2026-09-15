@@ -1,0 +1,18 @@
+Map Print Companion v1
+Copyright 2026 Dungeon Mapper contributors
+License: AGPL-3.0-or-later, as distributed with this repository.
+
+Original monochrome 32-unit line drawings in art.ts. No external artwork,
+fonts, downloads, textures or raster atlases are required for the tile kit.
+Material patterns use fixed map coordinates and do not depend on page offsets.
+Unknown material versions use flagstone, without changing the saved material ID.
+
+The approved Folio furnishing and token sources retain their own manifests
+and notices. Furnishing print strokes use neutral charcoal; their approved
+paths and color-mode paints are unchanged. Legacy tokens use the same party shield, NPC seal and hostile
+hexagon. Their bundled glyphs remain; emoji-only glyphs use a label initial
+in print because color emoji fonts cannot guarantee monochrome output.
+
+The three original encounter compositions are in src/utils/launchSamples.ts
+under the same license. They reuse bundled themes and furnishing/token art.
+They do not replace the wilderness/starship adaptation kits in ART-05.

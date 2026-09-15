@@ -37,7 +37,7 @@ describe('Folio furnishing kit', () => {
       expect(parseBundledFolioSvg(source.toString())).toEqual(stamp.paths);
       expect(stamp.viewBox).toBe('0 0 64 64');
       expect(stampPaths(stamp, true)?.every(path =>
-        (!path.fill || path.fill === '#ffffff') && path.stroke === '#202820')).toBe(true);
+        (!path.fill || path.fill === '#ffffff') && path.stroke === '#202020')).toBe(true);
     }
   });
 

@@ -2,7 +2,8 @@ import React, { useRef, useEffect, useLayoutEffect, useMemo, useCallback, useSta
 import type { CustomThemeDefinition, DungeonMap, StampDef, TileType, ToolType, Token, TokenKind, ViewMode, AnnotationStroke, ShapeMarker, MarkerShape, MeasureShape, LightSource, PlacedStamp, StampPlacementOptions, WallSegment, PathSegment, River, RiverType, RoomShape } from '../types/map';
 import { TOKEN_KIND_COLORS, isBuiltInTileType } from '../types/map';
 import { getSemanticTileType, getThemeWithCustom, preloadCustomThemeImages } from '../utils/customThemes';
-import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
+import { drawPrintTile, PRINT_BG, PRINT_GRID, printFogFill } from '../themes/printMode';
+import { drawPrintToken } from '../utils/printTokenRender';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from '../utils/tokenVisibility';
 import { ICON_BY_ID } from '../utils/iconLibrary';
@@ -360,10 +361,15 @@ function drawToken(
     ctx.beginPath();
     ctx.arc(px, py, radius + Math.max(2, tileSize * size * 0.1), 0, Math.PI * 2);
     ctx.lineWidth = Math.max(2, tileSize * size * 0.12);
-    ctx.strokeStyle = '#ffd400';
+    ctx.strokeStyle = printMode ? '#000000' : '#ffd400';
     ctx.stroke();
   }
-  if (drawFolioToken(ctx, token, tileSize, printMode)) {
+  if (printMode) {
+    drawPrintToken(ctx, token, tileSize);
+    ctx.restore();
+    return;
+  }
+  if (drawFolioToken(ctx, token, tileSize)) {
     ctx.restore();
     return;
   }
@@ -1335,7 +1341,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         const tile = renderTiles[y]?.[x];
         if (tile) {
           if (printMode) {
-            drawPrintTile(ctx, getSemanticTileType(tile.type, customThemes), x, y, tileSize);
+            drawPrintTile(ctx, getSemanticTileType(tile.type, customThemes), x, y, tileSize, tileDrawContext);
           } else if (tile.type !== 'empty') {
             // Skip 'empty' tiles in screen mode so the light graph-paper
             // background (SCREEN_BG) shows through instead of the theme's
@@ -1582,8 +1588,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         // Cells visible from player tokens OR illuminated by light sources
         // are rendered clear (no overlay). Two passes avoid per-cell
         // save/restore overhead.
-        const exploredFill = isPlayerView ? EXPLORED_PLAYER_FILL : EXPLORED_GM_FILL;
-        const hiddenFill = isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
+        const exploredFill = printMode ? printFogFill(isPlayerView ? 'player' : 'gm', true) : isPlayerView ? EXPLORED_PLAYER_FILL : EXPLORED_GM_FILL;
+        const hiddenFill = printMode ? printFogFill(isPlayerView ? 'player' : 'gm') : isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
 
         // Pass 1: explored (dimmed) cells.
         ctx.save();
@@ -1619,7 +1625,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
       } else {
         // Classic 2-state fog: hidden (opaque/translucent) or revealed.
         ctx.save();
-        ctx.fillStyle = isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
+        ctx.fillStyle = printMode ? printFogFill(isPlayerView ? 'player' : 'gm') : isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
         for (let y = 0; y < meta.height; y++) {
           for (let x = 0; x < meta.width; x++) {
             if (fog[y]?.[x]) {
@@ -1644,7 +1650,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
         }
         return true;
       };
-      drawFogFeather(ctx, meta.width, meta.height, tileSize, isCellFogged, fogRgb, fogAlpha);
+      if (!printMode) drawFogFeather(ctx, meta.width, meta.height, tileSize, isCellFogged, fogRgb, fogAlpha);
     }
 
     // FOV overlay. When fovVisible is provided, darken every cell that is

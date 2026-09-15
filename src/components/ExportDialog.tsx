@@ -160,7 +160,7 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
                 {PAGE_PRESETS.map(page => <option key={page.id} value={page.id}>{page.label}</option>)}
               </select></label>
               <label>Inches per cell<select aria-label="Inches per cell" value={inches} onChange={e => setInches(Number(e.target.value))}>
-                {[0.5, 1, 1.5, 2].map(n => <option key={n} value={n}>{n} in</option>)}
+                {[0.25, 0.5, 1, 1.5, 2].map(n => <option key={n} value={n}>{n} in</option>)}
               </select></label>
               <label>Page margin (in)<input type="number" min="0" max="2" step="0.125" value={margin} onChange={e => setMargin(e.target.valueAsNumber)} /></label>
               <label>Page overlap (in)<input type="number" min="0" max="2" step="0.125" value={overlap} onChange={e => setOverlap(e.target.valueAsNumber)} /></label>

@@ -9,7 +9,8 @@
 
 import type { CustomThemeDefinition, DungeonMap, ViewMode, Token, ShapeMarker, AnnotationStroke, PlacedStamp, StampDef, River } from '../types/map';
 import { TOKEN_KIND_COLORS, isBuiltInTileType } from '../types/map';
-import { drawPrintTile, PRINT_BG, PRINT_GRID } from '../themes/printMode';
+import { drawPrintTile, PRINT_BG, PRINT_GRID, printFogFill } from '../themes/printMode';
+import { drawPrintToken } from './printTokenRender';
 import { drawTileOverlay } from '../themes/tileOverlays';
 import { isTokenFogged } from './tokenVisibility';
 import { ICON_BY_ID } from './iconLibrary';
@@ -233,7 +234,7 @@ function renderMapDataToCanvas(
       const tile = tiles[y]?.[x];
       if (!tile) continue;
       if (printMode) {
-        drawPrintTile(ctx, getSemanticTileType(tile.type, customThemes), x, y, tileSize);
+        drawPrintTile(ctx, getSemanticTileType(tile.type, customThemes), x, y, tileSize, tileDrawContext);
       } else if (tile.type !== 'empty') {
         const tileTheme = tile.theme ? getThemeWithCustom(tile.theme, customThemes, opts.images) : theme;
         tileTheme.drawTile(ctx, tile.type, x, y, tileSize, tileDrawContext);
@@ -414,7 +415,7 @@ function renderMapDataToCanvas(
           if (!fog[y]?.[x]) continue;
           const isExplored = map.explored[y]?.[x] ?? false;
           ctx.save();
-          ctx.fillStyle = isExplored
+          ctx.fillStyle = printMode ? printFogFill(viewMode, isExplored) : isExplored
             ? (isPlayerView ? EXPLORED_PLAYER_FILL : EXPLORED_GM_FILL)
             : (isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL);
           ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
@@ -423,7 +424,7 @@ function renderMapDataToCanvas(
       }
     } else {
       ctx.save();
-      ctx.fillStyle = isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
+      ctx.fillStyle = printMode ? printFogFill(viewMode) : isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
           if (fog[y]?.[x]) {
@@ -441,7 +442,7 @@ function renderMapDataToCanvas(
       if (fx < 0 || fy < 0 || fx >= width || fy >= height) return false;
       return !!fog[fy]?.[fx];
     };
-    drawFogFeather(ctx, width, height, tileSize, isCellFogged, fogRgb, fogAlpha);
+    if (!printMode) drawFogFeather(ctx, width, height, tileSize, isCellFogged, fogRgb, fogAlpha);
   }
 
   // Scale bar — bottom-right corner
@@ -497,7 +498,8 @@ function renderToken(
   tileSize: number,
   printMode: boolean,
 ) {
-  if (drawFolioToken(ctx, token, tileSize, printMode)) return;
+  if (printMode) { drawPrintToken(ctx, token, tileSize); return; }
+  if (drawFolioToken(ctx, token, tileSize)) return;
   const size = Math.max(1, Math.floor(token.size ?? 1));
   const px = token.x * tileSize + (tileSize * size) / 2;
   const py = token.y * tileSize + (tileSize * size) / 2;

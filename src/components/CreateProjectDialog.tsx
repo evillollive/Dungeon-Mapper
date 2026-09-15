@@ -1,10 +1,11 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useFocusTrap } from '../hooks/useFocusTrap';
-import type { DungeonProject } from '../types/map';
+import type { DungeonProject, ViewMode } from '../types/map';
 import { buildThemeList } from '../utils/customThemes';
 import { GENERATOR_LIST } from '../utils/generators';
 import { PREMADE_MAP_SUMMARIES } from '../utils/premadeMaps';
+import { LAUNCH_SAMPLES } from '../utils/launchSamples';
 import { CREATION_LIMITS, createProjectCandidate, readTraceImage, renderCreationPreviews } from '../utils/projectCreation';
 import type { ProjectCreationOptions, TraceImage } from '../utils/projectCreation';
 import './CreateProjectDialog.css';
@@ -31,8 +32,9 @@ function failure(error: unknown): string {
   return error instanceof Error ? error.message : 'Something went wrong. Please try again.';
 }
 
-function CandidatePreview({ project, onBack, onCreate }: {
+function CandidatePreview({ project, onBack, onCreate, viewMode }: {
   project: DungeonProject;
+  viewMode: ViewMode;
   onBack: () => void;
   onCreate: CreateProjectDialogProps['onCreate'];
 }) {
@@ -47,13 +49,14 @@ function CandidatePreview({ project, onBack, onCreate }: {
   useEffect(() => { heading.current?.focus(); }, []);
   useEffect(() => {
     const controller = new AbortController();
-    void renderCreationPreviews(project, controller.signal).then(
+    void renderCreationPreviews(project, controller.signal, viewMode).then(
       images => { if (!controller.signal.aborted) setPreviews(images); },
       reason => { if (!controller.signal.aborted) setError(failure(reason)); },
     );
     return () => controller.abort();
-  }, [project, attempt]);
+  }, [project, attempt, viewMode]);
   const level = project.levels[levelIndex];
+  const previewName = viewMode === 'player' ? level.meta.publicName || 'Player map' : level.meta.name;
   const retry = () => { setError(''); setPreviews([]); setAttempt(value => value + 1); };
   const useMap = () => {
     if (accepting.current || previews.length !== project.levels.length || error) return;
@@ -73,8 +76,8 @@ function CandidatePreview({ project, onBack, onCreate }: {
       <div className="creation-preview-heading">
         <div>
           <p className="creation-eyebrow">02 / Preview your map</p>
-          <h3 ref={heading} tabIndex={-1}>{project.name}</h3>
-          <p>{level.meta.width} × {level.meta.height} tiles · {project.levels.length} {project.levels.length === 1 ? 'level' : 'levels'} · Full map, GM view</p>
+          <h3 ref={heading} tabIndex={-1}>{viewMode === 'player' ? previewName : project.name}</h3>
+          <p>{level.meta.width} × {level.meta.height} tiles · {project.levels.length} {project.levels.length === 1 ? 'level' : 'levels'} · {viewMode === 'player' ? 'Player-safe preview' : 'Full map, GM view'}</p>
         </div>
         <button type="button" onClick={onBack} disabled={accepted}>Back to options</button>
       </div>
@@ -86,13 +89,13 @@ function CandidatePreview({ project, onBack, onCreate }: {
       {level.backgroundImage && <p className="creation-notice">Reference alignment preview: the full image fits inside the grid, centered without stretching. You can adjust alignment in the editor.</p>}
       <div className="creation-preview-stage" aria-busy={!error && !previews.length}>
         {error ? <div role="alert"><p>Preview unavailable. {error}</p><button type="button" onClick={retry}>Retry preview</button></div>
-          : previews[levelIndex] ? <img src={previews[levelIndex]} alt={`Full map preview of ${level.meta.name}, ${level.meta.width} by ${level.meta.height} tiles`} onError={() => setError('The preview image could not be displayed.')} />
+          : previews[levelIndex] ? <img src={previews[levelIndex]} alt={`Full map preview of ${previewName}, ${level.meta.width} by ${level.meta.height} tiles`} onError={() => setError('The preview image could not be displayed.')} />
             : <p role="status">Rendering your map preview...</p>}
       </div>
       {createError && <p className="creation-error" role="alert">{createError}</p>}
       {accepted && <p role="status">Map accepted. Opening your new project...</p>}
       <div className="creation-preview-footer">
-        <p>A new project, not a replacement. Your current map stays unchanged.</p>
+        <p>A new project, not a replacement. Your current map stays unchanged.{viewMode === 'player' && ' Private encounter notes are included in your editable copy, not this preview.'}</p>
         <button type="button" className="creation-primary" onClick={useMap} disabled={accepted || !!error || previews.length !== project.levels.length}>Use this map</button>
       </div>
     </section>
@@ -176,7 +179,8 @@ export default function CreateProjectDialog({ onCancel, onCreate, sourceProject,
             <p id={`${id}-description`}>Choose a starting point. Preview it here before opening a new project.</p></div>
           <button type="button" onClick={cancel}>Cancel</button>
         </header>
-        {candidate ? <CandidatePreview project={candidate} onCreate={onCreate} onBack={() => {
+        {candidate ? <CandidatePreview project={candidate} onCreate={onCreate}
+          viewMode={path === 'sample' && LAUNCH_SAMPLES.some(sample => sample.id === sampleId) ? 'player' : 'gm'} onBack={() => {
           setCandidate(null);
           requestAnimationFrame(() => optionsHeading.current?.focus());
         }} /> : <>
