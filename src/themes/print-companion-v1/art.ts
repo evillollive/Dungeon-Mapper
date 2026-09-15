@@ -85,17 +85,23 @@ export function printTileShapes(
     const point = (x: number, y: number): Point => vertical ? [y, x] : [x, y];
     line([point(0, 16), point(6, 16)], 4);
     line([point(26, 16), point(32, 16)], 4);
-    line([point(6, 12), point(26, 12), point(26, 20), point(6, 20), point(6, 12)], 1.7);
-    line([point(8, 16), point(24, 16)], 0.75);
     if (type.startsWith('locked')) {
-      rect(11, 9, 10, 14, PAPER);
       line([[13, 15], [13, 11], [19, 11], [19, 15]], 1.5);
       box(11, 15, 10, 8);
       dot(16, 18.5, 1);
     } else if (type.startsWith('trapped')) {
-      rect(10, 8, 12, 16, PAPER);
       line([[16, 8], [23, 23], [9, 23], [16, 8]], 1.5);
       line([[16, 13], [16, 17]], 1.5); dot(16, 20, 0.9);
+    } else {
+      line([point(6, 12), point(26, 12), point(26, 20), point(6, 20), point(6, 12)], 1.7);
+      rect(vertical ? 11 : 10, 8, vertical ? 10 : 12, 16, PAPER);
+      if (vertical) {
+        line([[12, 10], [16, 22], [20, 10]], 1.8);
+      } else {
+        line([[12, 10], [12, 22]], 1.8);
+        line([[20, 10], [20, 22]], 1.8);
+        line([[12, 16], [20, 16]], 1.8);
+      }
     }
   } else if (type.startsWith('stairs')) {
     const down = type === 'stairs-down';

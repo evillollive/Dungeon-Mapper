@@ -15,6 +15,7 @@ All notable changes to this project are documented in this file.
 - Reserve unique token IDs before queued React updates so consecutive placements remain independently selectable and removable.
 
 ### Changed
+- Owner-approved print door revision: capital H/V overlays without the center line, matched letter clearance, and clean lock/trap symbols retaining their outer orientation posts.
 - Print furnishings use neutral charcoal ink, and print fog uses neutral gray with crisp edges. Approved furnishing/token geometry and color-mode artwork are unchanged.
 - Avoid full map/art repaints when only cursor coordinates change, while retaining live tool previews. Added repeatable F05 dense-map diagnostics; painting and representative-device performance qualification remain open.
 - Refreshed `README.md` as a shareable landing page while preserving the detailed tool reference in `docs/FEATURES.md`.

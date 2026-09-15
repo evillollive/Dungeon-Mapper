@@ -66,10 +66,30 @@ describe('ART-08 print companion', () => {
     })).toContain('translate(525 675) scale(2.34375)');
   });
 
-  it('keeps doors, locks, alarms and stair directions distinct without letters', () => {
+  it('keeps doors, locks, alarms and stair directions distinct without font-dependent glyphs', () => {
     const types = ['door-h', 'door-v', 'locked-door-h', 'locked-door-v',
       'trapped-door-h', 'trapped-door-v', 'stairs-up', 'stairs-down', 'archway'] as const;
     expect(new Set(types.map(type => JSON.stringify(printTileShapes(type, 0, 0)))).size).toBe(types.length);
+  });
+
+  it('overlays vector H/V on plain doors without center lines and keeps only posts behind lock/trap symbols', () => {
+    for (const vertical of [false, true]) {
+      const point = (x: number, y: number) => vertical ? [y, x] : [x, y];
+      const orientation = vertical ? 'v' : 'h';
+      const frame = [point(6, 12), point(26, 12), point(26, 20), point(6, 20), point(6, 12)];
+      const center = [point(8, 16), point(24, 16)];
+      const plain = printTileShapes(`door-${orientation}`, 0, 0);
+      expect(plain).toContainEqual({ kind: 'line', points: frame, width: 1.7, stroke: '#000000' });
+      expect(plain.some(shape => shape.kind === 'line' && JSON.stringify(shape.points) === JSON.stringify(center))).toBe(false);
+      expect(plain).toContainEqual({ kind: 'line', width: 1.8, stroke: '#000000',
+        points: vertical ? [[12, 10], [16, 22], [20, 10]] : [[12, 16], [20, 16]] });
+      for (const prefix of ['locked', 'trapped'] as const) {
+        const special = printTileShapes(`${prefix}-door-${orientation}`, 0, 0);
+        expect(special.some(shape => shape.kind === 'line' && JSON.stringify(shape.points) === JSON.stringify(frame))).toBe(false);
+        expect(special).toContainEqual({ kind: 'line', points: [point(0, 16), point(6, 16)], width: 4, stroke: '#000000' });
+        expect(special).toContainEqual({ kind: 'line', points: [point(26, 16), point(32, 16)], width: 4, stroke: '#000000' });
+      }
+    }
   });
 
   it('projects secrets before print geometry and retains trap floor materials', () => {
@@ -82,6 +102,22 @@ describe('ART-08 print companion', () => {
     expect(safe.notes).toHaveLength(2);
     expect(JSON.stringify(safe)).not.toContain('brass key');
     expect(printTileShapes('wall', 2, 10)).not.toEqual(printTileShapes('secret-door', 2, 10));
+  });
+
+  it('gives both sides of H the same minimum ink clearance as V', () => {
+    const horizontal = printTileShapes('door-h', 0, 0);
+    const vertical = printTileShapes('door-v', 0, 0);
+    const hMask = horizontal.filter(shape => shape.kind === 'rect').find(shape => shape.w < 32)!;
+    const vMask = vertical.filter(shape => shape.kind === 'rect').find(shape => shape.w < 32)!;
+    const hGlyph = horizontal.filter(shape => shape.kind === 'line').filter(shape => shape.width === 1.8);
+    const vGlyph = vertical.filter(shape => shape.kind === 'line').find(shape => shape.width === 1.8)!;
+    const hLeft = Math.min(...hGlyph.flatMap(shape => shape.points.map(([x]) => x))) - hGlyph[0].width / 2;
+    const hRight = Math.max(...hGlyph.flatMap(shape => shape.points.map(([x]) => x))) + hGlyph[0].width / 2;
+    const vBottom = Math.max(...vGlyph.points.map(([, y]) => y)) + vGlyph.width / 2;
+    const vGap = vMask.y + vMask.h - vBottom;
+    expect(vGap).toBeCloseTo(1.1);
+    expect(hLeft - hMask.x).toBeCloseTo(vGap);
+    expect(hMask.x + hMask.w - hRight).toBeCloseTo(vGap);
   });
 
   it('renders monochrome legacy affiliations and substitutes a label initial for emoji', () => {

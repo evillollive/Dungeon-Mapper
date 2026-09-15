@@ -1084,6 +1084,15 @@ crosshatching; shared wall and secret-wall edges do not acquire extra outlines.
 Doors, locks, alarms, arches, stairs, pillars, traps, treasure and entrances
 use vector symbols rather than font glyphs.
 
+**Door artwork approval, September 15, 2026:** The owner approved the revised
+six-door set after reviewing it separately. Plain doors now carry vector-drawn
+capital H/V overlays without the center line. Locked and trapped doors retain
+their solid orientation posts but omit the broken rectangle behind the symbol.
+The final H revision matches the V's minimum ink clearance; the other five
+designs are unchanged from the preceding review. This approval is limited to
+the six doors, not the remaining launch artwork or physical-print acceptance.
+See the [approved door sheet](./media/launch-art/doors.png).
+
 Editor print view, export preview and bounded PNG pages use the same geometry.
 Custom tiles still resolve through their semantic base type. Unknown material
 versions retain their stored ID and use the flagstone fallback. Existing
@@ -1132,7 +1141,7 @@ Review: [print key](./media/launch-art/companions.png),
 Editable source, provenance, source fingerprints and reproduction instructions
 are documented in [Development](./DEVELOPMENT.md#launch-art-and-print-companion-review).
 
-**Acceptance still open:** Owner approval of these new sheets, physical
+**Acceptance still open:** Owner approval of the remaining new artwork and sample sheets, physical
 A4/Letter printing, participant/device/screen-reader qualification and UX-09
 performance gates. Earlier "ART-06/08 remain open" entries describe their
 historical milestones; this section supersedes their implementation status,

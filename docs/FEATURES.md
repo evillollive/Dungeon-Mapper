@@ -82,7 +82,8 @@ Every theme keeps the same underlying tile logic, but gives it a different visua
 
 Print mode uses white paper, black map symbols and neutral charcoal furnishings.
 Flagstone, wood, earth, rock and water have distinct patterns; wall contours
-join without internal outlines. Doors and stairs use drawn symbols. Party,
+join without internal outlines. Plain doors use drawn H/V labels; lock/trap
+symbols keep clean outer orientation posts. Stairs use drawn arrows. Party,
 NPC and hostile tokens have different frames even without color, including
 legacy tokens. Emoji-only markers use a label initial in print.
 

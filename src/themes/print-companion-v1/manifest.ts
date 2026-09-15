@@ -8,7 +8,7 @@ export const PRINT_COMPANION_MANIFEST = {
   license: 'AGPL-3.0-or-later',
   attribution: 'Original procedural vector artwork for Dungeon Mapper, 2026.',
   source: 'src/themes/print-companion-v1/art.ts',
-  sourceHash: 'sha256:3c91d96d2de1759c1ff5135516c4c50c436bfeb91f85ef8c15e1257785610ade',
+  sourceHash: 'sha256:5e40c19a72ca66431645d99662698b82bc1a6d07c870b9820dc254a765f32bac',
   delivery: 'bundled-procedural-vector',
   previewSampleIds: ['launch-lantern-crypt', 'launch-alder-crossing', 'launch-kestrel-bay'],
   assets: ['empty', ...ALL_TILE_TYPES, ...FLOOR_MATERIAL_IDS].map(id => ({

@@ -172,7 +172,7 @@ reuses the Folio vector primitives, not the color kit or its caches.
 monochrome affiliations for legacy markers. Folio furnishings retain their
 approved paths, with neutral charcoal print strokes. No extra dependencies,
 asset requests, raster atlases or persistent render caches are introduced.
-The editable tile source is 5,587 bytes (1,910 gzip), legacy token adapter
+The editable tile source is 5,772 bytes (1,952 gzip), legacy token adapter
 1,486 bytes (752 gzip), and three scene compositions 9,930 bytes (3,448 gzip).
 These are individual source measurements, not application chunk sizes.
 
@@ -181,6 +181,11 @@ ART-06's three original 24 x 24 compositions are in
 without replacing the default sample or old IDs. Only the new launch samples
 select player-safe creation previews; generation, tracing and legacy sample
 previews keep their existing behavior.
+
+The owner-approved door revision uses vector H/V overlays on plain doors.
+Lock/trap symbols keep their outer orientation posts without the rectangle
+fragments behind them. `printCompanions.test.ts` pins these shapes and the H's
+matching minimum clearance from the frame. No platform font is needed.
 
 ```bash
 QA_OUTPUT=/absolute/path/to/launch-art npm run test:browser -- --grep='launch art'
