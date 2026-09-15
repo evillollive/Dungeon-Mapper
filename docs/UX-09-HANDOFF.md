@@ -4,6 +4,16 @@ First bounded milestone, 2026-09-11, based on `a38ea34`, merged in #171. The own
 automated browser journeys and enforced CI gates before remaining UX-07 art
 work. This starts UX-09; it does not complete its release acceptance.
 
+**Launch-scope decision, September 15, 2026:** The owner approved desktop-first
+early access with **physical A4/Letter printing included**. The
+[roadmap release milestones](./USER-EXPERIENCE-ROADMAP.md#release-milestones-and-ownership)
+now separate UX-09A early-access closure, UX-09B broader device/assistive
+qualification and UX-09C observed usability. Agents lead A, but outstanding
+owner artwork approval and real-paper qualification remain pre-launch gates.
+This documentation decision does not pass any unassessed gate or change the
+existing performance targets. Earlier milestone results below retain their
+original scope and source revisions.
+
 ## Implemented contract
 
 `playwright.config.mjs` uses the existing locked Playwright 1.62.1 test runner.
@@ -703,13 +713,26 @@ not the current warning baseline.
 
 UX-09 remains **in progress**. These automated journeys cover parts of roadmap
 section 8, not the entire nine-journey/seven-fixture acceptance matrix.
-UX-07's full art catalog and launch assets remain incomplete. UX-00 participant
-research remains deferred with zero participants.
+UX-07's initial-release art is implemented, with remaining owner acceptance
+recorded in the [art closeout ledger](./USER-EXPERIENCE-ROADMAP.md#initial-release-art-closeout);
+ART-05/09 are deferred expansions, not launch dependencies. UX-00 participant
+research remains deferred with zero participants under UX-09C.
 
-Human keyboard/screen-reader review (VoiceOver/Safari and NVDA/Firefox), WCAG
-2.2 AA evaluation beyond the scoped panel checks, the full-app layout/zoom matrix, physical touch/pen/keyboard behavior,
-printed-paper scale, reference-device selection and F05 input-to-paint/loading
-budgets are still open. Local F05 diagnostics above do not close those gates.
+UX-09A still requires the remaining production preservation/editing journeys,
+real application-version upgrade and rollback evidence, a measured desktop
+performance/support scope, accurate public workflow guidance, owner art
+closeout and exact-revision release handling. **Physical printing also blocks
+UX-09A:** digital DPI/layout evidence cannot replace A4/Letter paper measurement,
+assembled overlap and monochrome readability acceptance. See the
+[release gate ledger and print procedure](./USER-EXPERIENCE-ROADMAP.md#release-gate-ledger).
+
+Human screen-reader review (VoiceOver/Safari and NVDA/Firefox), WCAG 2.2 AA
+evaluation beyond scoped critical-action checks, broader native zoom and
+physical touch/pen/keyboard behavior, and remaining device-specific performance
+qualification belong to UX-09B. They are deferred from early access, not passed.
+Known inaccessible critical actions still block release. Desktop performance
+scope must be resolved in A; local F05 diagnostics do not establish reference
+acceptance, and the existing full-release budgets remain unchanged.
 No latency threshold or usability success rate is
 claimed from test-run duration. Existing React `act` and jsdom navigation
 warnings are not silently presented as a warning-free unit-test baseline.
@@ -727,3 +750,9 @@ qualification jobs. A full rollback to a pre-UX-09 workflow would stop emitting
 required-check policy must therefore be a deliberate coordinated operation,
 not an emergency silent weakening. Preserve project backups and follow UX-08's
 explicit saved-workspace update process for any deployed rollback.
+
+The new A-RELEASE gate is planned work, not an already implemented deployment
+guarantee: Pages currently starts independently on pushes to main. Require
+successful qualification of the published revision, rehearse actual
+application-version rollback/recovery, and preserve a versioned release
+evidence/limitations summary beyond the current fourteen-day CI retention.

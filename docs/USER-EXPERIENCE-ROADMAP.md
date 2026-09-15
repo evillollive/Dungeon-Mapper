@@ -4,9 +4,21 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 are merged. UX-07's dungeon foundation and approved wood/earth materials are merged in #167 and #168. The eight-piece furnishing reference and richer palette are approved in #169; the expanded 24-piece catalog received owner visual approval on September 12, 2026 in #177. The full package remains incomplete. UX-08 is merged in #170. UX-09's automated browser/CI milestone is merged in #171; its critical keyboard-workflow follow-up is merged in #172. Full release qualification remains open. No participant usability acceptance is claimed.
+**Status, updated September 15, 2026:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 and UX-08 are merged. UX-07's initial-release artwork is implemented, with implementation, automated evidence and owner acceptance tracked separately in the [art closeout ledger](#initial-release-art-closeout). UX-09 is split into [early-access closure, device qualification and observed usability](#release-milestones-and-ownership). Desktop-first early access includes physical printing; its release gates remain open. Full release qualification and participant usability acceptance are not claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
+
+**Owner-approved launch scope, September 15, 2026:** Proceed toward
+desktop-first early access with local projects, editing, DM sessions, local
+player display, export/offline recovery and **physical A4/Letter printing**.
+Agents lead technical closure; remaining artwork approval and real-paper
+qualification are still pre-launch requirements. Broader physical-device,
+assistive-technology and participant acceptance move to explicit later
+milestones, not to a passed state. This changes release sequencing, not product
+behavior or the existing full-release targets. See the
+[release gate ledger](#release-gate-ledger) for bounded remaining work.
+Earlier dated milestone limitations remain historical evidence; the scope
+decision here governs which open gates block early access.
 
 **Library/recovery CI follow-up, September 15, 2026:** Nine independent
 production-browser cases now cover rich duplicate isolation, archive/Trash
@@ -96,7 +108,19 @@ Build a focused, local-first encounter mapper, not an entire virtual tabletop. K
 
 ### Scope boundary
 
-The first redesigned release includes local projects, guided creation, focused editing, explicit content visibility, a DM session workspace, local player display, cohesive art, accessible controls, and dependable export/recovery.
+The first redesigned release is desktop-first early access. It includes local
+projects, guided creation, focused editing, explicit content visibility, a DM
+session workspace, read-only local player display, cohesive art, accessible
+critical controls, dependable export/recovery, production offline use and
+physical printing on A4 and Letter. Printing is a launch requirement, not an
+experimental feature deferred with mobile qualification.
+
+The supported desktop/browser and performance scope must be measured and
+documented before release. Preserve responsive/mobile functionality without
+claiming physical mobile, touch/pen or assistive-technology qualification.
+Those broader claims and participant acceptance belong to UX-09B/C.
+No early-access label permits known critical data-loss, audience-disclosure,
+unrecoverable-flow or inaccessible-critical-action defects.
 
 Remote players, accounts, cloud backup, marketplaces, character sheets, dice automation, rules adjudication, and world-scale generation are separate expansions. Do not add them as prerequisites for fixing today's experience.
 
@@ -464,8 +488,12 @@ UX-00 baseline and decision gates
        -> UX-06 session lifecycle and player display (also UX-02, UX-04)
   -> UX-07 art vertical slice (uses UX-03, UX-04; respects UX-05)
   -> UX-08 unified export and production offline (uses UX-01, UX-05, UX-07)
-       -> UX-09 release qualification (all preceding packages)
-            -> UX-10 optional remote collaboration
+       -> UX-09A early-access closure (including physical printing and art approval)
+            -> desktop-first early access
+       -> UX-09B broader device and assistive-technology qualification
+       -> UX-09C observed usability acceptance
+            -> full UX-09 acceptance after A, B and C
+                 -> UX-10 optional remote collaboration
 ```
 
 Art exploration and usability research may run alongside infrastructure work, but production player display must not precede the visibility contract.
@@ -1166,6 +1194,28 @@ not their outstanding human acceptance. ART-05/09 remain separate work.
 
 **Handoff:** Art contact sheets, editable source files, licenses, manifest schema, measured asset budgets, and reference render fixtures.
 
+#### Initial-release art closeout
+
+Do not treat implemented artwork as an unstarted development package, or
+automated rendering evidence as owner approval. Use the existing source packs
+and review sheets before commissioning further artwork.
+
+| Scope | Implementation | Automated evidence | Owner acceptance / remaining gate |
+| --- | --- | --- | --- |
+| ART-01 interface icons | 32 icons integrated in #180 | Component, render and workflow coverage recorded in the icon milestone | Family and 31 unchanged designs approved; final player-display P revision still awaits approval |
+| ART-02 dungeon/material kit | Foundation and wood/earth materials merged in #167/#168 | Determinism, renderer parity, material persistence and cache coverage recorded above | Foundation and material direction approved |
+| ART-03 furnishings | 24-piece catalog integrated in #177 | Placement, transform, persistence and player-export coverage | Catalog approved |
+| ART-04 tokens | Twelve silhouettes and affiliation frames integrated in #178 | Catalog placement, persistence and color/grayscale/print coverage | Catalog approved |
+| ART-06 launch samples | Three authored encounters integrated in #181 | Sample integrity, fresh copies, projection and render coverage | Sample sheets await owner approval |
+| ART-07 first-use illustrations | Revised three-scene set integrated in #180 | Component and browser art/workflow coverage | Revised set approved |
+| ART-08 print companions | Semantic monochrome set integrated in #181 | Shared rendering, bounded pages, scale metadata and overlap coverage | Six doors approved; remaining companion sheets and physical paper acceptance still required |
+| ART-05/09 additional kits and adaptations | Outside initial-release scope | Not assessed for release | Deferred; not an early-access dependency |
+
+The evidence column summarizes existing scoped coverage, not blanket
+qualification of every asset on every device. Finish the outstanding visual
+decisions through owner review and the [physical-print gate](#physical-printing-launch-gate).
+Do not expand the catalog or change approved art merely to close a status label.
+
 ### UX-08: Unified export, production offline, and portability
 
 **Priority:** P0/P1. **Depends on:** UX-01, UX-05, UX-07.
@@ -1253,9 +1303,93 @@ See the [handoff](./UX-09-HANDOFF.md#library-and-recovery-regression-milestone).
 
 **Tests:** All section 8 fixtures and journeys. Run lint and resolve or explicitly scope existing debt before removing `continue-on-error`; do not claim a clean baseline prematurely. New browser tooling must have locked dependencies and documented scripts rather than assuming Playwright is already an npm dependency.
 
-**Acceptance:** No open P0 data-loss, audience disclosure, unrecoverable flow, or inaccessible critical-action defect. All first-release workflow packages are complete. Deferred platform/device limits are explicit.
+**Acceptance:** No open P0 data-loss, audience disclosure, unrecoverable flow, or inaccessible critical-action defect. Early access requires all UX-09A gates and the scoped first-release workflow/art contracts, including physical printing. Full UX-09 acceptance additionally requires UX-09B/C and the section 8 criteria. Deferred platform/device and participant claims are explicit.
 
 **Handoff:** Release checklist, measured results, known limitations, rollback instructions, and completed roadmap statuses.
+
+#### Release milestones and ownership
+
+The owner approved this split on September 15, 2026 after the AI-led launch
+review at `06d20e8`, with physical printing explicitly retained in the initial
+release. UX-09A is agent-led, not an assertion that all its acceptance can be
+performed by agents alone.
+
+| Milestone | Scope and completion | Release relationship |
+| --- | --- | --- |
+| UX-09A: Early-access closure | Critical preservation, audience, editing, export/offline and real-version upgrade paths; measured desktop performance scope; accurate public guidance; release/rollback evidence; outstanding owner art approval; physical A4/Letter printing | All A gates must pass before desktop-first early access |
+| UX-09B: Broader device and assistive-technology qualification | Representative platform/device matrix, native browser zoom, physical touch/pen and interruption behavior, VoiceOver/Safari and NVDA/Firefox tasks, broader WCAG evaluation and remaining device-specific performance acceptance | Deferred from early access, required for full UX-09 acceptance; printing is not deferred here |
+| UX-09C: Observed usability acceptance | Real DM/player first-use, routine-play, comprehension and aesthetic/readability tasks using the existing participant criteria | Deferred from early access, required for full UX-09 acceptance |
+
+Agents can implement and exercise repeatable software behavior, inspect rendered
+output, prepare research/print materials and analyze supplied observations.
+They cannot manufacture owner approval, physical paper measurements, hardware
+observations or participant results. Simulated users and automated accessibility
+results are advisory evidence, not substitutes for B/C acceptance.
+
+#### Release gate ledger
+
+Each gate record must retain its evidence type, supported environment, source
+revision, evidence link, responsible reviewer and disposition: **passed**,
+**failed**, **deferred**, or **not assessed**. Record a deferral's affected
+product claim and owner decision. Missing evidence is not a pass. The initial
+records below describe remaining acceptance, not a reclassification of earlier
+successful bounded milestones.
+
+| Gate | Remaining work and acceptance | Evidence / environment | Current disposition and reference |
+| --- | --- | --- | --- |
+| A-DATA | Promote existing legacy migration, deletion-tombstone and failed-startup recovery/race scenarios into bounded production journeys. Preserve source records and newer work, prevent resurrection and partial commits, and retain a usable recovery path. | Agent-led; real IndexedDB, supported desktop engines, legacy/rich/failure fixtures | Not assessed for remaining production cases; [current Library milestone](./UX-09-HANDOFF.md#library-and-recovery-regression-milestone), `ux02Library.browser.mjs` and `projectFoundations.browser.mjs` supply prior art |
+| A-UPDATE | Exercise an actual supported prior application version upgrading to the candidate with existing projects and sessions. Rehearse safe rollback or documented recovery without lossy writes. Do not invent a schema change merely to exercise migration. | Agent-led; production application/worker versions, isolated persistent browser profiles and retained backups | Not assessed; [UX-08](./UX-08-HANDOFF.md#qualification) currently changes worker bytes without changing the application bundle |
+| A-EDIT | Bring critical `ux04Editing.browser.mjs` object-editing paths into the required runner; cover keyboard access, apply/cancel, undo, failure states, visible focus, contrast and reflow across supported workflows. Preserve player projection/display/export sentinel coverage. | Agent-led; existing production runner and section 8 fixtures; distinguish interface text scaling from native browser zoom | Not assessed for complete critical-workflow coverage; existing keyboard and audience milestones remain scoped evidence |
+| A-PERF | Profile before another bounded optimization. Establish a measured desktop workload/hardware/DPR scope, loading behavior, and F05 export allocation/cancellation behavior. Meet the existing desktop targets or obtain an explicit, evidence-backed early-access scope exception before release. | Agent-led where hardware is available; repeated production measurements and retained long-stall/memory observations | Not assessed for reference acceptance; [current F05 diagnostics](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone) remain above the paint target in Chromium/Firefox |
+| A-DOCS | Reconcile README, Features, Sharing, help/demo guidance and release notes with Your maps -> Create/open -> Edit -> Prepare -> Run -> Player display. State local-only display, project-backup versus session scope, offline readiness and supported limits accurately. | Agent-led; published entry paths and current UI, not historical screenshots or shortcut assumptions | Not assessed; review at `06d20e8` found the README's fresh-load G/Present instructions describe the old entry path |
+| A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | Not assessed for remaining approvals; [art closeout ledger](#initial-release-art-closeout) |
+| A-PRINT | Complete the physical-printing launch gate below, including both paper sizes, overview/miniature scale, assembled overlaps and monochrome readability. | Agents prepare exports; a person prints/measures/reviews and supplies evidence from documented printer/app setups | Not assessed on physical paper; digital layout and DPI evidence do not close this gate |
+| A-RELEASE | Require successful qualification of the exact revision before Pages publication; retain strict merge protection. Publish a versioned evidence/limitations summary and rehearse documented rollback/recovery. Preserve release evidence beyond the current 14-day CI artifact window. | Agent-led; GitHub workflow/run/release revisions and synthetic fixture artifacts | Not assessed; current Pages push workflow runs independently of that revision's CI |
+| B-DEVICE | Complete the broader hardware, native zoom, mobile/input, assistive-technology and device-performance matrix without implying that emulation is physical qualification. | Appropriate devices/OS tools plus human nonvisual/input task observations | Deferred from early access, not waived for full release; supported claims must reflect the gap |
+| C-USERS | Apply the unchanged section 8 participant criteria and retain sample sizes, failures and preference/recognition results separately. | Real DM/player sessions; agents may prepare tasks and analyze observations | Deferred from early access; UX-00 records zero participants, not a simulated success rate |
+
+Keep known critical data loss, audience disclosure, unrecoverable flows and
+inaccessible critical actions blocking regardless of milestone. Do not silently
+lower the 100 ms desktop, 150 ms mobile or two-second warm-launch targets,
+weaken pixel tolerances, disable required jobs, or choose a map-size cap without
+measurements. A scoped early-access exception does not pass the unchanged
+full-release criterion or permit new silent detail reduction.
+
+#### Physical printing launch gate
+
+Physical printing is part of UX-09A and must pass before early access. Retain
+F07 and the existing bounded PNG export path; this does not introduce a PDF
+pipeline or require a new art pack.
+
+Use A4 and Letter in documented printer/driver and print-application setups.
+Print at actual size / 100%, not fit to page. Include a 24-cell, quarter-inch
+overview whose map is six inches square and an assembled, overlapping
+one-inch-per-cell miniature-scale sample. Agree and record acceptable physical
+scale/alignment tolerances before measurement, rather than accepting whichever
+result a printer produces.
+
+Measure grid scale in both axes and page overlap/alignment. Review doors,
+stairs, boundaries, material patterns, token footprints/affiliations and public
+labels on paper in monochrome; ensure margins do not clip essential content.
+Include player-facing output and confirm its audience policy alongside the
+digital export evidence. Record the source revision, export settings/files,
+OS/browser, print application, printer/driver, paper, measured results and
+photos/scans with the reviewer decision. Findings must be fixed or the support
+scope explicitly resolved before this gate can pass. A screenshot, DPI chunk
+or AI visual review alone is not physical-print acceptance.
+
+#### Bounded execution order
+
+Start with A-DATA and A-EDIT using the existing scenarios, then A-UPDATE and
+A-RELEASE for a real candidate. A-DOCS and owner art/physical-print preparation
+can progress independently. A-PERF begins with a bounded profile and evidence
+handoff; a larger renderer rewrite or performance-scope exception requires an
+explicit decision, not an unattended expansion.
+
+Deliver each slice with concrete acceptance, retained evidence and a stop
+condition. Early access requires every A gate, including A-PRINT, to pass.
+Full UX-09 completion requires A, B and C; no package is marked complete simply
+because its human work moved to a later milestone.
 
 ### UX-10: Optional remote collaboration
 
@@ -1319,6 +1453,13 @@ Prefer role/name selectors. Use real browser IndexedDB and canvas for these test
 
 ### Proposed measurable release gates
 
+These remain the full-release criteria. UX-09A gates the narrower desktop-first
+early-access scope; UX-09B owns remaining platform/assistive qualification and
+UX-09C owns participant outcomes. Physical printing is explicitly in UX-09A.
+Deferring a claim does not pass its criterion; the
+[release gate ledger](#release-gate-ledger) records any owner-approved scope
+exception and its evidence.
+
 | Dimension | Gate | Method |
 | --- | --- | --- |
 | First use | At least 4 of 5 DM participants create a playable sample session in 5 minutes without coaching. | Moderated task, fixed starting state; report sample size and failure reasons. |
@@ -1333,6 +1474,7 @@ Prefer role/name selectors. Use real browser IndexedDB and canvas for these test
 | Responsiveness | F05 p95 input-to-paint at most 100 ms on an agreed reference desktop; mobile target at most 150 ms with documented reduced detail. | Browser tracing, fixed hardware/DPR, repeated runs; never average away long stalls. |
 | Loading | Usable shell and cached project within 2 seconds on the reference device after warm launch. | Production build measurements; cold/offline measured separately. |
 | Export | F05 high-resolution export completes or rejects safely within documented browser limits, remains cancellable, and never loses edits. | Stress journey with memory observations; establish device-specific limits before release. |
+| Physical printing | A4 and Letter output preserves agreed physical grid scale, page alignment, miniature footprints and essential monochrome information at overview and miniature scales. Required before early access. | F07 and launch-sample prints at actual size; pre-agreed tolerances, ruler measurements, assembled overlaps, documented printer/app setups and human paper review under A-PRINT. |
 | Art determinism | Same project, render version, and settings produce the same procedural composition. | Seeded unit tests and pinned-browser image comparisons with reviewed antialiasing tolerance. |
 
 Targets should be revised only through a documented decision, not lowered silently after failures. Automated accessibility results alone are not conformance certification.
@@ -1346,6 +1488,10 @@ Targets should be revised only through a documented decision, not lowered silent
 3. **UX-01B/02A:** Add project records and non-destructive switching, then a minimal Library with sample-copy creation. Deliver the full create/save/reopen slice before elaborate organization.
 
 After that, sequence shell and editing changes alongside visibility work. The first art session should deliver a reference-map slice, not a bulk asset expansion.
+
+Those kickoff sessions are historical sequencing, not the current backlog.
+For launch closure, use the [bounded execution order](#bounded-execution-order)
+and select an open gate from the ledger rather than restarting merged packages.
 
 ### Session kickoff template
 
@@ -1367,6 +1513,11 @@ The dependency gates are satisfied; visible controls perform real actions; failu
 
 A milestone is not done because a panel exists, an endpoint responds, or a screenshot looks good. Save/open/resume and audience behavior must work end to end.
 
+Implementation completion, automated evidence, owner acceptance and release
+qualification are separate states. Update the relevant gate record with source,
+environment, evidence and disposition. UX-09A cannot close with physical
+printing unassessed; UX-09 cannot close while B/C are deferred.
+
 ### Rollout and rollback
 
 Use a temporary workspace preference/feature flag while shell parity is incomplete. Keep new serialized data versioned and back up before migration. Older app versions must reject unsupported schemas clearly, not attempt lossy writes.
@@ -1384,9 +1535,12 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; current production journey passes Chromium, Firefox and WebKit in UX-09 | [Original policy and evidence](./UX-05-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
-| UX-07 | Foundation/materials merged in #167/#168; furnishings approved in #169/#177; tokens approved in #178; icons/first-use art merged in #180; ART-06/08 implemented for review | [Launch-art sheets](#launch-art-milestone-art-08-and-art-06) await owner and physical-paper acceptance; ART-05/09 and human/device release gates remain open |
+| UX-07 | Initial-release art implemented; automated evidence and owner acceptance tracked separately | [Art closeout ledger](#initial-release-art-closeout): remaining icon/sample/companion approvals and A-PRINT block launch closeout; ART-05/09 are deferred, not initial-release dependencies |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
-| UX-09 | In progress; browser/CI, keyboard and F05 diagnostics merged in #171/#172/#174; bounded edge-strip and native floor-path caches implemented | [Floor-cache limits and final F05 results](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone); painting/token latency, loading, human screen-reader and reference-device performance acceptance remain open |
+| UX-09 | In progress; umbrella for A/B/C, not an early-access completion label | Full acceptance requires all three milestones and the retained section 8 criteria |
+| UX-09A | Early-access closure in progress; desktop-first with physical printing | [Release gate ledger](#release-gate-ledger): preservation/editing coverage, real-version upgrade, performance scope, docs, owner art, physical print and release handling remain open |
+| UX-09B | Deferred from early access; not accepted | Broader physical-device, native zoom, assistive-technology and remaining device-performance qualification; printing stays in A |
+| UX-09C | Deferred from early access; no participant acceptance | Existing first-use, routine-play, comprehension and aesthetic/readability criteria require real participants |
 | UX-10 | Deferred | Explicit approval of remote scope |
 
 ## 10. Relationship to the previous roadmap

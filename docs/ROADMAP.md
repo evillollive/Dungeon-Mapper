@@ -7,6 +7,14 @@
 > document's older deferrals for those areas. Older competitor and art descriptions
 > below are historical context, not a fresh assessment of current capabilities.
 
+> **Launch scope approved September 15, 2026:** The initial redesigned release
+> is desktop-first early access **including physical A4/Letter printing**.
+> Follow the [UX-09A release gate ledger](./USER-EXPERIENCE-ROADMAP.md#release-gate-ledger).
+> Broader device/assistive qualification and observed usability are UX-09B/C,
+> deferred from early access but not waived for full release. Printing and
+> outstanding initial-art owner approvals remain pre-launch requirements;
+> ART-05/09 and remote collaboration are not launch dependencies.
+
 > **Last updated:** 2026-07-31
 > **Status:** Phases 1–12 are **COMPLETE**. The full implementation history for every
 > completed phase, the retrospective UI/accessibility/refactoring analyses, the recommended

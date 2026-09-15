@@ -4,6 +4,16 @@ Implemented 2026-09-11, based on `e65eae1`. This package uses the approved Folio
 foundation, materials and eight furnishings. It does not complete the remaining
 UX-07 asset catalog, physical-device research or UX-09 release qualification.
 
+**Launch-scope update, September 15, 2026:** Initial-release artwork is now
+implemented with remaining owner approvals tracked separately. The owner
+retained physical A4/Letter printing in desktop-first early access, so paper
+scale, assembled overlaps and monochrome readability are pre-launch requirements
+under [A-PRINT](./USER-EXPERIENCE-ROADMAP.md#physical-printing-launch-gate), not
+deferred device work. Broader device/assistive and participant acceptance move
+to UX-09B/C. This does not claim physical-print acceptance or change the export
+implementation; the earlier evidence below remains scoped to its original
+candidate.
+
 ## Export contract
 
 The header, command palette and existing JSON/PNG/SVG/print shortcuts all enter
