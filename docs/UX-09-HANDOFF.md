@@ -699,6 +699,69 @@ keyboard/reflow checks. It does not qualify human/device, cross-schema update,
 physical printing, or performance acceptance. Commands and artifact handling
 are in [Development](./DEVELOPMENT.md#library-and-recovery-regression-journeys).
 
+## A-DATA production preservation milestone
+
+September 15, 2026. Implementation and browser cases: `ca0dedb5f5f0fc4e65fca68d53695cc8649be59d`,
+based on the owner-approved release ledger at `62e0b95`. Responsible reviewer:
+Copilot, using source inspection, production-browser behavior and native
+storage assertions. Disposition: **passed** for the bounded cases below on
+the recorded local engines; exact-head required Linux CI remains the landing
+gate, not a result inferred from local execution.
+
+`ux09Preservation.browser.mjs` promotes ten independent cases from the older
+Library/foundations scenarios into `ux09.spec.mjs`. Existing required CI
+automatically runs them on every configured engine with the same runner,
+three-minute case timeout, twenty-minute suite budget, no retries and all-tab
+error capture.
+
+| Cases | Production assertions |
+| --- | --- |
+| Concurrent migration | Two startup tabs obtain one local identity and revision; IndexedDB takes precedence; rich project data and both original sources remain exact; repeated root startup is idempotent |
+| Bare-map migration | Whitespace-bearing localStorage bytes, embedded custom assets and unknown fields survive migration, backup download and reload |
+| Migration abort/retry | Aborting after both adds are queued exposes neither project nor marker; the original remains downloadable; Retry restore commits once |
+| Two unsupported legacy sources | IndexedDB and localStorage each retain their original through preview cancellation, recovery, original download from Recovery copies and reload |
+| Deletion tombstone | A native abort while writing the tombstone rolls back current/previous/checkpoint deletion; retry commits the tombstone; detached in-memory backup stays usable and Library/bare-root reload never resurrect retained sources |
+| Failed-startup quota recovery | Repeated checkpoint quota failures preserve identity and every prior record; retry commits the recovered project with exactly one original checkpoint and survives reload |
+| Competing recovery | One tab holds a completed native read while another recovers the same source; creation/editing remain unavailable, the stale restore cannot overwrite newer work or add a checkpoint, and original download plus Retry restore remain usable |
+| Two unavailable-source variants | Missing and corrupt startup sources survive an alternative disappearing after catalog enumeration; no blank editor or writes appear, and a healthy alternative opens and reloads |
+
+The race revealed a product defect: `recoverFailedProject` turned a clean
+failed-startup CAS rejection into ordinary editor conflict state. That exposed
+the default blank map and removed Retry restore even though no project had
+loaded. The coordinator now stays in failed-startup state with an explicit
+retry message when no newer in-memory work arrived. Unexpected pending work
+still enters conflict and stops automatic saving, preserving the existing
+in-memory recovery contract. Two coordinator regressions cover these distinct
+outcomes; existing hook coverage retains the creation-during-recovery guard.
+No serialized data, migration policy, artwork or rendering behavior changes.
+
+The final run at `ca0dedb` passed 60 case/engine combinations in 209.8 seconds:
+30 new preservation cases, 27 existing Library cases and three guided-creation
+cases sharing their storage reader. Environment: macOS 26.6.2, headless locked
+Playwright engines, 1440 x 900, DPR 1, production `/Dungeon-Mapper/` assets.
+
+| Engine | Recorded browser version | New A-DATA cases | Related regressions |
+| --- | --- | --- | --- |
+| Chromium | 151.0.7922.34 | 10 passed | 10 passed |
+| Firefox | 153.0 | 10 passed | 10 passed |
+| WebKit | 26.5 | 10 passed | 10 passed |
+
+Evidence is retained in session `24484730-7e2b-45b8-a5e8-d25ad816604c`,
+`files/data-final/browser-report.json`, its HTML report and per-case
+`journey-results`/`page-errors` attachments. Every result records the full
+implementation revision above. The first two runs retain harness failures and
+the pre-fix blank-editor reproduction in `files/data-first` and
+`files/data-second`; those are not passing evidence. `files/data-three-engine`
+is the earlier successful patched-tree run. The build, zero-warning lint
+and 68 targeted coordinator/hook/recovery component tests also passed.
+
+This closes the bounded A-DATA production coverage gap, not all historical
+repository probes or every failure mode of physical storage. The same-tab
+unexpected-pending branch is unit-level evidence, not fabricated UI activity
+through disabled controls. Cross-version updates, release publication,
+performance, art approval, physical printing and broader device/participant
+acceptance remain open. The next ordered implementation slice is A-EDIT.
+
 ## Remaining release gates
 
 Subsequent housekeeping removes 68 of the original 73 hook warnings and
@@ -718,7 +781,8 @@ recorded in the [art closeout ledger](./USER-EXPERIENCE-ROADMAP.md#initial-relea
 ART-05/09 are deferred expansions, not launch dependencies. UX-00 participant
 research remains deferred with zero participants under UX-09C.
 
-UX-09A still requires the remaining production preservation/editing journeys,
+The bounded A-DATA preservation journeys are covered above. UX-09A still
+requires the remaining critical editing journeys,
 real application-version upgrade and rollback evidence, a measured desktop
 performance/support scope, accurate public workflow guidance, owner art
 closeout and exact-revision release handling. **Physical printing also blocks

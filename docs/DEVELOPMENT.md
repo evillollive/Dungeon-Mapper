@@ -245,10 +245,43 @@ retries, optional checks, or larger timeout budgets.
 
 This promotes selected invariants from the standalone
 `ux02Library.browser.mjs` suite, not that entire suite. Its development-server
-repository probes, failed-startup recovery race matrix, legacy migration
-tombstones, thumbnail failures, and dedicated Library keyboard/reflow checks
-remain separate coverage. Human/device, cross-schema upgrade, and performance
-release gates remain open.
+repository probes, thumbnail failures, and dedicated Library keyboard/reflow
+checks remain separate coverage. The A-DATA follow-up below promotes the
+remaining startup/migration preservation cases. Human/device, real-version
+upgrade, and performance release gates remain open.
+
+### A-DATA production preservation journeys
+
+`ux09Preservation.browser.mjs` adds ten independent cases to the same required
+three-engine runner:
+
+```bash
+QA_OUTPUT=/absolute/path/to/data-preservation npm run test:browser -- --grep='A-DATA'
+# Include the existing journeys that share Library fixtures and actions:
+QA_OUTPUT=/absolute/path/to/data-and-library npm run test:browser -- --grep='A-DATA|Library recovery:|guided creation and library continuity'
+```
+
+These cover concurrent migration and source precedence, localStorage bare-map
+assets, migration abort/retry, unsupported-source recovery in both legacy
+stores, atomic deletion tombstones, failed-startup quota recovery, competing
+recoveries, and missing/corrupt startup sources with disappearing alternatives.
+Fixtures are seeded through native IndexedDB in disposable runner contexts.
+Subsequent actions use production UI, not imported source modules or a
+test-only application API. The Library suite supplies its rich fixture,
+download and recovery helpers; the creation suite supplies the storage reader.
+
+Faults abort native transactions after migration adds or deletion operations
+have been queued, or throw quota errors while saving recovery checkpoints.
+The race holds delivery of one completed native read while another tab
+commits through the recovery UI. Interceptions are page-scoped, counted or
+explicitly observed, and restored on completion/failure. They do not simulate
+physical disk exhaustion, OS crashes, or natural storage eviction. Unexpected
+same-tab pending work remains covered at the coordinator/hook layer because
+the production UI blocks editing and creation during failed-startup recovery.
+
+See the [A-DATA evidence and defect fix](./UX-09-HANDOFF.md#a-data-production-preservation-milestone).
+Timeouts, retries, dependencies, storage schema and required-check policy are
+unchanged.
 
 ## First-use illustration review
 

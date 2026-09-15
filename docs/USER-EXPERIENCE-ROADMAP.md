@@ -20,6 +20,13 @@ behavior or the existing full-release targets. See the
 Earlier dated milestone limitations remain historical evidence; the scope
 decision here governs which open gates block early access.
 
+**A-DATA follow-up, September 15, 2026:** Ten production preservation cases
+cover legacy migration, deletion tombstones and failed-startup recovery races.
+The race exposed and fixed a blank-editor transition after another tab won
+recovery. Local three-engine evidence at `ca0dedb` is recorded in the
+[A-DATA handoff](./UX-09-HANDOFF.md#a-data-production-preservation-milestone);
+required Linux CI remains the landing gate. The next ordered slice is A-EDIT.
+
 **Library/recovery CI follow-up, September 15, 2026:** Nine independent
 production-browser cases now cover rich duplicate isolation, archive/Trash
 restoration and deletion, stale Library/editor actions across tabs, committed
@@ -1337,7 +1344,7 @@ successful bounded milestones.
 
 | Gate | Remaining work and acceptance | Evidence / environment | Current disposition and reference |
 | --- | --- | --- | --- |
-| A-DATA | Promote existing legacy migration, deletion-tombstone and failed-startup recovery/race scenarios into bounded production journeys. Preserve source records and newer work, prevent resurrection and partial commits, and retain a usable recovery path. | Agent-led; real IndexedDB, supported desktop engines, legacy/rich/failure fixtures | Not assessed for remaining production cases; [current Library milestone](./UX-09-HANDOFF.md#library-and-recovery-regression-milestone), `ux02Library.browser.mjs` and `projectFoundations.browser.mjs` supply prior art |
+| A-DATA | Preserve source records and newer work, prevent resurrection and partial commits, and retain a usable recovery path through legacy migration, deletion tombstones and failed-startup recovery/races. | Copilot review; production UI and native IndexedDB on macOS 26.6.2, locked Chromium/Firefox/WebKit, legacy/rich/failure fixtures | Passed for the ten bounded cases at `ca0dedb`; [revision-linked evidence and startup-conflict fix](./UX-09-HANDOFF.md#a-data-production-preservation-milestone). Exact-head required Linux CI remains the landing gate; physical storage failure is not qualified |
 | A-UPDATE | Exercise an actual supported prior application version upgrading to the candidate with existing projects and sessions. Rehearse safe rollback or documented recovery without lossy writes. Do not invent a schema change merely to exercise migration. | Agent-led; production application/worker versions, isolated persistent browser profiles and retained backups | Not assessed; [UX-08](./UX-08-HANDOFF.md#qualification) currently changes worker bytes without changing the application bundle |
 | A-EDIT | Bring critical `ux04Editing.browser.mjs` object-editing paths into the required runner; cover keyboard access, apply/cancel, undo, failure states, visible focus, contrast and reflow across supported workflows. Preserve player projection/display/export sentinel coverage. | Agent-led; existing production runner and section 8 fixtures; distinguish interface text scaling from native browser zoom | Not assessed for complete critical-workflow coverage; existing keyboard and audience milestones remain scoped evidence |
 | A-PERF | Profile before another bounded optimization. Establish a measured desktop workload/hardware/DPR scope, loading behavior, and F05 export allocation/cancellation behavior. Meet the existing desktop targets or obtain an explicit, evidence-backed early-access scope exception before release. | Agent-led where hardware is available; repeated production measurements and retained long-stall/memory observations | Not assessed for reference acceptance; [current F05 diagnostics](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone) remain above the paint target in Chromium/Firefox |
@@ -1380,7 +1387,8 @@ or AI visual review alone is not physical-print acceptance.
 
 #### Bounded execution order
 
-Start with A-DATA and A-EDIT using the existing scenarios, then A-UPDATE and
+A-DATA's bounded implementation and local production qualification are recorded
+above. Continue with A-EDIT using the existing scenarios, then A-UPDATE and
 A-RELEASE for a real candidate. A-DOCS and owner art/physical-print preparation
 can progress independently. A-PERF begins with a bounded profile and evidence
 handoff; a larger renderer rewrite or performance-scope exception requires an
@@ -1538,7 +1546,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-07 | Initial-release art implemented; automated evidence and owner acceptance tracked separately | [Art closeout ledger](#initial-release-art-closeout): remaining icon/sample/companion approvals and A-PRINT block launch closeout; ART-05/09 are deferred, not initial-release dependencies |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; umbrella for A/B/C, not an early-access completion label | Full acceptance requires all three milestones and the retained section 8 criteria |
-| UX-09A | Early-access closure in progress; desktop-first with physical printing | [Release gate ledger](#release-gate-ledger): preservation/editing coverage, real-version upgrade, performance scope, docs, owner art, physical print and release handling remain open |
+| UX-09A | Early-access closure in progress; desktop-first with physical printing | [Release gate ledger](#release-gate-ledger): bounded A-DATA cases pass locally; critical editing coverage, real-version upgrade, performance scope, docs, owner art, physical print and release handling remain open |
 | UX-09B | Deferred from early access; not accepted | Broader physical-device, native zoom, assistive-technology and remaining device-performance qualification; printing stays in A |
 | UX-09C | Deferred from early access; no participant acceptance | Existing first-use, routine-play, comprehension and aesthetic/readability criteria require real participants |
 | UX-10 | Deferred | Explicit approval of remote scope |
