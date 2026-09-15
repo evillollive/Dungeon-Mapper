@@ -98,7 +98,7 @@
   background: var(--surface-panel); transform: none;
 }
 .context-close { align-self: flex-end; flex-shrink: 0; }
-.editor-shell .context-panel > :is(.notes-panel, .initiative-panel) {
+.editor-shell .context-panel > :is(.notes-panel, .initiative-panel, .selection-inspector) {
   flex: none; max-height: none; overflow: visible;
 }
 .editor-shell .context-panel :is(.notes-list, .initiative-list) { flex: none; overflow: visible; }
@@ -217,5 +217,5 @@
   .shell-dialog, .context-panel { border: 2px solid CanvasText; }
 }
 @media (max-height: 500px) {
-  .context-close { position: static; }
+  .context-close, .inspector-form-actions { position: static; }
 }

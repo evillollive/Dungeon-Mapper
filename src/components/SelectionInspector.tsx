@@ -71,7 +71,10 @@ function NumberField({ label, value, onChange, min, max, step = 1 }: {
   label: string; value: number; onChange: (value: number) => void; min?: number; max?: number; step?: number | 'any';
 }) {
   return <label>{label}<input required type="number" min={min} max={max} step={step} value={Number.isFinite(value) ? value : ''}
-    onChange={event => onChange(event.target.valueAsNumber)} /></label>;
+    onChange={event => {
+      // Firefox's valueAsNumber rounds long fractional coordinates.
+      onChange(event.target.value === '' ? NaN : Number(event.target.value));
+    }} /></label>;
 }
 
 export default function SelectionInspector(p: SelectionInspectorProps) {

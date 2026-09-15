@@ -118,6 +118,28 @@ describe('focused editing contracts', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
     expect(p.onUpdateRiver).toHaveBeenCalledWith(1, expect.objectContaining({ controlPoints: p.map.rivers[0].controlPoints, width: 2 }));
   });
+  it('parses edited fractional coordinates without native valueAsNumber rounding', () => {
+    const p = props();
+    p.map.rivers = [{ id: 1, controlPoints: [{ x: 1, y: 2 }], width: 1, type: 'water', flowDirection: 0 }];
+    render(<SelectionInspector {...p} selectedRiverId={1} />);
+    const input = screen.getByLabelText('Point 1 X');
+    Object.defineProperty(input, 'valueAsNumber', { configurable: true, get: () => 0.333333333333333 });
+    fireEvent.change(input, { target: { value: '0.3333333333333333' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+    expect(p.onUpdateRiver).toHaveBeenCalledWith(1, expect.objectContaining({ controlPoints: [{ x: 1 / 3, y: 2 }] }));
+  });
+  it('keeps an empty required coordinate invalid instead of converting it to zero', () => {
+    const p = props();
+    p.notes = [{ id: 1, x: 1, y: 1, label: 'Keep', description: '' }];
+    render(<SelectionInspector {...p} selectedNoteId={1} />);
+    fireEvent.change(screen.getByLabelText('X'), { target: { value: '' } });
+    expect(screen.getByLabelText('X')).toHaveValue(null);
+    expect(screen.getByRole('form')).toBeInvalid();
+    fireEvent.click(screen.getByRole('button', { name: 'Apply changes' }));
+    expect(p.onUpdateNote).not.toHaveBeenCalled();
+    fireEvent.keyDown(screen.getByLabelText('X'), { key: 'Escape' });
+    expect(screen.getByLabelText('X')).toHaveValue(1);
+  });
   it('preserves fractional and off-map polygon vertices during material edits', () => {
     const p = props();
     p.map.roomShapes = [{ id: 1, x: 8, y: 8, width: 40, height: 40, shapeType: 'polygon',
