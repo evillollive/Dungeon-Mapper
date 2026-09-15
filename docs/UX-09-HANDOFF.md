@@ -634,6 +634,61 @@ not a three-repetition benchmark or full release qualification. Artifacts are
 in the cleanup session's `files/cleanup-browser` directory. Exact-head required
 CI remains the landing gate.
 
+## Library and recovery regression milestone
+
+September 15, 2026, based on `c72371c` after ART-06/08 merged in #181.
+The owner selected a bounded, low-input follow-up: promote selected Library
+and recovery invariants from the standalone development-server qualification
+into the existing required production-browser jobs.
+
+`src/test/ux09Library.browser.mjs` registers nine independent cases through
+`ux09.spec.mjs`. The existing runner owns their pages, contexts, teardown,
+traces, screenshots, result attachments and all-tab error capture. The
+creation journey's native IndexedDB reader is reused for durable-state
+assertions. No application API, storage schema, artwork, rendering cache,
+dependency, retry policy or CI timeout changes.
+
+| Cases | Production assertions |
+| --- | --- |
+| Rich duplication | Distinct local identity/revision, complete two-level content and asset equality, portable provenance, copied tags, no copied previous-save/checkpoint records, exact source/checkpoint preservation after copy edits, real private JSON download |
+| Archive and Trash | Cancel writes nothing; reload and restore preserve identity/content/tags/recovery copies; no Open control for non-active records; confirmed permanent deletion removes only the target's current/previous/checkpoint records |
+| Competing Library tabs | Stale metadata and duplication fail visibly without writing or leaving an orphan copy; refresh shows the winning title |
+| Four stale-editor variants | Rename, archive, Trash and deletion in a second tab invalidate the old editor revision; stale saves cannot overwrite or resurrect the durable project; latest unsaved work remains downloadable |
+| Failed duplicate opening | A native read fault after commit leaves exactly one durable copy in the refreshed Library; reload and retry open that same identity |
+| Failed save | Native quota faults roll back the complete transaction, including the previous-save slot; repeated retries remain failed; backup retains newer edits; successful retry, reload and Library reopen preserve the latest intended work |
+
+Fixtures enter through the public import UI; retained predecessors/checkpoints
+are created through the actual recovery UI. Native storage reads observe
+committed state rather than replacing repository functions. The two fault
+cases count page-scoped native `get`/`put` failures and restore the methods
+in `finally`. This is injected transaction failure, not physical disk exhaustion,
+OS interruption or natural storage eviction.
+
+The first Chromium pass exposed two new-harness mistakes: an unscoped saved
+status locator matched both header and dialog, and stale duplication used the
+metadata-conflict message rather than its own source-conflict message. Those
+selectors were corrected without changing product behavior or assertions.
+The cross-engine pass also confirmed that restoring the unavailable current
+project remounts the Library in Recent maps. The journey now asserts committed
+active status and explicitly reselects Archive/Trash before checking absence,
+rather than mistaking the restored Recent card for a failed restoration.
+
+The final local production run on the merged ART-06/08 baseline passed all
+27 new case/engine combinations plus the three existing guided-creation cases
+that share the storage reader: 30 cases in 2.4 minutes. The zero-warning lint
+gate and production build also pass. Evidence is retained in the session's
+`files/library-final`, with source metadata identifying `c72371c` plus the
+working-tree patch. Earlier failed harness evidence remains in
+`files/library-first` and `files/library-three-engine`; it is not passing
+qualification. Exact-head required Linux CI remains the landing gate.
+
+The older standalone suite remains available. This milestone does not promote
+its entire native repository matrix, failed-startup recovery races, legacy
+migration/deletion tombstones, thumbnail failures, or Library-specific
+keyboard/reflow checks. It does not qualify human/device, cross-schema update,
+physical printing, or performance acceptance. Commands and artifact handling
+are in [Development](./DEVELOPMENT.md#library-and-recovery-regression-journeys).
+
 ## Remaining release gates
 
 Subsequent housekeeping removes 68 of the original 73 hook warnings and

@@ -14,6 +14,7 @@ export default defineConfig([
       'src/test/interfaceIcons.spec.mjs',
       'src/test/firstUseIllustrations.spec.mjs',
       'src/test/ux09Keyboard.browser.mjs',
+      'src/test/ux09Library.browser.mjs',
       'src/test/ux09Performance.spec.mjs',
       'src/test/ux09EdgeBlend.spec.mjs',
       'src/test/ux09FolioTiles.spec.mjs',

@@ -8,6 +8,15 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
+**Library/recovery CI follow-up, September 15, 2026:** Nine independent
+production-browser cases now cover rich duplicate isolation, archive/Trash
+restoration and deletion, stale Library/editor actions across tabs, committed
+copies after opening fails, and failed-save backup/retry. They extend the
+existing required three-engine jobs without changing storage behavior,
+artwork, dependencies or timeout budgets. See the
+[bounded milestone and remaining coverage](./UX-09-HANDOFF.md#library-and-recovery-regression-milestone).
+Full UX-09 and human/device/performance acceptance remain open.
+
 **Launch-art implementation follow-up, September 15, 2026:** ART-08's
 monochrome map companions and ART-06's three authored launch encounters are
 implemented for owner review. The owner selected these launch tasks, leaving
@@ -1230,6 +1239,15 @@ pixel comparisons cover explicit RGBA compositing tolerance, and high-DPR
 allocation cases retain the same cap without traversal churn. Batching atlas
 population fixes an initial loading regression; loading and representative-device
 gates are not accepted. See [renderer contract and final evidence](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone).
+
+**Library/recovery follow-up, September 15, 2026:** Selected invariants from
+the standalone UX-02 Library suite are adapted to production UI journeys in
+`ux09Library.browser.mjs`. The existing runner owns independent cases and
+captures errors from both tabs. Native read/quota fault injection verifies
+visible recovery paths and atomic record preservation, not physical storage
+exhaustion. The broader standalone repository, migration, failed-startup and
+Library keyboard matrices are not claimed as promoted by this slice.
+See the [handoff](./UX-09-HANDOFF.md#library-and-recovery-regression-milestone).
 
 **Implementation anchors:** Existing Vitest/Testing Library tests; new browser suite configured deliberately in this milestone or earlier when first needed; `.github/workflows/ci.yml`; docs.
 
