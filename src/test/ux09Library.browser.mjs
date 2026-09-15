@@ -3,6 +3,8 @@ import { readFile } from 'node:fs/promises';
 import { expect } from 'playwright/test';
 import { records } from './ux02Creation.browser.mjs';
 
+export { backup, card, file, fixture, landing, library, manage, projectId, retainCheckpoint, saved };
+
 const projectId = page => new URL(page.url()).searchParams.get('project');
 const card = (page, name) => page.getByRole('article', { name, exact: true });
 const saved = page => page.getByRole('button', { name: 'Save health & recovery', exact: true })

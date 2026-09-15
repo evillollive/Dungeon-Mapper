@@ -213,6 +213,50 @@ describe('revision-aware save coordinator', () => {
     expect(saveProject).not.toHaveBeenCalled();
   });
 
+  it('keeps failed-startup recovery blocked after another tab changes the source', async () => {
+    const writer = new SaveCoordinator();
+    writer.failRestore('Unsupported source', 'broken');
+    const generation = writer.getGeneration();
+    const recovery = deferred<Awaited<ReturnType<typeof loadProject>>>();
+    const operation = writer.recoverFailedProject(() => recovery.promise);
+    expect(writer.getSnapshot()).toEqual({ phase: 'replacing', restorationBlocked: true });
+    expect(() => writer.startProject(createDefaultProject())).toThrow();
+    const failure = expect(operation).rejects.toThrow('Another tab won');
+    recovery.reject(new StorageConflictError('Another tab won'));
+    await failure;
+    expect(writer.getSnapshot()).toEqual({ phase: 'restore-failed', message: expect.stringContaining('Retry restore') });
+    expect(writer.getProjectId()).toBe('broken');
+    expect(writer.getGeneration()).toBe(generation);
+    writer.retry();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(saveProject).not.toHaveBeenCalled();
+    expect(writer.updateBlocker()).not.toBeNull();
+
+    const loaded = { project: createDefaultProject(), projectId: 'healthy', revision: 'winning-revision' };
+    vi.mocked(loadProject).mockResolvedValueOnce(loaded);
+    await expect(writer.switchProject('healthy')).resolves.toEqual(loaded);
+    expect(writer.getSnapshot().phase).toBe('saved');
+  });
+
+  it('still retains unexpected pending work when a failed-startup recovery commits', async () => {
+    const writer = new SaveCoordinator();
+    writer.failRestore('Unsupported source', 'broken');
+    const generation = writer.getGeneration();
+    const recovery = deferred<Awaited<ReturnType<typeof loadProject>>>();
+    const operation = writer.recoverFailedProject(() => recovery.promise);
+    writer.schedule({ ...createDefaultProject(), name: 'Newer in-memory work' });
+    const failure = expect(operation).rejects.toThrow('Newer in-memory work is retained');
+    recovery.resolve({ project: createDefaultProject(), projectId: 'broken', revision: 'recovered' });
+    await failure;
+    expect(writer.getSnapshot().phase).toBe('conflict');
+    expect(writer.getProjectId()).toBe('broken');
+    expect(writer.getGeneration()).toBe(generation);
+    expect(() => writer.startProject(createDefaultProject())).toThrow();
+    writer.retry();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(saveProject).not.toHaveBeenCalled();
+  });
+
   it('serializes delayed transactions and never labels an older transaction as saved', async () => {
     const first = deferred<string>();
     const second = deferred<string>();

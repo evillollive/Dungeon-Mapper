@@ -12,6 +12,7 @@ All notable changes to this project are documented in this file.
 - Twelve original, owner-approved Folio token designs with shape-coded affiliation frames, monochrome print companions and two furnished sample scenes.
 
 ### Fixed
+- Keep failed-startup recovery controls available when another tab restores the same project first, instead of showing a blank editor. The original remains downloadable and Retry restore opens the newer saved project.
 - Reserve unique token IDs before queued React updates so consecutive placements remain independently selectable and removable.
 
 ### Changed
