@@ -1179,3 +1179,14 @@ guarantee: Pages currently starts independently on pushes to main. Require
 successful qualification of the published revision, rehearse actual
 application-version rollback/recovery, and preserve a versioned release
 evidence/limitations summary beyond the current fourteen-day CI retention.
+
+**September 28 design-only follow-up:** The
+[exact-revision Pages design](./RELEASE-DEPLOYMENT-DESIGN.md) records the proposed
+same-workflow dependency graph, canonical artifact reuse, explicit integrity
+checks, main-only deployment, superseded-job versus active-deployment handling,
+rollout/rollback and retention decisions. Read-only inspection confirmed both
+strict required checks and the main-only Pages environment; neither changed.
+The design's acceptance table is planned work, not simulated or hosted passes.
+Implementation needs explicit policy-scope approval; publication and hosted
+verification need a separate numeric budget. This design task initiated zero
+hosted triggers and made no workflow/environment or remote changes.
