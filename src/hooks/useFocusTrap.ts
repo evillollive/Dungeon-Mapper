@@ -85,6 +85,8 @@ export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
       const next = current < 0 ? (e.shiftKey ? nodes.length - 1 : 0)
         : (current + (e.shiftKey ? -1 : 1) + nodes.length) % nodes.length;
       nodes[next].focus();
+      // Firefox can leave a partially visible control clipped after focus().
+      nodes[next].scrollIntoView({ block: 'nearest', inline: 'nearest' });
     };
     const handleFocusIn = (event: FocusEvent) => {
       if (isActive() && event.target instanceof Node && !container.contains(event.target)) focusFirst(container);

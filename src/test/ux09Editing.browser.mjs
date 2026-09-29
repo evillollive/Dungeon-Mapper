@@ -451,7 +451,7 @@ async function keyboardLayout(page, { output, engine }, textScale) {
   await expect(page.getByLabel('Interface text size', { exact: true })).toHaveValue(String(textScale));
   await page.keyboard.press('Escape');
   const layouts = [];
-  for (const [width, height] of [[1440, 900], [1024, 768], [768, 1024], [390, 844], [844, 390], [390, 460], [720, 450]]) {
+  for (const [width, height] of [[1440, 900], [1024, 768], [768, 1024], [390, 844], [844, 390], [390, 440], [390, 460], [720, 450]]) {
     await page.setViewportSize({ width, height });
     await expect.poll(() => page.locator('.app-body').evaluate(node => node.classList.contains('app-body--mobile'))).toBe(width <= 768);
     const expand = page.getByRole('button', { name: 'Expand toolbar', exact: true });
@@ -484,11 +484,13 @@ async function keyboardLayout(page, { output, engine }, textScale) {
       return {
         width: rect.width, height: rect.height, outline: style.outlineStyle,
         outlineWidth: parseFloat(style.outlineWidth), hitTarget: node.contains(hit), clippedBy,
+        bounds: rect.toJSON(),
         inViewport: rect.top >= 0 && rect.bottom <= innerHeight && rect.left >= 0 && rect.right <= innerWidth,
         overflow: document.documentElement.scrollWidth > innerWidth,
       };
     });
-    await expect.poll(measure).toMatchObject({ inViewport: true, overflow: false, hitTarget: true, clippedBy: [], outline: 'solid' });
+    await expect.poll(measure, { message: `${engine} inspector at ${width}x${height}, ${textScale * 100}% text` })
+      .toMatchObject({ inViewport: true, overflow: false, hitTarget: true, clippedBy: [], outline: 'solid' });
     const metrics = await measure();
     assert(metrics.width >= 44 && metrics.height >= 44 && metrics.outlineWidth >= 2);
     const contrast = await panelContrast(page, '.selection-inspector label, .selection-inspector small, .selection-inspector button');

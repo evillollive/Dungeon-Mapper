@@ -95,6 +95,7 @@
 .editor-shell .context-panel {
   display: flex; flex-direction: column; position: static; width: 300px; max-width: 38vw;
   flex: 0 0 auto; overflow: auto; padding: 12px; gap: 12px; border-left: 1px solid var(--border);
+  scroll-padding: 4px;
   background: var(--surface-panel); transform: none;
 }
 .context-close { align-self: flex-end; flex-shrink: 0; }
