@@ -1,87 +1,109 @@
 # Sharing Guide
 
-Dungeon Mapper is easiest to share as a browser-first TTRPG map editor: fast enough for a blank-grid sketch, deep enough for fog, tokens, procedural generation, exports, and print prep.
+Describe Dungeon Mapper as a local-first battle-map editor with a separate DM
+session workspace and read-only local player display. These are draft sharing
+materials, not authorization to announce a release. Outstanding owner,
+physical-print, performance and qualification gates remain in the
+[roadmap](./USER-EXPERIENCE-ROADMAP.md#release-gate-ledger).
 
 ## Positioning
 
-**Short description:** Browser-based TTRPG battle-map editor with procedural generation, fog of war, tokens, themes, exports, and offline PWA support.
+**Short description:** Local-first TTRPG battle-map editor with procedural
+generation, fog, tokens, private project backups and a local player display.
 
-**One-liner:** Make a playable battle map in the browser, then reveal it at the table with fog, tokens, light, and print-ready exports.
+**One-liner:** Prepare a battle map, run the encounter and choose what appears
+on a second window at your table.
 
-**Longer pitch:** Dungeon Mapper is a local-first React + TypeScript map editor for tabletop RPGs. It combines deterministic generators, grid painting, room/river/path vectors, themed art layers, Present view, fog-of-war, token tools, and JSON/PNG/SVG/print exports in one installable browser app.
+**Longer pitch:** Dungeon Mapper keeps authored maps in a local Library.
+Start from a sample, generation, blank map or tracing image, then build and
+decorate the encounter. Prepare visibility and public notes before starting
+a separately saved session. Reveal geography, move tokens and advance turns
+in Run while a read-only local player window shows the published view.
+Export private project JSON, player PNG/SVG images or A4/Letter print pages.
 
-## Best-fit audiences
+## Audience and boundaries
 
-| Audience | Angle |
+| Audience | Useful angle |
 | --- | --- |
-| Game masters | "Prep a battle map quickly, then run it safely from Present view." |
-| TTRPG creators | "Generate, theme, export, and remix maps without leaving the browser." |
-| Front-end developers | "A compact canvas-heavy React app with generators, FOV, PWA, exports, and accessibility patterns." |
-| Open-source contributors | "Plenty of approachable feature, UX, docs, generator, and rendering work." |
+| Game masters | Prepare a map, review public content and run a local encounter without overwriting the authored source. |
+| TTRPG creators | Generate, decorate and export maps; keep an editable private backup. |
+| Front-end contributors | React/TypeScript, Canvas rendering, seeded generation, local persistence, audience projection and production-browser qualification. |
 
-## Demo script ideas
+Keep these distinctions in every demo or announcement:
 
-### Two-minute hosted demo
+- **Local display is not remote multiplayer.** It uses a second window in the
+  same browser, not accounts, authentication or a join link for other devices.
+- **The editor is private.** Edit, legacy DM view, Library previews and project
+  backups can contain secrets. Use Player preview, the local player display or
+  player-audience image export for sharing, and inspect secrets embedded in art.
+- **A project backup is not a session backup.** Run saves separately. Its
+  private recovery download has no dedicated file-import workflow.
+- **Offline-capable is not always offline-ready.** Wait for **App and built-in
+  art cached.** while online. Browser storage/caches can be evicted.
+- **Implemented is not qualified.** Do not claim physical printing, broad
+  mobile/touch/pen support, screen-reader conformance, performance targets or
+  participant acceptance that the roadmap has not accepted.
 
-1. Open the live demo.
-2. Press `G`, choose **Rooms & Corridors**, set or randomize a seed, and generate a map.
-3. Switch themes to show that structure and presentation are separated.
-4. Toggle **Present**, place a player token and light source, then enable dynamic fog.
-5. Export PNG/SVG, then mention JSON for editable backups.
+## Demo scripts
 
-### Five-minute deeper demo
+### Short map-to-table demo
 
-1. Start from a sample in Generate Hub.
-2. Use **Generate into selection** to replace one wing without disturbing the rest of the map.
-3. Draw or edit a river vector and show rasterized water/flow behavior.
-4. Add stamps, notes, and a scene template.
-5. Toggle art presets and print mode.
-6. Install the PWA or reload offline to show local-first behavior.
+1. From **Your maps**, choose **Open a sample** and preview **The Lantern
+   Crypt**, **Alder Crossing** or **Kestrel Docking Bay**. Select **Use this map**.
+2. Show Build, Decorate and Look. Make one edit, Undo it and wait for
+   **Saved on this device**.
+3. Open **Player preview** and explain that only public note fields are shared.
+   Keep the DM browser surface off any player-facing recording.
+4. Choose **Prepare session**, review visibility, acknowledge it and **Start
+   session**. Choose **Open player display**, then **Show this level**.
+5. Reveal a cell or move a token, then use **Pause / blank now**. Explain that
+   session progress is stored independently of the authored map.
+6. End with **Save session progress**. Back in Edit, show **Export > Share with
+   players** and explain **Back up project** without publishing the private file.
+
+### Optional focused demonstrations
+
+- **Creation:** Your maps > Create map > Generate a map. Preview before Use
+  this map; advanced editor generation is under Build > Generate, not a
+  fresh-Library `G` shortcut.
+- **Reuse:** Duplicate a Library project, or generate into a selected region
+  after reviewing its scope. Keep the source and show the independent copy.
+- **Print planning:** Export > Print for the table, choose audience and paper,
+  then show the page preview. Digital output is not proof of actual printer scale.
+- **Offline:** Use disposable synthetic data and check cache readiness first.
+  Demonstrate a locally rehearsed offline workflow, not untested promises about
+  mobile installation or storage durability.
+
+The GIFs in README and `docs/media` show historical interfaces. Retain them as
+tool demonstrations, but do not present them as the current first-use flow.
+New recordings should follow the steps above.
 
 ## Suggested repository metadata
 
-**Description:** Browser-based TTRPG battle-map editor with procedural generation, fog of war, tokens, themes, exports, and offline PWA support.
+**Description:** Local-first TTRPG battle-map editor with generation, fog,
+tokens, private backups, image/print export and a local player display.
 
 **Homepage:** `https://evillollive.github.io/Dungeon-Mapper/`
 
-**Topics:** `ttrpg`, `battlemap`, `dungeon-mapper`, `map-editor`, `procedural-generation`, `react`, `typescript`, `vite`, `pwa`, `tabletop-rpg`
+**Topics:** `ttrpg`, `battlemap`, `map-editor`, `procedural-generation`, `react`,
+`typescript`, `vite`, `pwa`, `tabletop-rpg`
 
-## Sharing channels
+These are suggestions only; this document does not change remote metadata.
 
-| Channel | Suggested angle |
-| --- | --- |
-| GitHub social preview / README | Lead with the Generate Hub GIF and live demo link. |
-| Mastodon / Bluesky / X | Short clip/GIF plus "browser-based, local-first, no account required." |
-| Reddit TTRPG/mapmaking communities | Emphasize GM workflow, export formats, and offline use. Follow subreddit self-promo rules. |
-| Hacker News / Show HN | Emphasize React canvas architecture, deterministic generators, PWA/offline, and local-first data. |
-| Discords for TTRPG tools | Use the two-minute demo flow and invite feedback on table workflows. |
-| Dev communities | Highlight canvas rendering, FOV/dynamic fog, generator tests, and export paths. |
+## Announcement draft
 
-## Launch copy
+I'm building Dungeon Mapper, a local-first browser tool for TTRPG maps.
+Create and organize encounters, prepare public content, then run a separately
+saved session with a read-only player window in the same browser. It includes
+seeded generation, fog, tokens and project/image/print exports.
 
-### Short social post
+The hosted build is available for exploration. Release qualification is still
+in progress, and device storage is not a backup.
 
-I built Dungeon Mapper, a browser-based TTRPG battle-map editor. It has seeded map generation, themes, fog of war, tokens, light/FOV, stamps, notes, JSON/PNG/SVG/print exports, and offline PWA support.
+App: https://evillollive.github.io/Dungeon-Mapper/
 
-Try it: https://evillollive.github.io/Dungeon-Mapper/
+Source: https://github.com/evillollive/Dungeon-Mapper
 
-### Show HN-style draft
-
-Show HN: Dungeon Mapper - a local-first browser battle-map editor for TTRPGs
-
-Dungeon Mapper is a React + TypeScript canvas app for making and running grid battle maps in the browser. You can paint maps by hand, generate rooms/terrain/caverns/villages from deterministic seeds, switch visual themes, add notes/stamps/tokens, reveal maps with fog of war, and export JSON, PNG, SVG, or high-DPI print images.
-
-I built it as a local-first tool: it auto-saves in IndexedDB, has no account system, and can be installed as a PWA for offline use. The technical pieces I think are most interesting are the generator pipeline, editable room/river/path vectors, dynamic fog with token sight and light sources, and the export/rendering path.
-
-Live demo: https://evillollive.github.io/Dungeon-Mapper/
-Repo: https://github.com/evillollive/Dungeon-Mapper
-
-I would love feedback from both GMs and front-end/canvas developers.
-
-## Follow-up backlog for stronger sharing
-
-- Record a polished 60-90 second demo video that starts from Generate Hub and ends in Present view.
-- Add a real full-screen screenshot or social preview image; the current GIFs are useful but a static Open Graph image would share better.
-- Add a small "sample map JSON" folder or release asset if the project wants reusable examples outside the app.
-- Consider a GitHub Pages "What's new" section if the project starts doing regular releases.
-- Add contribution-friendly issues for generator presets, export integrations, accessibility audits, and demo assets.
+Use the [Feature Reference](./FEATURES.md) for current controls, recovery scope
+and limitations. Social images, new recordings and launch-channel publishing
+are optional separate work, not prerequisites for closing documentation.

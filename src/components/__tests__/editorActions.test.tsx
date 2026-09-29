@@ -30,6 +30,12 @@ function Shortcuts({ actions, enabled = true }: { actions: EditorAction[]; enabl
 }
 
 describe('UX-03 shared action parity', () => {
+  it('describes image exports without claiming they capture editor overlays', () => {
+    const actions = registry();
+    expect(actions.find(action => action.id === 'file.exportPng')?.label).toBe('Level PNG (check DM/player audience)');
+    expect(actions.find(action => action.id === 'file.exportSvg')?.label).toBe('Level SVG (check DM/player audience)');
+  });
+
   it('shares action artwork across buttons, menus and commands without changing accessible names', () => {
     const actions = registry();
     const backup = actions.find(action => action.id === 'file.exportJson')!;

@@ -8,6 +8,15 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
+**Documentation follow-up, September 28, 2026:** README, Features, Sharing,
+demo guidance and in-app shortcut help now follow Your maps -> Edit -> Prepare
+-> Run -> local player display. They distinguish project backups from session
+recovery, Library import previews from direct editor imports, and implemented
+offline/responsive behavior from unqualified support claims. The stale
+editor-overlay PNG action label is corrected without changing export behavior.
+This is local documentation completion, not release approval. A real-bundle
+upgrade/recovery rehearsal is next; hosted budget remains zero.
+
 **Local-only follow-up, September 28, 2026:** Hosted budget is **zero**.
 PR #185 remains open at `dbba27f`; its Linux Firefox run
 [`35037146541`](https://github.com/evillollive/Dungeon-Mapper/actions/runs/35037146541)
@@ -1372,7 +1381,7 @@ successful bounded milestones.
 | A-UPDATE | Exercise an actual supported prior application version upgrading to the candidate with existing projects and sessions. Rehearse safe rollback or documented recovery without lossy writes. Do not invent a schema change merely to exercise migration. | Agent-led; production application/worker versions, isolated persistent browser profiles and retained backups | Not assessed; [UX-08](./UX-08-HANDOFF.md#qualification) currently changes worker bytes without changing the application bundle |
 | A-EDIT | Bring critical `ux04Editing.browser.mjs` object-editing paths into the required runner; cover keyboard access, apply/cancel, undo, failure states, visible focus, contrast and reflow across supported workflows. Preserve player projection/display/export sentinel coverage. | Copilot; production UI and native storage; platform/revision-specific evidence in the handoff | Failed Linux Firefox at `dbba27f`: 200% inspector focus is clipped; aggregate correctly failed. Correction at `aa40a14`, strengthened assertions at `0d0e0bb`, affected local three-engine cases passed. [Fresh exact-head hosted evidence is blocked by zero budget](./UX-09-HANDOFF.md#zero-actions-roadmap-disposition-and-resume-checklist). Earlier macOS results are retained, not relabeled as Linux acceptance |
 | A-PERF | Profile before another bounded optimization. Establish a measured desktop workload/hardware/DPR scope, loading behavior, and F05 export allocation/cancellation behavior. Meet the existing desktop targets or obtain an explicit, evidence-backed early-access scope exception before release. | Agent-led where hardware is available; repeated production measurements and retained long-stall/memory observations | Not assessed for reference acceptance; [current F05 diagnostics](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone) remain above the paint target in Chromium/Firefox |
-| A-DOCS | Reconcile README, Features, Sharing, help/demo guidance and release notes with Your maps -> Create/open -> Edit -> Prepare -> Run -> Player display. State local-only display, project-backup versus session scope, offline readiness and supported limits accurately. | Agent-led; published entry paths and current UI, not historical screenshots or shortcut assumptions | Not assessed; review at `06d20e8` found the README's fresh-load G/Present instructions describe the old entry path |
+| A-DOCS | Reconcile README, Features, Sharing, help/demo guidance and release notes with Your maps -> Create/open -> Edit -> Prepare -> Run -> Player display. State local-only display, project-backup versus session scope, offline readiness and supported limits accurately. | Copilot; actual UI source, UX-02/05/06/08 contracts and targeted help/action component assertions | Completed locally September 28: public guides, help text and action labels corrected; historical GIFs labeled, support/release gaps explicit. Not yet published, no support-scope exception or release approval |
 | A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | Not assessed for remaining approvals; [art closeout ledger](#initial-release-art-closeout) |
 | A-PRINT | Complete the physical-printing launch gate below, including both paper sizes, overview/miniature scale, assembled overlaps and monochrome readability. | Agents prepare exports; a person prints/measures/reviews and supplies evidence from documented printer/app setups | Not assessed on physical paper; digital layout and DPI evidence do not close this gate |
 | A-RELEASE | Require successful qualification of the exact revision before Pages publication; retain strict merge protection. Publish a versioned evidence/limitations summary and rehearse documented rollback/recovery. Preserve release evidence beyond the current 14-day CI artifact window. | Agent-led; GitHub workflow/run/release revisions and synthetic fixture artifacts | Not assessed; current Pages push workflow runs independently of that revision's CI |
@@ -1413,8 +1422,8 @@ or AI visual review alone is not physical-print acceptance.
 
 A-DATA and A-EDIT's bounded implementations and local production qualification
 are recorded above; A-EDIT's later Linux failure is corrected locally but still
-awaits hosted qualification. Under the current zero budget, A-DOCS is the next
-independent local milestone. A-UPDATE's synthetic real-version rehearsal can
+awaits hosted qualification. A-DOCS is now locally completed. Under the current
+zero budget, A-UPDATE's synthetic real-version rehearsal can
 also run locally once the prior-version/candidate pair is identified, without
 declaring either supported or released. With permissions and evidence resolved,
 continue with A-UPDATE, then

@@ -1,6 +1,27 @@
 # Feature Reference
 
-This page preserves the detailed feature tour from the README so the landing page can stay easier to scan without losing depth.
+This reference describes the current local-first workflow. Implemented features
+are not a claim of release, physical-device or accessibility qualification.
+See the [release gate ledger](./USER-EXPERIENCE-ROADMAP.md#release-gate-ledger).
+
+## Your maps to the table
+
+Start in **Your maps** to create, import, search, duplicate or reopen a project.
+**Create map** offers a sample, generation, blank map or image-tracing starting
+point with a preview before **Use this map**. Imports and samples create
+separate projects, keeping the current saved project. Library names, tags,
+Archive and Trash are local to this browser and origin, not an online account.
+Permanent deletion is explicit and cannot be undone.
+
+In **Edit**, use Build, Decorate and Look, with Levels, Fog & sight, Notes,
+Encounter and Map info alongside them. **Inspect object** and **Add or select
+by coordinates** provide alternatives to canvas dragging. Apply commits a
+property draft as one undo step; Cancel or Escape discards it.
+
+Wait for **Saved on this device**, review **Player preview**, then choose
+**Prepare session**. Session actions and backups have different scope from
+authored projects; see [sessions and player display](#sessions-and-player-display)
+and [saving and recovery](#saving-exporting--importing).
 
 ## Everything you can do
 
@@ -8,28 +29,27 @@ If you want the full tour in one place, this is it. Dungeon Mapper starts fast, 
 
 - **Consistent interface icons** - 32 original SVG line icons accompany navigation, project actions, save/offline status, export choices and player-display controls. Icons scale with interface text, inherit control colors and do not replace accessible names. Map symbols and token artwork are separate.
 - **First-use illustrations** - small original Folio scenes accompany the empty map collection, private backup guidance, session preparation and blank local player display. These are decorative drawings, not project previews, storage status or interactive controls.
-- **Grid editor** - configurable map from 8×8 up to 128×128 (selectable widths/heights: 8, 16, 24, 32, 48, 64, 96, 128), default 32×32
+- **Grid editor** - guided creation accepts 10-100 tiles per axis; Project settings offers geometry sizes from 8 to 128 and preserves a loaded map's current dimensions. These controls are not a measured performance support limit.
 - **Tile size** - selectable tile size (12, 16, 20, 24, 32 px), default 20 px
 - **20 paintable tile types** - Floor, Wall, Door (H/V), Secret Door, Locked Door (H/V), Trapped Door (H/V), Portcullis, Archway, Barricade, Stairs Up/Down, Water, Pillar, Trap, Treasure, Start, plus project-scoped custom tiles (use the Erase tool to clear a tile back to empty)
-- **13 preset theme modes** - Castle, Dungeon, Starship, Alien World, Lost Civilization, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City, Pirate, Desert - each with unique per-theme art for floors, walls, doors, water, treasure, traps, and start tiles (see [Preset Modes](#preset-modes) below)
+- **Themes** - Dungeon Folio plus 13 legacy modes: Castle, Dungeon, Starship, Alien World, Lost Civilization, Old West, Steampunk, Wilderness, Cyberpunk, Post-Apocalypse, Modern City, Pirate and Desert (see [Preset Modes](#preset-modes) below)
 - **Custom themes** - project-scoped custom theme builder with editable tile colors, labels, grid color, and optional uploaded tile graphics (see [Custom Themes](#custom-themes) below)
 - **Multi-level dungeons** - create multi-floor projects with level tabs, stair links between levels, per-level undo history, and double-click stair navigation (see [Multi-Level Dungeons](#multi-level-dungeons) below)
 - **Sample maps** - bundled encounters across all 13 themes, Folio art references and three authored launch maps: The Lantern Crypt, Alder Crossing and Kestrel Docking Bay. Launch previews are player-safe; opening a sample creates a fresh editable project (see [Sample Maps](#sample-maps) below)
 - **Themed canvas** - per-theme grid colors, deterministic tile color jitter, and wall depth/shadow effects for a rich, organic look; warm parchment background with pixel-sharp rendering
 - **Print mode** - monochrome material patterns, connected wall contours, drawn doors/stairs and shape-coded token affiliations; includes A4/Letter planning and a quarter-inch overview scale
-- **Navigation rail** - vertical icon strip with contextual side panel (default layout); switch between rail and classic tabbed toolbar via the LAYOUT dropdown in the header
+- **Shared navigation** - Build, Decorate, Look and task-specific destinations replace the former Rail/Tabs layout choice
 - **Command palette** - fuzzy-search overlay (`Ctrl/Cmd+K`) for quick access to tools, themes, file actions, view toggles, and canvas commands
-- **Selection inspector** - docked right panel showing properties of the selected stamp/token/note, or a map summary (dimensions, tile counts, theme) when nothing is selected
+- **Selection inspector** - contextual properties for tokens, notes, stamps, rooms, rivers and tile regions; Map info is a separate destination rather than an always-open empty inspector
 - **Generate Hub** - unified generation window (`G` shortcut) with tabbed Generate and Samples panels, archetype filtering, and all generation controls in one place
 - **Stamps** - the original 196-stamp catalog plus 24 versioned Dungeon Folio furnishings and custom stamp upload (PNG/SVG/JPEG/WebP, 2 MB limit); place, move, rotate, flip, scale, adjust opacity, lock, and z-order stamps on the canvas (see [Stamps](#stamps) below)
 - **Wall, path & river drawing** - free-form wall segments snapped to grid edges (`W`), smooth path/road lines (`Shift+W`), and editable flowing river vectors (`U`) with erase modes; independent of tile grid until rivers rasterize to water (see [Wall, Path & River Tools](#wall-path--river-tools) below)
 - **Scene/room templates** - save a selection of tiles, notes, and stamps as a reusable template; apply templates to stamp pre-built rooms onto any map (see [Scene Templates](#scene-templates) below)
-- **Tabbed toolbar** - GM tools organized into three tabs (Draw, Tactical, Advanced) for progressive disclosure and reduced clutter
 - **Drawing tools** - Paint `P`, Erase `E`, Flood Fill `F`, Add Note `N`, Line `L`, Rectangle `R`, Select `S`, Line-of-Sight / FOV `O`, Measure `M`, Light Source `I`, GM Draw `D`, Wall `W`, Path `Shift+W`
-- **GM drawing tools** - freehand GM-only annotations with dashed line rendering, hidden from Present view in canvas, PNG, and SVG exports (`D` shortcut)
+- **GM drawing tools** - private freehand annotations with dashed rendering; excluded from player projections and player-audience exports (`D` shortcut)
 - **Copy / Paste / Cut** - select a region with the Select tool, then `Ctrl+C` to copy, `Ctrl+X` to cut, `Ctrl+V` to paste tiles and notes at the selection origin with a live preview overlay
 - **Procedural map generation** - the **Generate Hub** (`G`) opens a unified window with four algorithms (Rooms & Corridors, Open Terrain, Cavern, Village), a deterministic seed, a density slider, per-generator tile-mix sliders, corridor strategy and shape controls, optional theme room labels with procedural names, and an opt-in **Generate into selection** mode that stamps a generated map into an active selection rectangle without disturbing the rest of the map (see [Map Generation](#map-generation) below)
-- **Edit / Present views** - header **👁 Present** toggle swaps to a player-safe toolbar with a freehand drawing pen, an eraser, fog-of-war controls, and token tools (see [Present View](#present-view) below)
+- **Prepare / Run / player display** - separately saved play progress and a read-only second window in the same browser. Legacy DM view is not a player-safe surface (see [sessions and player display](#sessions-and-player-display))
 - **Fog of war** - per-cell hidden / revealed flags with a Defog brush, Reveal `V` / Hide `H` drag-rectangles, Reset Fog (re-cover the map), Clear Fog (reveal everything), an optional GM **🌫 Show Fog** preview overlay, fog edge feathering, and **Dynamic Fog** mode that auto-reveals cells visible from player tokens with 3-state rendering (hidden / explored / visible)
 - **Tokens with icon library** - drop Player, NPC, and Monster tokens (small 1×1, medium 2×2, large 3×3) onto the map with a searchable icon picker (legacy icons plus twelve opt-in Folio silhouettes); Move Token to drag, Remove Token to delete
 - **Initiative panel** - a turn-order list with selectable entries, visible Up/Down controls, Alt+Arrow and drag reordering, inline renaming and Clear (see [Initiative](#initiative) below)
@@ -41,17 +61,17 @@ If you want the full tour in one place, this is it. Dungeon Mapper starts fast, 
 - **Zoom & pan** - `+` / `-` / `Reset` / `Fit` controls along the bottom of the map; right-click drag (or long-press on touch) to pan; mouse-wheel zoom while holding `Shift` (or with Caps Lock on); pinch-to-zoom and two-finger pan on touch devices; on-canvas HUD displays current zoom level and cursor coordinates
 - **Undo / Redo** - up to 50 steps per level (`Ctrl+Z` / `Ctrl+Y` or `Ctrl+Shift+Z`)
 - **Room notes** - numbered annotations with keyboard-editable labels and multiline descriptions. Player preview uses explicitly published public fields in known geography, not the DM's private text.
-- **Auto-save** - map state persisted to IndexedDB on every change (migrates legacy localStorage data automatically)
+- **Device saving** - debounced project writes to IndexedDB, visible save health, previous-save recovery and retained legacy migration originals. Failed or pending writes are not saved work.
 - **Line-of-Sight / FOV** - click any cell to visualize which cells are visible from that point, with walls blocking the view; click the same cell again to clear (`O` shortcut)
 - **Export / Import** - one intent-first dialog for private project backups, player-safe PNG/SVG images, bounded print pages and grid-aligned images for other tools
-- **Adjustable UI scale** - header **UI** dropdown rescales chrome text and controls (50%, 75%, 100%, 125%, 150%) and remembers your choice across sessions
+- **Interface text size** - Project menu > Project settings offers 75%, 100%, 125%, 150% and 200%; this changes controls, not geometry, export resolution or native browser zoom
 - **Preserve-tiles toggle** - when enabled (toolbar **🎨 Preserve**), switching themes keeps already-painted tiles in their original style so you can mix terrain styles from multiple themes on a single map
 - **Art style presets** - 5 built-in visual presets (Classic, Hand-Drawn, Painted, Minimal, Print) that configure all four art layers in one click; tweak individual layers to create a Custom style (see [Art System](#art-system) below)
 - **Paper texture** - procedural background texture with 5 patterns (parchment, linen, canvas, watercolor, marble), per-theme tints, adjustable opacity/grain/vignette
 - **Edge blending** - softens tile boundaries with 3 styles (dither, smooth, stipple) for organic terrain transitions
 - **Hand-drawn mode** - 3 rendering styles (sketchy, pencil, ink) that add wobbly grid lines, cross-hatch shading, and bold boundary strokes for a hand-crafted look
 - **Lighting & atmosphere** - ambient occlusion in wall corners, drop-shadows under stamps, and day/night/dusk color grading for mood and depth
-- **Mobile & tablet support** - responsive layout with 4 breakpoints, dedicated mobile bottom toolbar, touch gestures (pinch-to-zoom, two-finger pan, long-press pan), and gesture shortcuts (two-finger tap = undo, three-finger tap = redo)
+- **Responsive controls** - smaller-screen tool menus and contextual sheets, with touch gestures implemented; physical mobile/touch/pen qualification remains open
 - **Progressive Web App** - installable app with visible offline cache readiness and explicit, save-aware updates
 
 ## Preset Modes
@@ -128,18 +148,40 @@ Their creation previews show only player-safe content; the editable copy
 includes the private encounter. Existing generated samples and Folio art
 references remain available, including through Generate Hub.
 
-## Present View
+## Sessions and player display
 
-Present View is where Dungeon Mapper stops feeling like an editor and starts feeling like a session tool. You build in Edit mode, then switch to a player-safe surface that keeps the map shareable while preserving the same underlying project.
+**Prepare session** reads the saved source project. Review public content,
+starting visibility and sight sources, acknowledge the readiness checklist,
+then choose **Start session**. Manual-fog play remains possible without sight
+sources; do not assume a newly created or imported map starts hidden.
 
-- **Edit mode** is the full editor: paint tiles, place notes, switch themes, etc.
-- **Present mode** is a player-safe surface for use at the table. The tile-paint palette is hidden so the map can't be accidentally redrawn, and a different toolbar is exposed: fog-of-war controls, a freehand pen for table annotations, and tokens.
+**Run** has reveal/hide, token movement, measurement, pings, encounter turns and
+session checkpoints. Changes save in a separate session record; the authored
+source map stays unchanged. **Inspect DM level** does not change the published
+level. **Show this level** does. **Pause / blank now** blanks the local display.
 
-Your view-mode preference is remembered across sessions.
+**Open player display** opens a read-only second window in the same browser
+using local communication. Allow site popups if blocked, or use Player preview.
+The display starts blank and must be explicitly shown again after reconnection.
+It is not an authenticated remote player service or a URL another device can
+use to join.
+
+**Leave and resume later** keeps the saved session. **End session > Save session
+progress** keeps play progress separately. **Discard changes since session
+start** restores the session's source checkpoint, not the authored project.
+Both end choices retain the pre-end state in a last recovery slot.
+
+**Player preview** and player-audience images filter geography, discovery,
+hidden tokens and explicitly published public note fields. DM note labels and
+descriptions are private even when a note is published. Review custom artwork
+for secrets baked into images. The editor, Library thumbnails and legacy
+**DM view** are trusted DM surfaces; do not share their whole browser window.
 
 ### Fog of war
 
-Fog of war is designed for actual table use. New maps begin hidden, so you can safely throw the map on a screen right away, then reveal it however your game flows best: brush it in, box it out, or let tokens and light sources do the work for you.
+Prepare fog and sight in Edit, then inspect Player preview before showing the
+map. Starting fog depends on the creation path or imported project, not a
+universal hidden default.
 
 - **Defog** - freehand brush; drag across the map to wipe fog away cell-by-cell.
 - **Reveal `V`** / **Hide `H`** - drag a rectangle of cells to expose or re-cover them.
@@ -148,11 +190,14 @@ Fog of war is designed for actual table use. New maps begin hidden, so you can s
 - **Dynamic** - toggle auto-reveal mode. When enabled, cells visible from any player token are automatically revealed using line-of-sight. The fog uses 3-state rendering: **hidden** (opaque, never seen), **explored** (dimmed, previously visible but no longer in line-of-sight), and **visible** (clear, currently in line-of-sight of a player token). The explored grid persists with the map.
 - **Reset Explored** - (appears when Dynamic is enabled) clears all explored memory so previously seen cells return to fully fogged.
 
-In Present view, fogged cells are covered by an opaque overlay (with soft gradient feathering at revealed/hidden boundaries) and any room notes that sit under fog are omitted from the side panel so they don't leak hidden rooms. In Edit mode, the toolbar's **🌫 Show Fog** checkbox layers a translucent grey wash over the same cells so the GM can preview what's hidden from players without losing their own view of the map.
+Player outputs remove unknown geography and private content before rendering.
+The editor's **Show Fog** option is a DM inspection aid, not the publication
+boundary. Revealing geography alone does not publish a note's private text.
 
 ### Drawing pen
 
-Sometimes you just need to sketch on the map and keep moving. The Present toolbar includes a lightweight annotation pen for those moment-to-moment notes, arrows, plans, and panic scribbles that happen mid-session.
+The legacy **DM view** includes a player-annotation pen operated by the DM.
+The separate player display is read-only and does not expose drawing controls.
 
 - **Draw** / **Erase** - sketch over the map with the pen, or click an individual stroke to remove it.
 - **Pen colors** - eight preset swatches (red, orange, yellow, green, blue, purple, near-black, white).
@@ -169,7 +214,9 @@ Tokens are meant to be fast to place, easy to read, and flexible enough for a re
 - **Move Token** - click and drag a token to relocate it.
 - **Remove** - click a token to delete it.
 
-Tokens, fog flags, and player annotations are all stored on the map and survive auto-save / JSON export.
+Authored tokens, fog and annotations are included in project saves and backups.
+Token/fog changes made in Run belong to the separate session, not the source
+project's JSON backup.
 
 ### Initiative
 
@@ -248,7 +295,10 @@ Background images are there for the moments when you want to trace over an exist
 - **Scale** - resizes the image (10%–500%) relative to its natural size.
 - **Offset X / Y** - repositions the image in tile units (–50 to +50) to align it with the grid.
 
-The background image is hidden in Print mode. It's included in PNG exports (captured with the canvas) and SVG exports (embedded as a data URL). The image data is persisted with auto-save and JSON export/import.
+The background image is hidden by print styling. Other image exports use the
+export renderer, not a capture of the editor canvas. Player exports omit raw
+backgrounds while any geography remains unknown. Embedded image data is
+retained in private project saves and JSON backups.
 
 ## Stamps
 
@@ -259,8 +309,8 @@ Stamps are how you add flavor without turning every detail into tile work. Furni
 - **Place** - select a stamp from the stamp picker, then click on the canvas to place it. Stamps are tile-aligned.
 - **Move** - drag a placed stamp to reposition it.
 - **Select** - click a placed stamp on the canvas to select it; a yellow dashed highlight appears.
-- **Transform controls** - the Selection Inspector (right panel) exposes rotation, flip (horizontal/vertical), scale (0.25×–4×), opacity (10–100%), lock, z-order (bring to front / send to back), and delete.
-- **Keyboard shortcuts** - `Shift+R` rotate 90° clockwise, `Shift+H` flip horizontal, `Shift+V` flip vertical, `Delete` remove.
+- **Transform controls** - the Selection inspector exposes rotation, flips, scale, opacity, lock, layer ordering and deletion. Apply unlocking before changing a locked stamp's transform.
+- **Keyboard shortcuts** - `Shift+R` rotate 90 degrees clockwise, `Shift+H` flip horizontal, `Shift+Y` flip vertical, `Delete` remove.
 
 ### Per-theme filtering
 
@@ -295,7 +345,7 @@ These tools sit in a sweet spot between strict grid editing and freeform drawing
 - **River tool** (`U`) - drag across the canvas to draw a flowing vector river. Rivers stay editable via their control points, then rasterize to water tiles with flow direction metadata.
 - **River settings** - choose stroke color, width (stream/river/wide/broad), and semantic type (water, lava, or underground stream). River polish adds theme-aware bank tiles plus source and mouth markers.
 - **River editing** - drag control points to reshape a river, right-click a control point to remove it, use **Erase Rivers** to delete a whole river vector, or **Clear All** to remove every river from the level.
-- **Contextual settings** - when a wall, path, or river tool is active, the Draw tab shows color and thickness/width/type controls.
+- **Contextual settings** - Build provides wall, path and river controls; the Selection inspector edits placed room/river geometry.
 - **Clear all** - buttons clear wall segments, path segments, or river vectors from the current level.
 
 Walls, paths, and rivers are persisted with the map and included in all exports. They coexist with floor/wall tiles and are rendered above the tile layer but below stamps and tokens. Rivers also contribute rasterized water, bank, flow-direction, and endpoint metadata used by the canvas and export renderers.
@@ -304,19 +354,20 @@ Walls, paths, and rivers are persisted with the map and included in all exports.
 
 Scene templates are the payoff for building reusable encounter pieces. Save a room once, drop it into future maps whenever you need it, and slowly build your own library of reliable dungeon chunks.
 
-- **Save template** - select a region with the Select tool, then open the Templates dialog (📋 button in Advanced tab) and save the selection as a named template. Templates capture tiles, notes, and stamps within the selection.
+- **Save template** - select a region, then open **Project menu > Scene templates** or find it in Commands. Templates capture tiles, notes and stamps within the selection.
 - **Apply template** - choose a saved template from the dialog and stamp it onto the map at the current selection position.
 - **Manage** - rename or delete templates from the dialog.
 - **Persistence** - templates are project-scoped and round-trip through JSON export/import and IndexedDB auto-save.
 
 ## Navigation Rail & Layout
 
-Not everybody likes the same workspace. Dungeon Mapper gives you two desktop layouts so you can lean into a compact rail or stick with classic tabs, whichever one makes the toolset feel easier to reach.
-
-- **Rail** (default) - a vertical icon strip on the left with a contextual side panel that shows tool options for the active rail button. Compact and efficient for desktop use.
-- **Tabs** - the classic tabbed toolbar (Draw / Tactical / Advanced) in a wider left sidebar.
-
-The layout preference is saved to localStorage and restored on next visit. On mobile (≤768px), the bottom toolbar is always used regardless of this setting.
+One shared navigation serves Build, Decorate, Look, Levels, Fog & sight, Notes,
+Encounter and Map info. **Commands** and **Project menu** expose the same
+actions, including reasons when an action is unavailable. The former LAYOUT
+selector and Draw/Tactical/Advanced tabs are no longer the navigation model.
+On narrow screens, **Tools** expands the sidebar and **All actions** opens the
+action menu. A selection opens its contextual sheet rather than a permanent
+inspector column.
 
 ## Art System
 
@@ -376,11 +427,15 @@ Lighting and atmosphere are the finishing touches that give the map depth. They'
 
 ### Export integration
 
-Each art layer has a corresponding export toggle in the PNG/SVG export dialogs so you can include or exclude paper texture, edge blending, hand-drawn effects, and lighting from your exports independently.
+Exports use the current map's art settings. The unified Export dialog provides
+audience, format, resolution and print styling choices with a preview; it does
+not expose the former independent per-layer export toggles.
 
 ## Map Generation
 
-Generate Hub is where the app earns its keep when you need ideas fast. You can spin up a whole map from a seed, pull in a sample, or generate inside a selection when only one part of the layout needs fresh life. It's built to help you iterate, not just dump out a random dungeon and call it done.
+For first use, choose **Your maps > Create map > Generate a map** and preview
+before committing. Inside the editor, **Build > Generate** or `G` opens
+Generate Hub for advanced options and generation into a selected region.
 
 - **Generate** - procedural map generation with four algorithms and full parameter controls.
 - **Samples** - bundled sample projects and Folio references with archetype filtering, plus three authored launch encounters.
@@ -400,8 +455,8 @@ Each generator has a different personality. Some are great for structured spaces
 
 ### Dialog controls
 
-- **Width / Height** - target map size in tiles. Clamped to 8–128 (the same range as the header **SIZE** dropdowns).
-- **Generate into selection** - visible only when an active selection rectangle is present in the editor (use the Select tool `S` to make one) and is at least 6 × 6 tiles. When checked, Width / Height are taken from the selection and only cells inside the selection are overwritten - notes, tokens, fog, and tiles outside the selection are preserved. When unchecked (or no selection exists), generating replaces the entire map and clears notes and tokens.
+- **Width / Height** - advanced Generate Hub dimensions use 8-128 tiles; guided creation uses 10-100. Geometry dimensions are different from canvas zoom.
+- **Generate into selection** - available for eligible selection rectangles of at least 6 x 6 tiles. Preview the affected region before applying. Outside content, tokens and fog are retained; generated tiles/notes/rivers are applied in the region. Without a selection target, generation creates a separate project and keeps the saved source.
 - **Density** - global "how full should the map feel" multiplier (range: 0.1–1.5, default 1.0). Higher values pack in more rooms / obstacles / features; lower values produce sparser layouts.
 - **Corridor style** *(Rooms & Corridors only)* - selects the corridor routing strategy:
  - **Classic L-bends** - connect rooms in sequence with right-angled corridors (default).
@@ -419,9 +474,9 @@ Each generator has a different personality. Some are great for structured spaces
 
 ### Confirmation and undo
 
-- If the current map already contains painted tiles, generating a full map (i.e. with **Generate into selection** off) prompts for confirmation before replacing it. Notes and tokens are cleared by a full-map generation.
-- A selection-scoped generation never asks for confirmation and never touches notes, tokens, or fog.
-- Tile changes from any generation can be reverted with **Undo** (`Ctrl+Z`).
+- Review the preview, then choose **Use this map**; Cancel leaves the source unchanged.
+- Full-map generation and sample loading create separate projects, not an undoable replacement of the old project.
+- Selection generation is one undoable regional change. It can replace notes inside the region; it does not replace the whole project.
 
 ## Keyboard Shortcuts
 
@@ -443,7 +498,8 @@ Once you spend a few minutes with Dungeon Mapper, shortcuts start doing a lot of
 | `O` | Line-of-Sight / FOV tool - click a cell to see what is visible from it |
 | `M` | Measure / Distance tool - click and drag to measure distances |
 | `I` | Light Source tool - click a cell to place a light source (Illuminate) |
-| `D` | GM Draw tool - freehand annotations visible only in Edit mode (dashed lines, hidden from Present view) |
+| `D` | GM Draw tool - private freehand annotations, excluded from player outputs |
+| `Q` / `Shift+C` / `Shift+P` | Rectangle / ellipse / polygon room tools |
 | `W` | Wall drawing tool - draw walls along grid edges |
 | `Shift+W` | Path/road drawing tool - draw free-form paths |
 | `U` | River tool - drag to draw flowing water |
@@ -456,8 +512,8 @@ Once you spend a few minutes with Dungeon Mapper, shortcuts start doing a lot of
 
 | Shortcut | Action |
 | --- | --- |
-| `Shift+P` | Toggle Print / B&W mode |
-| `Shift+V` | Toggle Edit ↔ Present view |
+| `Ctrl+B` | Toggle Print / B&W map styling |
+| `Shift+V` | Toggle Edit / trusted DM view, not the player display |
 | `T` / `Shift+T` | Cycle to next / previous theme (Edit mode) |
 | `[` / `]` | Cycle to previous / next tile in the palette (Edit mode) |
 | `Ctrl+=` *or* `Ctrl++` | Increase UI scale |
@@ -492,9 +548,9 @@ Once you spend a few minutes with Dungeon Mapper, shortcuts start doing a lot of
 | Shortcut | Action |
 | --- | --- |
 | `G` | Open the Generate Hub (Edit mode) |
-| `Ctrl+Alt+N` *or* `Ctrl+N` | New map (with confirmation) |
-| `Ctrl+O` | Import map from JSON |
-| `Ctrl+S` | Export map as JSON |
+| `Ctrl+Alt+N` *or* `Ctrl+N` | Open creation for a separate project |
+| `Ctrl+O` | Import project JSON into a separate project |
+| `Ctrl+S` | Open private project backup export |
 | `Ctrl+Shift+S` | Export map as PNG |
 | `Ctrl+Alt+S` | Export map as SVG |
 | `Ctrl+Shift+P` | Print-optimized export (high-DPI PNG with page tiling) |
@@ -508,9 +564,9 @@ Once you spend a few minutes with Dungeon Mapper, shortcuts start doing a lot of
 
 > Some browsers reserve `Ctrl+N`, `Ctrl+O`, and `Ctrl+S` for their own
 > "new window", "open file", and "save page" actions and won't deliver
-> them to the page. The header buttons (**New**, **↑ Import**, **↓ JSON**)
-> and the documented alternates (`Ctrl+Alt+N` for **New**) work as a
-> fallback in those browsers.
+> them to the page. Use **Project menu > Create map / Import project JSON**,
+> **Export > Back up project**, or the listed alternate instead. These are
+> editor shortcuts, not the entry path from an empty Library.
 
 ## Accessibility
 
@@ -563,17 +619,46 @@ text fields, or enable the browser's full keyboard navigation setting.
  advanced sections. Escape dismisses the active dialog or editing draft,
  and focus returns to the opener when it still exists. A resized mobile
  sheet does not take focus from an already-open dialog.
-- **Print mode.** A high-contrast monochrome rendering of the map is
- available via the **🖨 Print** button (`Shift+P`) for users who need
- the highest possible contrast or want to print the map.
+- **Print mode.** Monochrome map styling is available through Commands or
+ `Ctrl+B`, and through **Export > Print for the table > Ink-friendly map styling**.
 
 ## Saving, Exporting & Importing
 
-Your work is auto-saved constantly, which is great for peace of mind, but file export is where the project becomes portable. You can archive it, share it, print it, or move it between devices depending on what kind of session prep you're doing.
+The save indicator reports device storage, not cloud sync or a separate backup.
+Writes are debounced and can fail. Wait for **Saved on this device** before
+closing or updating. Undo history is in memory and does not survive reload.
+
+### Save health and recovery
+
+Open **Save health & recovery** if saving fails or a stale tab conflicts with
+newer work. Download an **Export backup** of current in-memory work before
+reloading; retry a storage failure when its cause is resolved. Do not erase
+site data or overwrite another tab's work as a recovery shortcut.
+
+**Recovery copies** can preview a previous save, retained migration original,
+checkpoint or recovery file. **Restore whole project** restores all levels into
+the current project, not just the visible level; inspect the preview before
+confirming. A failed startup retains the original source and offers recovery
+or retry instead of treating a blank editor as a successful restore.
+
+Recovery copies live in the same browser storage and can be lost with it.
+Export an external project backup regularly. The checkpoint limit is 20;
+cleanup is explicit, not automatic deletion. Library Archive and Trash are
+organization tools, not off-device backups.
+
+Session records are separate. Run provides **Download session recovery**,
+named checkpoint downloads and the last recovery checkpoint. These files are
+DM-private recovery material; there is no dedicated session-file importer, and
+the project import dialog is not a session restore path. Keep the local session
+for normal resumption through **Prepare session > Continue a session**.
 
 ### Export
 
-Open **Export** and choose the purpose. Existing file shortcuts open the same dialog with the matching purpose selected.
+Open **Export** and choose the purpose. Existing file shortcuts open the same
+dialog with the matching purpose selected. PNG/SVG shortcuts select **Use in
+another map tool** and initially use the current DM/player view; from Edit,
+that can include private content. For player sharing, choose **Share with
+players** rather than assuming every image export is public.
 
 | Purpose | Output and scope |
 | --- | --- |
@@ -589,9 +674,9 @@ than cropped from an enormous full-map canvas. PNG files carry physical DPI
 metadata; print at **100% / actual size**, not fit to page. Browser permission
 may be required for multiple downloads.
 
-Ink-friendly PNG styling simplifies map geometry, Folio furnishings and Folio
-token frames/silhouettes; legacy token colors and embedded artwork can remain
-colored. SVG retains the map's color
+Ink-friendly PNG styling uses monochrome map companions, Folio furnishings,
+Folio token frames/silhouettes and legacy token affiliations. Embedded artwork
+and annotations can remain colored. SVG retains the map's color
 art treatment. Missing or undecodable optional artwork is explained in the
 preview and uses a base color or placeholder. External images are not fetched.
 Review embedded images for secrets before sharing. Cancelling or failing an
@@ -599,26 +684,33 @@ export does not change the project; already completed downloads remain.
 
 ### Import
 
-Import is intentionally straightforward: bring back a JSON export, replace the current project, and pick up where you left off. It's a clean round-trip rather than a catch-all importer, which keeps the format dependable.
+For a preview before import, choose **Your maps > Import project**, review the
+summary, then choose **Import as new project**. The editor's **Project menu >
+Import project JSON** reads the chosen file directly into a separate project
+without that Library preview step. Both allocate a new local identity, even
+when the file came from this Library, and retain the current saved project.
 
-- **Supported file type:** `.json` files produced by Dungeon Mapper's **↓ JSON** export. The file picker is restricted to `.json`, and the file is parsed as a `DungeonProject` (multi-level project with tiles, notes, theme, grid size, map name, stair links, etc.). Legacy single-map files are automatically upgraded to a one-level project on import.
-- **Not supported:** PNG and SVG exports can't be imported - they're image-only renders, not editable map data. No third-party formats (Dungeondraft, Universal VTT, images, CSV, etc.) are accepted.
-- **On error:** if the selected file isn't valid JSON, an alert is shown ("Failed to import map: Invalid JSON file") and your current map is left untouched.
-
-Because importing replaces the current map, export your work first if you want to keep it.
+Private project-backup JSON, legacy project JSON and legacy single-map JSON
+are supported. A single map becomes a one-level project. Invalid or unsupported
+data produces an error without replacing the source; preserve the original
+file. PNG/SVG exports, third-party VTT formats and separate session recovery
+records are not project imports. Use **Trace an image** or background-image
+tools for raster artwork rather than expecting editable geometry from a PNG.
 
 ## Mobile & Touch Support
 
-Dungeon Mapper isn't a desktop app awkwardly squeezed onto a phone. The interface adapts across screen sizes so tablets and touch devices feel like first-class citizens, especially when you want the map open at the table instead of at a desk.
+The initial release scope is desktop-first. Responsive layouts and touch
+gestures are implemented, but real mobile devices, keyboards, touch/pen and
+native zoom remain unqualified. Emulated dimensions and interface text scaling
+do not establish those support claims.
 
 ### Responsive layout
 
 The layout shifts with the screen instead of pretending one arrangement fits everything. That keeps the important tools reachable whether you're on a big monitor, a tablet in portrait, or a phone you handed across the table.
 
-- **Desktop** (>1024px) - full 3-column layout: left toolbar, center canvas, right panels.
-- **Tablet landscape** (768–1024px) - 2-column grid with collapsible left toolbar (icon-only with slide-out detail), right panel as overlay drawer, icon-only header labels.
-- **Tablet portrait / large phone** (480–768px) - single-column grid with bottom toolbar, canvas fills viewport, stacked header.
-- **Phone** (<480px) - minimal header, nearly full-width drawers, compact controls.
+- **Wide editor** - task navigation, map canvas and a contextual panel only when needed.
+- **At 1100px or narrower** - the contextual panel overlays the map rather than reserving a third column.
+- **At 768px or narrower** - compact primary actions, an expandable Tools panel and a focus-contained contextual sheet. The sheet tracks available viewport height, including reduced-height layouts.
 
 ### Touch gestures
 
@@ -633,10 +725,10 @@ Touch support is built around the gestures people already expect. Zooming, panni
 
 On smaller screens, the toolbar changes shape so the app stays usable with thumbs. The essentials stay close, and the deeper tools are still there when you need them.
 
-- **Bottom bar** - 5–6 primary tool buttons with 44×44px touch targets (Draw, Erase, Fill, Fog/Defog, Select, More).
-- **"More" flyout** - slides up from the bottom with categorized tool grids (Drawing, Fog, Tactical, Tokens, Advanced).
-- **Floating action button (FAB)** - 56px circular undo button; long-press reveals a vertical menu with Undo, Redo, Generate, and Switch Mode.
-- **Tool options bar** - contextual controls above the bottom bar showing relevant settings for the active tool.
+- **Edit** - Paint, Select, Undo and All actions.
+- **Legacy DM view** - Draw, Defog, Undo and All actions.
+- **Tools** - expands the shared navigation and coordinate/object controls.
+- **Run/player display** - separate workspaces, not the editor's bottom toolbar.
 
 ### Progressive Web App (PWA)
 
@@ -645,7 +737,7 @@ If you want Dungeon Mapper to behave more like an installed tool than a browser 
 - **Install prompt** - browsers offer an "Add to Home Screen" or "Install" option for the app.
 - **Offline readiness** - open **Offline & updates** in the Library or editor. Wait for **App and built-in art cached** while online. All bundled art is included; no third-party fonts or remote images are needed. Browser storage eviction can remove caches or projects, so retain JSON backups.
 - **App updates** - updates wait without automatically reloading. **Update saved workspace** requires a saved project, closed dialogs, and no other Dungeon Mapper windows or player displays. Save/end a live session and return to the editor first. Failed, conflicted or pending saves block reload.
-- **Standalone mode** - runs without browser chrome when installed, with proper safe-area handling for notched devices.
+- **Standalone mode** - installable where the browser provides it. Safe-area styling exists; physical notched-device and mobile interruption behavior remain unqualified.
 
 See [UX-08 export and offline contract](./UX-08-HANDOFF.md) for browser limits,
 production qualification and the update policy.
