@@ -24,6 +24,8 @@ import { polygonBoundingBox } from '../utils/roomRasterizer';
 import { useCanvasEditingDraft } from '../hooks/useCanvasDraft';
 import type { RegionSelection } from '../hooks/useEditorSelection';
 import { readEditorViewport, writeEditorViewport } from '../utils/editorViewport';
+import { expandTokenDamage, sameRepaintInputs, tokenRepaintDamage, type TokenPaintFrame } from '../utils/tokenRepaint';
+import { tokenSceneBounds } from '../utils/tokenSceneBounds';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
 // evoking traditional engineering / quad-ruled graph paper regardless of theme.
@@ -998,96 +1000,100 @@ function drawRoomShapeOverlay(
   ctx.restore();
 }
 
-const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
-  map: sourceMap,
-  viewportKey,
-  regionSelection,
-  onSelectToken,
-  onSelectRiver,
-  activeTool,
-  activeTile,
-  themeId,
-  customThemes = [],
-  customStamps = [],
-  printMode,
-  viewMode,
-  gmShowFog,
-  selectedNoteId,
-  selectedTokenId,
-  drawColor,
-  drawWidth,
-  gmDrawColor,
-  gmDrawWidth,
-  onSetTile: commitTile,
-  onSetTiles,
-  onFillTile,
-  onAddNote,
-  onSelectNote,
-  onEraseTiles,
-  onSetFogCells,
-  onAddToken,
-  onMoveToken: commitMoveToken,
-  onRemoveToken,
-  onAddAnnotation,
-  onRemoveAnnotation,
-  onAddMarker,
-  onRemoveMarker,
-  markerShape,
-  markerColor,
-  markerSize,
-  onSelectionChange,
-  hasClipboard,
-  clipboardSize,
-  fovVisible,
-  fovOrigin,
-  onFovClick,
-  dynamicFogEnabled,
-  playerVisible,
-  explored,
-  measureShape = 'ruler',
-  measureFeetPerCell = 5,
-  lightSources,
-  lightVisible,
-  onAddLightSource,
-  onRemoveLightSource,
-  lightRadius = 4,
-  lightColor = '#f97316',
-  onAddStamp,
-  onMoveStamp: commitMoveStamp,
-  onRemoveStamp,
-  selectedStampId,
-  selectedPlacedStampId,
-  onSelectPlacedStamp,
-  stairLinks,
-  stairLinkSource,
-  onStairLinkClick,
-  onStairNavigate,
-  activeLevelIndex = 0,
-  onUndo,
-  onRedo,
-  announce,
-  wallColor = '#1a1a2e',
-  wallThickness = 0.08,
-  pathColor = '#8B7355',
-  pathWidth = 0.3,
-  riverColor = '#2563eb',
-  riverWidth = 1,
-  riverType = 'water',
-  onAddWallSegment,
-  onRemoveWallSegment,
-  onAddPathSegment,
-  onRemovePathSegment,
-  onAddRiver,
-  onUpdateRiver: commitUpdateRiver,
-  onRemoveRiver,
-  onAddRoomShape,
-  onUpdateRoomShape,
-  onRemoveRoomShape,
-  onSelectRoomShape,
-}, ref) => {
+const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
+  const {
+    map: sourceMap,
+    viewportKey,
+    regionSelection,
+    onSelectToken,
+    onSelectRiver,
+    activeTool,
+    activeTile,
+    themeId,
+    customThemes = [],
+    customStamps = [],
+    printMode,
+    viewMode,
+    gmShowFog,
+    selectedNoteId,
+    selectedTokenId,
+    drawColor,
+    drawWidth,
+    gmDrawColor,
+    gmDrawWidth,
+    onSetTile: commitTile,
+    onSetTiles,
+    onFillTile,
+    onAddNote,
+    onSelectNote,
+    onEraseTiles,
+    onSetFogCells,
+    onAddToken,
+    onMoveToken: commitMoveToken,
+    onRemoveToken,
+    onAddAnnotation,
+    onRemoveAnnotation,
+    onAddMarker,
+    onRemoveMarker,
+    markerShape,
+    markerColor,
+    markerSize,
+    onSelectionChange,
+    hasClipboard,
+    clipboardSize,
+    fovVisible,
+    fovOrigin,
+    onFovClick,
+    dynamicFogEnabled,
+    playerVisible,
+    explored,
+    measureShape = 'ruler',
+    measureFeetPerCell = 5,
+    lightSources,
+    lightVisible,
+    onAddLightSource,
+    onRemoveLightSource,
+    lightRadius = 4,
+    lightColor = '#f97316',
+    onAddStamp,
+    onMoveStamp: commitMoveStamp,
+    onRemoveStamp,
+    selectedStampId,
+    selectedPlacedStampId,
+    onSelectPlacedStamp,
+    stairLinks,
+    stairLinkSource,
+    onStairLinkClick,
+    onStairNavigate,
+    activeLevelIndex = 0,
+    onUndo,
+    onRedo,
+    announce,
+    wallColor = '#1a1a2e',
+    wallThickness = 0.08,
+    pathColor = '#8B7355',
+    pathWidth = 0.3,
+    riverColor = '#2563eb',
+    riverWidth = 1,
+    riverType = 'water',
+    onAddWallSegment,
+    onRemoveWallSegment,
+    onAddPathSegment,
+    onRemovePathSegment,
+    onAddRiver,
+    onUpdateRiver: commitUpdateRiver,
+    onRemoveRiver,
+    onAddRoomShape,
+    onUpdateRoomShape,
+    onRemoveRoomShape,
+    onSelectRoomShape,
+  } = props;
   const { map, cancel: cancelDraft, finish: finishDraft, paintCells, onSetTile, onMoveToken, onMoveStamp, onUpdateRiver } =
     useCanvasEditingDraft(sourceMap, { commitTile, onSetTiles, commitMoveToken, commitMoveStamp, commitUpdateRiver });
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const paintedFrameRef = useRef<TokenPaintFrame | null>(null);
+  const [paintInputs, setPaintInputs] = useState(props);
+  if (!sameRepaintInputs(paintInputs, props)) setPaintInputs(props);
   const minimapRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const viewportRef = useRef<HTMLDivElement>(null);
@@ -1274,6 +1280,15 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
   useEffect(() => () => folioTileCache.clear(),
     [folioTileCache, viewportKey, meta.width, meta.height, themeId, customThemes, isPlayerView, printMode]);
 
+  const partialSceneEligible = useMemo(() => {
+    if (activeTool !== 'move-token') return false;
+    const edge = map.edgeBlend;
+    return themeId === folioTheme.id && !backgroundImage && customThemes.length === 0 && customStamps.length === 0 &&
+      !map.handDrawn?.enabled && (!edge?.enabled ||
+        (Number.isFinite(edge.intensity) && edge.intensity >= 0 && edge.intensity <= 1)) &&
+      renderTiles.every(row => row.every(tile => isBuiltInTileType(tile.type) && (!tile.theme || tile.theme === folioTheme.id)));
+  }, [activeTool, themeId, backgroundImage, customThemes, customStamps, map.handDrawn, map.edgeBlend, renderTiles]);
+
   // Main render
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1286,787 +1301,820 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>(({
     const w = meta.width * tileSize;
     const h = meta.height * tileSize;
     const dpr = window.devicePixelRatio || 1;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const nativeScale = ctx.getTransform().a;
+    const frame: TokenPaintFrame = {
+      map, inputs: paintInputs, canvas, width: Math.floor(w * dpr), height: Math.floor(h * dpr), dpr: nativeScale,
+      state: [renderTiles, visibleNotes, isDragging, dragStart, dragEnd, selection, activeStroke,
+        roomEditPreview, roomHoverId, polyVertices, defogStroke, previewMousePos, bgImageReady],
+      eligible: partialSceneEligible && !isPlayerView && !printMode && !gmShowFog && !fovVisible && !fovOrigin &&
+        activeTool === 'move-token' && !activeStroke && !defogStroke && !roomEditPreview && polyVertices.length === 0,
+      draggingTokenId: draggingTokenRef.current?.id ?? null, selectedTokenId: selectedTokenId ?? null,
+    };
+    const tokenDamage = canvas.width === frame.width && canvas.height === frame.height
+      ? tokenRepaintDamage(paintedFrameRef.current, frame) : null;
+    const damage = tokenDamage ? expandTokenDamage(tokenDamage, tokenSceneBounds(ctx, frame, {
+      lightSources, stairLinks, activeLevelIndex, selectedPlacedStampId, selection,
+    }), frame) : null;
+    const tileBounds = damage?.tiles;
+    paintedFrameRef.current = null;
+    if (!damage) {
+      canvas.width = w * dpr;
+      canvas.height = h * dpr;
+    }
     canvas.style.width = `${w}px`;
     canvas.style.height = `${h}px`;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.save();
+    try {
+      if (damage) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+        const clip = new Path2D();
+        clip.rect(damage.x, damage.y, damage.width, damage.height);
+        ctx.clip(clip);
+        ctx.clearRect(damage.x, damage.y, damage.width, damage.height);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
 
-    ctx.fillStyle = printMode ? PRINT_BG : SCREEN_BG;
-    ctx.fillRect(0, 0, w, h);
+      ctx.fillStyle = printMode ? PRINT_BG : SCREEN_BG;
+      ctx.fillRect(0, 0, w, h);
 
-    // Background image layer — rendered behind the tile grid so GMs can
-    // trace over an imported battlemap. Hidden in print mode.
-    const bgImg = bgImageRef.current;
-    if (bgImg && backgroundImage && !printMode) {
-      ctx.save();
-      ctx.globalAlpha = backgroundImage.opacity;
-      const imgW = bgImg.naturalWidth * backgroundImage.scale;
-      const imgH = bgImg.naturalHeight * backgroundImage.scale;
-      ctx.drawImage(
-        bgImg,
-        backgroundImage.offsetX * tileSize,
-        backgroundImage.offsetY * tileSize,
-        imgW,
-        imgH
-      );
-      ctx.restore();
-    }
-
-    // Paper texture layer — procedural parchment/linen/etc rendered behind
-    // the tile grid. Disabled in print mode.
-    if (!printMode && map.paperTexture?.enabled) {
-      const tint = map.paperTexture.tintOverride ?? getPaperTint(themeId);
-      const texCanvas = getCachedPaperTexture(w, h, map.paperTexture, tint);
-      if (texCanvas) {
+      // Background image layer — rendered behind the tile grid so GMs can
+      // trace over an imported battlemap. Hidden in print mode.
+      const bgImg = bgImageRef.current;
+      if (bgImg && backgroundImage && !printMode) {
         ctx.save();
-        ctx.globalAlpha = map.paperTexture.opacity;
-        ctx.drawImage(texCanvas, 0, 0);
-        ctx.restore();
-      }
-    }
-
-    const tileDrawContext: TileDrawContext = {
-      getFloorMaterial: (x, y) => renderTiles[y]?.[x]?.floorMaterial,
-      getTileBaseType: (x, y) => {
-        const type = renderTiles[y]?.[x]?.type;
-        return type ? getSemanticTileType(type, customThemes) : undefined;
-      },
-    };
-    if (printMode) folioTileCache.clear();
-    else folioTileCache.prepare(ctx, tileSize);
-
-    for (let y = 0; y < meta.height; y++) {
-      for (let x = 0; x < meta.width; x++) {
-        const tile = renderTiles[y]?.[x];
-        if (tile) {
-          if (printMode) {
-            drawPrintTile(ctx, getSemanticTileType(tile.type, customThemes), x, y, tileSize, tileDrawContext);
-          } else if (tile.type !== 'empty') {
-            // Skip 'empty' tiles in screen mode so the light graph-paper
-            // background (SCREEN_BG) shows through instead of the theme's
-            // dark "empty" color.
-            // Honor the per-tile theme override (set by the optional
-            // "preserve tiles when switching themes" mode) so mixed-style
-            // maps render each tile in its original theme.
-            const tileTheme = tile.theme ? getThemeWithCustom(tile.theme, customThemes) : theme;
-            if (tileTheme === folioTheme) folioTileCache.draw(ctx, tile.type, x, y, tileSize, tileDrawContext);
-            else tileTheme.drawTile(ctx, tile.type, x, y, tileSize, tileDrawContext);
-            // Draw print-mode-inspired glyph overlay for quick identification.
-            if (isBuiltInTileType(tile.type) && !tileTheme.includesTileGlyphs) {
-              drawTileOverlay(ctx, tile.type, x, y, tileSize, tileTheme.tileColors[tile.type]);
-            }
-          }
-        }
-      }
-    }
-
-    drawRiverBanks(ctx, renderTiles, meta.width, meta.height, tileSize, themeId, printMode);
-
-    // Edge blending — render after tiles, before grid lines. Disabled in print mode.
-    if (!printMode && map.edgeBlend?.enabled) {
-      drawEdgeBlending(ctx, renderTiles, meta.width, meta.height, tileSize, map.edgeBlend, theme, customThemes, edgeBlendCache);
-    } else {
-      edgeBlendCache.clear();
-    }
-
-    ctx.strokeStyle = printMode ? PRINT_GRID : theme.gridColor;
-    ctx.lineWidth = 0.5;
-    for (let y = 0; y <= meta.height; y++) {
-      ctx.beginPath();
-      ctx.moveTo(0, y * tileSize);
-      ctx.lineTo(w, y * tileSize);
-      ctx.stroke();
-    }
-    for (let x = 0; x <= meta.width; x++) {
-      ctx.beginPath();
-      ctx.moveTo(x * tileSize, 0);
-      ctx.lineTo(x * tileSize, h);
-      ctx.stroke();
-    }
-
-    // Hand-drawn mode — wobbly grid lines + cross-hatch overlay rendered
-    // after the regular grid so the hand-drawn strokes sit on top. Works in
-    // both screen and print mode (B&W strokes in print).
-    if (map.handDrawn?.enabled) {
-      drawHandDrawn(ctx, renderTiles, meta.width, meta.height, tileSize, map.handDrawn, printMode, customThemes);
-    }
-
-    // Lighting & atmosphere — ambient occlusion, stamp shadows, and color
-    // grading rendered after hand-drawn overlay. Disabled in print mode.
-    if (!printMode && map.lightingAtmosphere?.enabled) {
-      drawLightingAtmosphere(ctx, renderTiles, meta.width, meta.height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes, customStamps);
-    }
-
-    // Light source glow halos — rendered right after the grid lines so the
-    // warm overlay blends naturally with tile art. Glows are always visible
-    // to the GM and are shown in player view regardless of dynamic fog mode
-    // (the fog pass below still decides which cells are actually hidden).
-    if (!printMode && lightSources && lightSources.length > 0) {
-      for (const ls of lightSources) {
-        drawLightGlow(ctx, ls, tileSize);
-      }
-    }
-
-    visibleNotes.forEach(note => {
-      const px = note.x * tileSize + tileSize / 2;
-      const py = note.y * tileSize + tileSize / 2;
-      const radius = tileSize * 0.38;
-      const isSelected = note.id === selectedNoteId;
-      if (printMode) {
-        // Outlined circle with a black number — works equally well in B&W print.
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(px, py, radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = '#000000';
-        ctx.lineWidth = isSelected ? 2 : 1.25;
-        ctx.stroke();
-        ctx.fillStyle = '#000000';
-      } else {
-        ctx.fillStyle = isSelected ? '#e94560' : '#f0c040';
-        ctx.beginPath();
-        ctx.arc(px, py, radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = isSelected ? '#fff' : '#8b6914';
-        ctx.lineWidth = 1;
-        ctx.stroke();
-        ctx.fillStyle = '#1a1a2e';
-      }
-      ctx.font = `bold ${Math.max(8, tileSize * 0.45)}px "Courier New", monospace`;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(String(note.id), px, py + 0.5);
-    });
-
-    // Wall segments — structural overlays rendered above tiles/notes but
-    // under annotations and tokens. Visible in both GM and player views.
-    for (const seg of wallSegments) {
-      drawWallSegmentOnCanvas(ctx, seg, tileSize);
-    }
-
-    // Path segments — road/path overlays rendered above tiles but under walls,
-    // annotations, and tokens. Visible in both GM and player views.
-    for (const seg of pathSegments) {
-      drawPathSegmentOnCanvas(ctx, seg, tileSize);
-    }
-
-    for (const river of rivers) {
-      drawRiverOnCanvas(ctx, river, tileSize, printMode);
-      if (!isPlayerView && activeTool === 'river') {
-        ctx.save();
-        ctx.fillStyle = '#e0f2fe';
-        ctx.strokeStyle = '#1e3a8a';
-        for (const p of river.controlPoints) {
-          ctx.beginPath();
-          ctx.arc(p.x * tileSize, p.y * tileSize, Math.max(3, tileSize * 0.14), 0, Math.PI * 2);
-          ctx.fill();
-          ctx.stroke();
-        }
-        ctx.restore();
-      }
-    }
-    drawRiverEndpointMarkers(ctx, rivers, tileSize, printMode);
-
-    if (!isPlayerView && roomShapes.length > 0 && isRoomTool(activeTool)) {
-      const previewId = roomEditPreview?.id ?? null;
-      const activeMode = activeTool === 'room-cut' ? 'subtractive' : 'additive';
-      for (const shape of roomShapes) {
-        if (shape.id === previewId) continue;
-        const shapeMode = shape.mode ?? 'additive';
-        const isSub = shapeMode === 'subtractive';
-        const isActive = shapeMode === activeMode;
-        drawRoomShapeOverlay(ctx, shape, tileSize, {
-          stroke: shape.id === roomHoverId
-            ? (isSub ? '#f97316' : '#22d3ee')
-            : (isSub ? '#ef4444' : '#38bdf8'),
-          fill: isSub ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
-          dashed: true,
-          showHandles: isActive,
-        });
-      }
-      if (roomEditPreview) {
-        const previewSub = (roomEditPreview.mode ?? 'additive') === 'subtractive';
-        drawRoomShapeOverlay(ctx, roomEditPreview, tileSize, {
-          stroke: previewSub ? '#f97316' : '#06b6d4',
-          fill: previewSub ? 'rgba(249, 115, 22, 0.2)' : 'rgba(6, 182, 212, 0.2)',
-          showHandles: true,
-        });
-      }
-    }
-
-    // Annotations are drawn under tokens but over notes so token glyphs
-    // remain readable. GM-only annotations are suppressed in player mode.
-    for (const stroke of annotations) {
-      if (isPlayerView && stroke.kind === 'gm') continue;
-      drawAnnotation(ctx, stroke, tileSize);
-    }
-
-    // Shape markers are drawn on top of annotations but under tokens so
-    // the tactical overlays don't obscure token glyphs.
-    for (const marker of markers) {
-      drawMarker(ctx, marker, tileSize);
-    }
-
-    // Light source icons (candle emoji) are drawn on top of markers and
-    // annotations but still under tokens, so they remain identifiable
-    // while token glyphs stay legible.
-    if (!printMode && lightSources && lightSources.length > 0) {
-      for (const ls of lightSources) {
-        drawLightIcon(ctx, ls, tileSize);
-      }
-    }
-
-    // Placed stamps — rendered between light icons and tokens so they
-    // appear as map furniture/dressing beneath the tactical token layer.
-    if (stamps.length > 0) {
-      for (const stamp of stamps) {
-        drawPlacedStamp(ctx, stamp, tileSize, stamp.id === selectedPlacedStampId, customStampImagesRef.current, customStamps, printMode);
-      }
-    }
-
-    // Render tokens before fog so fogged cells in player mode genuinely
-    // hide the tokens beneath them.
-    for (const token of visibleTokens) {
-      drawToken(ctx, token, tileSize, token.id === selectedTokenId, printMode);
-    }
-
-    // Live (in-progress) freehand stroke, drawn on top so the user sees
-    // immediate feedback while dragging. Use the appropriate kind/color/width
-    // depending on whether the GM or player is drawing.
-    // Pen annotation strokes are drawn here; wall/path/river previews are
-    // rendered by their dedicated overlay blocks below.
-    if (activeStroke && activeStroke.length > 0 && (activeTool === 'pdraw' || activeTool === 'gmdraw')) {
-      const isGmDraw = !isPlayerView && activeTool === 'gmdraw';
-      drawAnnotation(ctx, {
-        id: -1,
-        kind: isGmDraw ? 'gm' : 'player',
-        points: activeStroke,
-        color: isGmDraw ? gmDrawColor : drawColor,
-        width: isGmDraw ? gmDrawWidth : drawWidth,
-      }, tileSize);
-    }
-
-    // Live (in-progress) wall or path stroke.
-    if (activeStroke && activeStroke.length > 0 && activeTool === 'wall') {
-      drawWallSegmentOnCanvas(ctx, {
-        id: -1, points: activeStroke, color: wallColor, thickness: wallThickness,
-      }, tileSize);
-    }
-    if (activeStroke && activeStroke.length > 0 && activeTool === 'path') {
-      drawPathSegmentOnCanvas(ctx, {
-        id: -1, points: activeStroke, color: pathColor, width: pathWidth,
-      }, tileSize);
-    }
-    if (activeStroke && activeStroke.length > 0 && activeTool === 'river') {
-      drawRiverOnCanvas(ctx, {
-        id: -1,
-        controlPoints: activeStroke,
-        color: riverColor,
-        width: riverWidth,
-        type: riverType,
-        flowDirection: 0,
-      }, tileSize, printMode);
-    }
-
-    // Fog overlay. In player view, paint fully opaque grey cells so hidden
-    // content is genuinely hidden. In GM view, normally render nothing —
-    // the GM is in control of the map and shouldn't have it obscured —
-    // but when the GM has opted in to "Show Fog", paint a translucent grey
-    // wash so they can see at a glance what is fogged.
-    const renderFog = fogActive && fog && (isPlayerView || gmShowFog);
-    if (renderFog) {
-      // Cells the player is currently brushing with the Defog tool — skip
-      // their fog overlay so the wipe is visible in real time before the
-      // change is committed on mouseup.
-      const defogSkip = defogStroke
-        ? new Set(defogStroke.map(c => `${c.x},${c.y}`))
-        : null;
-
-      if (dynamicFogEnabled && playerVisible) {
-        // 3-state dynamic fog: hidden → explored (dimmed) → visible (clear).
-        // Cells visible from player tokens OR illuminated by light sources
-        // are rendered clear (no overlay). Two passes avoid per-cell
-        // save/restore overhead.
-        const exploredFill = printMode ? printFogFill(isPlayerView ? 'player' : 'gm', true) : isPlayerView ? EXPLORED_PLAYER_FILL : EXPLORED_GM_FILL;
-        const hiddenFill = printMode ? printFogFill(isPlayerView ? 'player' : 'gm') : isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
-
-        // Pass 1: explored (dimmed) cells.
-        ctx.save();
-        ctx.fillStyle = exploredFill;
-        for (let y = 0; y < meta.height; y++) {
-          for (let x = 0; x < meta.width; x++) {
-            if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
-            if (!fog[y]?.[x]) continue;
-            if (playerVisible.has(`${x},${y}`)) continue;
-            if (lightVisible?.has(`${x},${y}`)) continue;
-            if (explored?.[y]?.[x]) {
-              ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-            }
-          }
-        }
-        ctx.restore();
-
-        // Pass 2: fully hidden (never-seen) cells.
-        ctx.save();
-        ctx.fillStyle = hiddenFill;
-        for (let y = 0; y < meta.height; y++) {
-          for (let x = 0; x < meta.width; x++) {
-            if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
-            if (!fog[y]?.[x]) continue;
-            if (playerVisible.has(`${x},${y}`)) continue;
-            if (lightVisible?.has(`${x},${y}`)) continue;
-            if (!(explored?.[y]?.[x])) {
-              ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-            }
-          }
-        }
-        ctx.restore();
-      } else {
-        // Classic 2-state fog: hidden (opaque/translucent) or revealed.
-        ctx.save();
-        ctx.fillStyle = printMode ? printFogFill(isPlayerView ? 'player' : 'gm') : isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
-        for (let y = 0; y < meta.height; y++) {
-          for (let x = 0; x < meta.width; x++) {
-            if (fog[y]?.[x]) {
-              if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
-              ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-            }
-          }
-        }
+        ctx.globalAlpha = backgroundImage.opacity;
+        const imgW = bgImg.naturalWidth * backgroundImage.scale;
+        const imgH = bgImg.naturalHeight * backgroundImage.scale;
+        ctx.drawImage(
+          bgImg,
+          backgroundImage.offsetX * tileSize,
+          backgroundImage.offsetY * tileSize,
+          imgW,
+          imgH
+        );
         ctx.restore();
       }
 
-      // Fog edge feathering — soft gradient fringe at fog/clear boundaries.
-      const fogRgb: [number, number, number] = [107, 114, 128];
-      const fogAlpha = isPlayerView ? 1.0 : 0.55;
-      const isCellFogged = (fx: number, fy: number): boolean => {
-        if (fx < 0 || fy < 0 || fx >= meta.width || fy >= meta.height) return false;
-        if (!fog[fy]?.[fx]) return false;
-        if (defogSkip && defogSkip.has(`${fx},${fy}`)) return false;
-        if (dynamicFogEnabled && playerVisible) {
-          if (playerVisible.has(`${fx},${fy}`)) return false;
-          if (lightVisible?.has(`${fx},${fy}`)) return false;
+      // Paper texture layer — procedural parchment/linen/etc rendered behind
+      // the tile grid. Disabled in print mode.
+      if (!printMode && map.paperTexture?.enabled) {
+        const tint = map.paperTexture.tintOverride ?? getPaperTint(themeId);
+        const texCanvas = getCachedPaperTexture(w, h, map.paperTexture, tint);
+        if (texCanvas) {
+          ctx.save();
+          ctx.globalAlpha = map.paperTexture.opacity;
+          ctx.drawImage(texCanvas, 0, 0);
+          ctx.restore();
         }
-        return true;
+      }
+
+      const tileDrawContext: TileDrawContext = {
+        getFloorMaterial: (x, y) => renderTiles[y]?.[x]?.floorMaterial,
+        getTileBaseType: (x, y) => {
+          const type = renderTiles[y]?.[x]?.type;
+          return type ? getSemanticTileType(type, customThemes) : undefined;
+        },
       };
-      if (!printMode) drawFogFeather(ctx, meta.width, meta.height, tileSize, isCellFogged, fogRgb, fogAlpha);
-    }
+      if (printMode) folioTileCache.clear();
+      else folioTileCache.prepare(ctx, tileSize);
 
-    // FOV overlay. When fovVisible is provided, darken every cell that is
-    // NOT in the visible set. Drawn after fog (so it stacks) but before
-    // ghost previews and selection outlines.
-    if (fovVisible) {
-      ctx.save();
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
-      for (let y = 0; y < meta.height; y++) {
-        for (let x = 0; x < meta.width; x++) {
-          if (!fovVisible.has(`${x},${y}`)) {
-            ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+      for (let y = tileBounds?.minY ?? 0; y < (tileBounds?.maxY ?? meta.height); y++) {
+        for (let x = tileBounds?.minX ?? 0; x < (tileBounds?.maxX ?? meta.width); x++) {
+          const tile = renderTiles[y]?.[x];
+          if (tile) {
+            if (printMode) {
+              drawPrintTile(ctx, getSemanticTileType(tile.type, customThemes), x, y, tileSize, tileDrawContext);
+            } else if (tile.type !== 'empty') {
+              // Skip 'empty' tiles in screen mode so the light graph-paper
+              // background (SCREEN_BG) shows through instead of the theme's
+              // dark "empty" color.
+              // Honor the per-tile theme override (set by the optional
+              // "preserve tiles when switching themes" mode) so mixed-style
+              // maps render each tile in its original theme.
+              const tileTheme = tile.theme ? getThemeWithCustom(tile.theme, customThemes) : theme;
+              if (tileTheme === folioTheme) folioTileCache.draw(ctx, tile.type, x, y, tileSize, tileDrawContext);
+              else tileTheme.drawTile(ctx, tile.type, x, y, tileSize, tileDrawContext);
+              // Draw print-mode-inspired glyph overlay for quick identification.
+              if (isBuiltInTileType(tile.type) && !tileTheme.includesTileGlyphs) {
+                drawTileOverlay(ctx, tile.type, x, y, tileSize, tileTheme.tileColors[tile.type]);
+              }
+            }
           }
         }
       }
-      ctx.restore();
-      // Draw a bright marker on the FOV origin cell so the user can see
-      // where the sight calculation is anchored.
-      if (fovOrigin) {
-        ctx.save();
-        const cx = (fovOrigin.x + 0.5) * tileSize;
-        const cy = (fovOrigin.y + 0.5) * tileSize;
-        const r = tileSize * 0.32;
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(250, 204, 21, 0.7)';
-        ctx.fill();
-        ctx.strokeStyle = '#b45309';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-        ctx.restore();
-      }
-    }
 
-    // ── Stair link indicators ────────────────────────────────────────
-    // Draw small arrow badges on stairs that have stair links.
-    if (stairLinks && stairLinks.length > 0 && !printMode) {
-      ctx.save();
-      const badgeR = Math.max(6, tileSize * 0.22);
-      for (const link of stairLinks) {
-        // Determine which end is on this level.
-        const entries: { x: number; y: number; destLevel: number }[] = [];
-        if (link.fromLevel === activeLevelIndex) {
-          entries.push({ x: link.fromCell.x, y: link.fromCell.y, destLevel: link.toLevel });
+      drawRiverBanks(ctx, renderTiles, meta.width, meta.height, tileSize, themeId, printMode, tileBounds);
+
+      // Edge blending — render after tiles, before grid lines. Disabled in print mode.
+      if (!printMode && map.edgeBlend?.enabled) {
+        drawEdgeBlending(ctx, renderTiles, meta.width, meta.height, tileSize, map.edgeBlend, theme, customThemes, edgeBlendCache, tileBounds);
+      } else {
+        edgeBlendCache.clear();
+      }
+
+      ctx.strokeStyle = printMode ? PRINT_GRID : theme.gridColor;
+      ctx.lineWidth = 0.5;
+      for (let y = 0; y <= meta.height; y++) {
+        ctx.beginPath();
+        ctx.moveTo(0, y * tileSize);
+        ctx.lineTo(w, y * tileSize);
+        ctx.stroke();
+      }
+      for (let x = 0; x <= meta.width; x++) {
+        ctx.beginPath();
+        ctx.moveTo(x * tileSize, 0);
+        ctx.lineTo(x * tileSize, h);
+        ctx.stroke();
+      }
+
+      // Hand-drawn mode — wobbly grid lines + cross-hatch overlay rendered
+      // after the regular grid so the hand-drawn strokes sit on top. Works in
+      // both screen and print mode (B&W strokes in print).
+      if (map.handDrawn?.enabled) {
+        drawHandDrawn(ctx, renderTiles, meta.width, meta.height, tileSize, map.handDrawn, printMode, customThemes);
+      }
+
+      // Lighting & atmosphere — ambient occlusion, stamp shadows, and color
+      // grading rendered after hand-drawn overlay. Disabled in print mode.
+      if (!printMode && map.lightingAtmosphere?.enabled) {
+        drawLightingAtmosphere(ctx, renderTiles, meta.width, meta.height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes, customStamps, tileBounds);
+      }
+
+      // Light source glow halos — rendered right after the grid lines so the
+      // warm overlay blends naturally with tile art. Glows are always visible
+      // to the GM and are shown in player view regardless of dynamic fog mode
+      // (the fog pass below still decides which cells are actually hidden).
+      if (!printMode && lightSources && lightSources.length > 0) {
+        for (const ls of lightSources) {
+          drawLightGlow(ctx, ls, tileSize);
         }
-        if (link.toLevel === activeLevelIndex) {
-          entries.push({ x: link.toCell.x, y: link.toCell.y, destLevel: link.fromLevel });
-        }
-        for (const { x, y, destLevel } of entries) {
-          const px = (x + 1) * tileSize - badgeR - 1;
-          const py = y * tileSize + badgeR + 1;
-          // Badge circle
+      }
+
+      visibleNotes.forEach(note => {
+        const px = note.x * tileSize + tileSize / 2;
+        const py = note.y * tileSize + tileSize / 2;
+        const radius = tileSize * 0.38;
+        const isSelected = note.id === selectedNoteId;
+        if (printMode) {
+          // Outlined circle with a black number — works equally well in B&W print.
+          ctx.fillStyle = '#ffffff';
           ctx.beginPath();
-          ctx.arc(px, py, badgeR, 0, Math.PI * 2);
-          ctx.fillStyle = 'rgba(59, 130, 246, 0.85)';
+          ctx.arc(px, py, radius, 0, Math.PI * 2);
           ctx.fill();
-          ctx.strokeStyle = '#fff';
-          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = isSelected ? 2 : 1.25;
           ctx.stroke();
-          // Level number label
-          const label = `L${destLevel + 1}`;
-          ctx.fillStyle = '#fff';
-          ctx.font = `bold ${Math.max(8, badgeR * 0.9)}px sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(label, px, py);
-        }
-      }
-      ctx.restore();
-    }
-
-    // Highlight the pending stair link source cell.
-    if (stairLinkSource && stairLinkSource.level === activeLevelIndex && activeTool === 'link-stair') {
-      ctx.save();
-      const sx = stairLinkSource.x * tileSize;
-      const sy = stairLinkSource.y * tileSize;
-      ctx.strokeStyle = '#f59e0b';
-      ctx.lineWidth = 3;
-      ctx.setLineDash([6, 3]);
-      ctx.strokeRect(sx + 2, sy + 2, tileSize - 4, tileSize - 4);
-      ctx.setLineDash([]);
-      ctx.restore();
-    }
-
-    // ── Measure tool overlay ──────────────────────────────────────────
-    if (activeTool === 'measure' && isDragging && dragStart && dragEnd) {
-      const sx = (dragStart.x + 0.5) * tileSize;
-      const sy = (dragStart.y + 0.5) * tileSize;
-      const ex = (dragEnd.x + 0.5) * tileSize;
-      const ey = (dragEnd.y + 0.5) * tileSize;
-      const dx = dragEnd.x - dragStart.x;
-      const dy = dragEnd.y - dragStart.y;
-      // Chebyshev distance (D&D 5e default: each diagonal = 1 square)
-      const distCells = Math.max(Math.abs(dx), Math.abs(dy));
-      const distFeet = distCells * measureFeetPerCell;
-      const angle = Math.atan2(dy, dx);
-      const MEASURE_COLOR = '#22d3ee';
-      const MEASURE_FILL = 'rgba(34, 211, 238, 0.18)';
-
-      ctx.save();
-
-      if (measureShape === 'ruler') {
-        // Draw line from start to end with distance label
-        ctx.strokeStyle = MEASURE_COLOR;
-        ctx.lineWidth = 2.5;
-        ctx.setLineDash([6, 4]);
-        ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(ex, ey);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Start and end dots
-        for (const [px, py] of [[sx, sy], [ex, ey]]) {
+          ctx.fillStyle = '#000000';
+        } else {
+          ctx.fillStyle = isSelected ? '#e94560' : '#f0c040';
           ctx.beginPath();
-          ctx.arc(px, py, tileSize * 0.18, 0, Math.PI * 2);
-          ctx.fillStyle = MEASURE_COLOR;
+          ctx.arc(px, py, radius, 0, Math.PI * 2);
           ctx.fill();
+          ctx.strokeStyle = isSelected ? '#fff' : '#8b6914';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+          ctx.fillStyle = '#1a1a2e';
         }
-      } else if (measureShape === 'circle') {
-        // Circle area template with radius = distance
-        const radiusPx = distCells * tileSize;
-        ctx.beginPath();
-        ctx.arc(sx, sy, radiusPx, 0, Math.PI * 2);
-        ctx.fillStyle = MEASURE_FILL;
-        ctx.fill();
-        ctx.strokeStyle = MEASURE_COLOR;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 4]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Origin dot
-        ctx.beginPath();
-        ctx.arc(sx, sy, tileSize * 0.18, 0, Math.PI * 2);
-        ctx.fillStyle = MEASURE_COLOR;
-        ctx.fill();
-
-        // Radius line
-        ctx.strokeStyle = MEASURE_COLOR;
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 3]);
-        ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.lineTo(ex, ey);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      } else if (measureShape === 'cone') {
-        // 90° cone emanating from start toward end
-        const coneHalf = Math.PI / 4; // 45° each side = 90° total
-        const radiusPx = distCells * tileSize;
-        ctx.beginPath();
-        ctx.moveTo(sx, sy);
-        ctx.arc(sx, sy, radiusPx, angle - coneHalf, angle + coneHalf);
-        ctx.closePath();
-        ctx.fillStyle = MEASURE_FILL;
-        ctx.fill();
-        ctx.strokeStyle = MEASURE_COLOR;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 4]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Origin dot
-        ctx.beginPath();
-        ctx.arc(sx, sy, tileSize * 0.18, 0, Math.PI * 2);
-        ctx.fillStyle = MEASURE_COLOR;
-        ctx.fill();
-      } else if (measureShape === 'line') {
-        // Line template: 1-cell-wide line from start to end
-        const lineWidth = tileSize;
-        const perp = angle + Math.PI / 2;
-        const hw = lineWidth / 2;
-        const px1 = sx + Math.cos(perp) * hw;
-        const py1 = sy + Math.sin(perp) * hw;
-        const px2 = sx - Math.cos(perp) * hw;
-        const py = sy - Math.sin(perp) * hw;
-        const px3 = ex - Math.cos(perp) * hw;
-        const py3 = ey - Math.sin(perp) * hw;
-        const px4 = ex + Math.cos(perp) * hw;
-        const py4 = ey + Math.sin(perp) * hw;
-        ctx.beginPath();
-        ctx.moveTo(px1, py1);
-        ctx.lineTo(px4, py4);
-        ctx.lineTo(px3, py3);
-        ctx.lineTo(px2, py);
-        ctx.closePath();
-        ctx.fillStyle = MEASURE_FILL;
-        ctx.fill();
-        ctx.strokeStyle = MEASURE_COLOR;
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 4]);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Start and end dots
-        for (const [px, py] of [[sx, sy], [ex, ey]]) {
-          ctx.beginPath();
-          ctx.arc(px, py, tileSize * 0.18, 0, Math.PI * 2);
-          ctx.fillStyle = MEASURE_COLOR;
-          ctx.fill();
-        }
-      }
-
-      // Distance label — always shown
-      if (distCells > 0) {
-        const midX = (sx + ex) / 2;
-        const midY = (sy + ey) / 2;
-        const labelText = `${distCells} sq · ${distFeet} ft`;
-        const fontSize = Math.max(12, tileSize * 0.4);
-        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
-        const textWidth = ctx.measureText(labelText).width;
-        const pad = fontSize * 0.35;
-        // Background pill
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        const pillX = midX - textWidth / 2 - pad;
-        const pillY = midY - fontSize / 2 - pad;
-        const pillW = textWidth + pad * 2;
-        const pillH = fontSize + pad * 2;
-        const pillR = Math.min(pillH / 2, 6);
-        ctx.beginPath();
-        ctx.moveTo(pillX + pillR, pillY);
-        ctx.lineTo(pillX + pillW - pillR, pillY);
-        ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + pillR);
-        ctx.lineTo(pillX + pillW, pillY + pillH - pillR);
-        ctx.quadraticCurveTo(pillX + pillW, pillY + pillH, pillX + pillW - pillR, pillY + pillH);
-        ctx.lineTo(pillX + pillR, pillY + pillH);
-        ctx.quadraticCurveTo(pillX, pillY + pillH, pillX, pillY + pillH - pillR);
-        ctx.lineTo(pillX, pillY + pillR);
-        ctx.quadraticCurveTo(pillX, pillY, pillX + pillR, pillY);
-        ctx.closePath();
-        ctx.fill();
-        // Label text
-        ctx.fillStyle = MEASURE_COLOR;
+        ctx.font = `bold ${Math.max(8, tileSize * 0.45)}px "Courier New", monospace`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(labelText, midX, midY);
+        ctx.fillText(String(note.id), px, py + 0.5);
+      });
+
+      // Wall segments — structural overlays rendered above tiles/notes but
+      // under annotations and tokens. Visible in both GM and player views.
+      for (const seg of wallSegments) {
+        drawWallSegmentOnCanvas(ctx, seg, tileSize);
       }
 
-      ctx.restore();
-    }
+      // Path segments — road/path overlays rendered above tiles but under walls,
+      // annotations, and tokens. Visible in both GM and player views.
+      for (const seg of pathSegments) {
+        drawPathSegmentOnCanvas(ctx, seg, tileSize);
+      }
 
-    // Ghost preview for line/rect
-    if (isDragging && dragStart && dragEnd && (activeTool === 'line' || activeTool === 'rect')) {
-      const ghostPoints = activeTool === 'line'
-        ? bresenhamLine(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y)
-        : rectOutline(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
-      ctx.save();
-      ctx.globalAlpha = 0.5;
-      for (const p of ghostPoints) {
-        if (p.x >= 0 && p.x < meta.width && p.y >= 0 && p.y < meta.height) {
-          ctx.fillStyle = printMode ? '#000000' : (theme.tileColors[activeTile] ?? '#888');
-          ctx.fillRect(p.x * tileSize, p.y * tileSize, tileSize, tileSize);
+      for (const river of rivers) {
+        drawRiverOnCanvas(ctx, river, tileSize, printMode);
+        if (!isPlayerView && activeTool === 'river') {
+          ctx.save();
+          ctx.fillStyle = '#e0f2fe';
+          ctx.strokeStyle = '#1e3a8a';
+          for (const p of river.controlPoints) {
+            ctx.beginPath();
+            ctx.arc(p.x * tileSize, p.y * tileSize, Math.max(3, tileSize * 0.14), 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+          }
+          ctx.restore();
         }
       }
-      ctx.restore();
-    }
+      drawRiverEndpointMarkers(ctx, rivers, tileSize, printMode);
 
-    if (isDragging && dragStart && dragEnd && isRoomTool(activeTool) && activeTool !== 'room-poly') {
-      const preview = normalizeRectRoomShape(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
-      if (activeTool === 'room-circle') {
-        preview.shapeType = 'circle';
+      if (!isPlayerView && roomShapes.length > 0 && isRoomTool(activeTool)) {
+        const previewId = roomEditPreview?.id ?? null;
+        const activeMode = activeTool === 'room-cut' ? 'subtractive' : 'additive';
+        for (const shape of roomShapes) {
+          if (shape.id === previewId) continue;
+          const shapeMode = shape.mode ?? 'additive';
+          const isSub = shapeMode === 'subtractive';
+          const isActive = shapeMode === activeMode;
+          drawRoomShapeOverlay(ctx, shape, tileSize, {
+            stroke: shape.id === roomHoverId
+              ? (isSub ? '#f97316' : '#22d3ee')
+              : (isSub ? '#ef4444' : '#38bdf8'),
+            fill: isSub ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+            dashed: true,
+            showHandles: isActive,
+          });
+        }
+        if (roomEditPreview) {
+          const previewSub = (roomEditPreview.mode ?? 'additive') === 'subtractive';
+          drawRoomShapeOverlay(ctx, roomEditPreview, tileSize, {
+            stroke: previewSub ? '#f97316' : '#06b6d4',
+            fill: previewSub ? 'rgba(249, 115, 22, 0.2)' : 'rgba(6, 182, 212, 0.2)',
+            showHandles: true,
+          });
+        }
       }
-      const isCut = activeTool === 'room-cut';
-      drawRoomShapeOverlay(ctx, preview, tileSize, {
-        stroke: isCut ? '#f97316' : '#22d3ee',
-        fill: isCut ? 'rgba(249, 115, 22, 0.22)' : 'rgba(34, 211, 238, 0.22)',
-      });
-    }
 
-    // Polygon in-progress preview — show partial polygon with placed vertices + cursor.
-    if (polyVertices.length > 0 && activeTool === 'room-poly') {
-      ctx.save();
-      ctx.strokeStyle = '#22d3ee';
-      ctx.lineWidth = 2;
-      ctx.setLineDash([6, 4]);
-      ctx.beginPath();
-      ctx.moveTo(polyVertices[0].x * tileSize, polyVertices[0].y * tileSize);
-      for (let i = 1; i < polyVertices.length; i++) {
-        ctx.lineTo(polyVertices[i].x * tileSize, polyVertices[i].y * tileSize);
+      // Annotations are drawn under tokens but over notes so token glyphs
+      // remain readable. GM-only annotations are suppressed in player mode.
+      for (const stroke of annotations) {
+        if (isPlayerView && stroke.kind === 'gm') continue;
+        drawAnnotation(ctx, stroke, tileSize);
       }
-      // Draw line to cursor position if available.
-      if (previewMousePos) {
-        ctx.lineTo(previewMousePos.x * tileSize, previewMousePos.y * tileSize);
+
+      // Shape markers are drawn on top of annotations but under tokens so
+      // the tactical overlays don't obscure token glyphs.
+      for (const marker of markers) {
+        drawMarker(ctx, marker, tileSize);
       }
-      ctx.stroke();
-      ctx.setLineDash([]);
-      // Draw vertex handles.
-      const handleSize = Math.max(6, Math.round(tileSize * 0.3));
-      const half = handleSize / 2;
-      ctx.fillStyle = '#0f172a';
-      ctx.strokeStyle = '#e2e8f0';
-      ctx.lineWidth = 1;
-      for (const v of polyVertices) {
-        const px = v.x * tileSize;
-        const py = v.y * tileSize;
-        ctx.fillRect(px - half, py - half, handleSize, handleSize);
-        ctx.strokeRect(px - half, py - half, handleSize, handleSize);
+
+      // Light source icons (candle emoji) are drawn on top of markers and
+      // annotations but still under tokens, so they remain identifiable
+      // while token glyphs stay legible.
+      if (!printMode && lightSources && lightSources.length > 0) {
+        for (const ls of lightSources) {
+          drawLightIcon(ctx, ls, tileSize);
+        }
       }
-      ctx.restore();
-    }
 
-    // Ghost preview for fog reveal/hide drag — show the in-progress
-    // rectangle the user is about to commit.
-    if (isDragging && dragStart && dragEnd && (activeTool === 'reveal' || activeTool === 'hide')) {
-      const minX = Math.min(dragStart.x, dragEnd.x);
-      const maxX = Math.max(dragStart.x, dragEnd.x);
-      const minY = Math.min(dragStart.y, dragEnd.y);
-      const maxY = Math.max(dragStart.y, dragEnd.y);
-      ctx.save();
-      ctx.globalAlpha = 0.4;
-      ctx.fillStyle = activeTool === 'reveal' ? '#fbbf24' : '#1e293b';
-      ctx.fillRect(minX * tileSize, minY * tileSize, (maxX - minX + 1) * tileSize, (maxY - minY + 1) * tileSize);
-      ctx.restore();
-      ctx.save();
-      ctx.strokeStyle = activeTool === 'reveal' ? '#b45309' : '#0f172a';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 4]);
-      ctx.strokeRect(minX * tileSize, minY * tileSize, (maxX - minX + 1) * tileSize, (maxY - minY + 1) * tileSize);
-      ctx.setLineDash([]);
-      ctx.restore();
-    }
+      // Placed stamps — rendered between light icons and tokens so they
+      // appear as map furniture/dressing beneath the tactical token layer.
+      if (stamps.length > 0) {
+        for (const stamp of stamps) {
+          drawPlacedStamp(ctx, stamp, tileSize, stamp.id === selectedPlacedStampId, customStampImagesRef.current, customStamps, printMode);
+        }
+      }
 
-    // Selection box
-    if (selection) {
-      ctx.save();
-      ctx.strokeStyle = printMode ? '#000000' : '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 4]);
-      ctx.strokeRect(
-        selection.x * tileSize,
-        selection.y * tileSize,
-        selection.w * tileSize,
-        selection.h * tileSize
-      );
-      ctx.setLineDash([]);
-      ctx.restore();
-    }
+      // Render tokens before fog so fogged cells in player mode genuinely
+      // hide the tokens beneath them.
+      for (const token of visibleTokens) {
+        drawToken(ctx, token, tileSize, token.id === selectedTokenId, printMode);
+      }
 
-    // Paste preview — when the clipboard has content and the select tool
-    // is active, draw a translucent dashed outline at the mouse position
-    // (or the selection origin) showing where the paste will land.
-    if (hasClipboard && clipboardSize && activeTool === 'select' && previewMousePos) {
-      ctx.save();
-      ctx.strokeStyle = '#22d3ee';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 3]);
-      ctx.globalAlpha = 0.7;
-      ctx.strokeRect(
-        previewMousePos.x * tileSize,
-        previewMousePos.y * tileSize,
-        clipboardSize.w * tileSize,
-        clipboardSize.h * tileSize
-      );
-      ctx.setLineDash([]);
-      ctx.fillStyle = 'rgba(34, 211, 238, 0.12)';
-      ctx.fillRect(
-        previewMousePos.x * tileSize,
-        previewMousePos.y * tileSize,
-        clipboardSize.w * tileSize,
-        clipboardSize.h * tileSize
-      );
-      ctx.restore();
-    }
+      // Live (in-progress) freehand stroke, drawn on top so the user sees
+      // immediate feedback while dragging. Use the appropriate kind/color/width
+      // depending on whether the GM or player is drawing.
+      // Pen annotation strokes are drawn here; wall/path/river previews are
+      // rendered by their dedicated overlay blocks below.
+      if (activeStroke && activeStroke.length > 0 && (activeTool === 'pdraw' || activeTool === 'gmdraw')) {
+        const isGmDraw = !isPlayerView && activeTool === 'gmdraw';
+        drawAnnotation(ctx, {
+          id: -1,
+          kind: isGmDraw ? 'gm' : 'player',
+          points: activeStroke,
+          color: isGmDraw ? gmDrawColor : drawColor,
+          width: isGmDraw ? gmDrawWidth : drawWidth,
+        }, tileSize);
+      }
 
-    // Marker preview — when the marker tool is active and the mouse is on
-    // the canvas, show a ghost marker at the cursor position.
-    if (activeTool === 'marker' && previewMousePos) {
-      const ghost: ShapeMarker = {
-        id: -1,
-        x: previewMousePos.x,
-        y: previewMousePos.y,
-        shape: markerShape,
-        color: markerColor,
-        size: markerSize,
-      };
-      ctx.save();
-      ctx.globalAlpha = 0.5;
-      drawMarker(ctx, ghost, tileSize);
+      // Live (in-progress) wall or path stroke.
+      if (activeStroke && activeStroke.length > 0 && activeTool === 'wall') {
+        drawWallSegmentOnCanvas(ctx, {
+          id: -1, points: activeStroke, color: wallColor, thickness: wallThickness,
+        }, tileSize);
+      }
+      if (activeStroke && activeStroke.length > 0 && activeTool === 'path') {
+        drawPathSegmentOnCanvas(ctx, {
+          id: -1, points: activeStroke, color: pathColor, width: pathWidth,
+        }, tileSize);
+      }
+      if (activeStroke && activeStroke.length > 0 && activeTool === 'river') {
+        drawRiverOnCanvas(ctx, {
+          id: -1,
+          controlPoints: activeStroke,
+          color: riverColor,
+          width: riverWidth,
+          type: riverType,
+          flowDirection: 0,
+        }, tileSize, printMode);
+      }
+
+      // Fog overlay. In player view, paint fully opaque grey cells so hidden
+      // content is genuinely hidden. In GM view, normally render nothing —
+      // the GM is in control of the map and shouldn't have it obscured —
+      // but when the GM has opted in to "Show Fog", paint a translucent grey
+      // wash so they can see at a glance what is fogged.
+      const renderFog = fogActive && fog && (isPlayerView || gmShowFog);
+      if (renderFog) {
+        // Cells the player is currently brushing with the Defog tool — skip
+        // their fog overlay so the wipe is visible in real time before the
+        // change is committed on mouseup.
+        const defogSkip = defogStroke
+          ? new Set(defogStroke.map(c => `${c.x},${c.y}`))
+          : null;
+
+        if (dynamicFogEnabled && playerVisible) {
+          // 3-state dynamic fog: hidden → explored (dimmed) → visible (clear).
+          // Cells visible from player tokens OR illuminated by light sources
+          // are rendered clear (no overlay). Two passes avoid per-cell
+          // save/restore overhead.
+          const exploredFill = printMode ? printFogFill(isPlayerView ? 'player' : 'gm', true) : isPlayerView ? EXPLORED_PLAYER_FILL : EXPLORED_GM_FILL;
+          const hiddenFill = printMode ? printFogFill(isPlayerView ? 'player' : 'gm') : isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
+
+          // Pass 1: explored (dimmed) cells.
+          ctx.save();
+          ctx.fillStyle = exploredFill;
+          for (let y = 0; y < meta.height; y++) {
+            for (let x = 0; x < meta.width; x++) {
+              if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
+              if (!fog[y]?.[x]) continue;
+              if (playerVisible.has(`${x},${y}`)) continue;
+              if (lightVisible?.has(`${x},${y}`)) continue;
+              if (explored?.[y]?.[x]) {
+                ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+              }
+            }
+          }
+          ctx.restore();
+
+          // Pass 2: fully hidden (never-seen) cells.
+          ctx.save();
+          ctx.fillStyle = hiddenFill;
+          for (let y = 0; y < meta.height; y++) {
+            for (let x = 0; x < meta.width; x++) {
+              if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
+              if (!fog[y]?.[x]) continue;
+              if (playerVisible.has(`${x},${y}`)) continue;
+              if (lightVisible?.has(`${x},${y}`)) continue;
+              if (!(explored?.[y]?.[x])) {
+                ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+              }
+            }
+          }
+          ctx.restore();
+        } else {
+          // Classic 2-state fog: hidden (opaque/translucent) or revealed.
+          ctx.save();
+          ctx.fillStyle = printMode ? printFogFill(isPlayerView ? 'player' : 'gm') : isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
+          for (let y = 0; y < meta.height; y++) {
+            for (let x = 0; x < meta.width; x++) {
+              if (fog[y]?.[x]) {
+                if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
+                ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+              }
+            }
+          }
+          ctx.restore();
+        }
+
+        // Fog edge feathering — soft gradient fringe at fog/clear boundaries.
+        const fogRgb: [number, number, number] = [107, 114, 128];
+        const fogAlpha = isPlayerView ? 1.0 : 0.55;
+        const isCellFogged = (fx: number, fy: number): boolean => {
+          if (fx < 0 || fy < 0 || fx >= meta.width || fy >= meta.height) return false;
+          if (!fog[fy]?.[fx]) return false;
+          if (defogSkip && defogSkip.has(`${fx},${fy}`)) return false;
+          if (dynamicFogEnabled && playerVisible) {
+            if (playerVisible.has(`${fx},${fy}`)) return false;
+            if (lightVisible?.has(`${fx},${fy}`)) return false;
+          }
+          return true;
+        };
+        if (!printMode) drawFogFeather(ctx, meta.width, meta.height, tileSize, isCellFogged, fogRgb, fogAlpha);
+      }
+
+      // FOV overlay. When fovVisible is provided, darken every cell that is
+      // NOT in the visible set. Drawn after fog (so it stacks) but before
+      // ghost previews and selection outlines.
+      if (fovVisible) {
+        ctx.save();
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+        for (let y = 0; y < meta.height; y++) {
+          for (let x = 0; x < meta.width; x++) {
+            if (!fovVisible.has(`${x},${y}`)) {
+              ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+            }
+          }
+        }
+        ctx.restore();
+        // Draw a bright marker on the FOV origin cell so the user can see
+        // where the sight calculation is anchored.
+        if (fovOrigin) {
+          ctx.save();
+          const cx = (fovOrigin.x + 0.5) * tileSize;
+          const cy = (fovOrigin.y + 0.5) * tileSize;
+          const r = tileSize * 0.32;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(250, 204, 21, 0.7)';
+          ctx.fill();
+          ctx.strokeStyle = '#b45309';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      // ── Stair link indicators ────────────────────────────────────────
+      // Draw small arrow badges on stairs that have stair links.
+      if (stairLinks && stairLinks.length > 0 && !printMode) {
+        ctx.save();
+        const badgeR = Math.max(6, tileSize * 0.22);
+        for (const link of stairLinks) {
+          // Determine which end is on this level.
+          const entries: { x: number; y: number; destLevel: number }[] = [];
+          if (link.fromLevel === activeLevelIndex) {
+            entries.push({ x: link.fromCell.x, y: link.fromCell.y, destLevel: link.toLevel });
+          }
+          if (link.toLevel === activeLevelIndex) {
+            entries.push({ x: link.toCell.x, y: link.toCell.y, destLevel: link.fromLevel });
+          }
+          for (const { x, y, destLevel } of entries) {
+            const px = (x + 1) * tileSize - badgeR - 1;
+            const py = y * tileSize + badgeR + 1;
+            // Badge circle
+            ctx.beginPath();
+            ctx.arc(px, py, badgeR, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(59, 130, 246, 0.85)';
+            ctx.fill();
+            ctx.strokeStyle = '#fff';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+            // Level number label
+            const label = `L${destLevel + 1}`;
+            ctx.fillStyle = '#fff';
+            ctx.font = `bold ${Math.max(8, badgeR * 0.9)}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, px, py);
+          }
+        }
+        ctx.restore();
+      }
+
+      // Highlight the pending stair link source cell.
+      if (stairLinkSource && stairLinkSource.level === activeLevelIndex && activeTool === 'link-stair') {
+        ctx.save();
+        const sx = stairLinkSource.x * tileSize;
+        const sy = stairLinkSource.y * tileSize;
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([6, 3]);
+        ctx.strokeRect(sx + 2, sy + 2, tileSize - 4, tileSize - 4);
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      // ── Measure tool overlay ──────────────────────────────────────────
+      if (activeTool === 'measure' && isDragging && dragStart && dragEnd) {
+        const sx = (dragStart.x + 0.5) * tileSize;
+        const sy = (dragStart.y + 0.5) * tileSize;
+        const ex = (dragEnd.x + 0.5) * tileSize;
+        const ey = (dragEnd.y + 0.5) * tileSize;
+        const dx = dragEnd.x - dragStart.x;
+        const dy = dragEnd.y - dragStart.y;
+        // Chebyshev distance (D&D 5e default: each diagonal = 1 square)
+        const distCells = Math.max(Math.abs(dx), Math.abs(dy));
+        const distFeet = distCells * measureFeetPerCell;
+        const angle = Math.atan2(dy, dx);
+        const MEASURE_COLOR = '#22d3ee';
+        const MEASURE_FILL = 'rgba(34, 211, 238, 0.18)';
+
+        ctx.save();
+
+        if (measureShape === 'ruler') {
+          // Draw line from start to end with distance label
+          ctx.strokeStyle = MEASURE_COLOR;
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([6, 4]);
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(ex, ey);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Start and end dots
+          for (const [px, py] of [[sx, sy], [ex, ey]]) {
+            ctx.beginPath();
+            ctx.arc(px, py, tileSize * 0.18, 0, Math.PI * 2);
+            ctx.fillStyle = MEASURE_COLOR;
+            ctx.fill();
+          }
+        } else if (measureShape === 'circle') {
+          // Circle area template with radius = distance
+          const radiusPx = distCells * tileSize;
+          ctx.beginPath();
+          ctx.arc(sx, sy, radiusPx, 0, Math.PI * 2);
+          ctx.fillStyle = MEASURE_FILL;
+          ctx.fill();
+          ctx.strokeStyle = MEASURE_COLOR;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Origin dot
+          ctx.beginPath();
+          ctx.arc(sx, sy, tileSize * 0.18, 0, Math.PI * 2);
+          ctx.fillStyle = MEASURE_COLOR;
+          ctx.fill();
+
+          // Radius line
+          ctx.strokeStyle = MEASURE_COLOR;
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(ex, ey);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        } else if (measureShape === 'cone') {
+          // 90° cone emanating from start toward end
+          const coneHalf = Math.PI / 4; // 45° each side = 90° total
+          const radiusPx = distCells * tileSize;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.arc(sx, sy, radiusPx, angle - coneHalf, angle + coneHalf);
+          ctx.closePath();
+          ctx.fillStyle = MEASURE_FILL;
+          ctx.fill();
+          ctx.strokeStyle = MEASURE_COLOR;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Origin dot
+          ctx.beginPath();
+          ctx.arc(sx, sy, tileSize * 0.18, 0, Math.PI * 2);
+          ctx.fillStyle = MEASURE_COLOR;
+          ctx.fill();
+        } else if (measureShape === 'line') {
+          // Line template: 1-cell-wide line from start to end
+          const lineWidth = tileSize;
+          const perp = angle + Math.PI / 2;
+          const hw = lineWidth / 2;
+          const px1 = sx + Math.cos(perp) * hw;
+          const py1 = sy + Math.sin(perp) * hw;
+          const px2 = sx - Math.cos(perp) * hw;
+          const py = sy - Math.sin(perp) * hw;
+          const px3 = ex - Math.cos(perp) * hw;
+          const py3 = ey - Math.sin(perp) * hw;
+          const px4 = ex + Math.cos(perp) * hw;
+          const py4 = ey + Math.sin(perp) * hw;
+          ctx.beginPath();
+          ctx.moveTo(px1, py1);
+          ctx.lineTo(px4, py4);
+          ctx.lineTo(px3, py3);
+          ctx.lineTo(px2, py);
+          ctx.closePath();
+          ctx.fillStyle = MEASURE_FILL;
+          ctx.fill();
+          ctx.strokeStyle = MEASURE_COLOR;
+          ctx.lineWidth = 2;
+          ctx.setLineDash([6, 4]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Start and end dots
+          for (const [px, py] of [[sx, sy], [ex, ey]]) {
+            ctx.beginPath();
+            ctx.arc(px, py, tileSize * 0.18, 0, Math.PI * 2);
+            ctx.fillStyle = MEASURE_COLOR;
+            ctx.fill();
+          }
+        }
+
+        // Distance label — always shown
+        if (distCells > 0) {
+          const midX = (sx + ex) / 2;
+          const midY = (sy + ey) / 2;
+          const labelText = `${distCells} sq · ${distFeet} ft`;
+          const fontSize = Math.max(12, tileSize * 0.4);
+          ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+          const textWidth = ctx.measureText(labelText).width;
+          const pad = fontSize * 0.35;
+          // Background pill
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+          const pillX = midX - textWidth / 2 - pad;
+          const pillY = midY - fontSize / 2 - pad;
+          const pillW = textWidth + pad * 2;
+          const pillH = fontSize + pad * 2;
+          const pillR = Math.min(pillH / 2, 6);
+          ctx.beginPath();
+          ctx.moveTo(pillX + pillR, pillY);
+          ctx.lineTo(pillX + pillW - pillR, pillY);
+          ctx.quadraticCurveTo(pillX + pillW, pillY, pillX + pillW, pillY + pillR);
+          ctx.lineTo(pillX + pillW, pillY + pillH - pillR);
+          ctx.quadraticCurveTo(pillX + pillW, pillY + pillH, pillX + pillW - pillR, pillY + pillH);
+          ctx.lineTo(pillX + pillR, pillY + pillH);
+          ctx.quadraticCurveTo(pillX, pillY + pillH, pillX, pillY + pillH - pillR);
+          ctx.lineTo(pillX, pillY + pillR);
+          ctx.quadraticCurveTo(pillX, pillY, pillX + pillR, pillY);
+          ctx.closePath();
+          ctx.fill();
+          // Label text
+          ctx.fillStyle = MEASURE_COLOR;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(labelText, midX, midY);
+        }
+
+        ctx.restore();
+      }
+
+      // Ghost preview for line/rect
+      if (isDragging && dragStart && dragEnd && (activeTool === 'line' || activeTool === 'rect')) {
+        const ghostPoints = activeTool === 'line'
+          ? bresenhamLine(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y)
+          : rectOutline(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        for (const p of ghostPoints) {
+          if (p.x >= 0 && p.x < meta.width && p.y >= 0 && p.y < meta.height) {
+            ctx.fillStyle = printMode ? '#000000' : (theme.tileColors[activeTile] ?? '#888');
+            ctx.fillRect(p.x * tileSize, p.y * tileSize, tileSize, tileSize);
+          }
+        }
+        ctx.restore();
+      }
+
+      if (isDragging && dragStart && dragEnd && isRoomTool(activeTool) && activeTool !== 'room-poly') {
+        const preview = normalizeRectRoomShape(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
+        if (activeTool === 'room-circle') {
+          preview.shapeType = 'circle';
+        }
+        const isCut = activeTool === 'room-cut';
+        drawRoomShapeOverlay(ctx, preview, tileSize, {
+          stroke: isCut ? '#f97316' : '#22d3ee',
+          fill: isCut ? 'rgba(249, 115, 22, 0.22)' : 'rgba(34, 211, 238, 0.22)',
+        });
+      }
+
+      // Polygon in-progress preview — show partial polygon with placed vertices + cursor.
+      if (polyVertices.length > 0 && activeTool === 'room-poly') {
+        ctx.save();
+        ctx.strokeStyle = '#22d3ee';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([6, 4]);
+        ctx.beginPath();
+        ctx.moveTo(polyVertices[0].x * tileSize, polyVertices[0].y * tileSize);
+        for (let i = 1; i < polyVertices.length; i++) {
+          ctx.lineTo(polyVertices[i].x * tileSize, polyVertices[i].y * tileSize);
+        }
+        // Draw line to cursor position if available.
+        if (previewMousePos) {
+          ctx.lineTo(previewMousePos.x * tileSize, previewMousePos.y * tileSize);
+        }
+        ctx.stroke();
+        ctx.setLineDash([]);
+        // Draw vertex handles.
+        const handleSize = Math.max(6, Math.round(tileSize * 0.3));
+        const half = handleSize / 2;
+        ctx.fillStyle = '#0f172a';
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 1;
+        for (const v of polyVertices) {
+          const px = v.x * tileSize;
+          const py = v.y * tileSize;
+          ctx.fillRect(px - half, py - half, handleSize, handleSize);
+          ctx.strokeRect(px - half, py - half, handleSize, handleSize);
+        }
+        ctx.restore();
+      }
+
+      // Ghost preview for fog reveal/hide drag — show the in-progress
+      // rectangle the user is about to commit.
+      if (isDragging && dragStart && dragEnd && (activeTool === 'reveal' || activeTool === 'hide')) {
+        const minX = Math.min(dragStart.x, dragEnd.x);
+        const maxX = Math.max(dragStart.x, dragEnd.x);
+        const minY = Math.min(dragStart.y, dragEnd.y);
+        const maxY = Math.max(dragStart.y, dragEnd.y);
+        ctx.save();
+        ctx.globalAlpha = 0.4;
+        ctx.fillStyle = activeTool === 'reveal' ? '#fbbf24' : '#1e293b';
+        ctx.fillRect(minX * tileSize, minY * tileSize, (maxX - minX + 1) * tileSize, (maxY - minY + 1) * tileSize);
+        ctx.restore();
+        ctx.save();
+        ctx.strokeStyle = activeTool === 'reveal' ? '#b45309' : '#0f172a';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(minX * tileSize, minY * tileSize, (maxX - minX + 1) * tileSize, (maxY - minY + 1) * tileSize);
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      // Selection box
+      if (selection) {
+        ctx.save();
+        ctx.strokeStyle = printMode ? '#000000' : '#ffffff';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.strokeRect(
+          selection.x * tileSize,
+          selection.y * tileSize,
+          selection.w * tileSize,
+          selection.h * tileSize
+        );
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      // Paste preview — when the clipboard has content and the select tool
+      // is active, draw a translucent dashed outline at the mouse position
+      // (or the selection origin) showing where the paste will land.
+      if (hasClipboard && clipboardSize && activeTool === 'select' && previewMousePos) {
+        ctx.save();
+        ctx.strokeStyle = '#22d3ee';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.globalAlpha = 0.7;
+        ctx.strokeRect(
+          previewMousePos.x * tileSize,
+          previewMousePos.y * tileSize,
+          clipboardSize.w * tileSize,
+          clipboardSize.h * tileSize
+        );
+        ctx.setLineDash([]);
+        ctx.fillStyle = 'rgba(34, 211, 238, 0.12)';
+        ctx.fillRect(
+          previewMousePos.x * tileSize,
+          previewMousePos.y * tileSize,
+          clipboardSize.w * tileSize,
+          clipboardSize.h * tileSize
+        );
+        ctx.restore();
+      }
+
+      // Marker preview — when the marker tool is active and the mouse is on
+      // the canvas, show a ghost marker at the cursor position.
+      if (activeTool === 'marker' && previewMousePos) {
+        const ghost: ShapeMarker = {
+          id: -1,
+          x: previewMousePos.x,
+          y: previewMousePos.y,
+          shape: markerShape,
+          color: markerColor,
+          size: markerSize,
+        };
+        ctx.save();
+        ctx.globalAlpha = 0.5;
+        drawMarker(ctx, ghost, tileSize);
+        ctx.restore();
+      }
+      // Light source preview — when the light tool is active and the mouse is
+      // on the canvas, show a ghost glow at the cursor position so the user
+      // can see the illumination radius before placing the source.
+      if (activeTool === 'light' && previewMousePos) {
+        const ghost: LightSource = {
+          id: -1,
+          x: previewMousePos.x,
+          y: previewMousePos.y,
+          radius: lightRadius,
+          color: lightColor,
+          label: 'preview',
+        };
+        ctx.save();
+        ctx.globalAlpha = 0.6;
+        drawLightGlow(ctx, ghost, tileSize);
+        ctx.restore();
+        // Dashed radius circle outline
+        ctx.save();
+        ctx.strokeStyle = lightColor;
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 3]);
+        ctx.globalAlpha = 0.5;
+        ctx.beginPath();
+        ctx.arc(
+          (previewMousePos.x + 0.5) * tileSize,
+          (previewMousePos.y + 0.5) * tileSize,
+          lightRadius * tileSize,
+          0,
+          Math.PI * 2,
+        );
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+    } finally {
       ctx.restore();
     }
-    // Light source preview — when the light tool is active and the mouse is
-    // on the canvas, show a ghost glow at the cursor position so the user
-    // can see the illumination radius before placing the source.
-    if (activeTool === 'light' && previewMousePos) {
-      const ghost: LightSource = {
-        id: -1,
-        x: previewMousePos.x,
-        y: previewMousePos.y,
-        radius: lightRadius,
-        color: lightColor,
-        label: 'preview',
-      };
-      ctx.save();
-      ctx.globalAlpha = 0.6;
-      drawLightGlow(ctx, ghost, tileSize);
-      ctx.restore();
-      // Dashed radius circle outline
-      ctx.save();
-      ctx.strokeStyle = lightColor;
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 3]);
-      ctx.globalAlpha = 0.5;
-      ctx.beginPath();
-      ctx.arc(
-        (previewMousePos.x + 0.5) * tileSize,
-        (previewMousePos.y + 0.5) * tileSize,
-        lightRadius * tileSize,
-        0,
-        Math.PI * 2,
-      );
-      ctx.stroke();
-      ctx.setLineDash([]);
-      ctx.restore();
-    }
-  }, [map, tiles, renderTiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, rivers, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, polyVertices, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, previewMousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType, edgeBlendCache, folioTileCache, viewportKey]);
+    paintedFrameRef.current = frame;
+  }, [map, tiles, renderTiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, rivers, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, polyVertices, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, previewMousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType, edgeBlendCache, folioTileCache, viewportKey, partialSceneEligible, paintInputs]);
 
   // Minimap render
   useEffect(() => {

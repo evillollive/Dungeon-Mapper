@@ -3,6 +3,14 @@ export interface GridPoint {
   y: number;
 }
 
+/** Half-open tile bounds; neighbor queries still use the complete map. */
+export interface TileBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
 export function bresenhamLine(x0: number, y0: number, x1: number, y1: number): GridPoint[] {
   const points: GridPoint[] = [];
   const dx = Math.abs(x1 - x0);

@@ -21,27 +21,38 @@ function installMeasurements() {
       performance.mark(`f05:${sample.label}:frame`);
     }));
   };
-  // MapCanvas assigns its backing width at the start of every full render.
-  // The microtask runs after that synchronous drawing stack, even when React
-  // schedules it later than the input's next animation frame.
+  const inStack = new WeakSet();
+  const observeDraw = (canvas, kind) => {
+    if (canvas.getAttribute('role') !== 'application' || inStack.has(canvas)) return;
+    inStack.add(canvas);
+    const drawStartMs = performance.now();
+    queueMicrotask(() => {
+      inStack.delete(canvas);
+      const drawEndMs = performance.now();
+      window.__f05.draws.push({ drawStartMs, drawEndMs, kind });
+      const active = window.__f05.active;
+      if (!active?.requiresDraw || active.drawEndMs !== undefined || active.startMs > drawStartMs) return;
+      active.drawStartMs = drawStartMs;
+      active.drawEndMs = drawEndMs;
+      active.drawKind = kind;
+      finish(active);
+    });
+  };
+  // Observe real main-canvas clears, not context lookups or frame callbacks.
   const width = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, 'width');
   Object.defineProperty(HTMLCanvasElement.prototype, 'width', {
     ...width,
     set(value) {
       width.set.call(this, value);
-      if (this.getAttribute('role') !== 'application') return;
-      const drawStartMs = performance.now();
-      queueMicrotask(() => {
-        const drawEndMs = performance.now();
-        window.__f05.draws.push({ drawStartMs, drawEndMs });
-        const active = window.__f05.active;
-        if (!active?.requiresDraw || active.drawEndMs !== undefined || active.startMs > drawStartMs) return;
-        active.drawStartMs = drawStartMs;
-        active.drawEndMs = drawEndMs;
-        finish(active);
-      });
+      observeDraw(this, 'full');
     },
   });
+  const clear = CanvasRenderingContext2D.prototype.clearRect;
+  CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+    const result = clear.apply(this, args);
+    observeDraw(this.canvas, 'partial');
+    return result;
+  };
   if (PerformanceObserver.supportedEntryTypes.includes('longtask')) {
     new PerformanceObserver(list => {
       window.__f05.longTasks.push(...list.getEntries().map(entry => ({ startMs: entry.startTime, durationMs: entry.duration })));
@@ -61,25 +72,29 @@ function installMeasurements() {
   }
 }
 
-test('F05 probe waits for delayed canvas drawing', async ({ page }) => {
+for (const kind of ['full', 'partial']) test(`F05 probe waits for delayed ${kind} canvas drawing`, async ({ page }) => {
   await page.setContent('<button>Draw</button><canvas role="application"></canvas>');
   await page.evaluate(installMeasurements);
-  await page.evaluate(() => {
+  await page.evaluate(kind => {
     window.__f05.pending = { label: 'delayed-draw', type: 'click', requiresDraw: true };
     document.querySelector('button').addEventListener('click', () => {
+      document.querySelector('canvas').getContext('2d');
+      document.createElement('canvas').getContext('2d').clearRect(0, 0, 10, 10);
       setTimeout(() => {
         const canvas = document.querySelector('canvas');
-        canvas.width = 64;
+        if (kind === 'full') canvas.width = 64;
+        else canvas.getContext('2d').clearRect(0, 0, 64, 64);
         canvas.getContext('2d').fillRect(0, 0, 64, 64);
       }, 100);
     });
-  });
+  }, kind);
   await page.getByRole('button', { name: 'Draw', exact: true }).click();
   await page.waitForFunction(() => window.__f05.samples.length === 1);
   const sample = await page.evaluate(() => window.__f05.samples[0]);
   assert(sample.durationMs >= 100, 'A frame opportunity before drawing must not end the measurement');
   assert(sample.drawEndMs >= sample.drawStartMs && sample.drawStartMs >= sample.startMs);
   assert(sample.postDrawFrameMs >= 0);
+  assert.equal(sample.drawKind, kind);
 });
 
 for (const repetition of [1, 2, 3]) {
@@ -96,8 +111,10 @@ for (const repetition of [1, 2, 3]) {
       engine: info.project.name, browserVersion: context.browser().version(),
       host: { cpu: cpus()[0]?.model, memoryBytes: totalmem(), platform: process.platform, osRelease: release() },
       viewport: { width: 1440, height: 900 }, cpuThrottle: throttle,
+      probeVersion: 'F05 full-or-partial-clear v2',
+      probeBlob: execFileSync('git', ['hash-object', 'src/test/ux09Performance.spec.mjs'], { encoding: 'utf8' }).trim(),
       acceptance: 'Diagnostic only. Reference-device and mobile acceptance remain open.',
-      method: 'Trusted event timestamp through completed main-canvas drawing, when required, then two animation frames. Rendering opportunity proxy, not physical input-to-paint or INP. Warm loading includes browser-driver readiness checks and a frame opportunity.',
+      method: 'Trusted event timestamp through a main-canvas width reset or regional clear and its completed synchronous drawing stack, when required, then two animation frames. Rendering opportunity proxy, not physical input-to-paint or INP. Warm loading includes browser-driver readiness checks and a frame opportunity.',
       runs: [],
     };
     let cdp;

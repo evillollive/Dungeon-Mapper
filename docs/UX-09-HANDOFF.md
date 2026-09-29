@@ -1359,6 +1359,179 @@ runner minutes. No pushes, remote mutations, provider calls, dependency
 installs, subagents or native browser/OS setting changes. Local compute and
 disk usage were not metered; no account-wide allowance is assumed.
 
+### Token-drag partial repaint proposal
+
+September 29, 2026, based on `e1ba751` with the restored renderer. The owner
+asked to investigate avoiding full-map redraws after the rejected floor-state
+batching trial, then explicitly approved proceeding with the bounded prototype.
+After the first pixel mismatch was localized, the owner also approved expanding
+damage to complete overlapping artwork, while reiterating that no Actions
+minutes are available. The source trace itself needed no additional benchmark;
+implementation and qualification are now in progress, not release acceptance.
+
+The owner subsequently approved conservative admission only where the native
+tile pitch is an integer number of device pixels. Other scales retain the
+full-quality full renderer, without a DPR whitelist, resolution reduction or
+tolerance change. Complete-overlap expansion also falls back at canvas edges,
+above 25% area, after sixteen closure passes, or beyond 2,048 temporary
+footprint records. These records are not retained raster surfaces.
+
+#### Actual invalidation and drawing order
+
+`useCanvasEditingDraft` stages token movement in a local map copy, changing the
+tokens array and the moved token's coordinates while sharing untouched branches.
+`MapCanvas` derives tiles from tiles/rooms/rivers, so that derivation can remain
+stable, but its main effect depends on the whole draft `map` and token arrays.
+Each movement therefore resets the entire backing canvas and redraws every
+layer. The minimap also depends on `map`, although it draws no tokens; that
+smaller cost is not the main target of this proposal.
+
+The renderer draws background/paper, tiles, river banks, edge blending, grid,
+hand-drawn styling, atmosphere/lights, notes, structural overlays, annotations,
+markers, light icons, stamps, then tokens. Fog, FOV, stair badges and other
+interaction overlays can be drawn above tokens. A token-only canvas placed on
+top of the finished image would change occlusion or leave the original token
+behind. It is not a drop-in optimization.
+
+During local drag previews, parent `App` still owns source-map FOV/exploration.
+Commit, cancellation and source-map changes have their existing gesture/history
+behavior. The optimization must not change when visibility, exploration,
+autosave or undo is updated. Do not move those calculations into the drawing
+fast path or suppress them for performance.
+
+#### Recommendation and memory boundary
+
+Prototype a **same-canvas dirty-region repaint**, not another full-map layer
+or a copied background patch. Clear and repaint the union of the last-painted
+and next token footprints on the original backing surface, preserving global
+coordinates and the normal layer order.
+
+An extra F05-sized RGBA surface would add approximately 64 MiB at DPR 1,
+256 MiB at DPR 2, or 576 MiB at DPR 3 before browser overhead. These are
+computed storage sizes, not measured process memory. A viewport-sized overlay
+costs less, but introduces coordinate/compositing and `getCanvas()` contract
+changes. Cached patch readback/blitting also risks synchronization and the
+cross-surface fidelity issues already observed. Neither is the first choice.
+
+Proposed incremental retained raster budget: **zero new canvases, ImageData
+caches or bitmap atlases**. Keep the existing main surface, edge-cache ceiling
+and floor-path bounds. Retain only the last completed frame's input references,
+token identity/position and bounded rectangle metadata; release on scope
+changes/unmount. This is not a claim that browser command buffers, transient
+objects or GPU memory are constant. Include long-drag observations before
+making any memory claim.
+
+#### First prototype scope
+
+| Condition | Proposed disposition |
+| --- | --- |
+| Active `move-token` drag preview in trusted Edit, before commit | Candidate for partial repaint |
+| One token changes only X/Y; IDs, order and every other token field are unchanged | Required; detect against the last successfully painted frame, not the last pointer event |
+| Existing complete frame, unchanged project/level/source, dimensions, tile size, DPR, non-token map branches and drawing inputs | Required; unknown/additional input changes default to full repaint |
+| Fog enabled but not drawn because GM Show Fog is off | Can remain eligible if all visibility inputs are unchanged, as in the existing F05 editor workload |
+| Visible fog, player/DM-view mode, FOV inspection, print mode or competing gesture overlays | Full repaint |
+| Initial scope: Folio tiles/materials, bundled known token paths, existing paper/edge/lighting effects | Supported candidate set; preserve every effect and rendering order |
+| Imported background images, custom themes/stamp images, non-Folio tile overrides, hand-drawn effects, unknown or text/emoji moved-token glyphs | Full repaint for the initial proof, not silently reduced detail |
+| Commit, cancellation, lost capture, blur, tool/mode/level/project change, undo/redo, async asset readiness or resize | Full repaint and reset partial-frame eligibility |
+| Invalid bounds or a damage rectangle exceeding 25% of the canvas | Full repaint; this is a proposed optimization cutoff, not a map-size/support limit |
+
+Exclude unsupported artwork before entering the fast path. The ordinary
+renderer continues handling it unchanged. Cache the eligibility result only
+while its immutable source inputs remain identical, rather than scanning every
+tile on every pointer movement. Keep a conservative comparison of the full
+external render inputs and relevant local drawing state; do not create a
+second incomplete dependency whitelist that can miss future changes.
+
+#### Repainting contract
+
+Damage includes both the old and new token footprints, stroke width and
+selection ring, not just the occupied cells. For the existing one-cell token
+at a 32-pixel tile size, the selected outer radius is 18.56 pixels, which extends
+past the 16-pixel half-cell. Unknown glyph extents must fall back, not guess.
+Round outward in physical pixels, add an antialiasing gutter, clamp to the
+canvas and merge into one rectangle to avoid painting alpha twice.
+
+As a work-count illustration only, a selected one-cell token moving one cell
+horizontally in F05 gives a conservative 4x3-tile damage box with a two-physical-
+pixel gutter at DPR 1. A one-cell drawing halo would visit up to 30 tiles
+instead of 16,384. This is neither a latency prediction nor an allocated patch.
+The halo must be justified against the admitted primitives, not assumed safe
+for arbitrary imported art or stroke settings.
+
+The initial full frame retains the current backing-size initialization.
+A partial frame must not assign canvas width/height, which would erase all
+unaffected pixels. It must begin from the same known paint state, clip using
+physical-pixel-aligned bounds on the original surface, clear that rectangle,
+then replay the ordinary scene paint body under the clip. Full and partial
+rendering must share the paint order rather than duplicate the renderer.
+If arranging that seam needs a broader refactor than this bounded proof,
+stop and revise the scope before implementing it.
+
+Cull only loops whose footprints are established: tiles, local river-bank
+cells, edge bands and ambient-occlusion cells, using a conservative halo where
+needed. Neighbor/material queries still address the entire source map.
+Keep global artwork seeds and full-map dimensions for texture/gradient/cache
+configuration. Do not translate to a patch-local origin or call the export
+renderer to manufacture a replacement editor patch.
+
+Replay the remaining scene layers in their original order under the clip,
+including unchanged overlapping tokens. A moved token must not jump ahead of
+stationary tokens, stamps, stair badges or selection overlays. Do not assume
+the area beneath it is plain floor. Preserve the complete `getCanvas()` result,
+hit testing, DOM/accessibility summaries and existing export behavior.
+
+The edge cache's populate-before-sample behavior must remain intact. New range
+arguments, if needed, default to full-map traversal for existing callers.
+Print/export and the separate Run/player surfaces remain outside this first
+prototype. Do not add another canvas cache or browser-specific pixel exception
+to rescue a failed implementation.
+
+#### Evidence required before retaining an implementation
+
+Use the actual editor's full-frame paint path as the oracle, not the different
+export renderer. Compare complete equal-sized surfaces after each move,
+including unchanged pixels outside the damage, overlapping tokens, old-position
+erasure and boundary seams. Cover 1/2/3-cell tokens, selected rings, map edges,
+coalesced/long jumps, mixed materials, vectors, furnishings, lights, DPR
+1/1.25/1.5/2/3 and fallback scenes. Exact alpha and the existing floor RGB/mean
+bounds remain the fidelity standard; no perceptual-only substitution.
+
+Exercise start/commit/cancel, return-to-origin, undo, source replacement,
+fog/FOV/mode/print transitions and asset readiness. A rejected/unsupported fast
+path must perform the full render, not return a success-shaped no-op. Keep all
+pixel reads in qualification rather than production rendering.
+
+**Measurement dependency:** F05 currently identifies a draw through backing-
+width assignment. Keeping that unchanged would miss successful partial paints
+and hang the diagnostic. Extend its test-only observation to main-canvas
+`clearRect` as well as width reset, coalescing the synchronous paint stack and
+retaining the two-frame completion rule. Observe real pixel-mutating work,
+not only a pointer event or context lookup. Extend the delayed-draw probe to
+cover partial clearing and reject unrelated-canvas/context-only false signals.
+Keep the fixture, sample counts, undo/persistence assertions, retries and timeouts.
+
+Run a small fidelity proof first. Only if it passes, capture a matched baseline
+and candidate using the same measurement probe, browser, viewport, DPR and
+unthrottled host conditions. Compare profiled/unprofiled repetitions separately
+and retain all results, including paint and warm-ready regressions. The target
+is a clear repeatable token-drag improvement, not a timing assertion tuned to
+this Mac. Painting gains, physical input latency and representative-device
+acceptance are not implied.
+
+#### Decision and stopping point
+
+The owner approved this token-preview-only, zero-additional-raster
+prototype and the bounded overlap extension. This does not approve a general
+layer/cache redesign, visible-fog optimization, paint-stroke optimization,
+larger memory budget, raised tolerance or hosted run.
+
+If the prototype cannot preserve the existing scene with these constraints,
+retain the failure and stop rather than accumulating special cases. A later
+layer/invalidation design requires a new scope decision. Current production
+code was unchanged during the initial design. Subsequent implementation remains
+local-only with zero hosted triggers/reservations, no agents and no native
+setting changes. Results must be recorded before this can be retained.
+
 ## Remaining release gates
 
 Subsequent housekeeping removes 68 of the original 73 hook warnings and

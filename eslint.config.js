@@ -16,6 +16,7 @@ export default defineConfig([
     files: [
       'playwright.config.mjs',
       'src/test/ux09.spec.mjs',
+      'src/test/tokenRepaint.spec.mjs',
       'src/test/interfaceIcons.spec.mjs',
       'src/test/firstUseIllustrations.spec.mjs',
       'src/test/ux09Keyboard.browser.mjs',
