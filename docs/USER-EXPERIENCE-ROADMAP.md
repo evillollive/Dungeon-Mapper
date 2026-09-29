@@ -1277,6 +1277,25 @@ and composed-print evidence is refreshed; unrelated token/terrain geometry,
 storage and keyboard campaigns retain their original scope and were not rerun.
 These local results are not an exact-head hosted receipt or paper qualification.
 
+**Crypt sample approval, September 28, 2026:** The owner approved The Lantern
+Crypt's overall visual composition and readability after the furnishing
+revision. The reviewed sheet is `launch-lantern-crypt-outlined.png`, retained
+at `6c23cda`, rendered from artwork source `68d1bf2`. This accepts the sample
+artwork, not participant playtesting or physical-print qualification.
+
+**Crossing review, September 28, 2026:** The owner requested clearer bridge
+boundaries in monochrome and chose a preview of thin floor-material transition
+contours throughout print mode. After reviewing the equal-scale before/after
+map and bridge detail, the owner explicitly approved the thin boundary
+treatment. Print companion 1.1.0 / render version 2 draws each wood/earth/
+flagstone seam once, at 1.2 frame units, lighter than a wall. Matching floor
+tiles, existing wall/water contours, doors, color art and map behavior are
+unchanged. Approved source SHA-256:
+`513b9e1d3727f7873ec9b80c0cd01392e36510e9828258bae0aee696e60a6e02`.
+The comparison is retained as `files/floor-boundary-preview.html` in session
+`20233d90-7a79-4423-a564-f75af5b08662`. This approves the styling, not Alder
+Crossing's full sample composition or physical-paper qualification.
+
 **Acceptance still open:** Owner approval of the remaining new artwork and sample sheets, physical
 A4/Letter printing, participant/device/screen-reader qualification and UX-09
 performance gates. Earlier "ART-06/08 remain open" entries describe their
@@ -1305,9 +1324,9 @@ and review sheets before commissioning further artwork.
 | ART-02 dungeon/material kit | Foundation and wood/earth materials merged in #167/#168 | Determinism, renderer parity, material persistence and cache coverage recorded above | Foundation and material direction approved |
 | ART-03 furnishings | 24-piece catalog integrated in #177 | Placement, transform, persistence and player-export coverage | Catalog approved |
 | ART-04 tokens | Twelve silhouettes and affiliation frames integrated in #178 | Catalog placement, persistence and color/grayscale/print coverage | Catalog approved |
-| ART-06 launch samples | Three authored encounters integrated in #181 | Sample integrity, fresh copies, projection and render coverage | Crypt changes requested September 28 for monochrome furnishing readability; revised sheet awaits approval. Crossing and ship reviews remain open |
+| ART-06 launch samples | Three authored encounters integrated in #181 | Sample integrity, fresh copies, projection and render coverage | Revised Lantern Crypt approved September 28 at artwork source `68d1bf2`; Alder's floor-boundary styling is approved but overall sample review remains open; ship review remains open |
 | ART-07 first-use illustrations | Revised three-scene set integrated in #180 | Component and browser art/workflow coverage | Revised set approved |
-| ART-08 print companions | Semantic monochrome set integrated in #181; stronger furnishing outlines implemented at `68d1bf2` | Targeted furnishing renderer, launch geometry/seams and crypt A4/Letter cases refreshed locally on three engines | Six doors previously approved; all 24 stronger monochrome furnishings approved September 28. Remaining map companions and physical paper acceptance stay open |
+| ART-08 print companions | Semantic monochrome set integrated in #181; stronger furnishings at `68d1bf2`; floor-transition contours in print companion 1.1.0 | Furnishing/crypt three-engine evidence retained; floor-boundary print evidence refresh in progress | Six doors, all 24 stronger monochrome furnishings and the thin floor-material boundary treatment approved. Remaining map companions and physical paper acceptance stay open |
 | ART-05/09 additional kits and adaptations | Outside initial-release scope | Not assessed for release | Deferred; not an early-access dependency |
 
 The evidence column summarizes existing scoped coverage, not blanket

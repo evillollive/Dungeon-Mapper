@@ -7,6 +7,12 @@ fonts, downloads, textures or raster atlases are required for the tile kit.
 Material patterns use fixed map coordinates and do not depend on page offsets.
 Unknown material versions use flagstone, without changing the saved material ID.
 
+Version 1.1.0 adds thin contours where printed floor materials meet. Matching
+materials have no extra edges; each transition is drawn once, inside the
+higher-priority material (wood, then earth, then flagstone). Existing water,
+wall and doorway boundaries are unchanged. The owner approved this print-only
+treatment on September 28, 2026; physical-paper acceptance remains separate.
+
 The approved Folio furnishing and token sources retain their own manifests
 and notices. Furnishing print strokes use neutral charcoal; their approved
 paths and color-mode paints are unchanged. Legacy tokens use the same party shield, NPC seal and hostile

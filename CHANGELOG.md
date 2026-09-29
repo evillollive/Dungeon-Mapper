@@ -17,6 +17,7 @@ All notable changes to this project are documented in this file.
 - Reserve unique token IDs before queued React updates so consecutive placements remain independently selectable and removable.
 
 ### Changed
+- Owner-approved thin print contours between wood, earth and stone floor materials. Matching floor tiles gain no new lines; existing water, wall and doorway contours, color art and map behavior are unchanged.
 - Owner-approved stronger outer contours and interior strokes for all 24 monochrome Folio furnishings. Color artwork, path geometry, saved IDs, tokens and map symbols are unchanged; physical-paper acceptance remains open.
 - Locally implemented exact-artifact Pages gating: one production build is verified and consumed by each browser engine before eligible main runs can package and deploy it. Required check names and suites are preserved. Hosted enforcement and publication remain unverified.
 - Reconciled public guides and in-app shortcut help with Your maps, Edit, Prepare, Run and the local player display. Documented private project backup versus session recovery scope, explicit import copies, offline readiness and unqualified release/device limits.

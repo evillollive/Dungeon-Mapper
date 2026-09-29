@@ -52,6 +52,52 @@ describe('ART-08 print companion', () => {
     }))).toHaveLength(3);
   });
 
+  it('draws one thin contour per floor-material transition in every direction', () => {
+    const materials = [undefined, 'folio-earth-v1', 'folio-worn-wood-v1'];
+    const directions = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+    const edges = [
+      [[0, 1], [32, 1]], [[31, 0], [31, 32]],
+      [[0, 31], [32, 31]], [[1, 0], [1, 32]],
+    ];
+    const contours = (shapes: ReturnType<typeof printTileShapes>) =>
+      shapes.filter(shape => shape.kind === 'line' && shape.width === 1.2);
+    for (let lower = 0; lower < materials.length; lower++) {
+      for (let higher = lower + 1; higher < materials.length; higher++) {
+        for (const [index, [dx, dy]] of directions.entries()) {
+          const context = {
+            getTileBaseType: () => 'floor' as const,
+            getFloorMaterial: (x: number, y: number) => x === 7 && y === 9 ? materials[higher] : materials[lower],
+          };
+          expect(contours(printTileShapes('floor', 7, 9, context))).toHaveLength(4);
+          expect(contours(printTileShapes('floor', 7, 9, context))).toContainEqual({
+            kind: 'line', points: edges[index], width: 1.2, stroke: '#000000',
+          });
+          expect(contours(printTileShapes('floor', 7 + dx, 9 + dy, context))).toEqual([]);
+        }
+      }
+    }
+  });
+
+  it('does not outline matching or fallback materials, or duplicate non-floor boundaries', () => {
+    const contours = (shapes: ReturnType<typeof printTileShapes>) =>
+      shapes.filter(shape => shape.kind === 'line' && shape.width === 1.2);
+    for (const material of [undefined, ...FLOOR_MATERIAL_IDS]) {
+      expect(contours(printTileShapes('floor', 0, 0, {
+        getTileBaseType: () => 'floor', getFloorMaterial: () => material,
+      }))).toEqual([]);
+    }
+    expect(contours(printTileShapes('floor', 0, 0, {
+      getTileBaseType: () => 'floor',
+      getFloorMaterial: (x, y) => x === 0 && y === 0 ? 'unavailable-v2' : undefined,
+    }))).toEqual([]);
+    for (const neighbor of ['water', 'wall', 'secret-door', 'door-h', 'archway', 'background', 'empty', undefined] as const) {
+      expect(contours(printTileShapes('floor', 0, 0, {
+        getTileBaseType: () => neighbor,
+        getFloorMaterial: (x, y) => x === 0 && y === 0 ? 'folio-worn-wood-v1' : undefined,
+      }))).toEqual([]);
+    }
+  });
+
   it('distinguishes all five surfaces and keeps page-independent material marks', () => {
     const floors = [undefined, ...FLOOR_MATERIAL_IDS].map(material =>
       printTileShapes('floor', 7, 9, { getTileBaseType: () => 'floor', getFloorMaterial: () => material }));
