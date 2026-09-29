@@ -15,7 +15,17 @@ recovery, Library import previews from direct editor imports, and implemented
 offline/responsive behavior from unqualified support claims. The stale
 editor-overlay PNG action label is corrected without changing export behavior.
 This is local documentation completion, not release approval. A real-bundle
-upgrade/recovery rehearsal is next; hosted budget remains zero.
+upgrade/recovery rehearsal now also passes for the source-pinned pair below;
+hosted budget remains zero.
+
+**A-UPDATE local rehearsal, September 28, 2026:** A locally rebuilt prior
+application at the last successful Pages source `72f32e1` upgrades to candidate
+`d9036c5` and rolls back while retaining project/session records and recovery
+data. All three locked engines passed the manual rehearsal at `db024ac`.
+These are real different bundles with unchanged storage schemas, not the
+older comment-only worker update. Supported-version scope, final-candidate
+applicability and hosted release qualification remain unaccepted. See
+[build identities, assertions and retained evidence](./UX-09-HANDOFF.md#local-documentation-and-real-version-update-milestone).
 
 **Local-only follow-up, September 28, 2026:** Hosted budget is **zero**.
 PR #185 remains open at `dbba27f`; its Linux Firefox run
@@ -1378,7 +1388,7 @@ successful bounded milestones.
 | Gate | Remaining work and acceptance | Evidence / environment | Current disposition and reference |
 | --- | --- | --- | --- |
 | A-DATA | Preserve source records and newer work, prevent resurrection and partial commits, and retain a usable recovery path through legacy migration, deletion tombstones and failed-startup recovery/races. | Copilot review; production UI and native IndexedDB on macOS 26.6.2, locked Chromium/Firefox/WebKit, legacy/rich/failure fixtures | Passed for the ten bounded cases at `ca0dedb`; [revision-linked evidence and startup-conflict fix](./UX-09-HANDOFF.md#a-data-production-preservation-milestone). Exact-head required Linux CI remains the landing gate; physical storage failure is not qualified |
-| A-UPDATE | Exercise an actual supported prior application version upgrading to the candidate with existing projects and sessions. Rehearse safe rollback or documented recovery without lossy writes. Do not invent a schema change merely to exercise migration. | Agent-led; production application/worker versions, isolated persistent browser profiles and retained backups | Not assessed; [UX-08](./UX-08-HANDOFF.md#qualification) currently changes worker bytes without changing the application bundle |
+| A-UPDATE | Exercise an actual supported prior application version upgrading to the candidate with existing projects and sessions. Rehearse safe rollback or documented recovery without lossy writes. Do not invent a schema change merely to exercise migration. | Copilot; source-pinned production rebuilds, isolated synthetic persistent profiles and real recovery downloads on macOS 26.7 | Passed locally for `72f32e1 -> d9036c5 -> 72f32e1` on three engines with harness `db024ac`; [evidence and limits](./UX-09-HANDOFF.md#local-documentation-and-real-version-update-milestone). Supported-version scope and final release candidate remain unaccepted; manual rehearsal is not a new required CI check |
 | A-EDIT | Bring critical `ux04Editing.browser.mjs` object-editing paths into the required runner; cover keyboard access, apply/cancel, undo, failure states, visible focus, contrast and reflow across supported workflows. Preserve player projection/display/export sentinel coverage. | Copilot; production UI and native storage; platform/revision-specific evidence in the handoff | Failed Linux Firefox at `dbba27f`: 200% inspector focus is clipped; aggregate correctly failed. Correction at `aa40a14`, strengthened assertions at `0d0e0bb`, affected local three-engine cases passed. [Fresh exact-head hosted evidence is blocked by zero budget](./UX-09-HANDOFF.md#zero-actions-roadmap-disposition-and-resume-checklist). Earlier macOS results are retained, not relabeled as Linux acceptance |
 | A-PERF | Profile before another bounded optimization. Establish a measured desktop workload/hardware/DPR scope, loading behavior, and F05 export allocation/cancellation behavior. Meet the existing desktop targets or obtain an explicit, evidence-backed early-access scope exception before release. | Agent-led where hardware is available; repeated production measurements and retained long-stall/memory observations | Not assessed for reference acceptance; [current F05 diagnostics](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone) remain above the paint target in Chromium/Firefox |
 | A-DOCS | Reconcile README, Features, Sharing, help/demo guidance and release notes with Your maps -> Create/open -> Edit -> Prepare -> Run -> Player display. State local-only display, project-backup versus session scope, offline readiness and supported limits accurately. | Copilot; actual UI source, UX-02/05/06/08 contracts and targeted help/action component assertions | Completed locally September 28: public guides, help text and action labels corrected; historical GIFs labeled, support/release gaps explicit. Not yet published, no support-scope exception or release approval |
@@ -1422,13 +1432,13 @@ or AI visual review alone is not physical-print acceptance.
 
 A-DATA and A-EDIT's bounded implementations and local production qualification
 are recorded above; A-EDIT's later Linux failure is corrected locally but still
-awaits hosted qualification. A-DOCS is now locally completed. Under the current
-zero budget, A-UPDATE's synthetic real-version rehearsal can
-also run locally once the prior-version/candidate pair is identified, without
-declaring either supported or released. With permissions and evidence resolved,
-continue with A-UPDATE, then
-A-RELEASE for a real candidate. A-DOCS and owner art/physical-print preparation
-can progress independently. A-PERF begins with a bounded profile and evidence
+awaits hosted qualification. A-DOCS is locally completed, and the bounded
+A-UPDATE pair passes the manual local rehearsal. Do not repeat either campaign
+without a changed claim or implementation. Next decisions are reference
+hardware/workload for A-PERF and explicit qualification/deployment policy scope
+for A-RELEASE; owner art/physical-print work can progress independently.
+Supported-version scope and a final candidate must still be identified before
+A-UPDATE can serve as release evidence. A-PERF begins with a bounded profile and evidence
 handoff; a larger renderer rewrite or performance-scope exception requires an
 explicit decision, not an unattended expansion.
 
@@ -1584,7 +1594,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-07 | Initial-release art implemented; automated evidence and owner acceptance tracked separately | [Art closeout ledger](#initial-release-art-closeout): remaining icon/sample/companion approvals and A-PRINT block launch closeout; ART-05/09 are deferred, not initial-release dependencies |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; umbrella for A/B/C, not an early-access completion label | Full acceptance requires all three milestones and the retained section 8 criteria |
-| UX-09A | Early-access closure in progress; desktop-first with physical printing | [Release gate ledger](#release-gate-ledger): bounded A-DATA local evidence retained; A-EDIT Linux failure corrected locally, fresh hosted receipt blocked by zero budget. Real-version upgrade, performance scope, docs, owner art, physical print and release handling remain open |
+| UX-09A | Early-access closure in progress; desktop-first with physical printing | [Release gate ledger](#release-gate-ledger): A-DOCS complete locally; bounded A-UPDATE pair passed locally; A-EDIT hosted receipt blocked by zero budget. Final-candidate/version scope, performance, owner art, physical print and release handling remain open |
 | UX-09B | Deferred from early access; not accepted | Broader physical-device, native zoom, assistive-technology and remaining device-performance qualification; printing stays in A |
 | UX-09C | Deferred from early access; no participant acceptance | Existing first-use, routine-play, comprehension and aesthetic/readability criteria require real participants |
 | UX-10 | Deferred | Explicit approval of remote scope |

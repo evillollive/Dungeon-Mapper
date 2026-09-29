@@ -890,12 +890,15 @@ eight-size matrix now has sixteen observations per engine.
 | Local evidence | Result and applicability |
 | --- | --- |
 | Original application plus retained 390x440 case | Firefox reproduced sheet clipping at 200%; command failed as expected, not passing evidence |
-| `aa40a14`, macOS 26.6.2, DPR 1, production assets | Four selected journeys per engine passed: both inspector text sizes, existing editor navigation and existing critical keyboard workflows; zero skipped cases |
+| `aa40a14`, macOS 26.7, DPR 1, production assets | Four selected journeys per engine passed: both inspector text sizes, existing editor navigation and existing critical keyboard workflows; zero skipped cases |
 | `0d0e0bb`, same application build | Both strengthened inspector journeys passed on Chromium 151.0.7922.34, Firefox 153.0 and WebKit 26.5; each size now commits a distinct edit; zero skipped cases |
 | Focus trap, inspector and dialog component selection | 31 tests passed, including forward/backward scroll-target assertions; jsdom is not visual scrolling evidence |
 | Build and lint | Production build and zero-warning lint passed; no dependencies were installed or changed |
 
 The final inspector results are in `files/zero-actions-applied-{chromium,firefox,webkit}/`.
+The September 28 host version above corrects an initially copied 26.6.2 label
+to the retained `sw_vers` result, 26.7. September 16's actual 26.6.2 records
+remain unchanged.
 Existing shell/critical-keyboard results are in
 `files/zero-actions-final-{chromium,firefox,webkit}/`. Each browser attachment
 records its source commit and browser version. All local runs kept the
@@ -958,8 +961,8 @@ run costs are historical, not spending authorized by this task.
 
 | Remaining work | Owner / dependency / permission | Reusable evidence and smallest next execution | Completion evidence / stop |
 | --- | --- | --- | --- |
-| Local now: A-DOCS | Agent; current UI and documented contracts; no hosted budget needed | Existing creation, UX-05/06/08 handoffs and production journeys. Correct README, Features, Sharing, help/demo guidance and changelog against the current Library -> Create/open -> Edit -> Prepare -> Run flow | Locally committed accurate guidance distinguishing local player display, backups versus sessions, offline readiness and unqualified limits. Stop before claiming release/support approval; targeted checks only for any help-code changes |
-| Local now: A-UPDATE preparation and rehearsal | Agent; identify actual prior deployment and candidate; owner decides supported-version claims | Existing UX-08 synthetic projects, session cases and backups; build two real revisions in task-owned isolated artifacts and exercise actual upgrade plus recovery/rollback locally | Retain both bundle/worker identities and data assertions; a worker-comment-only update is insufficient. Stop if a lossy write, unidentified prior version or support-scope decision is encountered |
+| Locally completed: A-DOCS | Agent; current UI and documented contracts; publication still requires budget | `d9036c5` updates README, Features, Sharing, help/demo guidance and release notes; targeted help/action cases passed | See the milestone below. Do not repeat the audit or claim release/support approval |
+| Bounded local pass: A-UPDATE | Agent; owner still decides supported-version scope and final candidate; publication/hosted integration requires budget and policy scope | Rebuilt deployment source `72f32e1`, candidate `d9036c5`, manual harness `db024ac`; three-engine upgrade/rollback evidence below | Reuse this pair's evidence where applicable. Rerun only for a changed build pair, schema or claim; final release evidence must name the accepted versions. Stop on lossy writes or an unresolved support decision |
 | Owner: A-ART and A-PRINT | Owner/reviewer with approved art sheets, printer and print application; agree scale/alignment tolerances before measurement | Existing ART-01/06/08 sheets, F07 and exported A4/Letter files; review remaining art and print actual-size overview/assembled miniature pages | Explicit revision-tied art decisions, measured paper scale/overlap and monochrome acceptance. Remain pre-release blockers, not post-release follow-ups |
 | Local analysis plus owner: A-PERF | Agent can profile; owner must identify/approve reference hardware and any support-scope exception | Retain existing F05/cache diagnostics. Profile an identified workload only for an actual gap or proposed change; do not repeat the completed cache campaigns | Measured target results or explicit scoped early-access decision. Development Mac results alone do not pass reference acceptance |
 | Hosted: A-EDIT landing / #185 | Agent plus owner numeric budget approval; final head and base must be refreshed; fix is only local | Original failed run and current local correction/results above. After approval, one batched push and full existing CI on that head, including all three engines and UX-08; do not rerun the stale failed head or only the aggregate | Build and test plus Browser qualification succeed with all constituent results on the actual candidate/merge revision. Stop on failure, quota rejection or budget exhaustion; diagnose before any retry |
@@ -967,9 +970,11 @@ run costs are historical, not spending authorized by this task.
 | Later full-release: B-DEVICE / C-USERS | Owner, owned devices and real participants; separate authorization/restoration plan for native settings and assistive tools | Existing task scripts and synthetic fixtures, not AI personas or private data | Actual platform/input/screen-reader observations and participant results. Explicitly deferred from early access, not passed or optional for full qualification |
 | Optional: ART-05/09 and UX-10 | Owner product and operating-cost decision | Existing scope boundaries; no work started | No implementation until explicitly selected; not initial-release dependencies |
 
-The next useful zero-Actions milestone is A-DOCS. It can advance without
-publishing this correction and should not invent a supported browser/device
-range or imply that early access is approved. No dependency update is bundled:
+The subsequent zero-Actions A-DOCS/A-UPDATE milestones are recorded below.
+Remaining work needs the reference-hardware/workload decision for A-PERF,
+owner art/print participation, or explicit policy scope for A-RELEASE; hosted
+qualification still needs a numeric budget. Do not invent a supported
+browser/device range or imply that early access is approved. No dependency update is bundled:
 this failure involves focus/layout, not package exposure. Any future dependency
 finding must identify the installed path, affected version, runtime/build
 exposure and compatible fix before changing the lockfile.
@@ -1007,6 +1012,114 @@ two CI runs plus Pages, before retries; another full CI attempt adds roughly
 implications, propose a conservative numeric ceiling with post-merge/retry
 reservations, and obtain approval **before** a trigger. None of these estimates
 grants an allowance now. Stop rather than exceed the approved ceiling.
+
+### Local documentation and real-version update milestone
+
+September 28, 2026. All work is locally committed with no pushes or hosted
+triggers. Documentation/help source: `d9036c503c833ca44061bef86283c13440e4d6b4`.
+Manual rehearsal: `db024ac7470e4f61dc7dcf6c557dcccf8e197a13`.
+
+A-DOCS reconciles README, Features, Sharing/demo scripts, the documentation
+index, changelog and in-app shortcut help against the actual UI source and
+existing UX-02/05/06/08 contracts. It corrects the obsolete fresh-Library
+G/Present flow, Rail/Tabs and mobile menus, import replacement claims, print
+shortcut, export-overlay labels, save promises and qualification overclaims.
+Library import previews and direct editor imports are described separately.
+Project backup JSON excludes separate session records; session recovery files
+have no dedicated importer. Historical GIFs remain labeled references.
+Nineteen targeted help/action component assertions, build and lint passed.
+Only help/action wording changed in application code; action handlers,
+publication and serialized data did not.
+
+The prior source was identified read-only from successful Pages run
+[`35034579361`](https://github.com/evillollive/Dungeon-Mapper/actions/runs/35034579361):
+`72f32e16c30be85e92f48e13fccb1576f36ed35e`. It was exported with `git archive`
+into task-owned session artifacts, not another session or the main checkout.
+Both versions were built locally with Node 24.16.0 and the identical dependency
+lockfile (SHA-256
+`e038ea92ee0771faac9355d3892b01fc838daf42350251bbc7cbbde08806ee50`).
+The archived build reused the existing dependency directory after byte equality
+of the lockfiles was checked. No install, upgrade or schema change was needed.
+This is a reconstruction of the deployed source, not a claim that the original
+hosted artifact was downloaded or its byte identity independently established.
+
+| Build | App asset | App SHA-256 | Worker SHA-256 |
+| --- | --- | --- | --- |
+| Prior `72f32e1` | `App-CbydfPzw.js` | `32c23606ba87c1b2ccd50ec93d1826f8d28dd179ba5f5d56e7b01d157c5a4af2` | `5cd81b01a4780d216c7126760b1f00255f17416780145782d1ea89f72502bd2c` |
+| Candidate `d9036c5` | `App-BE003znV.js` | `171eaac1c1c34284f77cbc985b77e74a5a0190bc4554cdb8fa18606194bc8774` | `d1012ad893e5348c4b7e50b32809890492a8bc987c52f2fe4cc1d9020f4c8460` |
+
+`ux09Upgrade.spec.mjs` uses the locked Playwright runner and real Vite production
+previews at the same `/Dungeon-Mapper/` loopback origin. It restarts that origin
+with each complete build; it does not append worker comments or invent a data
+migration. Assertions verify distinct bundle bytes, the loaded document module,
+the actual App resource and content hashes after upgrade and rollback.
+
+The synthetic input reuses `ux09Library.browser.mjs`'s rich two-level fixture,
+including embedded image, custom theme/tile/stamp/template libraries and unknown
+extension fields, with one added player token and initiative entry. Public UI
+creates the local identity, recovery copy, session movement and named session
+checkpoint. There are no real users, live AI personas, external providers or
+native browser-setting operations.
+
+Each engine asserts:
+
+- A held native IndexedDB write blocks the explicit update without navigation;
+  the latest committed project then survives activation.
+- Every durable record remains equal immediately across upgrade and rollback,
+  including project/session identities, revisions, source checkpoint, project
+  recovery copy and named session checkpoint.
+- Private backup downloads before/after upgrade are equal; candidate session
+  checkpoint restoration preserves the pre-restore progress in the recovery slot.
+- Candidate edits survive rollback; the older application can save a new project
+  edit and session turn without losing assets, unknown fields or recovery history.
+- A real downloaded project backup imports as a separate identity, leaving source
+  project/session work intact. The rolled-back application reloads and reopens
+  that copy with the sole HTTP origin stopped.
+
+| Local environment | Actual result |
+| --- | --- |
+| macOS 26.7, Chromium 151.0.7922.34 | One complete upgrade/rollback journey passed, 19.9 seconds |
+| macOS 26.7, Firefox 153.0 | One complete upgrade/rollback journey passed, 22.1 seconds |
+| macOS 26.7, WebKit 26.5 | One complete upgrade/rollback journey passed, 19.6 seconds |
+
+All three passed in 62.4 seconds with zero skipped/flaky cases, one worker,
+no retries and the existing three-minute case/twenty-minute suite limits.
+Persistent profiles are synthetic and task-owned, and contexts/servers were
+closed by fixture teardown. Browser errors were empty. Neither browser-process
+restart nor OS interruption, physical storage loss, all historical version
+pairs, arbitrary downgrades or a schema migration was qualified.
+
+Reference dispositions in session
+`20233d90-7a79-4423-a564-f75af5b08662`:
+
+| Material | Disposition |
+| --- | --- |
+| `files/upgrade-prior-source/` | Retained source archive, build and read-only deployment metadata; its dependency symlink is build tooling, not part of the immutable distribution |
+| `files/upgrade-candidate-dist/` | Retained copy of the tested candidate distribution, checked against the full file-hash manifest |
+| `files/upgrade-final/` | Retained runner reports, build/runner source identities, complete distribution hashes, synthetic persistent profiles, original input, native record snapshots and real project/session recovery downloads |
+| `files/upgrade-first-chromium/`, `upgrade-second-chromium/`, `upgrade-third-chromium/` | Retained failed harness attempts: inherited preview server collision, then native Fetch response API mismatch. These failed before qualifying upgrade behavior and are not product failures or passes |
+| `files/upgrade-fourth-chromium/` | Retained initial successful working-tree rehearsal; final three-engine evidence supersedes it for this pair |
+| Existing UX-08, preservation and A-EDIT references | Already retained. Their original outcomes remain unchanged; no unrelated renderer/export campaign was repeated |
+
+The manual config is deliberately outside default CI. The required runner still
+discovers 177 tests in nine files; this was a discovery check only, not 177 passes.
+No workflow, trigger, required-check policy, timeout or hosted resource changed.
+Commands and prerequisites are in
+[Development](./DEVELOPMENT.md#manual-real-version-upgrade-and-rollback-rehearsal).
+
+**Release applicability:** This supplies bounded local A-UPDATE evidence for
+`72f32e1 -> d9036c5 -> 72f32e1`, not an approved supported-version range or a
+final-release receipt. A-RELEASE must still bind the accepted candidate and
+supported predecessor to exact qualification and a publication/rollback policy.
+Adding this rehearsal to hosted CI or changing Pages qualification needs explicit
+policy scope and a numeric budget. The known #185 hosted Firefox failure is
+not cleared by these local runs. A-PERF reference acceptance, owner art approval,
+physical A4/Letter evidence and the later B/C gates remain open.
+
+**Accounting:** The continuation retains a zero-minute hosted budget, zero
+initiated triggers and zero reservations. No remote publication or paid-provider
+call occurred. Local compute and disk costs were not metered; account-wide
+quota, billed storage/cache usage and other actors' usage remain unknown.
 
 ## Remaining release gates
 

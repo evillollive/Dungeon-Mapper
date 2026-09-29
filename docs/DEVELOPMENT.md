@@ -76,6 +76,60 @@ bundle. It is an activation and data-continuity test, not a cross-schema upgrade
 test. Historical UX-01 scenario scripts remain baseline-specific; use the
 current UX-08 runner for export and update behavior.
 
+### Manual real-version upgrade and rollback rehearsal
+
+`npm run test:upgrade:run` uses `playwright.upgrade.config.mjs` and
+`ux09Upgrade.spec.mjs`. It inherits the locked engines, one-worker/no-retry
+settings, timeouts and reporting from the existing runner, but owns its
+switchable Vite preview server. It is **not** registered in required CI or the
+default `test:browser` suite. Test discovery is not execution evidence.
+
+Build an actual prior application revision and the intended candidate into
+separate retained directories. Record the full source SHA of each build; do
+not point both inputs at the same `dist` or identify a dirty build as clean
+HEAD. Use task-owned archives or build directories, not another session's or
+the main checkout. The recorded rehearsal rebuilt the source of the latest
+successful Pages deployment, rather than downloading its original artifact.
+Identical lockfiles allowed reuse of existing dependencies without an install.
+If lockfiles differ, inspect compatibility before attempting a build.
+
+```bash
+QA_OUTPUT=/absolute/path/to/new-rehearsal \
+QA_PRIOR_DIST=/absolute/path/to/retained-prior/dist \
+QA_PRIOR_SHA=72f32e16c30be85e92f48e13fccb1576f36ed35e \
+QA_CANDIDATE_DIST=/absolute/path/to/retained-candidate/dist \
+QA_CANDIDATE_SHA=d9036c503c833ca44061bef86283c13440e4d6b4 \
+QA_SOURCE_SHA="$(git rev-parse HEAD)" \
+npm run test:upgrade:run
+# Append -- --project=firefox for a bounded investigation.
+```
+
+The example SHAs identify the recorded pair. Change them only when the
+corresponding retained build comes from that different revision.
+
+`QA_PORT` has the existing 5309 default and must be free. The test restarts
+the sole loopback origin with each build; it does not alter worker bytes or
+application data to fake a version change. It verifies different real App
+and worker hashes, the document module URL and the loaded App resource.
+Each engine owns a synthetic persistent profile, which is closed on teardown.
+Use a new `QA_OUTPUT` to retain prior runs because the normal runner replaces
+its browser-results/report subdirectories.
+
+The fixture reuses the existing rich Library project: two levels, embedded
+art, custom libraries, unknown extension fields, a project recovery copy and
+a separately saved session with a named checkpoint. Assertions cover an
+update blocked by a pending native write; exact durable records and real
+backup downloads across activation; candidate session-checkpoint recovery;
+rollback preserving newer project/session work; subsequent writes by the
+older application; private project-backup reimport as a separate identity;
+and offline reload with the sole origin stopped.
+
+Results retain source/build hashes, native storage snapshots, actual private
+synthetic downloads and profiles. These are one pair's compatibility evidence,
+not generic downgrade support, a new schema migration, physical storage
+failure, browser/OS restart qualification or a release receipt. See the
+[recorded version pair and limitations](./UX-09-HANDOFF.md#local-documentation-and-real-version-update-milestone).
+
 ## Blocking production browser journeys (UX-09)
 
 The locked `playwright` package also provides `playwright/test`; no external SDK,

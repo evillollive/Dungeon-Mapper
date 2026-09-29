@@ -741,3 +741,16 @@ If you want Dungeon Mapper to behave more like an installed tool than a browser 
 
 See [UX-08 export and offline contract](./UX-08-HANDOFF.md) for browser limits,
 production qualification and the update policy.
+
+### If an update or recovery goes wrong
+
+Keep the current tab open while saving is pending or failed. Export a private
+project backup of current work where available, and retain session recovery
+downloads separately before leaving Run. Do not clear browser/site storage:
+that can remove the Library, sessions, recovery copies and offline cache.
+
+Use the visible retry/recovery controls and preserve the original download
+when reporting a failure. An older deployed app is not automatically a safe
+reader for newer data. There is no user-facing version picker or general
+downgrade guarantee. A locally rehearsed version pair is evidence for that
+pair only, not permission to restore arbitrary application or storage versions.
