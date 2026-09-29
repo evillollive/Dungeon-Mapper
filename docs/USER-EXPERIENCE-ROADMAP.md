@@ -4,9 +4,21 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status, updated September 16, 2026:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 and UX-08 are merged. UX-07's initial-release artwork is implemented, with implementation, automated evidence and owner acceptance tracked separately in the [art closeout ledger](#initial-release-art-closeout). UX-09 is split into [early-access closure, device qualification and observed usability](#release-milestones-and-ownership). Desktop-first early access includes physical printing; its release gates remain open. Full release qualification and participant usability acceptance are not claimed.
+**Status, updated September 28, 2026:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 and UX-08 are merged. UX-07's initial-release artwork is implemented, with implementation, automated evidence and owner acceptance tracked separately in the [art closeout ledger](#initial-release-art-closeout). UX-09 is split into [early-access closure, device qualification and observed usability](#release-milestones-and-ownership). Desktop-first early access includes physical printing; its release gates remain open. Full release qualification and participant usability acceptance are not claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
+
+**Local-only follow-up, September 28, 2026:** Hosted budget is **zero**.
+PR #185 remains open at `dbba27f`; its Linux Firefox run
+[`35037146541`](https://github.com/evillollive/Dungeon-Mapper/actions/runs/35037146541)
+failed the 200% editing-inspector focus case. Browser qualification correctly
+failed with it. Earlier local passes below retain their recorded platform and
+revision, not an all-platform acceptance claim. The local correction is
+committed at `aa40a14`, with stronger per-viewport edit assertions at `0d0e0bb`.
+Affected keyboard cases pass locally on all three engines; Linux acceptance
+remains blocked. Original failures are retained. See the
+[local disposition and hosted-resume checklist](./UX-09-HANDOFF.md#zero-actions-roadmap-disposition-and-resume-checklist).
+No push, PR mutation, hosted run or release is authorized.
 
 **Owner-approved launch scope, September 15, 2026:** Proceed toward
 desktop-first early access with local projects, editing, DM sessions, local
@@ -1358,7 +1370,7 @@ successful bounded milestones.
 | --- | --- | --- | --- |
 | A-DATA | Preserve source records and newer work, prevent resurrection and partial commits, and retain a usable recovery path through legacy migration, deletion tombstones and failed-startup recovery/races. | Copilot review; production UI and native IndexedDB on macOS 26.6.2, locked Chromium/Firefox/WebKit, legacy/rich/failure fixtures | Passed for the ten bounded cases at `ca0dedb`; [revision-linked evidence and startup-conflict fix](./UX-09-HANDOFF.md#a-data-production-preservation-milestone). Exact-head required Linux CI remains the landing gate; physical storage failure is not qualified |
 | A-UPDATE | Exercise an actual supported prior application version upgrading to the candidate with existing projects and sessions. Rehearse safe rollback or documented recovery without lossy writes. Do not invent a schema change merely to exercise migration. | Agent-led; production application/worker versions, isolated persistent browser profiles and retained backups | Not assessed; [UX-08](./UX-08-HANDOFF.md#qualification) currently changes worker bytes without changing the application bundle |
-| A-EDIT | Bring critical `ux04Editing.browser.mjs` object-editing paths into the required runner; cover keyboard access, apply/cancel, undo, failure states, visible focus, contrast and reflow across supported workflows. Preserve player projection/display/export sentinel coverage. | Copilot; production UI and native storage, macOS 26.6.2, locked Chromium/Firefox/WebKit; actual keyboard traversal, 100%/200% interface text, seven viewport sizes | Passed for 13 bounded editing cases per engine at `4f3fad3`; [revision-linked evidence and two fixes](./UX-09-HANDOFF.md#a-edit-production-editing-milestone). Existing shell/keyboard/audience/display and UX-08 export/offline journeys also passed. Exact-head required Linux CI remains the landing gate; native zoom, physical input and full accessibility qualification are not claimed |
+| A-EDIT | Bring critical `ux04Editing.browser.mjs` object-editing paths into the required runner; cover keyboard access, apply/cancel, undo, failure states, visible focus, contrast and reflow across supported workflows. Preserve player projection/display/export sentinel coverage. | Copilot; production UI and native storage; platform/revision-specific evidence in the handoff | Failed Linux Firefox at `dbba27f`: 200% inspector focus is clipped; aggregate correctly failed. Correction at `aa40a14`, strengthened assertions at `0d0e0bb`, affected local three-engine cases passed. [Fresh exact-head hosted evidence is blocked by zero budget](./UX-09-HANDOFF.md#zero-actions-roadmap-disposition-and-resume-checklist). Earlier macOS results are retained, not relabeled as Linux acceptance |
 | A-PERF | Profile before another bounded optimization. Establish a measured desktop workload/hardware/DPR scope, loading behavior, and F05 export allocation/cancellation behavior. Meet the existing desktop targets or obtain an explicit, evidence-backed early-access scope exception before release. | Agent-led where hardware is available; repeated production measurements and retained long-stall/memory observations | Not assessed for reference acceptance; [current F05 diagnostics](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone) remain above the paint target in Chromium/Firefox |
 | A-DOCS | Reconcile README, Features, Sharing, help/demo guidance and release notes with Your maps -> Create/open -> Edit -> Prepare -> Run -> Player display. State local-only display, project-backup versus session scope, offline readiness and supported limits accurately. | Agent-led; published entry paths and current UI, not historical screenshots or shortcut assumptions | Not assessed; review at `06d20e8` found the README's fresh-load G/Present instructions describe the old entry path |
 | A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | Not assessed for remaining approvals; [art closeout ledger](#initial-release-art-closeout) |
@@ -1400,7 +1412,12 @@ or AI visual review alone is not physical-print acceptance.
 #### Bounded execution order
 
 A-DATA and A-EDIT's bounded implementations and local production qualification
-are recorded above. Continue with A-UPDATE, then
+are recorded above; A-EDIT's later Linux failure is corrected locally but still
+awaits hosted qualification. Under the current zero budget, A-DOCS is the next
+independent local milestone. A-UPDATE's synthetic real-version rehearsal can
+also run locally once the prior-version/candidate pair is identified, without
+declaring either supported or released. With permissions and evidence resolved,
+continue with A-UPDATE, then
 A-RELEASE for a real candidate. A-DOCS and owner art/physical-print preparation
 can progress independently. A-PERF begins with a bounded profile and evidence
 handoff; a larger renderer rewrite or performance-scope exception requires an
@@ -1558,7 +1575,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-07 | Initial-release art implemented; automated evidence and owner acceptance tracked separately | [Art closeout ledger](#initial-release-art-closeout): remaining icon/sample/companion approvals and A-PRINT block launch closeout; ART-05/09 are deferred, not initial-release dependencies |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; umbrella for A/B/C, not an early-access completion label | Full acceptance requires all three milestones and the retained section 8 criteria |
-| UX-09A | Early-access closure in progress; desktop-first with physical printing | [Release gate ledger](#release-gate-ledger): bounded A-DATA and A-EDIT cases pass locally; exact-head CI, real-version upgrade, performance scope, docs, owner art, physical print and release handling remain open |
+| UX-09A | Early-access closure in progress; desktop-first with physical printing | [Release gate ledger](#release-gate-ledger): bounded A-DATA local evidence retained; A-EDIT Linux failure corrected locally, fresh hosted receipt blocked by zero budget. Real-version upgrade, performance scope, docs, owner art, physical print and release handling remain open |
 | UX-09B | Deferred from early access; not accepted | Broader physical-device, native zoom, assistive-technology and remaining device-performance qualification; printing stays in A |
 | UX-09C | Deferred from early access; no participant acceptance | Existing first-use, routine-play, comprehension and aesthetic/readability criteria require real participants |
 | UX-10 | Deferred | Explicit approval of remote scope |

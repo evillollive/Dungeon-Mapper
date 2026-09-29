@@ -240,7 +240,7 @@ for each primary property and Apply/Cancel, plus the complete note inspector
 layout matrix. Numeric input preserves fractional precision without relying
 on Firefox's rounding `valueAsNumber`.
 
-Each text-scale case records seven viewport sizes at 100% or 200% interface
+Each text-scale case records eight viewport sizes at 100% or 200% interface
 text, with screenshots, measured focus/clipping/hit targets and sampled text
 contrast. This is not native page zoom, physical keyboard/device acceptance,
 screen-reader qualification or full WCAG conformance. Quota and preference
@@ -249,6 +249,12 @@ physical disk failures. Negative persistence assertions wait beyond the
 production save debounce and compare raw native records; content/history
 equality ignores absent-versus-undefined optional keys through the portable
 JSON contract.
+
+The added 390x440 case retains the local reproduction of Firefox's partially
+clipped focus at short heights. Every viewport uses a distinct draft and
+requires an enabled Apply action, including adjacent reduced-height cases.
+The application focus trap scrolls keyboard destinations fully into view;
+the test does not call `scrollIntoView` to manufacture a passing result.
 
 See [A-EDIT scope, evidence and remaining gates](./UX-09-HANDOFF.md#a-edit-production-editing-milestone).
 

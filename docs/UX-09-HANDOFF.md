@@ -856,6 +856,158 @@ promoted to passed by these cases. No project schema, renderer, audience
 policy or display/export contract changes. Continue with A-UPDATE's real
 application-version upgrade/recovery milestone.
 
+### September 28 local-only correction and reference retention
+
+The September 16 result above is historical macOS evidence, not a passed
+Linux qualification. PR #185 is still open at `dbba27f`. In
+[run 35037146541](https://github.com/evillollive/Dungeon-Mapper/actions/runs/35037146541),
+Firefox passed 58 registered cases and failed the 200% inspector case at
+390x460: Apply was partly outside the sheet and viewport. Build/test,
+Chromium and WebKit passed on that revision. The Browser qualification
+aggregate correctly failed because Firefox failed. The failure is an
+application focus defect exposed by the new A-EDIT coverage, not a package
+registry, runner or cancellation failure. Rerunning unchanged code is not the
+remedy.
+
+The prior investigation left an uncommitted 390x440 regression size and a
+viewport-specific assertion message. Both are preserved. The original
+production assets reproduce clipping at that size locally in Firefox.
+The focus trap advances with `focus()`, which can leave a partly visible
+control clipped in Firefox. Keyboard traversal now also calls
+`scrollIntoView({ block: 'nearest', inline: 'nearest' })`, matching Notes and
+Initiative's existing focus-restoration pattern. Context panels reserve four
+pixels of scroll padding for the focus outline. No scripted scrolling is added
+to the browser test to conceal the defect, and no assertion, timeout or
+qualification requirement is weakened.
+
+The correction is locally committed as
+`aa40a14932537ace59c05536a5bd4fd5d99ae41b`. A subsequent test-only commit,
+`0d0e0bb5fc1a73b5108da5ff25ae839d4f1d7112`, includes both width and height in
+each draft and requires Apply to be enabled. This prevents adjacent 390x440
+and 390x460 cases from accidentally exercising a no-op Apply. The retained
+eight-size matrix now has sixteen observations per engine.
+
+| Local evidence | Result and applicability |
+| --- | --- |
+| Original application plus retained 390x440 case | Firefox reproduced sheet clipping at 200%; command failed as expected, not passing evidence |
+| `aa40a14`, macOS 26.6.2, DPR 1, production assets | Four selected journeys per engine passed: both inspector text sizes, existing editor navigation and existing critical keyboard workflows; zero skipped cases |
+| `0d0e0bb`, same application build | Both strengthened inspector journeys passed on Chromium 151.0.7922.34, Firefox 153.0 and WebKit 26.5; each size now commits a distinct edit; zero skipped cases |
+| Focus trap, inspector and dialog component selection | 31 tests passed, including forward/backward scroll-target assertions; jsdom is not visual scrolling evidence |
+| Build and lint | Production build and zero-warning lint passed; no dependencies were installed or changed |
+
+The final inspector results are in `files/zero-actions-applied-{chromium,firefox,webkit}/`.
+Existing shell/critical-keyboard results are in
+`files/zero-actions-final-{chromium,firefox,webkit}/`. Each browser attachment
+records its source commit and browser version. All local runs kept the
+existing single-worker, no-retry and timeout settings. The inspector assertions
+still require unclipped, hit-testable, viewport-visible focus and at least
+44x44 CSS-pixel actions. Minimum sampled contrast remained 8.39:1 and the
+focus outline 3 pixels. Selected reduced-height screenshots were inspected.
+No OS screen reader, native browser settings or physical-input tests ran.
+
+The shared focus trap affects modal keyboard scrolling, so the existing
+critical-keyboard journey was refreshed alongside the inspector matrix. It
+includes nested dialogs, export-backup/recovery controls and session actions.
+Storage transactions, project schema, numeric parsing, renderer geometry,
+player projections and export pixels did not change in this correction.
+Their earlier evidence remains applicable to those unchanged implementations,
+but is not a new exact-head or release receipt. Renderer, preservation and
+UX-08 campaigns were not repeated solely because this CSS/hook changed.
+Future full hosted qualification is still required by the existing policy.
+
+Build identity for both final local groups: `App-CCpLUrr1.js`,
+`App-THvbwtv0.css`, service worker SHA-256
+`0a1c061ddce052e4c2668a0541d8ac82feb680c7d8a06ee8ad4edb3b51fe5a9f`.
+The original Linux report records the PR test-merge revision
+`bd69b5f5cd70d3b7f66a6f25667b21c9d64d0ab5`, based on main `72f32e1` and PR
+head `dbba27f`; it must not be confused with the local correction.
+
+Reference dispositions, recorded before relocating the old untracked folders:
+
+| Material | Disposition |
+| --- | --- |
+| Original Linux Firefox report, failed-case screenshot/trace, other case artifacts and UX-08 results in `.pr185-check-fix-ci/` | Retain the complete downloaded directory, unchanged, in session `20233d90-7a79-4423-a564-f75af5b08662`, `files/zero-actions-retained-ci/`; do not commit generated reports |
+| Earlier font/height/padding screenshots in `.pr185-check-fix-probe/` | Retain unchanged in `files/zero-actions-retained-probes/` as diagnostic references only; screenshots without run/source metadata are not passing qualification |
+| September 16 `files/editing-final-*` reports and synthetic fixtures in `src/test/` | Already retained; do not rerun unrelated storage, renderer or export campaigns or delete their evidence |
+| New local reproduction | Retain `files/zero-actions-editing-baseline/`, identified as `dbba27f` application code plus the retained 390x440 regression and diagnostics; this is a failed result |
+| First corrected local run | Retain `files/zero-actions-editing-candidate/` as a working-tree result, not a hosted receipt |
+
+No original failure or synthetic fixture is discarded. The repository's
+existing policy remains: generated local evidence lives in session artifacts;
+CI evidence has fourteen-day retention; release evidence must outlive that
+window. Relocation preserves content, rather than replacing failure evidence
+with a successful report.
+
+The relocation completed without removing evidence. The original Firefox
+`browser-report.json` SHA-256 before and after relocation is
+`80f03d45bc92c7f2fa7b17936f23bcb5ff07532ef6abfa5ab42cfaf2b4827b39`.
+Read-only GitHub run metadata was added beside it, preserving both run-head
+and test-merge identities. The screenshots-only probes remain explicitly
+non-qualifying. No new evidence framework or test fixture was introduced.
+
+### Zero-Actions roadmap disposition and resume checklist
+
+**Budget and scope:** September 28 task approval is **0 hosted runner
+minutes**. This task initiated **0 hosted triggers**, reserved **0 minutes**
+and has **0 allowance remaining**. No push, PR mutation, merge, workflow
+dispatch/rerun, hosted review/agent, paid-provider call or automation was
+requested. Local compute and disk usage were not metered; GitHub account
+quota, billed storage/cache usage and other actors' consumption are unknown.
+Read-only GitHub queries do not establish a free account balance. Previous
+run costs are historical, not spending authorized by this task.
+
+| Remaining work | Owner / dependency / permission | Reusable evidence and smallest next execution | Completion evidence / stop |
+| --- | --- | --- | --- |
+| Local now: A-DOCS | Agent; current UI and documented contracts; no hosted budget needed | Existing creation, UX-05/06/08 handoffs and production journeys. Correct README, Features, Sharing, help/demo guidance and changelog against the current Library -> Create/open -> Edit -> Prepare -> Run flow | Locally committed accurate guidance distinguishing local player display, backups versus sessions, offline readiness and unqualified limits. Stop before claiming release/support approval; targeted checks only for any help-code changes |
+| Local now: A-UPDATE preparation and rehearsal | Agent; identify actual prior deployment and candidate; owner decides supported-version claims | Existing UX-08 synthetic projects, session cases and backups; build two real revisions in task-owned isolated artifacts and exercise actual upgrade plus recovery/rollback locally | Retain both bundle/worker identities and data assertions; a worker-comment-only update is insufficient. Stop if a lossy write, unidentified prior version or support-scope decision is encountered |
+| Owner: A-ART and A-PRINT | Owner/reviewer with approved art sheets, printer and print application; agree scale/alignment tolerances before measurement | Existing ART-01/06/08 sheets, F07 and exported A4/Letter files; review remaining art and print actual-size overview/assembled miniature pages | Explicit revision-tied art decisions, measured paper scale/overlap and monochrome acceptance. Remain pre-release blockers, not post-release follow-ups |
+| Local analysis plus owner: A-PERF | Agent can profile; owner must identify/approve reference hardware and any support-scope exception | Retain existing F05/cache diagnostics. Profile an identified workload only for an actual gap or proposed change; do not repeat the completed cache campaigns | Measured target results or explicit scoped early-access decision. Development Mac results alone do not pass reference acceptance |
+| Hosted: A-EDIT landing / #185 | Agent plus owner numeric budget approval; final head and base must be refreshed; fix is only local | Original failed run and current local correction/results above. After approval, one batched push and full existing CI on that head, including all three engines and UX-08; do not rerun the stale failed head or only the aggregate | Build and test plus Browser qualification succeed with all constituent results on the actual candidate/merge revision. Stop on failure, quota rejection or budget exhaustion; diagnose before any retry |
+| Hosted and policy approval: A-RELEASE | Owner authorizes qualification/deployment policy changes and separately budgets publication/post-merge work; depends on A-UPDATE and all other A gates | Existing workflows and retained failure/candidate evidence. Design a fail-closed exact-revision Pages qualification dependency locally; do not change the current policy without approval | Exact deployed source matches successful qualification; versioned evidence survives CI expiry; real-version rollback/recovery rehearsed. Merge alone is not release approval |
+| Later full-release: B-DEVICE / C-USERS | Owner, owned devices and real participants; separate authorization/restoration plan for native settings and assistive tools | Existing task scripts and synthetic fixtures, not AI personas or private data | Actual platform/input/screen-reader observations and participant results. Explicitly deferred from early access, not passed or optional for full qualification |
+| Optional: ART-05/09 and UX-10 | Owner product and operating-cost decision | Existing scope boundaries; no work started | No implementation until explicitly selected; not initial-release dependencies |
+
+The next useful zero-Actions milestone is A-DOCS. It can advance without
+publishing this correction and should not invent a supported browser/device
+range or imply that early access is approved. No dependency update is bundled:
+this failure involves focus/layout, not package exposure. Any future dependency
+finding must identify the installed path, affected version, runtime/build
+exposure and compatible fix before changing the lockfile.
+
+**CI waste assessment, read-only:** Feature-branch pushes have no direct CI
+push trigger, but updating the open PR starts one full PR workflow. CI also
+runs after merge on main; Pages starts separately. There is no merge-queue
+trigger in the checked-in workflows. CI uses per-ref superseded-run
+cancellation; Pages has its own cancellation group. Each PR run performs four
+dependency installs/builds, one in Build and test and one in each engine job.
+Main adds a separate Pages install/build. Each engine already reuses its build
+for the runner and UX-08, so no extra build should be added between those
+steps. The WebKit pixel preflight deliberately runs before the full suite.
+Job limits remain 15 minutes for Build and test, 20 per engine and 2 for the
+aggregate; Pages has no explicit job timeout.
+
+No change-aware selection currently exists. Deduplicating production builds
+would require artifact identity/integrity handling; safe docs-only selection
+would require an approved policy that keeps required checks fail-closed and
+distinguishes unexecuted evidence from passes. Adding `paths-ignore`, omitting
+an engine, making the aggregate green on a skipped job or removing the
+preflight is not an authorized optimization. Pages currently runs
+independently of successful CI, which remains an A-RELEASE defect to address
+under explicit policy scope, not a reason to weaken checks.
+
+Historical run `35037146541` used about **32.5 aggregate job minutes**,
+approximately **35** after per-job whole-minute rounding, not its 11.5-minute
+elapsed duration. Earlier main run `35034579302` used about 24.4 aggregate
+minutes, before this added editing suite; Pages run `35034579361` used
+44 seconds across two jobs, approximately 2 rounded minutes. These are
+observed standard-Linux durations, not invoices. A future one-update/one-merge
+cycle with the enlarged suite is roughly 70-80 rounded runner minutes for
+two CI runs plus Pages, before retries; another full CI attempt adds roughly
+35-40. Refresh durations, triggers, billing rules and artifact/storage
+implications, propose a conservative numeric ceiling with post-merge/retry
+reservations, and obtain approval **before** a trigger. None of these estimates
+grants an allowance now. Stop rather than exceed the approved ceiling.
+
 ## Remaining release gates
 
 Subsequent housekeeping removes 68 of the original 73 hook warnings and
