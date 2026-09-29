@@ -1251,8 +1251,31 @@ are documented in [Development](./DEVELOPMENT.md#launch-art-and-print-companion-
 revision for the writing desk with papers in the crypt's upper-left study,
 then explicitly expanded the request to stronger outlines across all 24
 monochrome furnishings. Tokens, map symbols, colored artwork and interface
-icons are outside this change. The print-only revision is in progress;
-the crypt sample and revised furnishing companions are not yet approved.
+icons are outside this change.
+
+**Furnishing outline approval, September 28, 2026:** The owner approved the
+stronger monochrome treatment at `68d1bf260cb9dda4bca01ab69d4973bcc6f25a4d`,
+after reviewing equal before/after study enlargements and the complete
+24-furnishing sheet. Pack 1.1.1 / render version 2 uses at least 2.4 frame units
+for outer silhouettes and 1 for interior strokes. Source colors, path geometry,
+IDs, placement, tokens and map symbols are unchanged.
+Retain the [approved furnishing sheet](./media/launch-art/furnishings-outlined-v1.1.1.png)
+and [revised crypt context](./media/launch-art/launch-lantern-crypt-outlined.png);
+the original sheets above remain the pre-revision reference. This approval is
+for the furnishing treatment, not launch-sample composition or physical paper.
+
+The targeted furnishing/launch/print unit selection passed 34 tests. Nine
+production case/engine combinations passed on the locked Chromium, Firefox
+and WebKit engines: the complete furnishing renderer matrix, launch-art
+geometry/page seams, and the crypt's real A4/Letter export journey. Existing
+pixel bounds, cache limits and audience assertions were unchanged. Build and
+lint passed. Evidence is retained in session
+`20233d90-7a79-4423-a564-f75af5b08662`,
+`files/furnishing-outlines-final-{chromium,firefox,webkit}`; the before/after
+review is `files/furnishing-outline-review.html`. Stroke-dependent furnishing
+and composed-print evidence is refreshed; unrelated token/terrain geometry,
+storage and keyboard campaigns retain their original scope and were not rerun.
+These local results are not an exact-head hosted receipt or paper qualification.
 
 **Acceptance still open:** Owner approval of the remaining new artwork and sample sheets, physical
 A4/Letter printing, participant/device/screen-reader qualification and UX-09
@@ -1284,7 +1307,7 @@ and review sheets before commissioning further artwork.
 | ART-04 tokens | Twelve silhouettes and affiliation frames integrated in #178 | Catalog placement, persistence and color/grayscale/print coverage | Catalog approved |
 | ART-06 launch samples | Three authored encounters integrated in #181 | Sample integrity, fresh copies, projection and render coverage | Crypt changes requested September 28 for monochrome furnishing readability; revised sheet awaits approval. Crossing and ship reviews remain open |
 | ART-07 first-use illustrations | Revised three-scene set integrated in #180 | Component and browser art/workflow coverage | Revised set approved |
-| ART-08 print companions | Semantic monochrome set integrated in #181; furnishing outlines being revised at owner request | Existing geometry/page evidence retained; stroke-dependent results need targeted refresh | Six doors remain approved. Stronger monochrome furnishing outlines and remaining companion sheets await approval; physical paper acceptance stays open |
+| ART-08 print companions | Semantic monochrome set integrated in #181; stronger furnishing outlines implemented at `68d1bf2` | Targeted furnishing renderer, launch geometry/seams and crypt A4/Letter cases refreshed locally on three engines | Six doors previously approved; all 24 stronger monochrome furnishings approved September 28. Remaining map companions and physical paper acceptance stay open |
 | ART-05/09 additional kits and adaptations | Outside initial-release scope | Not assessed for release | Deferred; not an early-access dependency |
 
 The evidence column summarizes existing scoped coverage, not blanket

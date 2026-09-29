@@ -14,8 +14,8 @@ stable IDs, default scales and the 1.x rendering contract are unchanged.
 Version 1.1.1 strengthens monochrome silhouette strokes to at least 2.4 frame
 units and interior strokes to at least 1 unit. Colored source artwork, path
 geometry, IDs, scales and shadows are unchanged. This print-only adjustment
-was requested during owner review; visual and physical-paper acceptance are
-separate from implementation.
+was requested and visually approved by the owner on September 28, 2026.
+Physical-paper acceptance remains separate.
 
 The .svg files are editable, authoritative path-only sources. catalog.ts
 admits this deliberately restricted format and derives monochrome paths.
