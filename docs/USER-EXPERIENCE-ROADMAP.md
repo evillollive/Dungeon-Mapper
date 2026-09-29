@@ -1365,6 +1365,28 @@ unchanged. The guide round-trips in private JSON but is absent from player
 projection. This implements the requested guidance, not an inferred owner
 approval of all newly authored text or participant playtesting.
 
+Implementation: `11a6189987cbf6188487b27955fdcb9d6e3182d7`. Guidance source
+`src/utils/sampleGuides.ts` has SHA-256
+`64b34f035ba86f2979df98e78180b5b12752344bb5e8bfbeb02cdb6c591a423c`.
+The review page is generated from the actual catalog, not separately authored
+copy: `files/sample-guide-review.html` in session
+`20233d90-7a79-4423-a564-f75af5b08662`. It includes all 35 entries and their
+three roles; the generator is retained alongside it.
+
+Targeted unit/component evidence covers all guide IDs with no orphan entries,
+each level's private JSON round-trip, player exclusion, independent copies
+and both picker components. The new gallery test initially left its remembered
+tab selected for the next test; scoping preference reset to that test group
+fixed the test isolation without changing product behavior. Six production
+case/engine combinations passed on Chromium, Firefox and WebKit: guided
+creation/Library continuity, including the art-reference guide at phone width,
+and Kestrel's safe preview/copy/print journey with the persisted guide. Results
+are retained under `files/sample-guides-final-{chromium,firefox,webkit}`.
+Build and lint passed. Shared artwork and geometry are unchanged, so their
+unrelated renderer campaigns were not repeated. No hosted receipt, physical
+printing or participant qualification is inferred; the prior real-version
+update pair remains evidence for its original source revisions.
+
 **Acceptance still open:** Owner approval of the remaining new artwork and sample sheets, physical
 A4/Letter printing, participant/device/screen-reader qualification and UX-09
 performance gates. Earlier "ART-06/08 remain open" entries describe their
@@ -1529,7 +1551,7 @@ successful bounded milestones.
 | A-EDIT | Bring critical `ux04Editing.browser.mjs` object-editing paths into the required runner; cover keyboard access, apply/cancel, undo, failure states, visible focus, contrast and reflow across supported workflows. Preserve player projection/display/export sentinel coverage. | Copilot; production UI and native storage; platform/revision-specific evidence in the handoff | Failed Linux Firefox at `dbba27f`: 200% inspector focus is clipped; aggregate correctly failed. Correction at `aa40a14`, strengthened assertions at `0d0e0bb`, affected local three-engine cases passed. [Fresh exact-head hosted evidence is blocked by zero budget](./UX-09-HANDOFF.md#zero-actions-roadmap-disposition-and-resume-checklist). Earlier macOS results are retained, not relabeled as Linux acceptance |
 | A-PERF | Profile before another bounded optimization. Establish a measured desktop workload/hardware/DPR scope, loading behavior, and F05 export allocation/cancellation behavior. Meet the existing desktop targets or obtain an explicit, evidence-backed early-access scope exception before release. | Agent-led where hardware is available; repeated production measurements and retained long-stall/memory observations | Not assessed for reference acceptance; [current F05 diagnostics](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone) remain above the paint target in Chromium/Firefox |
 | A-DOCS | Reconcile README, Features, Sharing, help/demo guidance and release notes with Your maps -> Create/open -> Edit -> Prepare -> Run -> Player display. State local-only display, project-backup versus session scope, offline readiness and supported limits accurately. | Copilot; actual UI source, UX-02/05/06/08 contracts and targeted help/action component assertions | Completed locally September 28: public guides, help text and action labels corrected; historical GIFs labeled, support/release gaps explicit. Not yet published, no support-scope exception or release approval |
-| A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | ART-01's final P revision approved September 28. Launch samples and remaining print-companion approvals stay open; [art closeout ledger](#initial-release-art-closeout) |
+| A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | Final P icon, all three launch visuals, Kestrel rescue purpose/layout, stronger furnishings and floor-boundary treatment approved September 28. All-sample guidance implemented without blanket acceptance of new text. Remaining print-companion review and A-PRINT stay open; [art closeout ledger](#initial-release-art-closeout) |
 | A-PRINT | Complete the physical-printing launch gate below, including both paper sizes, overview/miniature scale, assembled overlaps and monochrome readability. | Agents prepare exports; a person prints/measures/reviews and supplies evidence from documented printer/app setups | Not assessed on physical paper; digital layout and DPI evidence do not close this gate |
 | A-RELEASE | Require successful qualification of the exact revision before Pages publication; retain strict merge protection. Publish a versioned evidence/limitations summary and rehearse documented rollback/recovery. Preserve release evidence beyond the current 14-day CI artifact window. | Approved local workflow implementation, synthetic verifier tests and artifact-consumer evidence; remote baseline unchanged | Core gating implemented locally at `96b1b70`; [evidence and resume requirements](./UX-09-HANDOFF.md#local-exact-artifact-deployment-implementation). No hosted enforcement/deployment receipt. Zero budget blocks publication; durable retention and formal release approval remain open |
 | B-DEVICE | Complete the broader hardware, native zoom, mobile/input, assistive-technology and device-performance matrix without implying that emulation is physical qualification. | Appropriate devices/OS tools plus human nonvisual/input task observations | Deferred from early access, not waived for full release; supported claims must reflect the gap |
