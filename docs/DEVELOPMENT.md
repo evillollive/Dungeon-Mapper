@@ -581,15 +581,17 @@ hosts. No sample counts or behavior assertions are reduced.
 Each repetition samples 24 hovers, 24 paint-drag updates, twelve token-drag
 updates, 24 keyboard pans, and separate paint/token start or commit events.
 It checks coordinate feedback, imported density/art, persisted edits and
-single-action undo before accepting the run. Together with the delayed-draw
-probe, F05 now contributes four tests per engine to the required browser jobs.
+single-action undo before accepting the run. Together with the delayed full-
+and partial-draw probes, F05 contributes five tests per engine.
 
 Timing begins at a trusted browser event's timestamp. Painting and token edits
-must reach the existing main-canvas render (backing-width assignment), finish
+must reach a main-canvas width reset or regional clear, finish
 its synchronous drawing stack, and reach two subsequent animation frames.
 Hover and pan use the frame opportunity without requiring a map redraw.
-The separate probe regression deliberately delays drawing by 100 ms to ensure
-an earlier animation frame cannot prematurely end an edit measurement.
+The two probe regressions deliberately delay drawing by 100 ms and reject
+context-only or unrelated-canvas operations, so an earlier frame cannot
+prematurely end an edit measurement. Synchronous clears are coalesced per
+canvas; the v2 probe records `drawKind` and its source Git blob identity.
 This is an event-to-render/frame **proxy**, not physical input-to-paint or INP.
 Browser scheduling and headless frame cadence differ between engines.
 
@@ -610,11 +612,50 @@ report, never a zero-latency sample. Chromium's first repetition additionally pr
 `f05-chromium-trace.json` and `f05-chromium.cpuprofile`, and is explicitly
 marked profiled. Compare profiled and unprofiled runs separately. Timelines
 contain the `f05:` input/frame marks. Later repetitions do not use CDP profiling.
+Compare builds with the same probe version/blob; a measurement based only on
+width assignment cannot qualify an implementation that paints without resizing.
 
 There are deliberately no 100 ms/2-second CI assertions before representative
 hardware and measurement methodology are agreed. Do not lower the roadmap
 targets or interpret a green diagnostic as performance acceptance.
 See [actual local results and remaining bottleneck](./UX-09-HANDOFF.md#dense-map-diagnostic-milestone).
+
+### Bounded editor token repaint
+
+`tokenRepaint.ts` plans conservative token-only damage. `tokenSceneBounds.ts`
+expands it to complete intersecting artwork, using at most 2,048 temporary
+bounds and sixteen closure passes. The fast path is limited to trusted Edit
+previews on integral native device-pixel tile grids. Canvas edges, regions
+above 25%, visible fog/FOV, print, unknown glyphs, imported/custom assets and
+other changed scene state use the full renderer. Native scale is read from
+the Canvas transform, not approximated from a DPR whitelist. Existing image
+resolution, art detail and caches are unchanged.
+
+MapCanvas retains the last completed frame's references and rectangle metadata,
+not a second bitmap. Partial paints preserve global coordinates, layer order and
+the complete composed canvas. Commit/cancel and unsupported states continue to
+redraw fully. No export/player renderer or map schema adopts this optimization.
+
+```bash
+npm test -- src/utils/__tests__/tokenRepaint.test.ts \
+  src/utils/__tests__/tokenSceneBounds.test.ts \
+  src/components/__tests__/MapCanvas.performance.test.tsx
+QA_OUTPUT=/absolute/path/to/token-repaint npm run test:browser -- src/test/tokenRepaint.spec.mjs
+```
+
+The source-bundled browser harness compares the actual editor with its full-
+render path. It compares complete images across six DPRs and 20/24/32-pixel
+tiles, overlapping artwork, token footprints, movement/cancel/commit and
+fallbacks. Alpha must match exactly, RGB differs by at most 1/255 with a
+0.01/255 mean limit. It uses synthetic events for differential pixels, while
+existing production journeys and F05 retain genuine input/persistence checks.
+An eighty-move case observes no new DOM canvas allocations; this is not a
+total browser-memory ceiling or physical-device soak test.
+
+The additional case is included in the existing runner, without a new job,
+dependency, timeout or retry. Local results and known limitations, including
+the still-visible App chunk-size advisory, are recorded in the
+[implementation handoff](./UX-09-HANDOFF.md#token-drag-partial-repaint-implementation-and-local-results).
 
 ### Bounded edge-cache regressions
 
@@ -645,7 +686,7 @@ the test rejects new rasterization/page allocation on an unchanged second
 traversal. Unit/component tests also cover semantic/color invalidation,
 settings, disposal and populating pages before sampling them.
 
-Keep the performance probe's four cases, these two renderer cases and the five
+Keep the performance probe's five cases, these two renderer cases and the
 workflow journeys in every engine job. Read
 [the cache milestone](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone)
 for final measurements, startup costs, memory exclusions and remaining gates.

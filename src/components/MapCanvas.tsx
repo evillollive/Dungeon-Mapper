@@ -1339,7 +1339,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
       ctx.fillStyle = printMode ? PRINT_BG : SCREEN_BG;
       ctx.fillRect(0, 0, w, h);
 
-      // Background image layer — rendered behind the tile grid so GMs can
+      // Background image layer: rendered behind the tile grid so GMs can
       // trace over an imported battlemap. Hidden in print mode.
       const bgImg = bgImageRef.current;
       if (bgImg && backgroundImage && !printMode) {
@@ -1357,7 +1357,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         ctx.restore();
       }
 
-      // Paper texture layer — procedural parchment/linen/etc rendered behind
+      // Paper texture layer: procedural parchment/linen/etc rendered behind
       // the tile grid. Disabled in print mode.
       if (!printMode && map.paperTexture?.enabled) {
         const tint = map.paperTexture.tintOverride ?? getPaperTint(themeId);
@@ -1407,7 +1407,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
 
       drawRiverBanks(ctx, renderTiles, meta.width, meta.height, tileSize, themeId, printMode, tileBounds);
 
-      // Edge blending — render after tiles, before grid lines. Disabled in print mode.
+      // Edge blending: render after tiles, before grid lines. Disabled in print mode.
       if (!printMode && map.edgeBlend?.enabled) {
         drawEdgeBlending(ctx, renderTiles, meta.width, meta.height, tileSize, map.edgeBlend, theme, customThemes, edgeBlendCache, tileBounds);
       } else {
@@ -1429,20 +1429,20 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         ctx.stroke();
       }
 
-      // Hand-drawn mode — wobbly grid lines + cross-hatch overlay rendered
+      // Hand-drawn mode: wobbly grid lines + cross-hatch overlay rendered
       // after the regular grid so the hand-drawn strokes sit on top. Works in
       // both screen and print mode (B&W strokes in print).
       if (map.handDrawn?.enabled) {
         drawHandDrawn(ctx, renderTiles, meta.width, meta.height, tileSize, map.handDrawn, printMode, customThemes);
       }
 
-      // Lighting & atmosphere — ambient occlusion, stamp shadows, and color
+      // Lighting & atmosphere: ambient occlusion, stamp shadows, and color
       // grading rendered after hand-drawn overlay. Disabled in print mode.
       if (!printMode && map.lightingAtmosphere?.enabled) {
         drawLightingAtmosphere(ctx, renderTiles, meta.width, meta.height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes, customStamps, tileBounds);
       }
 
-      // Light source glow halos — rendered right after the grid lines so the
+      // Light source glow halos: rendered right after the grid lines so the
       // warm overlay blends naturally with tile art. Glows are always visible
       // to the GM and are shown in player view regardless of dynamic fog mode
       // (the fog pass below still decides which cells are actually hidden).
@@ -1458,7 +1458,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         const radius = tileSize * 0.38;
         const isSelected = note.id === selectedNoteId;
         if (printMode) {
-          // Outlined circle with a black number — works equally well in B&W print.
+          // Outlined circle with a black number works equally well in B&W print.
           ctx.fillStyle = '#ffffff';
           ctx.beginPath();
           ctx.arc(px, py, radius, 0, Math.PI * 2);
@@ -1483,13 +1483,13 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         ctx.fillText(String(note.id), px, py + 0.5);
       });
 
-      // Wall segments — structural overlays rendered above tiles/notes but
+      // Wall segments: structural overlays rendered above tiles/notes but
       // under annotations and tokens. Visible in both GM and player views.
       for (const seg of wallSegments) {
         drawWallSegmentOnCanvas(ctx, seg, tileSize);
       }
 
-      // Path segments — road/path overlays rendered above tiles but under walls,
+      // Path segments: road/path overlays rendered above tiles but under walls,
       // annotations, and tokens. Visible in both GM and player views.
       for (const seg of pathSegments) {
         drawPathSegmentOnCanvas(ctx, seg, tileSize);
@@ -1561,7 +1561,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         }
       }
 
-      // Placed stamps — rendered between light icons and tokens so they
+      // Placed stamps: rendered between light icons and tokens so they
       // appear as map furniture/dressing beneath the tactical token layer.
       if (stamps.length > 0) {
         for (const stamp of stamps) {
@@ -1614,13 +1614,13 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
       }
 
       // Fog overlay. In player view, paint fully opaque grey cells so hidden
-      // content is genuinely hidden. In GM view, normally render nothing —
-      // the GM is in control of the map and shouldn't have it obscured —
+      // content is genuinely hidden. In GM view, normally render nothing;
+      // the GM is in control of the map and shouldn't have it obscured,
       // but when the GM has opted in to "Show Fog", paint a translucent grey
       // wash so they can see at a glance what is fogged.
       const renderFog = fogActive && fog && (isPlayerView || gmShowFog);
       if (renderFog) {
-        // Cells the player is currently brushing with the Defog tool — skip
+        // Cells the player is currently brushing with the Defog tool: skip
         // their fog overlay so the wipe is visible in real time before the
         // change is committed on mouseup.
         const defogSkip = defogStroke
@@ -1681,7 +1681,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
           ctx.restore();
         }
 
-        // Fog edge feathering — soft gradient fringe at fog/clear boundaries.
+        // Fog edge feathering: soft gradient fringe at fog/clear boundaries.
         const fogRgb: [number, number, number] = [107, 114, 128];
         const fogAlpha = isPlayerView ? 1.0 : 0.55;
         const isCellFogged = (fx: number, fy: number): boolean => {
@@ -1899,7 +1899,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
           }
         }
 
-        // Distance label — always shown
+        // Distance label: always shown
         if (distCells > 0) {
           const midX = (sx + ex) / 2;
           const midY = (sy + ey) / 2;
@@ -1965,7 +1965,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         });
       }
 
-      // Polygon in-progress preview — show partial polygon with placed vertices + cursor.
+      // Polygon in-progress preview: show partial polygon with placed vertices + cursor.
       if (polyVertices.length > 0 && activeTool === 'room-poly') {
         ctx.save();
         ctx.strokeStyle = '#22d3ee';
@@ -1997,7 +1997,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         ctx.restore();
       }
 
-      // Ghost preview for fog reveal/hide drag — show the in-progress
+      // Ghost preview for fog reveal/hide drag: show the in-progress
       // rectangle the user is about to commit.
       if (isDragging && dragStart && dragEnd && (activeTool === 'reveal' || activeTool === 'hide')) {
         const minX = Math.min(dragStart.x, dragEnd.x);
@@ -2034,7 +2034,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         ctx.restore();
       }
 
-      // Paste preview — when the clipboard has content and the select tool
+      // Paste preview: when the clipboard has content and the select tool
       // is active, draw a translucent dashed outline at the mouse position
       // (or the selection origin) showing where the paste will land.
       if (hasClipboard && clipboardSize && activeTool === 'select' && previewMousePos) {
@@ -2060,7 +2060,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         ctx.restore();
       }
 
-      // Marker preview — when the marker tool is active and the mouse is on
+      // Marker preview: when the marker tool is active and the mouse is on
       // the canvas, show a ghost marker at the cursor position.
       if (activeTool === 'marker' && previewMousePos) {
         const ghost: ShapeMarker = {
@@ -2076,7 +2076,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         drawMarker(ctx, ghost, tileSize);
         ctx.restore();
       }
-      // Light source preview — when the light tool is active and the mouse is
+      // Light source preview: when the light tool is active and the mouse is
       // on the canvas, show a ghost glow at the cursor position so the user
       // can see the illumination radius before placing the source.
       if (activeTool === 'light' && previewMousePos) {

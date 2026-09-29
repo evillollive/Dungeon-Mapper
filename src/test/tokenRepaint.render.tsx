@@ -12,9 +12,9 @@ const noop = () => {};
 const noToken = () => null;
 const frame = () => new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
 
-function fixture(size: number, fog: boolean, text: boolean): DungeonMap {
+function fixture(size: number, fog: boolean, text: boolean, tileSize: number): DungeonMap {
   const map = createDefaultMap('Token repaint proof');
-  map.meta = { ...map.meta, theme: FOLIO_THEME_ID, width: 24, height: 24, tileSize: 24 };
+  map.meta = { ...map.meta, theme: FOLIO_THEME_ID, width: 24, height: 24, tileSize };
   map.tiles = Array.from({ length: 24 }, (_, y) => Array.from({ length: 24 }, (_, x): Tile => ({
     type: x === 0 || y === 0 || x === 23 || y === 23 ? 'wall'
       : x >= 17 && y >= 4 && y <= 8 ? 'water' : 'floor',
@@ -44,8 +44,8 @@ function fixture(size: number, fog: boolean, text: boolean): DungeonMap {
   return map;
 }
 
-export async function mountTokenRepaintProof(size = 1, fog = false, text = false, omitStamps = false) {
-  const map = fixture(size, fog, text);
+export async function mountTokenRepaintProof(size = 1, fog = false, text = false, omitStamps = false, tileSize = 24) {
+  const map = fixture(size, fog, text, tileSize);
   if (omitStamps) map.stamps = [];
   const stats = {
     candidate: { full: 0, partial: 0 },

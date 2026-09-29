@@ -1367,7 +1367,8 @@ batching trial, then explicitly approved proceeding with the bounded prototype.
 After the first pixel mismatch was localized, the owner also approved expanding
 damage to complete overlapping artwork, while reiterating that no Actions
 minutes are available. The source trace itself needed no additional benchmark;
-implementation and qualification are now in progress, not release acceptance.
+the subsequent bounded implementation and local results are recorded below,
+not treated as release acceptance.
 
 The owner subsequently approved conservative admission only where the native
 tile pitch is an integer number of device pixels. Other scales retain the
@@ -1530,7 +1531,175 @@ retain the failure and stop rather than accumulating special cases. A later
 layer/invalidation design requires a new scope decision. Current production
 code was unchanged during the initial design. Subsequent implementation remains
 local-only with zero hosted triggers/reservations, no agents and no native
-setting changes. Results must be recorded before this can be retained.
+setting changes. The result section below records why the bounded implementation
+was retained; the wider layer/cache redesign is not approved.
+
+### Token-drag partial repaint implementation and local results
+
+September 29, 2026. **Retained locally** at
+`e55bc1e358780b7ba44110ffb0702eeccb5fca79`, following the explicitly approved
+prototype, complete-overlap expansion and conservative native-grid rule.
+The subsequent test-only tile-size expansion and comment punctuation cleanup
+were rebuilt and verified against all eighteen retained distribution hashes:
+the measured application bytes are unchanged. No branch was pushed and no
+hosted receipt is claimed.
+
+#### What changed
+
+Trusted Edit token-drag previews can repaint a bounded area of the existing
+main canvas instead of resizing and repainting the whole map. The planner
+compares the last completed frame with current inputs, admits one token moving
+only X/Y, and expands the damage to complete intersecting artwork. Tile,
+river-bank, edge and ambient-occlusion loops receive conservative cell bounds;
+neighbor queries and all world coordinates remain global. Other scene layers,
+including overlapping tokens, keep their existing order under the clip.
+The common paint body is unchanged apart from those bounds and its outer
+save/restore scope; most of the large MapCanvas diff is indentation.
+
+There is no new retained canvas, bitmap or ImageData cache. The existing
+edge/floor caches keep their bounds. Temporary footprint metadata is capped at
+2,048 records and sixteen closure passes; a region above 25% of the canvas,
+touching its boundary, or failing eligibility uses a full redraw. Normal source
+updates, commit/cancel, unknown glyphs, custom/imported artwork, visible fog/FOV,
+DM/player view and print remain on the full path. No movement, visibility,
+history, autosave, token ordering, export or artwork semantics changed.
+
+Admission uses the **native Canvas transform's tile pitch**, not a guessed DPR
+whitelist: tile size times native scale must be integral in device pixels.
+An unaligned grid uses the unchanged full-quality renderer. Fractional-scale
+cases remain in the pixel tests, with fallback asserted; there is no resolution
+reduction, high-DPR detail cutoff or widened pixel allowance.
+
+#### Why the extra bounds and fallback were necessary
+
+The first token-footprint-only implementation differed by up to 16/255 when a
+clip crossed existing artwork. Text omission and full traversal under the same
+small clip did not remove the mismatch; a full-surface clip control matched.
+Complete-object expansion resolved that case. Canvas-boundary and nonintegral
+device-grid cases still exposed 2/255 rounding differences. The final rule
+keeps those cases on full repaint rather than accepting a different picture.
+The owner approved this narrower optimization eligibility explicitly.
+
+Those failed experiments are retained, not reclassified as passes. Early
+harness setup also used incorrect fixture dimensions and initially exercised
+no movement; the commit-position assertion caught that, and strict harness
+type-checking plus explicit partial/full counters now prevent a false proof.
+No timing was used to override a fidelity failure.
+
+#### Matched local measurements
+
+Baseline application `2866790ba7e3b5904e8fa5c64e9b4e5c4868f6f0` was served
+from its retained distribution, not rebuilt with candidate source. Candidate
+application is `e55bc1e`. Both used the same updated F05 probe blob, unchanged
+F05 v1 fixture, trusted input, sample counts, persistence/undo assertions,
+single worker, no retries and existing timeout budgets. Each engine completed
+three baseline and three candidate repetitions, run sequentially.
+
+Environment: Apple M5 Max, 64 GiB, macOS 26.7, Node 24.16.0, 1440x900,
+DPR 1, no throttling. Chromium 151.0.7922.34, Firefox 153.0, WebKit 26.5.
+This is the available development Mac, not approved representative hardware.
+
+| Engine / repetitions | Token-preview p95 before / after (ms) | Paint p95 before / after (ms) | Warm-ready before / after (s) |
+| --- | --- | --- | --- |
+| Chromium, unprofiled 2-3 | 143.0-145.7 / 21.5-23.2 | 146.4-149.0 / 148.9-150.1 | 1.51 / 1.50-2.02 |
+| Firefox, 1-3 | 141-143 / 22-23 | 142-144 / 142-143 | 1.24 / 1.22-1.26 |
+| WebKit, 1-3 | 80-94 / 63-79 | 81-86 / 80-87 | 1.47-1.61 / 1.52-1.59 |
+
+These are ranges of each repetition's p95, not pooled statistics. Chromium's
+profiled repetition changed token p95 from 147.5 to 24.9 ms, paint from 154.7
+to 151.5 ms, and warm-ready from 2.01 to 2.02 seconds. All twelve token-drag
+samples in every candidate repetition used partial painting; every baseline
+token-drag sample used full painting. The clear improvement is scoped to
+eligible editor previews, not the separate Run workspace or all dragging.
+
+Release/commit still redraws the full map. Its single observation per repetition
+was 145.0-153.3 / 147.6-152.2 ms in Chromium, 141-144 / 142-148 in Firefox,
+and 81-82 / 82-87 in WebKit. Do not call these single observations tail-latency
+qualification. Paint and warm-ready results are mixed; there is no claimed
+paint/loading improvement. Small full-render regressions and the variable
+two-second Chromium readiness result are retained rather than averaged away.
+
+The probe now observes actual main-canvas width resets **or** regional clears
+through the end of the synchronous drawing stack and two frame opportunities.
+Delayed full/partial probes reject early frame, context-only and unrelated-
+canvas false signals. This remains an event-to-render/frame proxy, not physical
+input latency, INP, or a pass of the unchanged 100 ms desktop/150 ms mobile/
+two-second warm-launch release criteria.
+
+#### Correctness and cost evidence
+
+The in-memory browser harness mounts the actual MapCanvas twice. A changing,
+nonvisual callback makes the reference take its ordinary full-render fallback;
+the candidate uses partial painting. Complete equal-sized surfaces are compared,
+not cropped patches and not an export-renderer substitute. The final expanded
+matrix covers 20/24/32-pixel tiles, six DPR values (1, 1.25, 1.3, 1.5, 2, 3),
+1/2/3-cell tokens, overlapping art, map edges, long moves, return-to-origin,
+cancellation, commit and visible-fog/text-glyph fallbacks. These comparisons
+use synthetic pointer events; native production journeys and F05 separately
+cover genuine input and persistence.
+
+The alpha-equality and maximum 1/255 RGB / 0.01 mean bounds remain intact.
+The expanded matrix records 632 complete-frame comparisons per engine:
+maximum RGB difference 1/255, alpha difference zero, and maximum mean
+0.000264/255 in Chromium/Firefox and 0.00000151/255 in WebKit.
+Each engine also completes an eighty-move drag/cancel case with no new DOM
+canvas elements observed. That does not measure total GPU/process memory or
+qualify long-running physical-device behavior.
+
+Local evidence includes 117 targeted unit/component/audit tests, strict
+browser-harness type-checking, zero-warning lint, all three expanded pixel
+matrices and six delayed-draw probes. Existing native editing cancellation
+and viewport/scope journeys passed on all three engines. The unchanged F05
+functional assertions passed in all eighteen matched repetitions.
+
+Build/type-check succeeds, but the App chunk is now about 506.68 kB minified
+(148.95 kB gzip), versus 499.14 kB (146.37 kB gzip) in the baseline. Vite's
+500 kB advisory is visible; its threshold was not raised or hidden. No unrelated
+code-splitting refactor or dependency upgrade was added.
+
+The required runner discovers 183 tests in ten files after adding the
+editor-comparison case and second probe per engine. Discovery is not execution:
+the whole required hosted suite was not run. Required check names, engines,
+pixel tolerances, retry/timeout policy and fail-closed aggregation are unchanged.
+Future CI budgeting must account for the added comparison case; do not assume
+local rendering savings mean fewer total hosted minutes.
+
+#### Retention and resume
+
+Session `20233d90-7a79-4423-a564-f75af5b08662` retains:
+
+- `files/token-region-matched-baseline` and `token-region-matched-candidate`:
+  all eighteen measurements, browser/host/source/probe identities and Chromium
+  profiles. `files/token-region-matched-comparison.json` retains individual runs.
+- `files/perf-sept29-baseline-dist`, `token-region-final-dist` and
+  `token-region-build-identities.json`: complete builds and file hashes.
+  Baseline App hash:
+  `18acacd9d1e40bc42de5ef21de819f5a80cec5a7542846e98e26fd15ac4a3310`;
+  candidate App hash:
+  `a3b8e8e21a2f1999b196acbcef08124a7d79238552d4b92b9b95060e4ad29852`.
+- `files/token-region-qualified-local`, `token-region-final-size-fidelity`
+  and `token-region-unit-final.json`: clean-revision proof/probes, expanded
+  test-only tile-size proof and unit results. Earlier native gesture results
+  are in `token-region-final-fidelity`, which also retains the fractional-grid
+  failures and must not be represented as an entirely successful run.
+- `files/token-region-first-pixels`, `token-region-third-pixels`,
+  `token-region-localized-pixels`, `token-region-opaque-pixels`,
+  `token-region-overlap-pixels` and `token-region-aligned-fidelity`: rejected
+  intermediate outcomes. `token-repaint-*-diagnostic.json` and the retained
+  diagnostic script explain the text/stamp/culling/full-clip isolation;
+  these altered-fixture controls are not qualification.
+- `files/token-performance-baseline.config.mjs`: the local-only configuration
+  that serves the retained baseline with the common current measurement probe.
+
+Keep the earlier rejected floor-batch evidence and all artwork approvals.
+No cleanup discarded an original failure or synthetic reference. The next
+hosted step remains one separately budgeted, batched publication and exact-head
+qualification. No performance-target exception or release approval was granted.
+
+**Accounting:** zero hosted triggers/reservations against zero approved
+runner minutes. No pushes, PR mutations, workflow dispatches/reruns, deployments,
+paid-provider calls, native browser/OS setting changes or agents. Local compute
+and disk were not metered; account-wide usage remains unknown.
 
 ## Remaining release gates
 

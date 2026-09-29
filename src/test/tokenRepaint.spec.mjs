@@ -37,9 +37,11 @@ test('token-only repaint matches the complete editor across movement and cancell
           { size: 1, fog: false, text: false }, { size: 2, fog: false, text: false },
           { size: 3, fog: false, text: false }, { size: 1, fog: true, text: false },
           { size: 1, fog: false, text: true },
+          { size: 1, fog: false, text: false, tileSize: 20 },
+          { size: 3, fog: false, text: false, tileSize: 32 },
         ]) {
           await page.evaluate(async scenario => {
-            window.tokenProof = await window.mountTokenProof(scenario.size, scenario.fog, scenario.text);
+            window.tokenProof = await window.mountTokenProof(scenario.size, scenario.fog, scenario.text, false, scenario.tileSize ?? 24);
           }, scenario);
           const compare = async phase => {
             const result = await page.evaluate(() => window.tokenProof.compare());
@@ -58,7 +60,7 @@ test('token-only repaint matches the complete editor across movement and cancell
             }
             await page.evaluate(() => window.tokenProof.pointer('pointercancel', 4, 5));
             await compare('cancelled');
-            if (dpr === 1 && scenario.size === 1 && !scenario.fog && !scenario.text) {
+            if (dpr === 1 && scenario.size === 1 && !scenario.fog && !scenario.text && !scenario.tileSize) {
               await page.evaluate(() => {
                 const create = document.createElement;
                 window.createdDragCanvases = 0;
