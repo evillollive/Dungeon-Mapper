@@ -1312,6 +1312,12 @@ Only print-material appearance and related evidence changed, not color,
 storage, map geometry or previous owner decisions. No physical printing or
 hosted run occurred, and digital results do not qualify paper output.
 
+**Crossing sample approval, September 28, 2026:** The owner approved Alder
+Crossing's overall visual composition and readability after the boundary
+revision. The approved sheet is `launch-alder-crossing-boundaries.png`,
+retained at `0a29f67` from artwork source `d200237`. This is sample artwork
+acceptance, not participant playtesting or physical-print qualification.
+
 **Acceptance still open:** Owner approval of the remaining new artwork and sample sheets, physical
 A4/Letter printing, participant/device/screen-reader qualification and UX-09
 performance gates. Earlier "ART-06/08 remain open" entries describe their
@@ -1340,7 +1346,7 @@ and review sheets before commissioning further artwork.
 | ART-02 dungeon/material kit | Foundation and wood/earth materials merged in #167/#168 | Determinism, renderer parity, material persistence and cache coverage recorded above | Foundation and material direction approved |
 | ART-03 furnishings | 24-piece catalog integrated in #177 | Placement, transform, persistence and player-export coverage | Catalog approved |
 | ART-04 tokens | Twelve silhouettes and affiliation frames integrated in #178 | Catalog placement, persistence and color/grayscale/print coverage | Catalog approved |
-| ART-06 launch samples | Three authored encounters integrated in #181 | Sample integrity, fresh copies, projection and render coverage | Revised Lantern Crypt approved September 28 at artwork source `68d1bf2`; Alder's floor-boundary styling is approved but overall sample review remains open; ship review remains open |
+| ART-06 launch samples | Three authored encounters integrated in #181 | Sample integrity, fresh copies, projection and render coverage | Revised Lantern Crypt and Alder Crossing approved September 28 at artwork sources `68d1bf2` and `d200237`; ship review remains open |
 | ART-07 first-use illustrations | Revised three-scene set integrated in #180 | Component and browser art/workflow coverage | Revised set approved |
 | ART-08 print companions | Semantic monochrome set integrated in #181; stronger furnishings at `68d1bf2`; floor-transition contours at `d200237` | Furnishing/crypt evidence retained; floor-boundary geometry/seams and Crossing A4/Letter cases refreshed locally on three engines | Six doors, all 24 stronger monochrome furnishings and the thin floor-material boundary treatment approved. Remaining map companions and physical paper acceptance stay open |
 | ART-05/09 additional kits and adaptations | Outside initial-release scope | Not assessed for release | Deferred; not an early-access dependency |
