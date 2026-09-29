@@ -258,5 +258,9 @@ describe('qualification CLI', () => {
     const failed = run('verify', f.bundle);
     expect(failed.status).toBe(1);
     expect(failed.stderr).toContain('Canonical distribution integrity failure');
+    await writeFile(join(f.source, 'index.html'), 'tracked source changed after checkout');
+    const dirty = run('verify', f.bundle);
+    expect(dirty.status).toBe(1);
+    expect(dirty.stderr).toContain('Tracked checkout changed');
   });
 });

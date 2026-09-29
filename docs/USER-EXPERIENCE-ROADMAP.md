@@ -8,13 +8,16 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
-**A-RELEASE design, September 28, 2026:** The
-[exact-revision Pages design](./RELEASE-DEPLOYMENT-DESIGN.md) proposes one
-canonical distribution consumed by every browser job, then gated packaging
-and deployment in the same workflow. Artifact identity, cancellation races,
-rollback, retention and budget boundaries are specified. It is documentation
-only, not implementation-scope approval or a passing release gate. Current
-workflows and the zero-hosted budget are unchanged.
+**A-RELEASE local implementation, September 28, 2026:** The owner explicitly
+approved local implementation of the
+[exact-revision Pages design](./RELEASE-DEPLOYMENT-DESIGN.md). Source `96b1b70`
+builds once, verifies the same artifact in each engine, and gates main-only
+packaging/deployment on the existing required checks. The independent deploy
+workflow is removed in this checkout. Local verifier, workflow lint and bounded
+artifact-consumer checks passed; [hosted enforcement remains unverified](./UX-09-HANDOFF.md#local-exact-artifact-deployment-implementation).
+No remote workflow/environment setting changed and the hosted budget remains
+zero. Durable release retention and any additional human deployment approval
+remain separate decisions.
 
 **Documentation follow-up, September 28, 2026:** README, Features, Sharing,
 demo guidance and in-app shortcut help now follow Your maps -> Edit -> Prepare
@@ -1402,7 +1405,7 @@ successful bounded milestones.
 | A-DOCS | Reconcile README, Features, Sharing, help/demo guidance and release notes with Your maps -> Create/open -> Edit -> Prepare -> Run -> Player display. State local-only display, project-backup versus session scope, offline readiness and supported limits accurately. | Copilot; actual UI source, UX-02/05/06/08 contracts and targeted help/action component assertions | Completed locally September 28: public guides, help text and action labels corrected; historical GIFs labeled, support/release gaps explicit. Not yet published, no support-scope exception or release approval |
 | A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | Not assessed for remaining approvals; [art closeout ledger](#initial-release-art-closeout) |
 | A-PRINT | Complete the physical-printing launch gate below, including both paper sizes, overview/miniature scale, assembled overlaps and monochrome readability. | Agents prepare exports; a person prints/measures/reviews and supplies evidence from documented printer/app setups | Not assessed on physical paper; digital layout and DPI evidence do not close this gate |
-| A-RELEASE | Require successful qualification of the exact revision before Pages publication; retain strict merge protection. Publish a versioned evidence/limitations summary and rehearse documented rollback/recovery. Preserve release evidence beyond the current 14-day CI artifact window. | Agent-led; GitHub workflow/run/release revisions and synthetic fixture artifacts | [Local design drafted](./RELEASE-DEPLOYMENT-DESIGN.md), awaiting explicit implementation/policy and retention decisions. Not implemented or qualified; current Pages push/dispatch workflow remains independent of CI. Hosted proof requires a separate numeric budget |
+| A-RELEASE | Require successful qualification of the exact revision before Pages publication; retain strict merge protection. Publish a versioned evidence/limitations summary and rehearse documented rollback/recovery. Preserve release evidence beyond the current 14-day CI artifact window. | Approved local workflow implementation, synthetic verifier tests and artifact-consumer evidence; remote baseline unchanged | Core gating implemented locally at `96b1b70`; [evidence and resume requirements](./UX-09-HANDOFF.md#local-exact-artifact-deployment-implementation). No hosted enforcement/deployment receipt. Zero budget blocks publication; durable retention and formal release approval remain open |
 | B-DEVICE | Complete the broader hardware, native zoom, mobile/input, assistive-technology and device-performance matrix without implying that emulation is physical qualification. | Appropriate devices/OS tools plus human nonvisual/input task observations | Deferred from early access, not waived for full release; supported claims must reflect the gap |
 | C-USERS | Apply the unchanged section 8 participant criteria and retain sample sizes, failures and preference/recognition results separately. | Real DM/player sessions; agents may prepare tasks and analyze observations | Deferred from early access; UX-00 records zero participants, not a simulated success rate |
 
@@ -1442,10 +1445,14 @@ A-DATA and A-EDIT's bounded implementations and local production qualification
 are recorded above; A-EDIT's later Linux failure is corrected locally but still
 awaits hosted qualification. A-DOCS is locally completed, and the bounded
 A-UPDATE pair passes the manual local rehearsal. Do not repeat either campaign
-without a changed claim or implementation. A-RELEASE now has a local design;
-next decisions are its explicit implementation/policy/retention scope and
-reference hardware/workload for A-PERF. Owner art/physical-print work can
-progress independently.
+without a changed claim or implementation. A-RELEASE's core gating is now
+approved and locally implemented; no further
+implementation approval is needed for that completed scope. Next decisions
+are legacy-deployment cutover handling, durable release-evidence retention,
+any additional human deployment approval, and reference hardware/workload for
+A-PERF. Owner art/physical-print
+work can progress independently. Actual hosted qualification/publication waits
+for a numeric budget and refreshed remote state.
 Supported-version scope and a final candidate must still be identified before
 A-UPDATE can serve as release evidence. A-PERF begins with a bounded profile and evidence
 handoff; a larger renderer rewrite or performance-scope exception requires an

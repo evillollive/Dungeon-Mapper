@@ -966,20 +966,20 @@ run costs are historical, not spending authorized by this task.
 | Owner: A-ART and A-PRINT | Owner/reviewer with approved art sheets, printer and print application; agree scale/alignment tolerances before measurement | Existing ART-01/06/08 sheets, F07 and exported A4/Letter files; review remaining art and print actual-size overview/assembled miniature pages | Explicit revision-tied art decisions, measured paper scale/overlap and monochrome acceptance. Remain pre-release blockers, not post-release follow-ups |
 | Local analysis plus owner: A-PERF | Agent can profile; owner must identify/approve reference hardware and any support-scope exception | Retain existing F05/cache diagnostics. Profile an identified workload only for an actual gap or proposed change; do not repeat the completed cache campaigns | Measured target results or explicit scoped early-access decision. Development Mac results alone do not pass reference acceptance |
 | Hosted: A-EDIT landing / #185 | Agent plus owner numeric budget approval; final head and base must be refreshed; fix is only local | Original failed run and current local correction/results above. After approval, one batched push and full existing CI on that head, including all three engines and UX-08; do not rerun the stale failed head or only the aggregate | Build and test plus Browser qualification succeed with all constituent results on the actual candidate/merge revision. Stop on failure, quota rejection or budget exhaustion; diagnose before any retry |
-| Hosted and policy approval: A-RELEASE | Owner authorizes qualification/deployment policy changes and separately budgets publication/post-merge work; depends on A-UPDATE and all other A gates | Existing workflows and retained failure/candidate evidence. Design a fail-closed exact-revision Pages qualification dependency locally; do not change the current policy without approval | Exact deployed source matches successful qualification; versioned evidence survives CI expiry; real-version rollback/recovery rehearsed. Merge alone is not release approval |
+| Hosted and remaining owner decisions: A-RELEASE | Core local topology/artifact/cancellation implementation approved; durable retention and any additional human deployment approval remain open. Publication/post-merge work needs a numeric budget | Local gating implementation and verifier/integration evidence below. Refresh the actual remote base, triggers and receipts before one batched publication; no deploy-only retries | Exact deployed source matches successful qualification; versioned release evidence survives CI expiry; final-version rollback/recovery applicability resolved. Merge alone is not release approval |
 | Later full-release: B-DEVICE / C-USERS | Owner, owned devices and real participants; separate authorization/restoration plan for native settings and assistive tools | Existing task scripts and synthetic fixtures, not AI personas or private data | Actual platform/input/screen-reader observations and participant results. Explicitly deferred from early access, not passed or optional for full qualification |
 | Optional: ART-05/09 and UX-10 | Owner product and operating-cost decision | Existing scope boundaries; no work started | No implementation until explicitly selected; not initial-release dependencies |
 
 The subsequent zero-Actions A-DOCS/A-UPDATE milestones are recorded below.
 Remaining work needs the reference-hardware/workload decision for A-PERF,
-owner art/print participation, or explicit policy scope for A-RELEASE; hosted
+owner art/print participation, or remaining A-RELEASE retention/approval decisions; hosted
 qualification still needs a numeric budget. Do not invent a supported
 browser/device range or imply that early access is approved. No dependency update is bundled:
 this failure involves focus/layout, not package exposure. Any future dependency
 finding must identify the installed path, affected version, runtime/build
 exposure and compatible fix before changing the lockfile.
 
-**CI waste assessment, read-only:** Feature-branch pushes have no direct CI
+**Baseline CI waste assessment, before local implementation:** Feature-branch pushes have no direct CI
 push trigger, but updating the open PR starts one full PR workflow. CI also
 runs after merge on main; Pages starts separately. There is no merge-queue
 trigger in the checked-in workflows. CI uses per-ref superseded-run
@@ -1121,6 +1121,127 @@ initiated triggers and zero reservations. No remote publication or paid-provider
 call occurred. Local compute and disk costs were not metered; account-wide
 quota, billed storage/cache usage and other actors' usage remain unknown.
 
+### Local exact-artifact deployment implementation
+
+September 28, 2026. The owner explicitly selected **Approve local
+implementation** for the design while preserving zero hosted minutes, no pushes
+and no remote-setting changes. Implementation source:
+`96b1b70ca09ca4610f7639d376c1b4f8cf3f9a80`. A subsequent local test-only assertion
+also verifies dirty-checkout rejection; it does not change the production helper
+or the artifact-consumer evidence below.
+
+The checked-in CI graph now builds the production distribution once after
+lint/unit success. Its canonical artifact binds the checkout, repository,
+event/ref, run/attempt, lockfile, tool versions and all distribution file hashes.
+Every browser engine downloads that exact immutable ID, checks its manifest
+against the producer's output hash, materializes a new `dist`, runs the unchanged
+qualification commands and checks the consumed files again. Renderer diagnostic
+bundles still use their existing in-memory compilation.
+
+**Build and test** and **Browser qualification** keep their required names.
+The latter still fails on any non-successful required engine. Matrix fail-fast,
+lint ceiling, test selection, preflight, existing qualification timeouts and
+pixel/latency policies are unchanged. UX-08 still runs after another browser
+assertion fails, but not when no verified distribution was materialized.
+Playwright report metadata, copied manifests and UX-08 results retain the build
+identity. This adds no new runtime dependency and does not rebuild between suites.
+
+Only a fully successful main push or main dispatch in this repository reaches
+Pages packaging/deployment. The separate `deploy.yml` is removed locally,
+including its manual bypass. Packaging and deployment verify the canonical
+bundle again. The deployment slot rechecks current main and the Pages artifact's
+ID/name/run/source/repository/expiry. Forks, PRs, off-main refs, stale sources
+and mixed attempts cannot pass those checks. Partial reruns require a complete
+budgeted rerun instead of reusing earlier-attempt qualification.
+
+Qualification jobs cancel superseded work individually; there is no outer
+workflow cancellation to terminate the serialized Pages job. Pages writes and
+OIDC permissions are confined to that job. The existing main-only environment
+and server-side required checks were not modified. External cancellation or
+uncertain Pages completion still requires an operational hold, not an assumption
+that a remote request was undone.
+
+Pre-submission intent and final receipt are distinct. A skipped submission
+records not-published; an unsuccessful Pages action records unknown server-side
+outcome; a successful action with a failed public-file check records
+published-but-unverified. HTTP checks compare qualified bytes with at most three
+rounds, a two-minute request deadline, ten-second request timeouts and bounded
+response sizes. There is no automatic redeployment. Canonical/qualification/
+receipt evidence retains fourteen days; the intermediate Pages archive retains
+the prior one-day lifetime. Durable release retention remains unapproved.
+
+#### Local evidence and applicability
+
+| Evidence | Actual outcome and limit |
+| --- | --- |
+| Verifier/admission tests | 34 tests passed, including real CLI exit codes, source/run/attempt/lockfile mismatches, mutated/missing/extra files, unsafe paths, links, stale main, fork/PR/tag/off-main denial, artifact metadata rejection, bounded smoke failures, receipt outcomes and dirty checkout rejection |
+| Workflow validation | `actionlint` 1.7.12 accepted `ci.yml`; existing lint passed. This is syntax/expression validation, not GitHub enforcement evidence |
+| Build | TypeScript/Vite production build passed. Application output remained unchanged by this tooling/pipeline slice |
+| Canonical handoff integration | Actual helper CLI created a bundle from the production build, materialized it back into the checkout and successfully verified all 18 files after selected existing production journeys |
+| Selected WebKit journeys | Editor navigation/focus/reflow and the floor direct-pixel case passed, zero skips; unchanged UX-08 export/offline/controlled-update journey passed on the materialized build |
+| Hosted execution | Not run. Artifact service behavior, Linux/Node 20 execution, job/concurrency semantics, environment permissions, Pages submission and public smoke remain unverified |
+
+Integration ran on macOS 26.7, Node 24.16.0, npm 11.13.0 and WebKit 26.5.
+Its canonical manifest SHA-256 is
+`de4f799784c1c3cbdf7d187c0532ef920a05a7c6a4c0b9d555b445161d63e346`.
+The source is the implementation commit above, but run/attempt/artifact IDs
+were deliberately synthetic (`1`) on the local feature ref. **They are not a
+GitHub dispatch, artifact or hosted receipt.** No Pages or GitHub publication
+API was called by the local tests; HTTP smoke tests used synthetic responses.
+
+Retained references in session `20233d90-7a79-4423-a564-f75af5b08662`:
+
+- `files/gating-unit-final.json`: final actual unit results.
+- `files/gating-integration/`: input distribution, canonical manifest/bundle,
+  synthetic step outputs and production browser/export reports with matching
+  manifest identity. Included for reproduction, not promoted to hosted evidence.
+- `files/gating-actionlint-1.7.12/`: pinned task-local validator and publisher
+  checksums. It was downloaded only after the chosen `actionlint` command failed
+  because the tool was missing; its archive checksum was verified. No global
+  install or repository dependency change was made.
+- Existing A-EDIT, A-UPDATE, renderer, preservation and original Linux failure
+  references remain retained. The application build did not change; their
+  unchanged behavior evidence is not invalidated or relabeled as new CI success.
+
+Local checks corrected a disallowed `runner` context in job-level env and the
+download action's artifact-ID extraction layout before publication. The action
+interfaces were inspected read-only at the exact selected versions. Verifier
+development failures were diagnosed without weakening assertions. No unrelated
+full browser/renderer campaign was repeated.
+
+#### Hosted resume and stopping conditions
+
+Core implementation approval is already recorded; do not ask for that same
+approval again. Before any push/dispatch/merge, refresh main, PR #185 and
+in-flight runs, inspect the final diff, estimate all jobs/attempts/post-merge
+work and obtain a numeric shared task budget. There are still zero approved
+minutes. The historical Firefox failure is not cleared by these local results.
+
+The smallest normal hosted path is one batched PR update running full CI, then
+an independently authorized merge/main run with gating, packaging, deployment
+and public receipt. Retain the existing fail-closed checks and stop on any
+failure, skipped requirement, quota rejection, identity mismatch or uncertain
+deployment. Diagnose and request remaining/full-rerun budget before another
+trigger. Refresh old pending deployments before rollout; do not cancel unrelated
+runs or leave the old independent deploy path as a fallback. Historical reruns
+retain their original SHA/ref and privileges, so deleting `deploy.yml` does not
+prove that all legacy publication definitions are revoked. Cutover needs explicit
+owner authorization for any remote legacy-workflow restriction and verification
+of its actual limitations. This remains a release blocker, not a locally enforced
+repository-wide guarantee.
+
+Do not automatically add the manual real-version rehearsal, new optional checks,
+or human environment protection to this scope. Final A-UPDATE applicability,
+durable release storage, any additional human deployment approval, A-PERF,
+owner art and physical printing remain separate pre-release decisions/evidence.
+Technical preview publication would still not authorize an early-access release.
+
+**Accounting:** zero hosted triggers and zero reservations against the
+zero-minute budget. No pushes, PR mutations, merges, dispatches, reruns or remote
+settings changes occurred. Local compute, disk and validator-download transfer
+were not metered; account-wide quota, billed storage/cache and other actors'
+usage remain unknown.
+
 ## Remaining release gates
 
 Subsequent housekeeping removes 68 of the original 73 hook warnings and
@@ -1174,11 +1295,12 @@ required-check policy must therefore be a deliberate coordinated operation,
 not an emergency silent weakening. Preserve project backups and follow UX-08's
 explicit saved-workspace update process for any deployed rollback.
 
-The new A-RELEASE gate is planned work, not an already implemented deployment
-guarantee: Pages currently starts independently on pushes to main. Require
-successful qualification of the published revision, rehearse actual
-application-version rollback/recovery, and preserve a versioned release
-evidence/limitations summary beyond the current fourteen-day CI retention.
+The A-RELEASE pipeline is now implemented locally, not remotely qualified.
+The remote baseline still has the independent Pages workflow until budgeted
+publication and merge. Require successful qualification of the published
+revision, resolve final-version rollback/recovery applicability, and preserve
+a versioned release evidence/limitations summary beyond the current fourteen-day
+CI retention.
 
 **September 28 design-only follow-up:** The
 [exact-revision Pages design](./RELEASE-DEPLOYMENT-DESIGN.md) records the proposed
@@ -1187,6 +1309,7 @@ checks, main-only deployment, superseded-job versus active-deployment handling,
 rollout/rollback and retention decisions. Read-only inspection confirmed both
 strict required checks and the main-only Pages environment; neither changed.
 The design's acceptance table is planned work, not simulated or hosted passes.
-Implementation needs explicit policy-scope approval; publication and hosted
-verification need a separate numeric budget. This design task initiated zero
-hosted triggers and made no workflow/environment or remote changes.
+The subsequent core implementation was explicitly approved and is recorded
+above. Publication and hosted verification still need a separate numeric budget.
+The original design task initiated zero hosted triggers and made no
+workflow/environment or remote changes.

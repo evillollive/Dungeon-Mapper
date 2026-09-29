@@ -3,7 +3,6 @@
 **Make battle maps that look great fast, then keep polishing until they feel like your table.**
 
 [![CI](https://github.com/evillollive/Dungeon-Mapper/actions/workflows/ci.yml/badge.svg)](https://github.com/evillollive/Dungeon-Mapper/actions/workflows/ci.yml)
-[![Deploy to GitHub Pages](https://github.com/evillollive/Dungeon-Mapper/actions/workflows/deploy.yml/badge.svg)](https://github.com/evillollive/Dungeon-Mapper/actions/workflows/deploy.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-6.x-3178C6?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=111827)
 ![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
@@ -99,7 +98,7 @@ npm test          # run the Vitest suite once
 npm run test:watch
 ```
 
-The project targets Node.js 20+ and npm 10+. CI requires build/test and three-engine browser qualification for pull requests and pushes to `main`. Pages currently has a separate push workflow; see [release qualification](./docs/UX-09-HANDOFF.md#rollout-and-rollback) rather than treating deployment as approval.
+The project targets Node.js 20+ and npm 10+. CI requires build/test and three-engine browser qualification for pull requests and pushes to `main`. The checked-in workflow gates Pages packaging and deployment on those checks using one verified build artifact. This policy is locally implemented but still awaits hosted verification; see [release qualification](./docs/UX-09-HANDOFF.md#rollout-and-rollback) rather than treating deployment as approval.
 
 ## Format notes and caveats
 

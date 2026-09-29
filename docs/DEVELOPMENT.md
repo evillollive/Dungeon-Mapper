@@ -197,6 +197,11 @@ worker updates. Do not run both suites concurrently on the same custom port.
 
 CI runs every registered journey plus UX-08 for Chromium, Firefox and WebKit, with
 independent engine jobs, no fail-fast cancellation and fourteen-day artifacts.
+The checked-in workflow now creates the production distribution once in Build
+and test and materializes that canonical artifact in each engine job. Engines
+still install their own test/browser dependencies. Artifact identity and every
+file hash are verified before use and again after the suites. Diagnostic
+renderer bundles remain in-memory builds, not replacements for `dist`.
 It also runs the F05 diagnostic, its delayed-draw probe, and the two edge-cache
 pixel/allocation cases described below. Their behavior assertions block CI, but their latency values do not
 certify a release or impose machine-dependent timing thresholds.
@@ -216,6 +221,58 @@ generation changes, so callbacks retained from a previous project are rejected.
 See [UX-09 qualification status](./UX-09-HANDOFF.md) for actual coverage and
 remaining human/device/performance gates. Passing these jobs is not an
 accessibility conformance or full-release certification.
+
+### Canonical build and Pages gating
+
+Local implementation is in `.github/workflows/ci.yml` and
+`scripts/qualification-artifact.mjs`; the independent `deploy.yml` is removed.
+Remote workflows are unchanged until this branch is budgeted, published and
+merged. Local validation does not prove GitHub job dependencies, permissions,
+artifact service behavior, environment enforcement or Pages delivery.
+
+The helper's `create`, `materialize` and `verify` commands bind a distribution
+to repository/source/event/ref/run/attempt, lockfile and an externally supplied
+manifest hash. They reject missing/extra/changed files, unsafe paths, links,
+stale checkout content and mixed-attempt evidence. A target distribution must
+not already exist. CI downloads by immutable artifact ID with explicit root
+extraction, rather than looking up a "latest" artifact.
+
+Only a successful full main push/dispatch in this repository can reach packaging
+and deployment. Both required check names remain unchanged. Build/browser jobs
+cancel superseded work; the Pages job is serialized without workflow-wide
+cancellation. Its preflight rechecks main and the Pages artifact's run/source
+inside the deployment slot. A stale candidate fails without publishing.
+
+Canonical builds and qualification/receipt artifacts retain the existing
+fourteen-day evidence window. The intermediate Pages archive retains the
+previous one-day lifetime. None of these is the durable release archive still
+requiring owner approval. Production file bytes, not the archive wrapper, are
+the identity contract. Playwright report metadata, the copied manifest and
+UX-08 results carry the canonical identity.
+
+The deployment receipt distinguishes ready-to-submit, not-published,
+deployment-outcome-unknown, verified and published-but-unverified. Public HTTP
+smoke checks have at most three rounds, a two-minute request deadline,
+per-request timeouts and qualified-size response bounds. Pages submission has
+a six-minute action limit inside a ten-minute job, leaving time for smoke
+checks and receipts. There is no automatic redeployment or rollback.
+Manual cancellation can prevent final receipt upload; retain the pre-submission
+intent and resolve server-side status before further publication.
+
+```bash
+npm test -- src/utils/__tests__/qualificationArtifact.test.ts
+actionlint .github/workflows/ci.yml
+```
+
+The tests use synthetic metadata, temporary repositories and mocked public
+responses. They do not contact Pages or submit deployments. `actionlint` is a
+local validation tool, not a new CI job or npm dependency. A missing local
+installation should be handled explicitly rather than claiming the check ran.
+Whole-workflow reruns are required for attempt-consistent publication evidence;
+diagnose first and obtain a numeric budget before any hosted trigger.
+
+See the [design and approved scope](./RELEASE-DEPLOYMENT-DESIGN.md) and
+[local implementation evidence](./UX-09-HANDOFF.md#local-exact-artifact-deployment-implementation).
 
 ## Launch art and print companion review
 

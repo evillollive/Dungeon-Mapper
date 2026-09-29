@@ -1,16 +1,25 @@
 # Exact-revision Pages deployment design
 
-**Status:** Draft for owner approval, September 28, 2026. Documentation only.
-No workflow, environment, required check, runner or account setting is changed.
-Hosted budget remains **zero**. This design is not deployment or release evidence.
+**Status:** Core local implementation approved explicitly September 28, 2026.
+The owner selected "Approve local implementation" while retaining zero hosted
+minutes and prohibiting pushes, hosted runs and remote-setting changes.
+Implementation is locally committed; [validation and remaining limits](./UX-09-HANDOFF.md#local-exact-artifact-deployment-implementation)
+are recorded separately. Remote workflows, branch/environment settings and
+account configuration are unchanged. This is not hosted or release evidence.
+
+The design below preserves the original rationale and acceptance targets.
+Workflow topology, canonical artifact reuse, replacement of independent
+deployment paths and job-level cancellation are approved for local implementation.
+Durable release retention, any additional human environment approval and a
+numeric hosted budget remain separate decisions.
 
 **Baseline:** Local source `2e18fcb`; remote main `72f32e1`; PR #185 remains at
 `dbba27f`. Read-only inspection confirmed the configuration below. Refresh it
 before implementation or publication rather than treating this snapshot as live.
 
-## Current gap and preserved policy
+## Observed baseline gap and preserved policy
 
-`.github/workflows/deploy.yml` builds and publishes independently on main pushes
+At the inspected remote baseline, `.github/workflows/deploy.yml` builds and publishes independently on main pushes
 or manual dispatch. It does not depend on that revision's CI. The last successful
 Pages run, `35034579361`, published source `72f32e1`; its successful result alone
 does not establish release acceptance.
@@ -63,10 +72,20 @@ UX-08 serves its controlled worker through middleware. Neither requires replacin
 the production distribution. Keep those diagnostic builds: removing them would
 remove assertions, not merely duplicate production compilation.
 
-The original independent `deploy.yml` push and dispatch paths must be retired in
-the same approved change. Leaving either path active preserves the bypass.
-This is a proposed workflow removal/replacement, not permission to do it now.
+The original independent `deploy.yml` push and dispatch paths are removed
+together in the local implementation. Leaving either path active would preserve
+the bypass. They remain active on the remote baseline until the implementation
+is budgeted, published and merged.
 No cross-run artifact promotion or reusable privileged deployment service is needed.
+
+Deleting the file does not apply new guards retroactively to historical runs.
+GitHub reruns retain the original SHA/ref and triggering actor's privileges.
+The cutover must also account for queued and still-rerunnable legacy deployments;
+otherwise an old main run can remain outside this new graph. Owner authorization
+is needed for any server-side legacy-workflow disablement or other publication
+restriction, and its actual rerun limitations must be verified rather than
+assumed. No remote restriction was changed in this local-only task. Until
+cutover is resolved, do not claim repository-wide enforced publication gating.
 
 ## Artifact identity and failure behavior
 
@@ -229,12 +248,16 @@ must include every leg and repeated setup. Refresh triggers, durations, billing
 rules, storage/cache implications and queued work before proposing a conservative
 numeric ceiling. Account quota and billed resource usage are unknown.
 
-Required owner decisions before implementation/publication:
+Owner decision disposition:
 
-- Approve the topology, canonical artifact reuse, replacement of independent
-  deployment paths, job-level cancellation and main-only full manual reruns.
+- Approved for local implementation: topology, canonical artifact reuse,
+  replacement of independent deployment paths, job-level cancellation and
+  main-only full manual reruns. Hosted enforcement remains unverified.
 - Choose durable release-evidence retention and whether a future formal release
   needs additional human deployment approval. The current environment has none.
+- Authorize the legacy-workflow cutover handling needed to prevent old deployment
+  definitions from being reused outside this graph. Local file deletion is not
+  evidence that historical runs are revoked.
 - Separately approve a numeric hosted budget before any push, dispatch, rerun or
   merge. Design approval and allowance resets grant no minutes.
 
@@ -247,6 +270,7 @@ are not a hosted qualification receipt.
 - [Custom Pages workflows and required deployment permissions](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)
 - [Immutable workflow artifacts and digest validation behavior](https://docs.github.com/en/actions/tutorials/store-and-share-data)
 - [Workflow/job concurrency and cancellation](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency)
+- [Historical reruns retain the original SHA, ref and actor privileges](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/re-run-workflows-and-jobs)
 
 Provider examples can show newer action versions than this repository. Verify a
 compatible upload/download/Pages action combination when implementing; do not

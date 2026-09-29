@@ -17,6 +17,7 @@ All notable changes to this project are documented in this file.
 - Reserve unique token IDs before queued React updates so consecutive placements remain independently selectable and removable.
 
 ### Changed
+- Locally implemented exact-artifact Pages gating: one production build is verified and consumed by each browser engine before eligible main runs can package and deploy it. Required check names and suites are preserved. Hosted enforcement and publication remain unverified.
 - Reconciled public guides and in-app shortcut help with Your maps, Edit, Prepare, Run and the local player display. Documented private project backup versus session recovery scope, explicit import copies, offline readiness and unqualified release/device limits.
 - Owner-approved print door revision: capital H/V overlays without the center line, matched letter clearance, and clean lock/trap symbols retaining their outer orientation posts.
 - Print furnishings use neutral charcoal ink, and print fog uses neutral gray with crisp edges. Approved furnishing/token geometry and color-mode artwork are unchanged.

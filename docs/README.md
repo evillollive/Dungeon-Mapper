@@ -6,7 +6,7 @@
 | [Architecture](./ARCHITECTURE.md) | High-level React/Vite app structure, state flow, rendering, persistence, and test strategy. |
 | [Development Guide](./DEVELOPMENT.md) | Local setup, npm scripts, validation commands, and test-suite organization. |
 | [UX-09 Qualification](./UX-09-HANDOFF.md) | Automated browser/CI gates, current journey coverage, rollout policy and remaining release acceptance. |
-| [Pages Deployment Design](./RELEASE-DEPLOYMENT-DESIGN.md) | Proposed exact-artifact qualification and deployment graph, failure behavior, concurrency, rollback and approval boundaries. Draft only, not implemented policy. |
+| [Pages Deployment Design](./RELEASE-DEPLOYMENT-DESIGN.md) | Approved local exact-artifact workflow design, failure behavior, concurrency, rollback and remaining approval boundaries. Hosted enforcement is not yet verified. |
 | [End-user Experience Roadmap](./USER-EXPERIENCE-ROADMAP.md) | Primary execution plan for the DM/player workflow redesign, local library, visual layout, art assets, infrastructure, and acceptance tests. |
 | [Roadmap](./ROADMAP.md) | Current feature inventory, competitor reference, forward-looking roadmap, and design decisions. |
 | [Roadmap Archive](./archive/ROADMAP-history.md) | Historical record: full implementation detail for completed Phases 1–12, retrospective analyses, priority ordering, and the dated changes log. |
