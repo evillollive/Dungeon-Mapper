@@ -48,6 +48,21 @@ describe('Folio furnishing kit', () => {
       .toBeLessThanOrEqual(FOLIO_STAMP_PATH_CACHE_LIMIT);
   });
 
+  it('strengthens every print outline without changing approved color art or geometry', () => {
+    for (const furnishing of FOLIO_FURNISHINGS) {
+      const original = parseBundledFolioSvg(readFileSync(furnishing.sourceFile, 'utf8'));
+      expect(stampPaths(furnishing, false)).toEqual(original);
+      const print = stampPaths(furnishing, true)!;
+      expect(print.map(path => path.path)).toEqual(original.map(path => path.path));
+      expect(print[0].strokeWidth).toBe(Math.max(original[0].strokeWidth ?? 0.7, 2.4));
+      for (let index = 1; index < print.length; index++) {
+        expect(print[index].strokeWidth).toBe(Math.max(original[index].strokeWidth ?? 0.7, 1));
+      }
+    }
+    expect(FOLIO_FURNISHING_MANIFEST.version).toBe('1.1.1');
+    expect(FOLIO_FURNISHING_MANIFEST.renderVersion).toBe(2);
+  });
+
   it('rejects corrupt or executable source markup rather than admitting it as artwork', () => {
     const source = readFileSync(FOLIO_FURNISHINGS[0].sourceFile, 'utf8');
     for (const invalid of [

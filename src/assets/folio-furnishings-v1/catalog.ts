@@ -107,11 +107,11 @@ export const FOLIO_FURNISHINGS: FolioFurnishing[] = sources.map(source => {
     defaultScale: source.scale,
     paths,
     shadowPath: paths[0].path,
-    printPaths: paths.map(path => ({
+    printPaths: paths.map((path, index) => ({
       path: path.path,
       fill: path.fill ? '#ffffff' : undefined,
       stroke: '#202020',
-      strokeWidth: path.strokeWidth ?? 0.7,
+      strokeWidth: Math.max(path.strokeWidth ?? 0.7, index === 0 ? 2.4 : 1),
     })),
   };
 });

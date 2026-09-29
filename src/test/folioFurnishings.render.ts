@@ -1,5 +1,6 @@
 import type { DungeonMap, PlacedStamp } from '../types/map';
 import { FOLIO_FURNISHINGS } from '../assets/folio-furnishings-v1/catalog';
+import { FOLIO_FURNISHING_MANIFEST } from '../assets/folio-furnishings-v1/manifest';
 import { drawPlacedStamp } from '../components/canvasStamps';
 import { getTheme } from '../themes';
 import { buildMapSVG } from '../utils/export';
@@ -154,15 +155,15 @@ export async function showFurnishingReview() {
   document.head.append(style);
   document.body.replaceChildren();
   const kicker = document.createElement('div');
-  kicker.className = 'kicker'; kicker.textContent = 'DUNGEON FOLIO / FURNISHINGS 1.1';
+  kicker.className = 'kicker'; kicker.textContent = `DUNGEON FOLIO / FURNISHINGS ${FOLIO_FURNISHING_MANIFEST.version}`;
   const title = document.createElement('h1'); title.textContent = 'A place to stay.';
   const introduction = document.createElement('p');
-  introduction.textContent = 'Sixteen additions for lived-in halls, quiet chapels and roadside camps. Warm timber, blue canvas, green leaves and cool stone. Artwork approved September 12, 2026.';
+  introduction.textContent = 'Approved color artwork paired with the current monochrome companions. Stronger print outlines are shown for owner review, not physical-paper acceptance.';
   document.body.append(kicker, title, introduction);
   const catalog = document.createElement('section'); catalog.id = 'catalog';
   for (const [label, defs] of [
-    ['16 new furnishings / color and print', FOLIO_FURNISHINGS.slice(8)],
-    ['8 approved originals / unchanged', FOLIO_FURNISHINGS.slice(0, 8)],
+    ['16 catalog additions / unchanged color, revised print', FOLIO_FURNISHINGS.slice(8)],
+    ['8 original furnishings / unchanged color, revised print', FOLIO_FURNISHINGS.slice(0, 8)],
   ] as const) {
     const heading = document.createElement('h2'); heading.textContent = label;
     const grid = document.createElement('div'); grid.className = 'catalog';

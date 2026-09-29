@@ -1247,6 +1247,13 @@ Review: [print key](./media/launch-art/companions.png),
 Editable source, provenance, source fingerprints and reproduction instructions
 are documented in [Development](./DEVELOPMENT.md#launch-art-and-print-companion-review).
 
+**Owner review, September 28, 2026:** The owner requested a readability
+revision for the writing desk with papers in the crypt's upper-left study,
+then explicitly expanded the request to stronger outlines across all 24
+monochrome furnishings. Tokens, map symbols, colored artwork and interface
+icons are outside this change. The print-only revision is in progress;
+the crypt sample and revised furnishing companions are not yet approved.
+
 **Acceptance still open:** Owner approval of the remaining new artwork and sample sheets, physical
 A4/Letter printing, participant/device/screen-reader qualification and UX-09
 performance gates. Earlier "ART-06/08 remain open" entries describe their
@@ -1275,9 +1282,9 @@ and review sheets before commissioning further artwork.
 | ART-02 dungeon/material kit | Foundation and wood/earth materials merged in #167/#168 | Determinism, renderer parity, material persistence and cache coverage recorded above | Foundation and material direction approved |
 | ART-03 furnishings | 24-piece catalog integrated in #177 | Placement, transform, persistence and player-export coverage | Catalog approved |
 | ART-04 tokens | Twelve silhouettes and affiliation frames integrated in #178 | Catalog placement, persistence and color/grayscale/print coverage | Catalog approved |
-| ART-06 launch samples | Three authored encounters integrated in #181 | Sample integrity, fresh copies, projection and render coverage | Sample sheets await owner approval |
+| ART-06 launch samples | Three authored encounters integrated in #181 | Sample integrity, fresh copies, projection and render coverage | Crypt changes requested September 28 for monochrome furnishing readability; revised sheet awaits approval. Crossing and ship reviews remain open |
 | ART-07 first-use illustrations | Revised three-scene set integrated in #180 | Component and browser art/workflow coverage | Revised set approved |
-| ART-08 print companions | Semantic monochrome set integrated in #181 | Shared rendering, bounded pages, scale metadata and overlap coverage | Six doors approved; remaining companion sheets and physical paper acceptance still required |
+| ART-08 print companions | Semantic monochrome set integrated in #181; furnishing outlines being revised at owner request | Existing geometry/page evidence retained; stroke-dependent results need targeted refresh | Six doors remain approved. Stronger monochrome furnishing outlines and remaining companion sheets await approval; physical paper acceptance stays open |
 | ART-05/09 additional kits and adaptations | Outside initial-release scope | Not assessed for release | Deferred; not an early-access dependency |
 
 The evidence column summarizes existing scoped coverage, not blanket
