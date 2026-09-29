@@ -463,11 +463,13 @@ async function keyboardLayout(page, { output, engine }, textScale) {
     await page.keyboard.press('Tab');
     await expect(page.getByLabel('Inspect object', { exact: true })).toHaveValue(`note:${note.id}`);
     await expect(inspector(page)).toBeVisible();
-    await typeIn(page, field(page, 'Note label'), `Keyboard ${width} ${textScale}`);
+    const labelDraft = `Keyboard ${width}x${height} ${textScale}`;
+    await typeIn(page, field(page, 'Note label'), labelDraft);
     await typeIn(page, field(page, 'Note description'), 'PRIVATE_EDIT_KEYBOARD_SENTINEL');
     await page.keyboard.press('Enter');
     await page.keyboard.type('Second line');
     await tabTo(page, apply(page));
+    await expect(apply(page)).toBeEnabled();
     const measure = () => apply(page).evaluate(node => {
       const rect = node.getBoundingClientRect();
       const style = getComputedStyle(node);
@@ -497,7 +499,7 @@ async function keyboardLayout(page, { output, engine }, textScale) {
     await page.screenshot({ path: join(output, `${engine}-editing-${width}x${height}-${textScale * 100}.png`) });
     await page.keyboard.press('Enter');
     const committed = await currentMap(page);
-    assert.equal(committed.notes[0].label, `Keyboard ${width} ${textScale}`);
+    assert.equal(committed.notes[0].label, labelDraft);
     assert.equal(committed.notes[0].description, 'PRIVATE_EDIT_KEYBOARD_SENTINEL\nSecond line');
     await typeIn(page, field(page, 'Note label'), 'Cancelled keyboard draft');
     await activate(page, cancel(page));
