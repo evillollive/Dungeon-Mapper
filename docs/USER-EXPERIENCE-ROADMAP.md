@@ -1109,6 +1109,14 @@ information/help symbols. That addition is implemented; its final appearance
 is shown for review. This accepts the overall family and the other 31 designs,
 not the remaining UX-07 packages or human/device release gates.
 
+**Owner approval, September 28, 2026:** The owner approved the final
+player-display P revision after reviewing the retained 16/20/24-pixel sheet.
+The source and sheet are unchanged from `1b16e68562833c84bb32b5afb3a69dfdc1a42461`
+(#180); sheet SHA-256:
+`47aeb68558cb854484ad7071c06706cdbf55e03a592dce3b1803333db04c5c5a`.
+This closes ART-01's outstanding artwork decision, not device, print or
+full-release qualification.
+
 Editable source and provenance are in `src/assets/interfaceIcons.ts`; no map
 schema or saved artwork ID changes. The source-driven review and reproduction
 command are documented in [Development](./DEVELOPMENT.md#interface-icon-artwork-review).
@@ -1263,7 +1271,7 @@ and review sheets before commissioning further artwork.
 
 | Scope | Implementation | Automated evidence | Owner acceptance / remaining gate |
 | --- | --- | --- | --- |
-| ART-01 interface icons | 32 icons integrated in #180 | Component, render and workflow coverage recorded in the icon milestone | Family and 31 unchanged designs approved; final player-display P revision still awaits approval |
+| ART-01 interface icons | 32 icons integrated in #180 | Component, render and workflow coverage recorded in the icon milestone | Family and 31 unchanged designs previously approved; final player-display P revision approved September 28 against the retained 16/20/24-pixel sheet at `1b16e68`. Artwork closeout complete; no device/print acceptance inferred |
 | ART-02 dungeon/material kit | Foundation and wood/earth materials merged in #167/#168 | Determinism, renderer parity, material persistence and cache coverage recorded above | Foundation and material direction approved |
 | ART-03 furnishings | 24-piece catalog integrated in #177 | Placement, transform, persistence and player-export coverage | Catalog approved |
 | ART-04 tokens | Twelve silhouettes and affiliation frames integrated in #178 | Catalog placement, persistence and color/grayscale/print coverage | Catalog approved |
@@ -1403,7 +1411,7 @@ successful bounded milestones.
 | A-EDIT | Bring critical `ux04Editing.browser.mjs` object-editing paths into the required runner; cover keyboard access, apply/cancel, undo, failure states, visible focus, contrast and reflow across supported workflows. Preserve player projection/display/export sentinel coverage. | Copilot; production UI and native storage; platform/revision-specific evidence in the handoff | Failed Linux Firefox at `dbba27f`: 200% inspector focus is clipped; aggregate correctly failed. Correction at `aa40a14`, strengthened assertions at `0d0e0bb`, affected local three-engine cases passed. [Fresh exact-head hosted evidence is blocked by zero budget](./UX-09-HANDOFF.md#zero-actions-roadmap-disposition-and-resume-checklist). Earlier macOS results are retained, not relabeled as Linux acceptance |
 | A-PERF | Profile before another bounded optimization. Establish a measured desktop workload/hardware/DPR scope, loading behavior, and F05 export allocation/cancellation behavior. Meet the existing desktop targets or obtain an explicit, evidence-backed early-access scope exception before release. | Agent-led where hardware is available; repeated production measurements and retained long-stall/memory observations | Not assessed for reference acceptance; [current F05 diagnostics](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone) remain above the paint target in Chromium/Firefox |
 | A-DOCS | Reconcile README, Features, Sharing, help/demo guidance and release notes with Your maps -> Create/open -> Edit -> Prepare -> Run -> Player display. State local-only display, project-backup versus session scope, offline readiness and supported limits accurately. | Copilot; actual UI source, UX-02/05/06/08 contracts and targeted help/action component assertions | Completed locally September 28: public guides, help text and action labels corrected; historical GIFs labeled, support/release gaps explicit. Not yet published, no support-scope exception or release approval |
-| A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | Not assessed for remaining approvals; [art closeout ledger](#initial-release-art-closeout) |
+| A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | ART-01's final P revision approved September 28. Launch samples and remaining print-companion approvals stay open; [art closeout ledger](#initial-release-art-closeout) |
 | A-PRINT | Complete the physical-printing launch gate below, including both paper sizes, overview/miniature scale, assembled overlaps and monochrome readability. | Agents prepare exports; a person prints/measures/reviews and supplies evidence from documented printer/app setups | Not assessed on physical paper; digital layout and DPI evidence do not close this gate |
 | A-RELEASE | Require successful qualification of the exact revision before Pages publication; retain strict merge protection. Publish a versioned evidence/limitations summary and rehearse documented rollback/recovery. Preserve release evidence beyond the current 14-day CI artifact window. | Approved local workflow implementation, synthetic verifier tests and artifact-consumer evidence; remote baseline unchanged | Core gating implemented locally at `96b1b70`; [evidence and resume requirements](./UX-09-HANDOFF.md#local-exact-artifact-deployment-implementation). No hosted enforcement/deployment receipt. Zero budget blocks publication; durable retention and formal release approval remain open |
 | B-DEVICE | Complete the broader hardware, native zoom, mobile/input, assistive-technology and device-performance matrix without implying that emulation is physical qualification. | Appropriate devices/OS tools plus human nonvisual/input task observations | Deferred from early access, not waived for full release; supported claims must reflect the gap |
