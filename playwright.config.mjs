@@ -18,6 +18,11 @@ export default defineConfig({
     ['html', { outputFolder: join(output, 'browser-report'), open: 'never' }],
   ],
   forbidOnly: true,
+  metadata: {
+    sourceRevision: process.env.GITHUB_SHA ?? process.env.QA_SOURCE_SHA ?? 'working tree',
+    buildManifestSha256: process.env.EXPECTED_MANIFEST_SHA256 ?? null,
+    canonicalArtifactId: process.env.CANONICAL_ARTIFACT_ID ?? null,
+  },
   retries: 0,
   workers: 1,
   timeout: 180_000,

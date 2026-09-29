@@ -10,15 +10,18 @@ on:
 permissions:
   contents: read
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
 jobs:
   build-and-test:
     name: Build and test
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    concurrency:
+      group: ${{ github.workflow }}-build-${{ github.ref }}
+      cancel-in-progress: true
+    outputs:
+      source-sha: ${{ steps.bundle.outputs.source-sha }}
+      manifest-sha256: ${{ steps.bundle.outputs.manifest-sha256 }}
+      artifact-id: ${{ steps.upload.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-node@v5
@@ -29,11 +32,27 @@ jobs:
       - run: npm run lint
       - run: npm run build
       - run: npm test
+      - name: Create canonical qualification bundle
+        id: bundle
+        run: node scripts/qualification-artifact.mjs create dist "$RUNNER_TEMP/qualified-build"
+      - name: Upload canonical distribution
+        id: upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/qualified-build
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 14
 
   browser-journeys:
     name: Browser journeys (${{ matrix.engine }})
+    needs: build-and-test
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    concurrency:
+      group: ${{ github.workflow }}-browser-${{ github.ref }}-${{ matrix.engine }}
+      cancel-in-progress: true
     strategy:
       fail-fast: false
       matrix:
@@ -41,15 +60,29 @@ jobs:
     env:
       QA_OUTPUT: ${{ github.workspace }}/qualification-artifacts
       QA_ENGINES: ${{ matrix.engine }}
+      EXPECTED_MANIFEST_SHA256: ${{ needs.build-and-test.outputs.manifest-sha256 }}
+      CANONICAL_ARTIFACT_ID: ${{ needs.build-and-test.outputs.artifact-id }}
     steps:
       - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.build-and-test.outputs.source-sha }}
       - uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps ${{ matrix.engine }}
-      - run: npm run build
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.build-and-test.outputs.artifact-id }}
+          path: ${{ runner.temp }}/qualified-build
+          merge-multiple: true
+      - name: Verify and materialize the canonical build
+        id: verified-build
+        run: |
+          node scripts/qualification-artifact.mjs materialize "$RUNNER_TEMP/qualified-build" dist
+          mkdir -p "$QA_OUTPUT"
+          cp "$RUNNER_TEMP/qualified-build/build-manifest.json" "$QA_OUTPUT/build-manifest.json"
       - name: Floor pixel preflight
         if: matrix.engine == 'webkit'
         env:
@@ -57,13 +90,16 @@ jobs:
         run: npm run test:browser:run -- src/test/ux09FolioTiles.spec.mjs --project=webkit --grep="preserve direct pixels"
       - run: npm run test:browser:run -- --project=${{ matrix.engine }}
       - name: Export, offline and controlled update journeys
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.verified-build.outcome == 'success' }}
         run: npm run test:ux08:run
+      - name: Verify the tested distribution stayed unchanged
+        if: ${{ !cancelled() && steps.verified-build.outcome == 'success' }}
+        run: node scripts/qualification-artifact.mjs verify "$RUNNER_TEMP/qualified-build" dist
       - name: Upload qualification evidence
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
         with:
-          name: qualification-${{ matrix.engine }}
+          name: qualification-${{ matrix.engine }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: ${{ env.QA_OUTPUT }}
           if-no-files-found: error
           retention-days: 14
@@ -79,3 +115,121 @@ jobs:
         env:
           RESULT: ${{ needs.browser-journeys.result }}
         run: test "$RESULT" = success
+
+  package-pages:
+    name: Package qualified Pages
+    needs: [build-and-test, browser-qualification]
+    if: >-
+      github.repository == 'evillollive/Dungeon-Mapper' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      needs.build-and-test.result == 'success' &&
+      needs.browser-qualification.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    concurrency:
+      group: ${{ github.workflow }}-package-${{ github.ref }}
+      cancel-in-progress: true
+    env:
+      EXPECTED_MANIFEST_SHA256: ${{ needs.build-and-test.outputs.manifest-sha256 }}
+    outputs:
+      artifact-id: ${{ steps.pages.outputs.artifact_id }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.build-and-test.outputs.source-sha }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.build-and-test.outputs.artifact-id }}
+          path: ${{ runner.temp }}/qualified-build
+          merge-multiple: true
+      - run: node scripts/qualification-artifact.mjs verify "$RUNNER_TEMP/qualified-build"
+      - name: Package the verified distribution without rebuilding
+        id: pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          name: pages-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/qualified-build/dist
+          retention-days: 1
+
+  deploy-pages:
+    name: Deploy qualified Pages
+    needs: [build-and-test, browser-qualification, package-pages]
+    if: >-
+      github.repository == 'evillollive/Dungeon-Mapper' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'push' || github.event_name == 'workflow_dispatch') &&
+      needs.build-and-test.result == 'success' &&
+      needs.browser-qualification.result == 'success' &&
+      needs.package-pages.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    env:
+      EXPECTED_MANIFEST_SHA256: ${{ needs.build-and-test.outputs.manifest-sha256 }}
+      CANONICAL_ARTIFACT_ID: ${{ needs.build-and-test.outputs.artifact-id }}
+      PAGES_ARTIFACT_ID: ${{ needs.package-pages.outputs.artifact-id }}
+      QA_OUTPUT: ${{ github.workspace }}/qualification-artifacts
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.build-and-test.outputs.source-sha }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 20
+      - uses: actions/download-artifact@v4
+        with:
+          artifact-ids: ${{ needs.build-and-test.outputs.artifact-id }}
+          path: ${{ runner.temp }}/qualified-build
+          merge-multiple: true
+      - name: Recheck main and artifact identity inside the deployment slot
+        id: identity
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          CURRENT_MAIN_SHA="$(gh api "repos/$GITHUB_REPOSITORY/git/ref/heads/main" --jq '.object.sha')"
+          PAGES_ARTIFACT_METADATA="$RUNNER_TEMP/pages-artifact.json"
+          export CURRENT_MAIN_SHA PAGES_ARTIFACT_METADATA
+          gh api "repos/$GITHUB_REPOSITORY/actions/artifacts/$PAGES_ARTIFACT_ID" > "$PAGES_ARTIFACT_METADATA"
+          node scripts/qualification-artifact.mjs preflight "$RUNNER_TEMP/qualified-build" "$QA_OUTPUT/deployment-receipt.json"
+      - name: Retain publication intent before submitting
+        uses: actions/upload-artifact@v4
+        with:
+          name: publication-intent-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.QA_OUTPUT }}/deployment-receipt.json
+          if-no-files-found: error
+          retention-days: 14
+      - name: Publish the qualified artifact
+        id: deployment
+        uses: actions/deploy-pages@v4
+        with:
+          artifact_name: pages-${{ github.run_id }}-${{ github.run_attempt }}
+          # Leave time for the bounded smoke check and receipt upload.
+          timeout: 360000
+      - name: Record deployment outcome and verify published file bytes
+        if: ${{ !cancelled() && steps.identity.outcome == 'success' }}
+        env:
+          DEPLOY_OUTCOME: ${{ steps.deployment.outcome }}
+          DEPLOY_PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: node scripts/qualification-artifact.mjs smoke "$RUNNER_TEMP/qualified-build" "$QA_OUTPUT/deployment-receipt.json"
+      - name: Retain deployment receipt
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: publication-result-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.QA_OUTPUT }}/deployment-receipt.json
+          if-no-files-found: error
+          retention-days: 14
