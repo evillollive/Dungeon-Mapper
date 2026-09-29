@@ -1253,6 +1253,112 @@ settings changes occurred. Local compute, disk and validator-download transfer
 were not metered; account-wide quota, billed storage/cache and other actors'
 usage remain unknown.
 
+### September 29 local render-state investigation
+
+**Outcome: no renderer change retained.** The owner authorized a bounded,
+zero-hosted performance investigation on the available Mac, not representative
+device acceptance or a performance-scope exception. Baseline:
+`2866790ba7e3b5904e8fa5c64e9b4e5c4868f6f0`. Existing floor-cache and edge-cache
+results were reviewed first; this pass did not revive the rejected bitmap work.
+
+The unchanged F05 v1 fixture and production diagnostic ran at 1440x900, DPR 1,
+unthrottled, on an Apple M5 Max / 64 GiB, macOS 26.7 (kernel 25.6.0), Node
+24.16.0. Engines were Chromium 151.0.7922.34, Firefox 153.0 and WebKit 26.5.
+Three repetitions per engine were run sequentially for the baseline and the
+initial prototype, avoiding concurrent test load. The host was not a reserved
+reference lab. Chromium repetition one includes CPU/timeline profiling;
+repetitions two and three do not. Other engines were unprofiled.
+
+The Chromium baseline profile attributes approximately 3,702 ms inclusive to
+the main render effect over the recorded interaction sequence. Folio cached
+tile dispatch, including its direct non-floor fallback, accounts for about
+1,949 ms; edge blending about 1,044 ms; lighting about 306 ms. These are
+sampled inclusive call-stack costs, not additive GPU timings or measurements
+of an isolated individual operation. Native Canvas execution and deferred work
+can affect attribution. Floor/edge raster drawing remains the main direction
+for investigation, rather than another speculative React/state cleanup.
+
+The prototype grouped consecutive cached floor draws under one Canvas
+save/restore and absolute transform setup, flushing before other tile themes.
+It retained primitive order, the twelve-entry/56-path ceiling and existing
+edge-cache allocation bounds, with no new bitmap or map-state cache.
+
+| Engine / repetitions | Paint p95 baseline / initial prototype (ms) | Token p95 baseline / initial prototype (ms) | Warm-ready baseline / initial prototype (s) |
+| --- | --- | --- | --- |
+| Chromium, unprofiled 2-3 | 144.3-149.0 / 146.0-147.5 | 144.3-144.4 / 141.9-145.8 | 1.50-1.99 / 1.49-1.52 |
+| Firefox, 1-3 | 148-149 / 142-143 | 141-165 / 137-143 | 1.23-1.26 / 1.24-1.26 |
+| WebKit, 1-3 | 76-86 / 77-79 | 83-94 / 76-84 | 1.46-1.50 / 1.51-1.51 |
+
+These are ranges of individual repetition p95 values, not pooled percentiles.
+Chromium's profiled repetition changed paint/token p95 from 147.8/142.6 to
+148.1/145.7 ms and warm-ready from 1.97 to 2.01 seconds. Chromium has no
+clear improvement. Firefox's paint measurements improved by 5-7 ms in this
+sample; WebKit token timings improved, while paint and warm-ready were mixed.
+No universal speedup, loading-target pass or representative-device result
+follows from these observations. F05 remains an event-to-render/frame proxy,
+not physical input-to-paint or INP.
+
+The initial prototype passed the existing nine floor-render cases, including
+the 210-combination pixel matrix per engine and cache bounds. Expanded
+caller-state probes then found discrepancies under transformed, partially
+transparent multiply compositing. Chromium comparisons reached 2/255 RGB and
+1-2/255 alpha difference. A later direct-path fallback for rotated/skewed/
+mirrored callers removed those observed cases, but a WebKit fractional,
+nonuniform-scale case still reached 2/255 RGB against the unchanged 1/255
+maximum. The required exact alpha and existing RGB/mean bounds were not
+relaxed. The additional cases are not passing evidence, and the precise
+native-raster contribution was not resolved within this bounded pass.
+
+The modest and mixed timings did not justify more special cases or a fidelity
+exception. Later correctness refinements were **not** performance-qualified;
+do not attribute the initial prototype's timing numbers to the final retained
+rejection patch. The prototype and its API-specific tests were removed from
+the application together, not left behind with a weakened check.
+All six touched source/test files were restored exactly to baseline. A rebuild
+then matched all **18 production distribution files byte-for-byte** against the
+retained baseline. The existing tests, artwork, renderer, memory ceilings and
+release targets are unchanged.
+
+Retained in session `20233d90-7a79-4423-a564-f75af5b08662`:
+
+- `files/perf-sept29-baseline`, `perf-sept29-baseline-unprofiled` and
+  `perf-sept29-baseline-other-engines`: nine baseline repetition results,
+  the Chromium profile/timeline, screenshots and environment/asset identities.
+- `files/perf-sept29-candidate-profile`, `perf-sept29-candidate-unprofiled`
+  and `perf-sept29-candidate-other-engines`: nine initial-prototype repetition
+  results. These are labeled dirty working-tree diagnostics, not committed
+  candidates or release qualification.
+- `files/perf-sept29-floor-candidate-pixels`: original matrix passes;
+  `perf-sept29-floor-state-pixels`: a harness export-placement error with six
+  unexecuted cases, not a pass; `perf-sept29-floor-state-pixels-fixed` and
+  `perf-sept29-floor-fidelity-final`: unresolved fidelity failures and traces.
+- `files/perf-sept29-rejected-floor-batch.patch` and
+  `perf-sept29-rejected-dist`: final rejected implementation and build, retained
+  for diagnosis rather than application. Patch SHA-256:
+  `1c59d0fed51f2722f1c694f7a46efd4c61bdeb6b8aad99987b13b559cf1d94f9`.
+- `files/perf-sept29-comparison.json`, `perf-sept29-baseline-profile-summary.jsonl`,
+  `perf-sept29-baseline-dist` and `perf-sept29-build-identities.json`: per-run
+  comparison, profile attribution, original files and exact restoration proof.
+
+Fixture SHA-256: `35856d38cf71fdf0132c99f426d7552e0708234ccda2436276ac26d7fb3296b1`.
+Unchanged diagnostic source SHA-256:
+`7e44eaa5122abf797d71f82cad36b3e01c979e7034d35c4eabc42f31b7b7a6f4`.
+Earlier performance evidence remains historical, not overwritten. Retaining
+failed probes prevents rediscovering this rejected approach.
+
+**Next boundary:** Reuse this profile to select a different measured approach,
+not another broad rerun. Avoiding full-map repaint during local token/gesture
+changes is a possible larger direction, but requires an explicit design for
+layer invalidation, derived geometry, fog, compositing and memory before
+implementation. It is outside this bounded pass. A-PRINT and reference/support
+decisions remain open; the 100 ms desktop, 150 ms mobile and two-second warm
+targets are unchanged and unaccepted.
+
+**Accounting:** zero hosted triggers, zero reservations and zero approved
+runner minutes. No pushes, remote mutations, provider calls, dependency
+installs, subagents or native browser/OS setting changes. Local compute and
+disk usage were not metered; no account-wide allowance is assumed.
+
 ## Remaining release gates
 
 Subsequent housekeeping removes 68 of the original 73 hook warnings and

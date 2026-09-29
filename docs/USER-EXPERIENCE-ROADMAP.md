@@ -8,6 +8,15 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
+**Local performance investigation, September 29, 2026:** The existing F05
+diagnostic identified repeated floor drawing and edge blending as the dominant
+sampled render costs on this Mac. A bounded floor-state batching trial showed
+modest/mixed gains and failed extended fidelity checks, so it was rejected.
+No renderer change is retained; source and all production files were restored
+exactly. [Current baseline, failed trial and next boundary](./UX-09-HANDOFF.md#september-29-local-render-state-investigation)
+are recorded without claiming representative-device or release acceptance.
+Hosted usage remained zero.
+
 **Digital art closeout, September 29, 2026:** The owner approved the integrated
 print stairs in map context, then the remaining access symbols, feature markers
 and legacy token treatment on the retained print key. This closes the outstanding
@@ -1618,7 +1627,7 @@ successful bounded milestones.
 | A-DATA | Preserve source records and newer work, prevent resurrection and partial commits, and retain a usable recovery path through legacy migration, deletion tombstones and failed-startup recovery/races. | Copilot review; production UI and native IndexedDB on macOS 26.6.2, locked Chromium/Firefox/WebKit, legacy/rich/failure fixtures | Passed for the ten bounded cases at `ca0dedb`; [revision-linked evidence and startup-conflict fix](./UX-09-HANDOFF.md#a-data-production-preservation-milestone). Exact-head required Linux CI remains the landing gate; physical storage failure is not qualified |
 | A-UPDATE | Exercise an actual supported prior application version upgrading to the candidate with existing projects and sessions. Rehearse safe rollback or documented recovery without lossy writes. Do not invent a schema change merely to exercise migration. | Copilot; source-pinned production rebuilds, isolated synthetic persistent profiles and real recovery downloads on macOS 26.7 | Passed locally for `72f32e1 -> d9036c5 -> 72f32e1` on three engines with harness `db024ac`; [evidence and limits](./UX-09-HANDOFF.md#local-documentation-and-real-version-update-milestone). Supported-version scope and final release candidate remain unaccepted; manual rehearsal is not a new required CI check |
 | A-EDIT | Bring critical `ux04Editing.browser.mjs` object-editing paths into the required runner; cover keyboard access, apply/cancel, undo, failure states, visible focus, contrast and reflow across supported workflows. Preserve player projection/display/export sentinel coverage. | Copilot; production UI and native storage; platform/revision-specific evidence in the handoff | Failed Linux Firefox at `dbba27f`: 200% inspector focus is clipped; aggregate correctly failed. Correction at `aa40a14`, strengthened assertions at `0d0e0bb`, affected local three-engine cases passed. [Fresh exact-head hosted evidence is blocked by zero budget](./UX-09-HANDOFF.md#zero-actions-roadmap-disposition-and-resume-checklist). Earlier macOS results are retained, not relabeled as Linux acceptance |
-| A-PERF | Profile before another bounded optimization. Establish a measured desktop workload/hardware/DPR scope, loading behavior, and F05 export allocation/cancellation behavior. Meet the existing desktop targets or obtain an explicit, evidence-backed early-access scope exception before release. | Agent-led where hardware is available; repeated production measurements and retained long-stall/memory observations | Not assessed for reference acceptance; [current F05 diagnostics](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone) remain above the paint target in Chromium/Firefox |
+| A-PERF | Profile before another bounded optimization. Establish a measured desktop workload/hardware/DPR scope, loading behavior, and F05 export allocation/cancellation behavior. Meet the existing desktop targets or obtain an explicit, evidence-backed early-access scope exception before release. | Agent-led local diagnostics; representative hardware/support decisions remain separate | [September 29 baseline and rejected batching trial](./UX-09-HANDOFF.md#september-29-local-render-state-investigation) retained. No new optimization shipped; current Chromium/Firefox dense-map proxies remain above 100 ms. Reference acceptance, warm/cold/offline loading scope and remaining export-memory evidence are still open |
 | A-DOCS | Reconcile README, Features, Sharing, help/demo guidance and release notes with Your maps -> Create/open -> Edit -> Prepare -> Run -> Player display. State local-only display, project-backup versus session scope, offline readiness and supported limits accurately. | Copilot; actual UI source, UX-02/05/06/08 contracts and targeted help/action component assertions | Completed locally September 28: public guides, help text and action labels corrected; historical GIFs labeled, support/release gaps explicit. Not yet published, no support-scope exception or release approval |
 | A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | Passed for the outstanding initial-release digital-art owner decisions, completed September 29. Local technical evidence retained; new sample-guide text is not blanket copy/playtest acceptance. A-PRINT and exact-head hosted qualification remain separate open gates; [art closeout ledger](#initial-release-art-closeout) |
 | A-PRINT | Complete the physical-printing launch gate below, including both paper sizes, overview/miniature scale, assembled overlaps and monochrome readability. | Agents prepare exports; a person prints/measures/reviews and supplies evidence from documented printer/app setups | Not assessed on physical paper; digital layout and DPI evidence do not close this gate |
@@ -1672,8 +1681,9 @@ work can progress independently; the digital-art owner decisions are complete.
 Actual hosted qualification/publication waits
 for a numeric budget and refreshed remote state.
 Supported-version scope and a final candidate must still be identified before
-A-UPDATE can serve as release evidence. A-PERF begins with a bounded profile and evidence
-handoff; a larger renderer rewrite or performance-scope exception requires an
+A-UPDATE can serve as release evidence. A-PERF's September 29 local profile and
+rejected trial are retained; reuse them before choosing a different optimization.
+A larger renderer rewrite or performance-scope exception requires an
 explicit decision, not an unattended expansion.
 
 Deliver each slice with concrete acceptance, retained evidence and a stop
