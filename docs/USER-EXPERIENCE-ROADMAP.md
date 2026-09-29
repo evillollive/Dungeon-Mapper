@@ -1296,6 +1296,22 @@ The comparison is retained as `files/floor-boundary-preview.html` in session
 `20233d90-7a79-4423-a564-f75af5b08662`. This approves the styling, not Alder
 Crossing's full sample composition or physical-paper qualification.
 
+The approved treatment is implemented at `d200237bb7c4275f20bef0796d704275adc679bf`.
+The [revised Crossing sheet](./media/launch-art/launch-alder-crossing-boundaries.png)
+is retained beside its original, with SHA-256
+`66e6994c030f288a6bf686ed8ac074dec6f9c803c5feac6bb4ff5286cc9cc589`.
+Twenty targeted print/sample unit tests passed, including single-edge ownership,
+same/fallback-material behavior and no duplicate non-floor boundaries. Six
+production case/engine combinations passed: launch-art geometry/seams and
+Crossing's safe creation/copy/A4/Letter journey on Chromium, Firefox and WebKit.
+Existing bounds and assertions are unchanged. Build and lint passed.
+Results are retained in the same session under
+`files/terrain-boundaries-final-{chromium,firefox,webkit}`; the first Chromium
+working-tree preview remains in `files/terrain-boundaries-first-chromium`.
+Only print-material appearance and related evidence changed, not color,
+storage, map geometry or previous owner decisions. No physical printing or
+hosted run occurred, and digital results do not qualify paper output.
+
 **Acceptance still open:** Owner approval of the remaining new artwork and sample sheets, physical
 A4/Letter printing, participant/device/screen-reader qualification and UX-09
 performance gates. Earlier "ART-06/08 remain open" entries describe their
@@ -1326,7 +1342,7 @@ and review sheets before commissioning further artwork.
 | ART-04 tokens | Twelve silhouettes and affiliation frames integrated in #178 | Catalog placement, persistence and color/grayscale/print coverage | Catalog approved |
 | ART-06 launch samples | Three authored encounters integrated in #181 | Sample integrity, fresh copies, projection and render coverage | Revised Lantern Crypt approved September 28 at artwork source `68d1bf2`; Alder's floor-boundary styling is approved but overall sample review remains open; ship review remains open |
 | ART-07 first-use illustrations | Revised three-scene set integrated in #180 | Component and browser art/workflow coverage | Revised set approved |
-| ART-08 print companions | Semantic monochrome set integrated in #181; stronger furnishings at `68d1bf2`; floor-transition contours in print companion 1.1.0 | Furnishing/crypt three-engine evidence retained; floor-boundary print evidence refresh in progress | Six doors, all 24 stronger monochrome furnishings and the thin floor-material boundary treatment approved. Remaining map companions and physical paper acceptance stay open |
+| ART-08 print companions | Semantic monochrome set integrated in #181; stronger furnishings at `68d1bf2`; floor-transition contours at `d200237` | Furnishing/crypt evidence retained; floor-boundary geometry/seams and Crossing A4/Letter cases refreshed locally on three engines | Six doors, all 24 stronger monochrome furnishings and the thin floor-material boundary treatment approved. Remaining map companions and physical paper acceptance stay open |
 | ART-05/09 additional kits and adaptations | Outside initial-release scope | Not assessed for release | Deferred; not an early-access dependency |
 
 The evidence column summarizes existing scoped coverage, not blanket
