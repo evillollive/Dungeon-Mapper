@@ -82,7 +82,10 @@ describe('ART-06 authored launch encounters', () => {
     a.levels[0].tiles[0][0].type = 'treasure';
     a.levels[0].notes[0].description = 'Changed';
     a.levels[0].stamps![0].rotation = 42;
-    expect(b).toEqual(buildLaunchSample(summary.id));
+    expect(b).toEqual(buildPremadeProject(summary.id));
+    const authored = buildLaunchSample(summary.id);
+    expect(b.levels[0].tiles).toEqual(authored.levels[0].tiles);
+    expect(b.levels[0].notes[0].description).toContain(authored.levels[0].notes[0].description);
   });
 
   it.each(LAUNCH_SAMPLES)('$id connects all walkable spaces, notes and token positions to arrival', summary => {

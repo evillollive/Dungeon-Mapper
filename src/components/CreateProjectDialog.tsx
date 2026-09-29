@@ -6,6 +6,7 @@ import { buildThemeList } from '../utils/customThemes';
 import { GENERATOR_LIST } from '../utils/generators';
 import { PREMADE_MAP_SUMMARIES } from '../utils/premadeMaps';
 import { LAUNCH_SAMPLES } from '../utils/launchSamples';
+import SampleGuidance from './SampleGuidance';
 import { CREATION_LIMITS, createProjectCandidate, readTraceImage, renderCreationPreviews } from '../utils/projectCreation';
 import type { ProjectCreationOptions, TraceImage } from '../utils/projectCreation';
 import './CreateProjectDialog.css';
@@ -16,13 +17,13 @@ export interface CreateProjectDialogProps {
   onCreate: (project: DungeonProject) => boolean;
   /** Reusable libraries for blank, generated, and traced projects. Never mutated. */
   sourceProject?: DungeonProject;
-  /** Starting selection on mount. Defaults to the ready-to-play sample flow. */
+  /** Starting selection on mount. Defaults to the sample flow. */
   initialPath?: ProjectCreationOptions['path'];
 }
 
 type CreationPath = ProjectCreationOptions['path'];
 const PATHS: { id: CreationPath; title: string; detail: string }[] = [
-  { id: 'sample', title: 'Ready to play', detail: 'A complete encounter, ready to explore.' },
+  { id: 'sample', title: 'Choose a sample', detail: 'Encounters, generated examples and art references.' },
   { id: 'generator', title: 'Generate a map', detail: 'Shape a new place from a repeatable seed.' },
   { id: 'blank', title: 'Start blank', detail: 'Your idea. A clean grid. Room to build.' },
   { id: 'trace', title: 'Trace an image', detail: 'Bring a local reference and draw over it.' },
@@ -192,11 +193,13 @@ export default function CreateProjectDialog({ onCancel, onCreate, sourceProject,
           </div>
           <form className="creation-options" onSubmit={event => { event.preventDefault(); preview(); }}>
             {path === 'sample' ? <div className="creation-sample">
-              <label>Ready-to-play sample<select value={sampleId} onChange={event => setSampleId(event.target.value)}>
+              <label>Sample map<select value={sampleId} onChange={event => setSampleId(event.target.value)}>
                 {PREMADE_MAP_SUMMARIES.map(sample => <option key={sample.id} value={sample.id}>{sample.name}</option>)}
               </select></label>
               <div><p className="creation-eyebrow">{selectedSample.themeLabel} / {selectedSample.archetype}</p><h3>{selectedSample.name}</h3>
-                <p>{selectedSample.description}</p><p className="creation-muted">{selectedSample.sizeLabel} tiles · {selectedSample.levelCount} {selectedSample.levelCount === 1 ? 'level' : 'levels'} · Includes encounter content</p></div>
+                <p>{selectedSample.description}</p>
+                <SampleGuidance guide={selectedSample.guide} />
+                <p className="creation-muted">{selectedSample.sizeLabel} tiles · {selectedSample.levelCount} {selectedSample.levelCount === 1 ? 'level' : 'levels'} · Creates an independent editable copy</p></div>
             </div> : <>
               <div className="creation-field-grid">
                 <label>Project name<input value={name} onChange={event => setName(event.target.value)} maxLength={100} required /></label>

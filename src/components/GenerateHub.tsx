@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import Icon from './Icon';
+import SampleGuidance from './SampleGuidance';
 import type { DungeonProject } from '../types/map';
 import { createDefaultMap } from '../hooks/mapStateUtils';
 import { createFogGrid } from '../utils/mapUtils';
@@ -659,9 +660,9 @@ const SamplesPanel: React.FC<SamplesPanelProps> = ({
   return (
     <>
       <p className="generate-dialog-help">
-        Load an original, generator-directed map that ships with themed
-        names, tokens, light sources, linked stairs where appropriate, and
-        fog-of-war ready for play.
+        Choose a launch encounter, generated example or art reference.
+        Read its purpose and usage guidance, then create an independent copy.
+        Review visibility and add any missing scenario details before play.
       </p>
 
       <div className="generate-hub-filters">
@@ -720,6 +721,7 @@ const SamplesPanel: React.FC<SamplesPanelProps> = ({
             <div className="premade-details-theme">{selected.themeLabel}</div>
             <h3>{selected.name}</h3>
             <p>{selected.description}</p>
+            <SampleGuidance guide={selected.guide} />
             <dl>
               <div>
                 <dt>Type</dt>

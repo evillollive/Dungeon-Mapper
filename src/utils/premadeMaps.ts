@@ -21,6 +21,7 @@ import { buildFolioTokenReference, FOLIO_TOKEN_REFERENCE_ID, FOLIO_TOKEN_REFEREN
 import { buildFolioFurnishingReference, FOLIO_FURNISHING_REFERENCE_ID, FOLIO_FURNISHING_REFERENCE_NAME,
   buildFolioCatalogReference, FOLIO_CATALOG_REFERENCE_ID, FOLIO_CATALOG_REFERENCE_NAME } from './folioFurnishingReference';
 import { buildLaunchSample, LAUNCH_SAMPLES } from './launchSamples';
+import { sampleGuide, sampleGuideText, type SampleGuide } from './sampleGuides';
 
 export interface PremadeMapSummary {
   id: string;
@@ -31,6 +32,7 @@ export interface PremadeMapSummary {
   sizeLabel: string;
   levelCount: number;
   description: string;
+  guide: SampleGuide;
 }
 
 interface TokenRequest {
@@ -1312,9 +1314,9 @@ export const PREMADE_MAP_SUMMARIES: PremadeMapSummary[] = [...PREMADE_MAP_SPECS.
   sizeLabel: '24 x 24',
   levelCount: 1,
   description: 'Twelve unlikely guests check into a refuge with a very optimistic damage deposit.',
-}, ...LAUNCH_SAMPLES];
+}, ...LAUNCH_SAMPLES].map(summary => ({ ...summary, guide: sampleGuide(summary.id) }));
 
-export function buildPremadeProject(id: string): DungeonProject {
+function buildPremadeContent(id: string): DungeonProject {
   if (LAUNCH_SAMPLES.some(sample => sample.id === id)) return buildLaunchSample(id);
   if (id === FOLIO_REFERENCE_ID) return buildFolioReference();
   if (id === FOLIO_MATERIALS_REFERENCE_ID) return buildFolioMaterialsReference();
@@ -1341,4 +1343,15 @@ export function buildPremadeProject(id: string): DungeonProject {
     activeLevelIndex: 0,
     stairLinks,
   };
+}
+
+export function buildPremadeProject(id: string): DungeonProject {
+  const project = buildPremadeContent(id);
+  const guide = sampleGuide(id);
+  for (const level of project.levels) {
+    const firstNote = level.notes[0];
+    if (!firstNote) throw new Error(`Sample ${id} has no note for its DM guide`);
+    firstNote.description = `${sampleGuideText(project.name, guide)}\n\n${firstNote.description}`;
+  }
+  return project;
 }

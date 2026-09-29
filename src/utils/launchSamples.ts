@@ -3,24 +3,28 @@ import type { PremadeMapSummary } from './premadeMaps';
 import { FOLIO_THEME_ID } from '../themes/folio-v1/art';
 import { furnishingPlacer } from './folioFurnishingReference';
 import { createFogGrid } from './mapUtils';
+import { sampleGuide } from './sampleGuides';
 
 export const LAUNCH_SAMPLES: readonly PremadeMapSummary[] = [
   {
     id: 'launch-lantern-crypt', name: 'The Lantern Crypt', themeId: FOLIO_THEME_ID,
     themeLabel: 'Dungeon Folio v1', archetype: 'Launch encounter / Crypt',
     sizeLabel: '24 x 24', levelCount: 1,
+    guide: sampleGuide('launch-lantern-crypt'),
     description: 'Follow the lantern stair to a flooded memorial, a keeper study and a sealed burial chamber. Includes a public arrival and private encounter notes.',
   },
   {
     id: 'launch-alder-crossing', name: 'Alder Crossing', themeId: 'wilderness',
     themeLabel: 'Wilderness', archetype: 'Launch encounter / Woodland crossing',
     sizeLabel: '24 x 24', levelCount: 1,
+    guide: sampleGuide('launch-alder-crossing'),
     description: 'A timber bridge spans a woodland stream between a sheltered camp and a rocky lookout. Clear approaches leave room for an encounter.',
   },
   {
     id: 'launch-kestrel-bay', name: 'Kestrel Docking Bay', themeId: 'starship',
     themeLabel: 'Starship', archetype: 'Launch encounter / Ship compartment',
     sizeLabel: '24 x 24', levelCount: 1,
+    guide: sampleGuide('launch-kestrel-bay'),
     description: 'Rescue a stranded engineer from sealed crew quarters and escort them to the aft airlock. Release the interlock from port control or recover cargo tools for a manual bypass.',
   },
 ];

@@ -95,7 +95,12 @@ describe('Folio token catalog', () => {
       ['folio-token-v1-warden', 6, 11], ['folio-token-v1-wayfinder', 8, 5], ['folio-token-v1-drake', 10, 8],
     ]);
     const project = buildPremadeProject(FOLIO_TOKEN_CATALOG_ID);
-    expect(project).toEqual(buildFolioTokenCatalogReference());
+    const reference = buildFolioTokenCatalogReference();
+    const expected = structuredClone(reference);
+    expected.levels[0].notes[0].description = project.levels[0].notes[0].description;
+    expect(project).toEqual(expected);
+    expect(project.levels[0].notes[0].description).toContain(reference.levels[0].notes[0].description);
+    expect(project.levels[0].notes[0].description).toContain('Sample guide: The Crooked Company');
     expect(decodeProject(encodeProject(project))).toEqual(project);
     const map = project.levels[0];
     const visible = projectForAudience(map).map.tokens!;

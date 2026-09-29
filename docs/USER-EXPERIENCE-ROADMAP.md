@@ -1336,7 +1336,8 @@ retained in session `20233d90-7a79-4423-a564-f75af5b08662`,
 `files/kestrel-rescue-review.html`. This is authored-content/layout acceptance,
 not participant playtesting, combat balancing or physical-print approval.
 The owner also requested explicit purpose for all samples; the scope of that
-follow-up is being clarified rather than silently treating it as complete.
+follow-up was explicitly confirmed as every bundled sample, with guidance
+suited to its role rather than turning all references into encounters.
 
 Twenty-two targeted sample/print unit tests passed, including the stated
 objective, public/private notes, both solutions reachable outside the sealed
@@ -1348,6 +1349,21 @@ downloads. Build and lint passed. Evidence is retained under
 and all earlier decisions remain retained; this refresh changes only Kestrel's
 authored content and its affected appearance, not shared art, storage schemas,
 movement rules or hosted qualification. Hosted triggers remain zero.
+
+**Catalog-purpose follow-up, September 28, 2026:** Role-specific purpose and
+usage guidance now covers all 35 samples: 26 generated examples, six art
+references and three launch encounters. Both the guided sample picker and
+Generate Hub display the same guide. The misleading blanket "Ready to play"
+choice is now "Choose a sample". Generated examples explain the preparation
+still needed; art references explain what to inspect or reuse; launch encounters
+state an objective, approaches and outcome.
+
+Each new sample copy keeps this guide at the start of the first note's private
+description on every level, followed by the original note text. Existing note
+IDs, locations, public fields, geometry, actors, artwork and saved projects are
+unchanged. The guide round-trips in private JSON but is absent from player
+projection. This implements the requested guidance, not an inferred owner
+approval of all newly authored text or participant playtesting.
 
 **Acceptance still open:** Owner approval of the remaining new artwork and sample sheets, physical
 A4/Letter printing, participant/device/screen-reader qualification and UX-09
@@ -1377,7 +1393,7 @@ and review sheets before commissioning further artwork.
 | ART-02 dungeon/material kit | Foundation and wood/earth materials merged in #167/#168 | Determinism, renderer parity, material persistence and cache coverage recorded above | Foundation and material direction approved |
 | ART-03 furnishings | 24-piece catalog integrated in #177 | Placement, transform, persistence and player-export coverage | Catalog approved |
 | ART-04 tokens | Twelve silhouettes and affiliation frames integrated in #178 | Catalog placement, persistence and color/grayscale/print coverage | Catalog approved |
-| ART-06 launch samples | Three authored encounters integrated in #181; Kestrel rescue revision at `92104bc` | Sample integrity, fresh copies, projection and render coverage; rescue topology/content and three-engine print results refreshed | Lantern Crypt and Alder Crossing visual composition approved; Kestrel rescue purpose/layout approved September 28. Owner requests explicit purpose across samples; follow-up scope pending. Physical/participant acceptance is separate |
+| ART-06 launch samples | Three authored encounters integrated in #181; Kestrel rescue revision at `92104bc`; all 35 catalog entries now have role-specific guides | Sample integrity, fresh copies, projection and render coverage; guide coverage/private round-trip and picker assertions added | Lantern Crypt and Alder Crossing visual composition approved; Kestrel rescue purpose/layout approved September 28. Catalog-wide guidance implemented at owner request, not blanket approval of new text or participant acceptance |
 | ART-07 first-use illustrations | Revised three-scene set integrated in #180 | Component and browser art/workflow coverage | Revised set approved |
 | ART-08 print companions | Semantic monochrome set integrated in #181; stronger furnishings at `68d1bf2`; floor-transition contours at `d200237` | Furnishing/crypt evidence retained; floor-boundary geometry/seams and Crossing A4/Letter cases refreshed locally on three engines | Six doors, all 24 stronger monochrome furnishings and the thin floor-material boundary treatment approved. Remaining map companions and physical paper acceptance stay open |
 | ART-05/09 additional kits and adaptations | Outside initial-release scope | Not assessed for release | Deferred; not an early-access dependency |

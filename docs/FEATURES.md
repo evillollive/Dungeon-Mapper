@@ -148,6 +148,23 @@ Their creation previews show only player-safe content; the editable copy
 includes the private encounter. Existing generated samples and Folio art
 references remain available, including through Generate Hub.
 
+Every one of the 35 bundled samples states its role, purpose and usage in both
+the guided **Choose a sample** path and Generate Hub's **Sample Maps** gallery.
+The 26 generated examples are adaptable starting points, not completed
+adventures. Six art references demonstrate materials, furnishings or tokens,
+not encounter balance. The three launch encounters have authored goals and
+approaches. Read that distinction before choosing a sample.
+
+New copies retain the guide at the start of the first note's DM-private
+description on each level, followed by the original note text. It travels
+with project saves and private JSON backups, but is not added to public note
+fields or player exports. Existing saved copies are not rewritten.
+
+The Lantern Crypt asks the party to recover the memorial's brass key and
+return to the lantern stair; the watch and concealed cache offer optional
+interaction. Alder Crossing asks the party to reach the eastern trail together,
+dealing with the keeper and avoiding escalation with the lookout wolf.
+
 Kestrel Docking Bay is a rules-neutral rescue: release a stranded engineer from
 sealed crew quarters and escort them to the aft airlock. DM notes offer a quiet
 port-control release or a cargo-tool bypass with an optional security
