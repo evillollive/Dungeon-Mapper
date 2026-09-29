@@ -1291,9 +1291,29 @@ refinements. Preview scripts/pages are retained in session
 `files/integrated-stair-preview.html`. Print companion 1.2.0 / render version 3
 implements the selected direction: all five treads join the central shaft and
 both sloping arrow sides, with mirrored up/down geometry. The in-context result
-is pending final owner review; colored stair artwork and stair-link behavior
-are unchanged. Previous approved doors, furnishings and floor boundaries are
-outside this revision.
+was approved by the owner on September 29, 2026 against source
+`cdba23566c9026f56be2b4ab1729edfefbf0e897`. Colored stair artwork and stair-link
+behavior are unchanged. Previously approved doors, furnishings and floor
+boundaries are outside this revision.
+
+The approved [updated print key](./media/launch-art/companions-stairs-v1.2.0.png)
+and [crypt context](./media/launch-art/launch-lantern-crypt-stairs-v1.2.0.png)
+are retained beside the earlier sheets, not substituted for their historical
+versions. The updated key has SHA-256
+`e522004f024d8ccb4994c1c47a4a91d2675b3fbd7b580bf75abfed8f21ecd1a0`.
+The source fingerprint is
+`93fe45870d8d2e7054a02cb1f5f4717ccd724165b90636f257bd25a7feb547c0`.
+
+Twenty-three targeted print/sample unit tests, build and lint passed before
+the pause. On September 29, six production case/engine combinations passed
+at that same source: launch-art geometry/page seams and the crypt's real
+A4/Letter export journey on Chromium, Firefox and WebKit. The existing pixel
+thresholds and audience assertions were unchanged. Retained evidence:
+`files/stairs-final-{chromium,firefox,webkit}` in the same session. This refresh
+applies to the stair artwork and affected print appearances, not unrelated
+storage, input or participant campaigns. The approval is digital artwork only;
+physical-paper acceptance and hosted qualification remain open. No hosted
+triggers or remote mutations were initiated.
 
 **Crypt sample approval, September 28, 2026:** The owner approved The Lantern
 Crypt's overall visual composition and readability after the furnishing
@@ -1435,7 +1455,7 @@ and review sheets before commissioning further artwork.
 | ART-04 tokens | Twelve silhouettes and affiliation frames integrated in #178 | Catalog placement, persistence and color/grayscale/print coverage | Catalog approved |
 | ART-06 launch samples | Three authored encounters integrated in #181; Kestrel rescue revision at `92104bc`; all 35 catalog entries now have role-specific guides | Sample integrity, fresh copies, projection and render coverage; guide coverage/private round-trip and picker assertions added | Lantern Crypt and Alder Crossing visual composition approved; Kestrel rescue purpose/layout approved September 28. Catalog-wide guidance implemented at owner request, not blanket approval of new text or participant acceptance |
 | ART-07 first-use illustrations | Revised three-scene set integrated in #180 | Component and browser art/workflow coverage | Revised set approved |
-| ART-08 print companions | Semantic set plus approved furnishing/floor-boundary revisions; integrated stair-arrow direction selected for print companion 1.2.0 | Earlier evidence retained; stair-dependent render evidence refresh in progress | Six doors, 24 stronger furnishings, floor boundaries and surface patterns approved. Revised stairs await in-context approval; other map symbols and physical paper acceptance stay open |
+| ART-08 print companions | Semantic set plus furnishing/floor boundaries; integrated stair arrows at `cdba235` | Stair-dependent geometry/page seams and crypt A4/Letter evidence refreshed locally on three engines | Six doors, 24 stronger furnishings, floor boundaries, surface patterns and revised stairs approved. Other map-symbol and legacy-frame decisions remain open; physical paper acceptance is separate |
 | ART-05/09 additional kits and adaptations | Outside initial-release scope | Not assessed for release | Deferred; not an early-access dependency |
 
 The evidence column summarizes existing scoped coverage, not blanket
