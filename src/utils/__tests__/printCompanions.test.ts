@@ -118,6 +118,28 @@ describe('ART-08 print companion', () => {
     expect(new Set(types.map(type => JSON.stringify(printTileShapes(type, 0, 0)))).size).toBe(types.length);
   });
 
+  it('joins stair treads to both arrow sides and mirrors the complete up/down geometry', () => {
+    const up = printTileShapes('stairs-up', 0, 0);
+    const down = printTileShapes('stairs-down', 0, 0);
+    expect(up).toHaveLength(8);
+    expect(down).toEqual(up.map(shape => shape.kind === 'line'
+      ? { ...shape, points: shape.points.map(([x, y]) => [x, 32 - y]) }
+      : shape));
+    expect(up).toContainEqual({ kind: 'line', points: [[16, 2], [16, 30]], width: 2.2, stroke: '#000000' });
+    expect(up).toContainEqual({ kind: 'line', points: [[3, 28], [16, 2], [29, 28]], width: 2.2, stroke: '#000000' });
+    const treads = up.filter(shape => shape.kind === 'line' && shape.width === 1.4);
+    expect(treads).toHaveLength(5);
+    for (const tread of treads) {
+      expect(tread.points).toHaveLength(2);
+      const [[left, y], [right, rightY]] = tread.points;
+      expect(y).toBe(rightY);
+      expect(left).toBe(16 - (y - 2) / 2);
+      expect(right).toBe(16 + (y - 2) / 2);
+      expect(tread.stroke).toBe('#000000');
+    }
+    expect(up.some(shape => shape.kind === 'line' && shape.stroke === '#ffffff')).toBe(false);
+  });
+
   it('overlays vector H/V on plain doors without center lines and keeps only posts behind lock/trap symbols', () => {
     for (const vertical of [false, true]) {
       const point = (x: number, y: number) => vertical ? [y, x] : [x, y];

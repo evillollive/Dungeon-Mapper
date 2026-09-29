@@ -115,13 +115,13 @@ export function printTileShapes(
     }
   } else if (type.startsWith('stairs')) {
     const down = type === 'stairs-down';
-    for (let i = 0; i < 5; i++) {
-      const inset = (down ? i : 4 - i) * 1.8;
-      line([[4 + inset, 5 + i * 5.5], [28 - inset, 5 + i * 5.5]], 1.4);
+    const point = (x: number, y: number): Point => [x, down ? 32 - y : y];
+    for (const y of [7, 12, 17, 22, 27]) {
+      const halfWidth = (y - 2) / 2;
+      line([point(16 - halfWidth, y), point(16 + halfWidth, y)], 1.4);
     }
-    line([[16, 4], [16, 28]], 4, PAPER);
-    line([[16, 4], [16, 28]], 1.5);
-    line(down ? [[12, 23], [16, 28], [20, 23]] : [[12, 9], [16, 4], [20, 9]], 1.8);
+    line([point(16, 2), point(16, 30)], 2.2);
+    line([point(3, 28), point(16, 2), point(29, 28)], 2.2);
   } else if (type === 'pillar') {
     dot(16, 16, 10); dot(16, 16, 7.5, PAPER);
     line([[11, 16], [13, 12], [17, 11]], 1);

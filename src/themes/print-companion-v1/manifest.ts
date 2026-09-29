@@ -2,13 +2,13 @@ import { ALL_TILE_TYPES, FLOOR_MATERIAL_IDS } from '../../types/map';
 
 export const PRINT_COMPANION_MANIFEST = {
   packId: 'map-print-companion',
-  version: '1.1.0',
-  renderVersion: 2,
+  version: '1.2.0',
+  renderVersion: 3,
   author: 'Dungeon Mapper contributors',
   license: 'AGPL-3.0-or-later',
   attribution: 'Original procedural vector artwork for Dungeon Mapper, 2026.',
   source: 'src/themes/print-companion-v1/art.ts',
-  sourceHash: 'sha256:513b9e1d3727f7873ec9b80c0cd01392e36510e9828258bae0aee696e60a6e02',
+  sourceHash: 'sha256:93fe45870d8d2e7054a02cb1f5f4717ccd724165b90636f257bd25a7feb547c0',
   delivery: 'bundled-procedural-vector',
   previewSampleIds: ['launch-lantern-crypt', 'launch-alder-crossing', 'launch-kestrel-bay'],
   assets: ['empty', ...ALL_TILE_TYPES, ...FLOOR_MATERIAL_IDS].map(id => ({

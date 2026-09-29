@@ -13,6 +13,12 @@ higher-priority material (wood, then earth, then flagstone). Existing water,
 wall and doorway boundaries are unchanged. The owner approved this print-only
 treatment on September 28, 2026; physical-paper acceptance remains separate.
 
+Version 1.2.0 integrates the stair treads with a wide directional arrow:
+five crossbars meet both sloping sides and the central shaft. Up and down
+are vertically mirrored. This owner-selected print-only revision is pending
+final in-context visual approval. Color artwork and stair-link behavior
+are unchanged.
+
 The approved Folio furnishing and token sources retain their own manifests
 and notices. Furnishing print strokes use neutral charcoal; their approved
 paths and color-mode paints are unchanged. Legacy tokens use the same party shield, NPC seal and hostile

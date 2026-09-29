@@ -17,6 +17,7 @@ All notable changes to this project are documented in this file.
 - Reserve unique token IDs before queued React updates so consecutive placements remain independently selectable and removable.
 
 ### Changed
+- Revised monochrome stair symbols with the owner-selected shared-side arrow treatment: five treads join a wider directional outline and central shaft. Color art and stair links are unchanged; final in-context review is pending.
 - Added role-specific purpose and usage guidance to all 35 bundled samples in both sample pickers and the DM Notes of new copies. Generated examples and art references are no longer described as universally ready-to-play encounters. Saved projects and sample layouts are unchanged.
 - Clarified Kestrel Docking Bay as a rescue encounter, with a locked crew-room entrance, explicit extraction objective, quiet control-room release and cargo-tool bypass. New sample copies receive the revised notes; existing projects and gameplay systems are unchanged.
 - Owner-approved thin print contours between wood, earth and stone floor materials. Matching floor tiles gain no new lines; existing water, wall and doorway contours, color art and map behavior are unchanged.

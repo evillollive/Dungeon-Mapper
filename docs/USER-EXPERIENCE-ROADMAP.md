@@ -1277,6 +1277,24 @@ and composed-print evidence is refreshed; unrelated token/terrain geometry,
 storage and keyboard campaigns retain their original scope and were not rerun.
 These local results are not an exact-head hosted receipt or paper qualification.
 
+**Surface and stair review, September 28, 2026:** The owner clarified that
+the floor, wall, water, background/rock, worn-wood and earth patterns on the
+retained print key are fine; their requested change concerns stairs. The key
+is `docs/media/launch-art/companions.png`, SHA-256
+`d79b2a46474192f77215194897129b2c5e1c225848fb7e46333464462b47a7fa`.
+This accepts those surface patterns only, not other symbols or paper output.
+
+The owner requested a larger stair arrow encompassing the treads, preferred
+the wide-arrow study, then selected **shared sloping sides** from two integrated
+refinements. Preview scripts/pages are retained in session
+`20233d90-7a79-4423-a564-f75af5b08662`, `files/stair-arrow-preview.html` and
+`files/integrated-stair-preview.html`. Print companion 1.2.0 / render version 3
+implements the selected direction: all five treads join the central shaft and
+both sloping arrow sides, with mirrored up/down geometry. The in-context result
+is pending final owner review; colored stair artwork and stair-link behavior
+are unchanged. Previous approved doors, furnishings and floor boundaries are
+outside this revision.
+
 **Crypt sample approval, September 28, 2026:** The owner approved The Lantern
 Crypt's overall visual composition and readability after the furnishing
 revision. The reviewed sheet is `launch-lantern-crypt-outlined.png`, retained
@@ -1417,7 +1435,7 @@ and review sheets before commissioning further artwork.
 | ART-04 tokens | Twelve silhouettes and affiliation frames integrated in #178 | Catalog placement, persistence and color/grayscale/print coverage | Catalog approved |
 | ART-06 launch samples | Three authored encounters integrated in #181; Kestrel rescue revision at `92104bc`; all 35 catalog entries now have role-specific guides | Sample integrity, fresh copies, projection and render coverage; guide coverage/private round-trip and picker assertions added | Lantern Crypt and Alder Crossing visual composition approved; Kestrel rescue purpose/layout approved September 28. Catalog-wide guidance implemented at owner request, not blanket approval of new text or participant acceptance |
 | ART-07 first-use illustrations | Revised three-scene set integrated in #180 | Component and browser art/workflow coverage | Revised set approved |
-| ART-08 print companions | Semantic monochrome set integrated in #181; stronger furnishings at `68d1bf2`; floor-transition contours at `d200237` | Furnishing/crypt evidence retained; floor-boundary geometry/seams and Crossing A4/Letter cases refreshed locally on three engines | Six doors, all 24 stronger monochrome furnishings and the thin floor-material boundary treatment approved. Remaining map companions and physical paper acceptance stay open |
+| ART-08 print companions | Semantic set plus approved furnishing/floor-boundary revisions; integrated stair-arrow direction selected for print companion 1.2.0 | Earlier evidence retained; stair-dependent render evidence refresh in progress | Six doors, 24 stronger furnishings, floor boundaries and surface patterns approved. Revised stairs await in-context approval; other map symbols and physical paper acceptance stay open |
 | ART-05/09 additional kits and adaptations | Outside initial-release scope | Not assessed for release | Deferred; not an early-access dependency |
 
 The evidence column summarizes existing scoped coverage, not blanket
