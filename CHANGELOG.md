@@ -6,7 +6,7 @@ All notable changes to this project are documented in this file.
 
 ### Added
 - Three authored launch encounters: The Lantern Crypt, Alder Crossing and Kestrel Docking Bay, with player-safe creation previews and independent editable copies containing public and private notes.
-- Original monochrome print companions for materials, connected walls, doors, stairs and legacy token affiliations, plus a quarter-inch overview scale for A4/Letter output. New artwork is awaiting owner and physical-paper review.
+- Original monochrome print companions for materials, connected walls, doors, stairs and legacy token affiliations, plus a quarter-inch overview scale for A4/Letter output. Digital artwork is owner-approved; physical-paper qualification remains open.
 - Three owner-approved Folio first-use illustrations for the empty map collection, private project backup and local player display, with solid monitor stands, clear dashed connectors and monochrome/forced-color treatments.
 - A consistent family of 32 original line icons for navigation, project actions, save/offline status, export and player-display controls, with text-scaled SVG artwork and unchanged accessible control names.
 - Twelve original, owner-approved Folio token designs with shape-coded affiliation frames, monochrome print companions and two furnished sample scenes.

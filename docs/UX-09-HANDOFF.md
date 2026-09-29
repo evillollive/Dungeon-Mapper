@@ -14,6 +14,17 @@ This documentation decision does not pass any unassessed gate or change the
 existing performance targets. Earlier milestone results below retain their
 original scope and source revisions.
 
+**Digital-art closeout, September 29, 2026:** The owner completed the remaining
+print-key decisions after the revised stairs were shown in map context.
+Source `cdba235` and the retained key/crypt sheets at `f503fd9` identify this
+review; individual decisions and the six passing local stair-render/export
+case/engine combinations are recorded in the
+[art closeout ledger](./USER-EXPERIENCE-ROADMAP.md#initial-release-art-closeout).
+Initial-release digital artwork is now owner-approved. Earlier dated art
+limitations remain historical; A-PRINT, exact-head hosted evidence, reference
+performance, supported-version/final-candidate scope and release handling are
+still open. Approval of artwork is not paper/device or participant acceptance.
+
 ## Implemented contract
 
 `playwright.config.mjs` uses the existing locked Playwright 1.62.1 test runner.
@@ -963,7 +974,7 @@ run costs are historical, not spending authorized by this task.
 | --- | --- | --- | --- |
 | Locally completed: A-DOCS | Agent; current UI and documented contracts; publication still requires budget | `d9036c5` updates README, Features, Sharing, help/demo guidance and release notes; targeted help/action cases passed | See the milestone below. Do not repeat the audit or claim release/support approval |
 | Bounded local pass: A-UPDATE | Agent; owner still decides supported-version scope and final candidate; publication/hosted integration requires budget and policy scope | Rebuilt deployment source `72f32e1`, candidate `d9036c5`, manual harness `db024ac`; three-engine upgrade/rollback evidence below | Reuse this pair's evidence where applicable. Rerun only for a changed build pair, schema or claim; final release evidence must name the accepted versions. Stop on lossy writes or an unresolved support decision |
-| Owner: A-ART and A-PRINT | Owner/reviewer with approved art sheets, printer and print application; agree scale/alignment tolerances before measurement | Existing ART-01/06/08 sheets, F07 and exported A4/Letter files; review remaining art and print actual-size overview/assembled miniature pages | Explicit revision-tied art decisions, measured paper scale/overlap and monochrome acceptance. Remain pre-release blockers, not post-release follow-ups |
+| Owner: A-PRINT; digital A-ART decisions complete | Owner/reviewer with approved art sheets, printer and print application; agree scale/alignment tolerances before measurement | Digital art approvals closed September 29. Reuse current approved F07/A4/Letter exports and print actual-size overview/assembled miniature pages | Measured paper scale/overlap and monochrome acceptance remain pre-release requirements. Do not repeat completed digital-art decisions or treat them as paper evidence |
 | Local analysis plus owner: A-PERF | Agent can profile; owner must identify/approve reference hardware and any support-scope exception | Retain existing F05/cache diagnostics. Profile an identified workload only for an actual gap or proposed change; do not repeat the completed cache campaigns | Measured target results or explicit scoped early-access decision. Development Mac results alone do not pass reference acceptance |
 | Hosted: A-EDIT landing / #185 | Agent plus owner numeric budget approval; final head and base must be refreshed; fix is only local | Original failed run and current local correction/results above. After approval, one batched push and full existing CI on that head, including all three engines and UX-08; do not rerun the stale failed head or only the aggregate | Build and test plus Browser qualification succeed with all constituent results on the actual candidate/merge revision. Stop on failure, quota rejection or budget exhaustion; diagnose before any retry |
 | Hosted and remaining owner decisions: A-RELEASE | Core local topology/artifact/cancellation implementation approved; durable retention and any additional human deployment approval remain open. Publication/post-merge work needs a numeric budget | Local gating implementation and verifier/integration evidence below. Refresh the actual remote base, triggers and receipts before one batched publication; no deploy-only retries | Exact deployed source matches successful qualification; versioned release evidence survives CI expiry; final-version rollback/recovery applicability resolved. Merge alone is not release approval |
@@ -972,7 +983,7 @@ run costs are historical, not spending authorized by this task.
 
 The subsequent zero-Actions A-DOCS/A-UPDATE milestones are recorded below.
 Remaining work needs the reference-hardware/workload decision for A-PERF,
-owner art/print participation, or remaining A-RELEASE retention/approval decisions; hosted
+physical-print participation, or remaining A-RELEASE retention/approval decisions; hosted
 qualification still needs a numeric budget. Do not invent a supported
 browser/device range or imply that early access is approved. No dependency update is bundled:
 this failure involves focus/layout, not package exposure. Any future dependency
@@ -1256,16 +1267,17 @@ not the current warning baseline.
 
 UX-09 remains **in progress**. These automated journeys cover parts of roadmap
 section 8, not the entire nine-journey/seven-fixture acceptance matrix.
-UX-07's initial-release art is implemented, with remaining owner acceptance
+UX-07's initial-release digital art is implemented and owner-approved, with decisions
 recorded in the [art closeout ledger](./USER-EXPERIENCE-ROADMAP.md#initial-release-art-closeout);
 ART-05/09 are deferred expansions, not launch dependencies. UX-00 participant
 research remains deferred with zero participants under UX-09C.
 
 The bounded A-DATA preservation and A-EDIT editing journeys are covered above.
-UX-09A still requires exact-head CI, real application-version upgrade and
-rollback evidence, a measured desktop
-performance/support scope, accurate public workflow guidance, owner art
-closeout and exact-revision release handling. **Physical printing also blocks
+UX-09A still requires exact-head CI, final-candidate applicability for the
+retained real-version upgrade/rollback evidence, a measured desktop
+performance/support scope and exact-revision release handling. Public workflow
+guidance is locally updated and digital-art owner decisions are complete.
+**Physical printing also blocks
 UX-09A:** digital DPI/layout evidence cannot replace A4/Letter paper measurement,
 assembled overlap and monochrome readability acceptance. See the
 [release gate ledger and print procedure](./USER-EXPERIENCE-ROADMAP.md#release-gate-ledger).

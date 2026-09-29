@@ -19,6 +19,11 @@ are vertically mirrored. The owner approved the print-only revision in map
 context on September 29, 2026. Color artwork and stair-link behavior are
 unchanged; physical-paper acceptance remains separate.
 
+On September 29, 2026 the owner completed the remaining digital print-key
+review, approving the access symbols, pillar/trap/treasure markers and legacy
+token treatment alongside the earlier surface, door and furnishing approvals.
+This does not constitute physical printing, device or release qualification.
+
 The approved Folio furnishing and token sources retain their own manifests
 and notices. Furnishing print strokes use neutral charcoal; their approved
 paths and color-mode paints are unchanged. Legacy tokens use the same party shield, NPC seal and hostile

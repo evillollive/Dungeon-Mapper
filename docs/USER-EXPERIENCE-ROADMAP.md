@@ -4,9 +4,16 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status, updated September 28, 2026:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 and UX-08 are merged. UX-07's initial-release artwork is implemented, with implementation, automated evidence and owner acceptance tracked separately in the [art closeout ledger](#initial-release-art-closeout). UX-09 is split into [early-access closure, device qualification and observed usability](#release-milestones-and-ownership). Desktop-first early access includes physical printing; its release gates remain open. Full release qualification and participant usability acceptance are not claimed.
+**Status, updated September 29, 2026:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 and UX-08 are merged. UX-07's initial-release digital artwork is implemented and owner-approved, with technical evidence and physical-paper acceptance tracked separately in the [art closeout ledger](#initial-release-art-closeout). UX-09 is split into [early-access closure, device qualification and observed usability](#release-milestones-and-ownership). Desktop-first early access includes physical printing; its release gates remain open. Full release qualification and participant usability acceptance are not claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
+
+**Digital art closeout, September 29, 2026:** The owner approved the integrated
+print stairs in map context, then the remaining access symbols, feature markers
+and legacy token treatment on the retained print key. This closes the outstanding
+initial-release digital-art decisions. It does not qualify actual paper, native
+devices, participant usability, performance or the unpublished branch's hosted
+checks. A-PRINT and the other release gates remain open.
 
 **A-RELEASE local implementation, September 28, 2026:** The owner explicitly
 approved local implementation of the
@@ -1315,6 +1322,30 @@ storage, input or participant campaigns. The approval is digital artwork only;
 physical-paper acceptance and hosted qualification remain open. No hosted
 triggers or remote mutations were initiated.
 
+**Access-symbol approval, September 29, 2026:** The owner approved the
+secret-door S, portcullis, archway, barricade and start/entrance symbols on
+`companions-stairs-v1.2.0.png`, retained at `f503fd9` from source `cdba235`.
+The review explicitly distinguished the DM secret-door symbol from the
+undiscovered wall appearance in player output. This approves these five
+artworks without changing visibility rules or inferring paper acceptance.
+
+**Feature-marker approval, September 29, 2026:** The owner approved the round
+pillar, triangular trap warning and treasure chest on that same print key.
+This decision concerns those three monochrome designs, not encounter rules
+or physical-printer readability.
+
+**Legacy-token approval, September 29, 2026:** The owner approved the legacy
+player shield, NPC circle and monster hexagon with the older character glyph,
+shown at the bottom right of that same sheet. The already-approved Folio
+designs served as context and were not changed or reopened for approval.
+
+These explicit decisions complete the remaining on-screen ART-08 review.
+The tile key and token examples remain bound to the sheet/source identities
+above. No code changed for the access, feature-marker or legacy-token approvals,
+so no redundant rendering campaign was run. The initial-release digital-art
+approval is complete; physical-paper acceptance and exact-head hosted evidence
+are not. The zero-minute budget remains unchanged.
+
 **Crypt sample approval, September 28, 2026:** The owner approved The Lantern
 Crypt's overall visual composition and readability after the furnishing
 revision. The reviewed sheet is `launch-lantern-crypt-outlined.png`, retained
@@ -1425,11 +1456,11 @@ unrelated renderer campaigns were not repeated. No hosted receipt, physical
 printing or participant qualification is inferred; the prior real-version
 update pair remains evidence for its original source revisions.
 
-**Acceptance still open:** Owner approval of the remaining new artwork and sample sheets, physical
-A4/Letter printing, participant/device/screen-reader qualification and UX-09
-performance gates. Earlier "ART-06/08 remain open" entries describe their
-historical milestones; this section supersedes their implementation status,
-not their outstanding human acceptance. ART-05/09 remain separate work.
+**Acceptance still open:** Physical A4/Letter printing, participant/device/
+screen-reader qualification, reference performance and exact-head hosted
+qualification. Initial-release digital-art decisions are now closed as recorded
+above. Earlier "ART-06/08 remain open" entries are historical, not a claim that
+these owner reviews must be repeated. ART-05/09 remain separate work.
 
 **Deliverables:** ART-01 through ART-04, ART-06 through ART-08 for the initial release, plus asset manifest/provenance, pack/version selection, previews, deterministic variants, caching, and fallbacks. ART-05/09 extend after the dungeon slice is approved.
 
@@ -1455,7 +1486,7 @@ and review sheets before commissioning further artwork.
 | ART-04 tokens | Twelve silhouettes and affiliation frames integrated in #178 | Catalog placement, persistence and color/grayscale/print coverage | Catalog approved |
 | ART-06 launch samples | Three authored encounters integrated in #181; Kestrel rescue revision at `92104bc`; all 35 catalog entries now have role-specific guides | Sample integrity, fresh copies, projection and render coverage; guide coverage/private round-trip and picker assertions added | Lantern Crypt and Alder Crossing visual composition approved; Kestrel rescue purpose/layout approved September 28. Catalog-wide guidance implemented at owner request, not blanket approval of new text or participant acceptance |
 | ART-07 first-use illustrations | Revised three-scene set integrated in #180 | Component and browser art/workflow coverage | Revised set approved |
-| ART-08 print companions | Semantic set plus furnishing/floor boundaries; integrated stair arrows at `cdba235` | Stair-dependent geometry/page seams and crypt A4/Letter evidence refreshed locally on three engines | Six doors, 24 stronger furnishings, floor boundaries, surface patterns and revised stairs approved. Other map-symbol and legacy-frame decisions remain open; physical paper acceptance is separate |
+| ART-08 print companions | Semantic set plus furnishing/floor boundaries; integrated stair arrows at `cdba235` | Stair-dependent geometry/page seams and crypt A4/Letter evidence refreshed locally on three engines | Digital artwork approved: surfaces, doors/access symbols, stairs, pillar/trap/treasure, furnishings, floor boundaries and legacy tokens. Owner closeout September 29; physical paper acceptance remains open |
 | ART-05/09 additional kits and adaptations | Outside initial-release scope | Not assessed for release | Deferred; not an early-access dependency |
 
 The evidence column summarizes existing scoped coverage, not blanket
@@ -1589,7 +1620,7 @@ successful bounded milestones.
 | A-EDIT | Bring critical `ux04Editing.browser.mjs` object-editing paths into the required runner; cover keyboard access, apply/cancel, undo, failure states, visible focus, contrast and reflow across supported workflows. Preserve player projection/display/export sentinel coverage. | Copilot; production UI and native storage; platform/revision-specific evidence in the handoff | Failed Linux Firefox at `dbba27f`: 200% inspector focus is clipped; aggregate correctly failed. Correction at `aa40a14`, strengthened assertions at `0d0e0bb`, affected local three-engine cases passed. [Fresh exact-head hosted evidence is blocked by zero budget](./UX-09-HANDOFF.md#zero-actions-roadmap-disposition-and-resume-checklist). Earlier macOS results are retained, not relabeled as Linux acceptance |
 | A-PERF | Profile before another bounded optimization. Establish a measured desktop workload/hardware/DPR scope, loading behavior, and F05 export allocation/cancellation behavior. Meet the existing desktop targets or obtain an explicit, evidence-backed early-access scope exception before release. | Agent-led where hardware is available; repeated production measurements and retained long-stall/memory observations | Not assessed for reference acceptance; [current F05 diagnostics](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone) remain above the paint target in Chromium/Firefox |
 | A-DOCS | Reconcile README, Features, Sharing, help/demo guidance and release notes with Your maps -> Create/open -> Edit -> Prepare -> Run -> Player display. State local-only display, project-backup versus session scope, offline readiness and supported limits accurately. | Copilot; actual UI source, UX-02/05/06/08 contracts and targeted help/action component assertions | Completed locally September 28: public guides, help text and action labels corrected; historical GIFs labeled, support/release gaps explicit. Not yet published, no support-scope exception or release approval |
-| A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | Final P icon, all three launch visuals, Kestrel rescue purpose/layout, stronger furnishings and floor-boundary treatment approved September 28. All-sample guidance implemented without blanket acceptance of new text. Remaining print-companion review and A-PRINT stay open; [art closeout ledger](#initial-release-art-closeout) |
+| A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | Passed for the outstanding initial-release digital-art owner decisions, completed September 29. Local technical evidence retained; new sample-guide text is not blanket copy/playtest acceptance. A-PRINT and exact-head hosted qualification remain separate open gates; [art closeout ledger](#initial-release-art-closeout) |
 | A-PRINT | Complete the physical-printing launch gate below, including both paper sizes, overview/miniature scale, assembled overlaps and monochrome readability. | Agents prepare exports; a person prints/measures/reviews and supplies evidence from documented printer/app setups | Not assessed on physical paper; digital layout and DPI evidence do not close this gate |
 | A-RELEASE | Require successful qualification of the exact revision before Pages publication; retain strict merge protection. Publish a versioned evidence/limitations summary and rehearse documented rollback/recovery. Preserve release evidence beyond the current 14-day CI artifact window. | Approved local workflow implementation, synthetic verifier tests and artifact-consumer evidence; remote baseline unchanged | Core gating implemented locally at `96b1b70`; [evidence and resume requirements](./UX-09-HANDOFF.md#local-exact-artifact-deployment-implementation). No hosted enforcement/deployment receipt. Zero budget blocks publication; durable retention and formal release approval remain open |
 | B-DEVICE | Complete the broader hardware, native zoom, mobile/input, assistive-technology and device-performance matrix without implying that emulation is physical qualification. | Appropriate devices/OS tools plus human nonvisual/input task observations | Deferred from early access, not waived for full release; supported claims must reflect the gap |
@@ -1636,8 +1667,9 @@ approved and locally implemented; no further
 implementation approval is needed for that completed scope. Next decisions
 are legacy-deployment cutover handling, durable release-evidence retention,
 any additional human deployment approval, and reference hardware/workload for
-A-PERF. Owner art/physical-print
-work can progress independently. Actual hosted qualification/publication waits
+A-PERF. Physical-print
+work can progress independently; the digital-art owner decisions are complete.
+Actual hosted qualification/publication waits
 for a numeric budget and refreshed remote state.
 Supported-version scope and a final candidate must still be identified before
 A-UPDATE can serve as release evidence. A-PERF begins with a bounded profile and evidence
@@ -1793,10 +1825,10 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; current production journey passes Chromium, Firefox and WebKit in UX-09 | [Original policy and evidence](./UX-05-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
-| UX-07 | Initial-release art implemented; automated evidence and owner acceptance tracked separately | [Art closeout ledger](#initial-release-art-closeout): remaining icon/sample/companion approvals and A-PRINT block launch closeout; ART-05/09 are deferred, not initial-release dependencies |
+| UX-07 | Initial-release digital art implemented and owner-approved; technical and paper qualification remain distinct | [Art closeout ledger](#initial-release-art-closeout): digital decisions closed September 29; A-PRINT and exact-head qualification still block launch closeout. ART-05/09 are deferred, not initial-release dependencies |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; umbrella for A/B/C, not an early-access completion label | Full acceptance requires all three milestones and the retained section 8 criteria |
-| UX-09A | Early-access closure in progress; desktop-first with physical printing | [Release gate ledger](#release-gate-ledger): A-DOCS complete locally; bounded A-UPDATE pair passed locally; A-EDIT hosted receipt blocked by zero budget. Final-candidate/version scope, performance, owner art, physical print and release handling remain open |
+| UX-09A | Early-access closure in progress; desktop-first with physical printing | [Release gate ledger](#release-gate-ledger): A-DOCS complete locally, digital-art owner decisions closed, bounded A-UPDATE pair passed locally. Exact-head hosted receipt blocked by zero budget; final-candidate/version scope, performance, physical print and release handling remain open |
 | UX-09B | Deferred from early access; not accepted | Broader physical-device, native zoom, assistive-technology and remaining device-performance qualification; printing stays in A |
 | UX-09C | Deferred from early access; no participant acceptance | Existing first-use, routine-play, comprehension and aesthetic/readability criteria require real participants |
 | UX-10 | Deferred | Explicit approval of remote scope |
