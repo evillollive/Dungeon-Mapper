@@ -15,6 +15,50 @@ describe('ART-06 authored launch encounters', () => {
     expect(() => buildLaunchSample('missing')).toThrow('Unknown launch sample');
   });
 
+  it('defines a rules-neutral rescue goal, two approaches and a clear outcome for Kestrel', () => {
+    const map = buildLaunchSample('launch-kestrel-bay').levels[0];
+    expect(LAUNCH_SAMPLES.find(sample => sample.id === 'launch-kestrel-bay')?.description)
+      .toContain('Rescue a stranded engineer');
+    const notes = new Map(map.notes.map(note => [note.label, note.description]));
+    expect(notes.get('Rescue objective')).toContain('escort them back through this airlock');
+    expect(notes.get('Rescue objective')).toContain('does not automate locks, alarms, timers or combat');
+    expect(notes.get('Port control: quiet release')).toContain('release the locked crew-room entrance');
+    expect(notes.get('Cargo tools: manual bypass')).toContain('portable door jack');
+    expect(notes.get('Stranded engineer')).toContain('the engineer can follow the party');
+    expect(notes.get('Security complication')).toContain('Combat is not required');
+    expect(notes.get('Coolant core')).toContain('does not impose a countdown');
+    const publicMap = projectForAudience(map).map;
+    expect(publicMap.notes.find(note => note.label === 'Docking airlock')?.description)
+      .toContain('Bring the stranded flight engineer back to this airlock');
+    expect(JSON.stringify(publicMap)).not.toContain('portable door jack');
+    expect(JSON.stringify(publicMap)).not.toContain('Crew credentials');
+  });
+
+  it('puts both rescue solutions outside the sealed crew room and connects the released engineer to the airlock', () => {
+    const map = buildLaunchSample('launch-kestrel-bay').levels[0];
+    expect(map.tiles[15][15].type).toBe('locked-door-v');
+    expect(map.tiles[10][18].type).toBe('locked-door-h');
+    // Check authored encounter topology, not automated lock or movement rules.
+    const reachable = (released: boolean) => {
+      const pending = [[11, 22]];
+      const visited = new Set<string>();
+      while (pending.length) {
+        const [x, y] = pending.pop()!;
+        const key = `${x},${y}`, type = map.tiles[y]?.[x]?.type;
+        if (!type || visited.has(key) || ['background', 'empty', 'wall', 'water', 'pillar', 'secret-door'].includes(type)) continue;
+        if (type.startsWith('locked-door') && !(released && x === 15 && y === 15)) continue;
+        visited.add(key);
+        pending.push([x - 1, y], [x + 1, y], [x, y - 1], [x, y + 1]);
+      }
+      return visited;
+    };
+    const sealed = reachable(false);
+    expect(sealed.has('5,8')).toBe(true);
+    expect(sealed.has('5,15')).toBe(true);
+    expect(sealed.has('18,16')).toBe(false);
+    expect(reachable(true).has('18,16')).toBe(true);
+  });
+
   it.each(LAUNCH_SAMPLES)('$id preserves content, uses available artwork and creates fresh copies', summary => {
     expect(PREMADE_MAP_SUMMARIES).toContainEqual(summary);
     const a = buildPremadeProject(summary.id);

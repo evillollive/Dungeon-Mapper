@@ -73,6 +73,11 @@ for (const sample of samples) test(`launch art ${sample.name} safe preview, edit
   const backup = JSON.parse(await downloadExportText(page, 'backup')).project;
   assert(JSON.stringify(backup).includes(sample.secret));
   assert(backup.levels[0].tokens.some(token => token.hidden));
+  if (sample.id === 'launch-kestrel-bay') {
+    assert.equal(backup.levels[0].tiles[15][15].type, 'locked-door-v');
+    assert(backup.levels[0].notes.some(note => note.label === 'Cargo tools: manual bypass'));
+    assert(backup.levels[0].notes.some(note => note.publicDescription?.includes('stranded flight engineer')));
+  }
   await page.screenshot({ path: info.outputPath('editor.png') });
   const svg = await downloadExportText(page, 'svg');
   assert(!svg.includes(sample.secret));

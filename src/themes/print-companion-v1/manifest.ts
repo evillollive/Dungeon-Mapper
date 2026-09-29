@@ -23,5 +23,5 @@ export const PRINT_COMPANION_MANIFEST = {
   legacyTokens: 'src/utils/printTokenRender.ts',
   legacyTokenSourceHash: 'sha256:5950aca9bf17c696eae80fed7ed5392229abe2f2b075d693af79f03f02079fff',
   sampleSource: 'src/utils/launchSamples.ts',
-  sampleSourceHash: 'sha256:5a01942bfae19efc34ffc030680f8e0de820786066e04d0f2582e5e3e339ec0e',
+  sampleSourceHash: 'sha256:a39ad211d391e3d2c477f29375479299b412da8c31e162ebee42621cf3db72da',
 } as const;

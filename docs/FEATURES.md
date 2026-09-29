@@ -148,6 +148,12 @@ Their creation previews show only player-safe content; the editable copy
 includes the private encounter. Existing generated samples and Folio art
 references remain available, including through Generate Hub.
 
+Kestrel Docking Bay is a rules-neutral rescue: release a stranded engineer from
+sealed crew quarters and escort them to the aft airlock. DM notes offer a quiet
+port-control release or a cargo-tool bypass with an optional security
+complication. The coolant core is not a countdown. Door symbols and notes do
+not automate locks, movement restrictions, alarms or combat.
+
 ## Sessions and player display
 
 **Prepare session** reads the saved source project. Review public content,
