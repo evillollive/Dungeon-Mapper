@@ -9,7 +9,9 @@ unimplemented/unassessed.
 The owner requested a substantial GitHub integration plan, with non-Actions
 and Actions tasks separated. This approves roadmap work, not implementation,
 app registration, hosting, repository creation, publication or spending.
-The current hosted runner-minute budget remains **zero**.
+The application/integration hosted budget remains **zero**. A separate
+fixture-repository task has an approved 24-minute ceiling but no currently
+spendable allowance; see the deferred fixture plan below.
 
 **Execution update, September 30:** The owner subsequently authorized starting
 the local tasks, selected both Map layout and DM encounter profiles, and chose
@@ -294,7 +296,9 @@ portable workflow until an authentication service exists.
 
 ## 6. Actions and hosted qualification tasks
 
-These tasks remain blocked by the zero runner-minute budget. Writing a proposed
+No Actions task may start now. Application/service work is unbudgeted; the
+separate fixture-task ceiling cannot be used until available allowance is
+confirmed. Writing a proposed
 workflow locally belongs to preparation; pushing, opening/updating a PR,
 creating a release/tag, merging, dispatching or rerunning may be the trigger.
 Do not infer permission from a task being present in this roadmap.
@@ -386,10 +390,13 @@ platform speculatively.
 
 The owner selected planning a small public fixture repository on September 30,
 with **creation/publication and CI-budget approval requested separately**.
-Neither approval has been granted by choosing this plan.
+The owner subsequently approved the public scope and the 24-minute task ceiling,
+but explicitly reported **zero available minutes until tomorrow**. Creation,
+publication and runs remain paused until actual allowance is confirmed.
+No automatic schedule or provider reset date is assumed.
 
-Proposed destination: **`evillollive/Dungeon-Mapper-Fixtures`**, public only after
-explicit approval of that visibility. It is a test-data repository, not a
+Approved destination/scope: **`evillollive/Dungeon-Mapper-Fixtures`**, public,
+but not yet created. It is a test-data repository, not a
 community catalog, Pages deployment or destination for the private release
 evidence archive. Check name availability read-only before creation; do not
 substitute another owner/name without a decision.
@@ -423,12 +430,15 @@ Initial scope:
   non-fast-forward changes. Public visibility supports server-side protection;
   verify actual availability and success, not just the requested settings.
 
-Proposed sequence, after both permissions:
+Sequence after confirming available allowance:
 
-1. Create the public repository with license/README, then make the explicit
-   bootstrap push containing validator/workflow and its synthetic unit fixtures.
-   No production map package is present yet. Confirm the bootstrap check before
-   enabling the required-check ruleset.
+1. Create an empty public repository, then make one initial bootstrap commit/push
+   containing the license, README, validator/workflow and synthetic unit fixtures.
+   Do not auto-create a separate README commit: the workflow's bootstrap-only
+   branch applies only to GitHub's first push to the empty default branch.
+   It reports zero qualified public packages. All PRs and later main pushes
+   require the actual fixture. No production map path is present initially.
+   Confirm bootstrap self-tests before enabling the required-check ruleset.
 2. Prepare and locally validate the single public map package, batch it into
    one branch/PR, and wait for its required validation. Inspect automatic
    review/other integrations before creating the PR; do not trigger an unknown
@@ -460,15 +470,16 @@ agent/review jobs. They explain why the fixture repository should use one small
 validator, not copy the app's browser matrix. Its actual hosted duration and
 account billing/quota remain unknown; do not run CI simply to measure them.
 
-**Budget proposal for a later, separate approval:** three expected workflow
+**Approved ceiling, execution deferred:** three expected workflow
 triggers, one job each: bootstrap, fixture PR and required post-merge validation.
 Estimate **3 to 9 aggregate runner minutes** (1 to 3 per run), with substantial
 uncertainty because the new validator has never run on a hosted runner.
-Propose a **24 runner-minute task ceiling**, reserving up to six minutes per
+The owner approved a **24 runner-minute task ceiling**, with planning room for
+up to six minutes per
 expected run for the five-minute timeout plus rounding/setup uncertainty and
 one additional full-workflow retry reservation. Diagnose before any retry and
 refresh actual use/reservations before each trigger. A timeout is not a billing
-cap, and this proposed accounting is not a provider-enforced spending limit.
+cap, and this accounting is not a provider-enforced spending limit.
 
 This proposal does not cover publishing the application branch, its existing
 CI/Pages jobs, hosted reviews/agents, additional fixture PRs, service hosting or
@@ -479,9 +490,45 @@ does not enable LFS, Actions artifact storage or paid runners. Provider-side
 usage, retention and billing still need confirmation; no account balance or
 zero-cost guarantee is claimed.
 
-**Current accounting:** zero minutes approved, zero hosted triggers, zero
-reservations, no repository created and no data uploaded. The proposed ceiling
-above is not an allocation until the owner explicitly accepts it.
+**Current accounting:** 24 minutes approved as the task ceiling, zero currently
+spendable until allowance is confirmed, zero hosted use/triggers and zero
+reservations. No repository has been created, no PR opened, no data uploaded
+and no automatic future run scheduled. The owner's reported availability is
+not a verified provider balance or an exclusive reservation.
+
+#### Prepared local fixture draft
+
+Session `20233d90-7a79-4423-a564-f75af5b08662` retains the ready local draft under
+`files/github-public-fixture-draft/`:
+
+| Path | Purpose |
+| --- | --- |
+| `bootstrap/` | Intended initial repository files: license, README, one workflow, dependency-free validator, negative tests and their synthetic reference data |
+| `fixture-overlay/` | Intended protected PR payload: the public package and its synthetic source/regeneration guidance |
+| `generation-receipt.json` | Current application producer identity, original geometric image, actual local package roundtrip and member hashes |
+| `final-draft-receipt.json` | Final 24-file intended-public inventory, SHA-256 values, local check observations and conditional budget ledger |
+| `PUBLISHING-NOTES.txt` | Exact resume order, private/public boundary, required quota/integration checks and later PR/merge permission gates |
+| `ruleset-request.json` | Staged API request, not an applied or verified ruleset |
+
+The package has seven members totaling **37,937 bytes**. Its image is a new
+32x32 two-color Canvas drawing, not an imported photograph or campaign asset.
+The exact package roundtripped through the application locally. Fourteen local
+Node checks pass, including missing/changed data, duplicate keys, unsafe paths,
+links/executable files, copyright notices and bounded PNG CRC/raster structure.
+The staged workflow passed retained actionlint 1.7.12. These are local Node
+24 observations, not a Node 20 hosted receipt or a hosted-duration benchmark.
+
+Only `bootstrap/` and `fixture-overlay/` are intended for publication. The parent
+directory contains local generation scripts, machine paths, receipts and
+operation notes and must not be pushed. The release-evidence archive is not
+part of this draft. The rendered synthetic preview and outgoing text were
+reviewed; a supplementary path/token-pattern scan is not a general secret-free
+guarantee. Originals and earlier local receipts are retained.
+
+Fixture PR creation also needs a correctly scoped repository context or a
+user-driven PR. This application session's PR tool targets Dungeon Mapper;
+do not create the fixture PR against that repository. Any new project session
+requires separate approval, and merge remains separately authorized.
 
 Reviewed September 30, 2026. Recheck live API limits and authorization behavior
 before implementation; pin the supported API version deliberately.
