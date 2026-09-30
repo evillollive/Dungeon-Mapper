@@ -382,6 +382,107 @@ platform speculatively.
 
 ## 9. Primary references and current evidence
 
+### Public synthetic fixture repository plan
+
+The owner selected planning a small public fixture repository on September 30,
+with **creation/publication and CI-budget approval requested separately**.
+Neither approval has been granted by choosing this plan.
+
+Proposed destination: **`evillollive/Dungeon-Mapper-Fixtures`**, public only after
+explicit approval of that visibility. It is a test-data repository, not a
+community catalog, Pages deployment or destination for the private release
+evidence archive. Check name availability read-only before creation; do not
+substitute another owner/name without a decision.
+
+Initial scope:
+
+- One small synthetic, single-level creator package under `maps/public-vault/`,
+  with an explicitly selected DM note/hidden test token and one original static
+  image. Include all normal package files and notices so the public reader
+  exercises real Git trees, blob media types, hashes and native import.
+- No real campaigns, private notes, recovery files, browser profiles, source
+  checkout archives, logs or the 330 MiB release-evidence bundle. Review every
+  outgoing member and keep an independently recorded manifest/digest.
+- AGPL-3.0-or-later repository/validator licensing, consistent with the owner's
+  default. Preserve an explicit inherited AGPL declaration/source for the
+  synthetic map, rather than labeling bundled material CC. Keep source
+  data/generation instructions sufficient to understand/reproduce the fixture.
+  Actual bytes and public notices need review before any upload.
+- A dependency-free Node structural/integrity validator and focused negative
+  tests. Validate expected members, identities, schema/profile metadata,
+  referenced assets and required source notices without executing map content.
+  Full browser image/behavior qualification stays in Dungeon Mapper; this
+  small repository must not install/build the entire application.
+- One standard Ubuntu job named **Validate creator fixtures**, Node 20,
+  five-minute job timeout, read-only token, superseded-run concurrency. Trigger
+  on PRs targeting `main` and pushes to `main`, not on both feature pushes and
+  their PRs. No matrix, scheduled crawling, dispatch/release automation, Pages,
+  deployment secrets, hosted agents, artifact uploads, caches or Git LFS.
+- After bootstrap qualification, apply a default-branch ruleset requiring a
+  PR and strict/up-to-date **Validate creator fixtures**, blocking deletion and
+  non-fast-forward changes. Public visibility supports server-side protection;
+  verify actual availability and success, not just the requested settings.
+
+Proposed sequence, after both permissions:
+
+1. Create the public repository with license/README, then make the explicit
+   bootstrap push containing validator/workflow and its synthetic unit fixtures.
+   No production map package is present yet. Confirm the bootstrap check before
+   enabling the required-check ruleset.
+2. Prepare and locally validate the single public map package, batch it into
+   one branch/PR, and wait for its required validation. Inspect automatic
+   review/other integrations before creating the PR; do not trigger an unknown
+   hosted job or silently disable one.
+3. Merge only if separately authorized and qualified; retain the post-merge
+   validator receipt. Run the first approved live read against its pinned
+   package commit, then exercise those downloaded bytes locally. Record
+   repository ID, commit, paths, raw member hashes, API outcome and remaining
+   limits. Read-only requests consume API quota even without Actions minutes;
+   do not assume allowance is available or bypass throttling with credentials.
+
+The repository's absence of prior timing history is a real uncertainty.
+Read-only inspection of the application repository on September 30 found
+`CI` on PR-to-main, main pushes and manual dispatch, plus an independent
+main-push/manual Pages workflow and available hosted Copilot workflows.
+The existing ruleset requires strict **Build and test** and **Browser
+qualification**, with no hosted-review requirement observed in that ruleset.
+None of those app settings were changed and the app branch remains unpublished.
+
+Reference timings, not estimates for the new validator:
+
+| Existing app receipt | Build and test | Aggregate CI jobs | Rounded-per-job planning equivalent |
+| --- | --- | --- | --- |
+| [Successful main run 35034579302](https://github.com/evillollive/Dungeon-Mapper/actions/runs/35034579302) | 1m 41s | 24m 22s | 27 minutes |
+| [Failed PR run 35037146541](https://github.com/evillollive/Dungeon-Mapper/actions/runs/35037146541) | 1m 37s | 32m 30s | 35 minutes |
+
+These five-job totals exclude the independent Pages workflow and any hosted
+agent/review jobs. They explain why the fixture repository should use one small
+validator, not copy the app's browser matrix. Its actual hosted duration and
+account billing/quota remain unknown; do not run CI simply to measure them.
+
+**Budget proposal for a later, separate approval:** three expected workflow
+triggers, one job each: bootstrap, fixture PR and required post-merge validation.
+Estimate **3 to 9 aggregate runner minutes** (1 to 3 per run), with substantial
+uncertainty because the new validator has never run on a hosted runner.
+Propose a **24 runner-minute task ceiling**, reserving up to six minutes per
+expected run for the five-minute timeout plus rounding/setup uncertainty and
+one additional full-workflow retry reservation. Diagnose before any retry and
+refresh actual use/reservations before each trigger. A timeout is not a billing
+cap, and this proposed accounting is not a provider-enforced spending limit.
+
+This proposal does not cover publishing the application branch, its existing
+CI/Pages jobs, hosted reviews/agents, additional fixture PRs, service hosting or
+deployments. If target integrations could add jobs or usage cannot be bounded,
+stop and obtain revised approval before triggering them. No storage/cache
+add-ons are proposed: repository data uses ordinary Git storage, and the plan
+does not enable LFS, Actions artifact storage or paid runners. Provider-side
+usage, retention and billing still need confirmation; no account balance or
+zero-cost guarantee is claimed.
+
+**Current accounting:** zero minutes approved, zero hosted triggers, zero
+reservations, no repository created and no data uploaded. The proposed ceiling
+above is not an allocation until the owner explicitly accepts it.
+
 Reviewed September 30, 2026. Recheck live API limits and authorization behavior
 before implementation; pin the supported API version deliberately.
 
