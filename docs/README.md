@@ -8,6 +8,7 @@
 | [UX-09 Qualification](./UX-09-HANDOFF.md) | Automated browser/CI gates, current journey coverage, rollout policy and remaining release acceptance. |
 | [Pages Deployment Design](./RELEASE-DEPLOYMENT-DESIGN.md) | Approved local exact-artifact workflow design, failure behavior, concurrency, rollback and remaining approval boundaries. Hosted enforcement is not yet verified. |
 | [End-user Experience Roadmap](./USER-EXPERIENCE-ROADMAP.md) | Primary execution plan for the DM/player workflow redesign, local library, visual layout, art assets, infrastructure, and acceptance tests. |
+| [GitHub Integration Roadmap](./GITHUB-INTEGRATION-ROADMAP.md) | Planned UX-11 creator packages, GitHub publishing/import/remix and licensing, with local, remote non-Actions and budget-gated Actions tasks. Not an implemented feature. |
 | [Roadmap](./ROADMAP.md) | Current feature inventory, competitor reference, forward-looking roadmap, and design decisions. |
 | [Roadmap Archive](./archive/ROADMAP-history.md) | Historical record: full implementation detail for completed Phases 1–12, retrospective analyses, priority ordering, and the dated changes log. |
 | [Sharing Guide](./SHARING.md) | Positioning, audiences, launch copy, demo scripts, repo metadata, and follow-up promotion backlog. |

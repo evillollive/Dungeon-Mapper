@@ -7,6 +7,13 @@
 > document's older deferrals for those areas. Older competitor and art descriptions
 > below are historical context, not a fresh assessment of current capabilities.
 
+> **Optional GitHub integration plan (2026-09-30):** Follow
+> [UX-11 and its detailed task roadmap](./GITHUB-INTEGRATION-ROADMAP.md) for portable
+> creator packages, user-owned publishing, licensing and map import/remix.
+> Local non-Actions work, separately authorized remote setup and Actions-backed
+> qualification are distinct. This is planned expansion, not a current feature,
+> a live-collaboration implementation or a new early-access requirement.
+
 > **Launch scope approved September 15, 2026:** The initial redesigned release
 > is desktop-first early access **including physical A4/Letter printing**.
 > Follow the [UX-09A release gate ledger](./USER-EXPERIENCE-ROADMAP.md#release-gate-ledger).

@@ -8,6 +8,13 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
+**Optional GitHub integration plan, September 30, 2026:** The owner requested
+a staged roadmap for user-owned map publishing, licensing, import/remix and
+optional GitHub connection. [UX-11](#ux-11-optional-github-publishing-and-map-reuse)
+separates portable local work, separately authorized remote non-Actions setup,
+and budget-gated Actions qualification. It is planned, not implemented, and
+does not add an early-access prerequisite or authorize remote writes/spending.
+
 **Portable evidence preparation, September 30, 2026:** A checksummed local
 archive now packages source `98cdada`, selected original reports/failures,
 retained builds and reviewed artwork. Fresh extraction verified 2,170 payload
@@ -612,6 +619,10 @@ UX-00 baseline and decision gates
        -> UX-09C observed usability acceptance
             -> full UX-09 acceptance after A, B and C
                  -> UX-10 optional remote collaboration
+  -> UX-11 optional GitHub publishing/reuse (uses UX-01, UX-05, UX-08)
+       -> portable creator packages and independent imports
+       -> optional public-link import, attribution and connected publishing
+          (separate decisions/qualification; not an early-access prerequisite)
 ```
 
 Art exploration and usability research may run alongside infrastructure work, but production player display must not precede the visibility contract.
@@ -1746,6 +1757,46 @@ because its human work moved to a later milestone.
 
 **Handoff:** Approved operating budget, permission model, incident/recovery runbook, and explicit support scope. Not a blocker for local-first release.
 
+### UX-11: Optional GitHub publishing and map reuse
+
+**Priority:** P2. **Status:** Roadmap requested September 30, 2026; implementation
+and remote operations are not yet authorized. **Depends on:** UX-01 preservation,
+UX-05 audience boundaries and UX-08 portability. Independent of UX-10 live
+collaboration; applicable qualification is required before a selected slice ships.
+
+**Outcome:** Creators can deliberately share editable, licensed maps in their
+own repositories; recipients can preview, import an independent copy and remix
+with attribution. Keep local editing and private backups account-free/offline.
+Do not upload a private backup under a player-safe or public-safe label.
+
+The [GitHub integration roadmap](./GITHUB-INTEGRATION-ROADMAP.md) defines format,
+rights/privacy, authentication/service, conflict/recovery and operational
+contracts with individually scoped tasks:
+
+| Track | Task IDs | Boundary |
+| --- | --- | --- |
+| Non-Actions, local | GH-N01 through GH-N12 | Package contracts, deterministic export, safe import, review UX, mocked public-link/auth/publish paths, provenance, qualification preparation, evidence review and optional validator design |
+| Non-Actions, remote permission needed | GH-R01 through GH-R05 | App/service setup, controlled real auth/read/write exercises and optional evidence transfer; remote writes may still trigger Actions and require budget approval |
+| Actions / hosted qualification | GH-A00 through GH-A05 | Numeric budget gate, existing exact-revision app pipeline, optional service/map validation/release automation and supported rollout |
+
+**First useful milestone:** GH-N01 through GH-N04 plus the selected slice's
+GH-N10: review and download a GitHub-ready creator package, then inspect/import
+it independently without any account connection. Public-link import/provenance
+can follow. A connected publisher needs a separately approved minimal service;
+secrets must never be embedded in the static Pages app.
+
+**Acceptance:** Existing private backup/player projection behavior is unchanged;
+every published field/asset is intentional and licensed for the declared use;
+imports cannot overwrite local work; remote writes respect exact content,
+repository permissions, concurrent edits and required checks. Preserve real
+versus mocked evidence and offline fallback. No mandatory sync, marketplace,
+new live-player service or speculative catalog backend.
+
+**Handoff:** Record approved scope, package/source versions, permission and
+hosting decisions, actual receipts, limitations and aggregate budget accounting.
+The current budget is zero. Separate evidence-archive retention from community
+map publication; initial release gates, including physical printing, remain open.
+
 ## 8. Test and acceptance plan
 
 ### Existing tests to preserve and extend
@@ -1885,6 +1936,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-09B | Deferred from early access; not accepted | Broader physical-device, native zoom, assistive-technology and remaining device-performance qualification; printing stays in A |
 | UX-09C | Deferred from early access; no participant acceptance | Existing first-use, routine-play, comprehension and aesthetic/readability criteria require real participants |
 | UX-10 | Deferred | Explicit approval of remote scope |
+| UX-11 | Planned; no implementation or publication authorized | [GitHub integration tasks](./GITHUB-INTEGRATION-ROADMAP.md): local packages/import first, optional permission-scoped connection later; remote setup and Actions budgets remain separate gates |
 
 ## 10. Relationship to the previous roadmap
 
