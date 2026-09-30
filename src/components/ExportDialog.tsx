@@ -52,6 +52,7 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
   const [scaleBar, setScaleBar] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const controller = useRef<AbortController | null>(null);
@@ -72,6 +73,11 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
   const { plan } = planning;
   const selectedPage = Math.min(pageIndex, (plan?.pages ?? 1) - 1);
   const busy = progress !== null;
+  const requestCancellation = () => {
+    if (!controller.current) return;
+    controller.current.abort();
+    setCancelling(true);
+  };
   const close = () => { controller.current?.abort(); onClose(); };
   useEffect(() => () => controller.current?.abort(), []);
 
@@ -81,6 +87,7 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
     controller.current = job;
     setError('');
     setMessage('');
+    setCancelling(false);
     setProgress({ completed: 0, total: 1 });
     try {
       if (isBackup) {
@@ -106,6 +113,7 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
     } finally {
       controller.current = null;
       setProgress(null);
+      setCancelling(false);
     }
   }
 
@@ -205,8 +213,10 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
       {error && <p className="export-warning" role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
       <footer className="export-footer">
-        {busy ? <><p role="status">Rendering {progress.completed} of {progress.total} images...</p>
-          <button type="button" onClick={() => controller.current?.abort()}>Cancel export</button></>
+        {busy ? <><p role="status">{cancelling ? 'Cancelling export. Waiting for the current operation to finish.'
+          : `Rendering ${progress.completed} of ${progress.total} images...`}</p>
+          <button type="button" disabled={cancelling} onClick={requestCancellation}>
+            {cancelling ? 'Cancellation requested' : 'Cancel export'}</button></>
           : <><button type="button" onClick={close}>Cancel</button>
             {isPrint && plan && plan.pages > 1 && <button type="button" onClick={() => void download(true)}>Download all {plan.pages} pages</button>}
             <button type="button" className="export-primary" disabled={isBackup ? !project : !plan} onClick={() => void download(false)}>

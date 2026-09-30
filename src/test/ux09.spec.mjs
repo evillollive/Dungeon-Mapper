@@ -12,6 +12,7 @@ import tokenCatalog from './ux07TokenCatalog.browser.mjs';
 import libraryJourneys from './ux09Library.browser.mjs';
 import preservationJourneys from './ux09Preservation.browser.mjs';
 import editingJourneys from './ux09Editing.browser.mjs';
+import denseExport from './ux09DenseExport.browser.mjs';
 
 const journeys = [
   ['guided creation and library continuity', creation],
@@ -25,6 +26,7 @@ const journeys = [
   ...libraryJourneys,
   ...preservationJourneys,
   ...editingJourneys,
+  ['F05 dense export allocation cancellation and retry', denseExport],
 ];
 
 for (const [name, journey] of journeys) {
