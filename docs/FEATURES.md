@@ -697,6 +697,11 @@ than cropped from an enormous full-map canvas. PNG files carry physical DPI
 metadata; print at **100% / actual size**, not fit to page. Browser permission
 may be required for multiple downloads.
 
+Once **Cancel export** is handled, the dialog shows that cancellation is pending.
+The current render or PNG encoding operation may still need to finish; output settings and new
+exports stay locked until its cleanup completes. Completed downloads are kept
+and the project remains unchanged.
+
 Ink-friendly PNG styling uses monochrome map companions, Folio furnishings,
 Folio token frames/silhouettes and legacy token affiliations. Embedded artwork
 and annotations can remain colored. SVG retains the map's color

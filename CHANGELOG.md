@@ -12,6 +12,7 @@ All notable changes to this project are documented in this file.
 - Twelve original, owner-approved Folio token designs with shape-coded affiliation frames, monochrome print companions and two furnished sample scenes.
 
 ### Fixed
+- Export cancellation now shows immediate pending feedback while keeping output controls locked until the current operation finishes. Dense F05 coverage verifies selected PNGs, allocation limits, cancellation cleanup, encoding-failure retry and unchanged project data.
 - Keep keyboard-focused controls fully visible in short contextual sheets, including Firefox at 200% interface text. Preserve fractional inspector coordinates without native number-input rounding. Local results and outstanding hosted qualification are tracked in the UX-09 handoff.
 - Keep failed-startup recovery controls available when another tab restores the same project first, instead of showing a blank editor. The original remains downloadable and Retry restore opens the newer saved project.
 - Reserve unique token IDs before queued React updates so consecutive placements remain independently selectable and removable.

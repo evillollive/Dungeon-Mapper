@@ -1701,6 +1701,130 @@ runner minutes. No pushes, PR mutations, workflow dispatches/reruns, deployments
 paid-provider calls, native browser/OS setting changes or agents. Local compute
 and disk were not metered; account-wide usage remains unknown.
 
+### Dense F05 export and cancellation milestone
+
+September 30, 2026. The owner authorized a bounded independent local export
+check, without physical printing or Actions minutes. Application baseline:
+`7b5dd9768fe090b8521d336cc83ea51697208462`. The observed feedback fix is
+`c7724e7d3f7b3eb5ded71cade3f5aa5b1fb36a39`; final cross-browser harness:
+`8bea2e06c9d305fb24f3d25bf95776631338dcc9`.
+
+The new journey reuses unchanged F05 v1: 128x128 cells, 100 tokens, 200
+furnishings, 100 notes, sixteen room shapes, a river, paper, edge effects and
+lighting. Existing UX-08 coverage for simpler page plans is retained rather
+than repeated. This case checks selected dense pages and interruption, not
+completion of a 252-page batch.
+
+#### Reproduced issue and surgical fix
+
+The initial Chromium run accepted cancellation promptly but took about 1,033 ms
+after receiving it to show the final cancelled message while a native PNG encode
+finished. The main thread remained responsive during most of that wait.
+ExportDialog now acknowledges the request immediately with **Cancelling export.
+Waiting for the current operation to finish.** The cancellation button becomes
+disabled and output/new-export controls remain locked until the current
+operation settles and its normal cleanup completes.
+
+No native encoding is claimed to be preempted. The implementation does not race
+an abort against encoding and then allow overlapping export jobs. Completed
+downloads are kept, later requests are suppressed, and the original allocation
+limits, renderer, PNG metadata and project data contracts are unchanged.
+
+A held-operation component regression verifies immediate acknowledgement,
+continued locking, final cancellation and a fresh usable controller on retry.
+Fifteen targeted component/export tests, build and zero-warning lint passed.
+The pre-existing App chunk-size advisory remains visible and unchanged in policy.
+
+#### Actual local coverage and limits
+
+The final case renders and encodes the first two color DM pages of the 300-DPI
+Letter plan. It retains the first real download and holds delivery of the
+second real encoding callback. Native Enter on the focused Cancel button must
+show pending cancellation and disabled controls before the callback is released.
+The second page must not request a download. This is an explicit injected
+pending-operation case, **not natural cancellation-latency evidence**.
+
+The case then injects one null encoding result for page 252, verifies the
+visible error and cleanup, retries the actual last page, and downloads a
+player-facing 2048x2048 image at sixteen pixels per cell. Every completed file
+is retained, browser-decoded and checked for dimensions, PNG chunk boundaries,
+end marker, physical-resolution metadata and nonblank content. Actual private
+backups and all IndexedDB map/recovery records must remain equal before/after.
+There is no new claim about audience policy beyond the existing projection
+coverage; this test is not a substitute for pixel/sentinel qualification.
+
+| Controlled local result | Chromium 151.0.7922.34 | Firefox 153.0 | WebKit 26.5 |
+| --- | --- | --- | --- |
+| Outcome | Passed | Passed | Passed |
+| Largest observed export canvas | 8,415,000 pixels | 8,415,000 pixels | 8,415,000 pixels |
+| Peak combined managed page/content capacity | 15,165,000 pixels | 15,165,000 pixels | 15,165,000 pixels |
+| Managed surfaces explicitly zeroed after completion/cancel/error | Yes | Yes | Yes |
+| Temporary PNG URLs revoked | All three | All three | All three |
+| Completed PNGs decoded | First page, last page, player image | Same | Same |
+
+The combined capacity is about 57.85 MiB at four bytes per pixel, **not total
+browser memory**. Observation covers HTML canvas dimension assignments and
+the known page/content surfaces, excluding the editor, pre-existing artwork
+caches, native encoding/GPU buffers and verifier-image decoding. It rejects an
+over-limit assignment before allocating it, retains the 16 MP / 8192-side
+per-surface bounds, and prevents a fourth batch download if the audit runs away.
+No limit, timeout or assertion was raised to obtain a passing result.
+
+Natural post-fix Chromium and Firefox observations are retained separately:
+feedback appeared about 0.9/1 ms after the cancellation event was received,
+while final completion took about 1,027/45 ms. Driver request-to-completion
+included additional automation overhead. WebKit reached the three-download
+audit cap before the driver's natural cancellation input arrived; its natural
+timing is **not qualified**, and those failed runs remain failures. Preparing
+focus earlier did not establish a valid natural measurement. The deterministic
+callback hold resolves coverage of cancellation semantics, not that timing gap.
+
+The controlled run's 50 ms heartbeat observed maximum event-loop gaps of
+99/125/186 ms across Chromium/Firefox/WebKit. These are single-run diagnostic
+gaps, not physical input latency, p95 or an agreed reference-device threshold.
+The controlled cancellation timings include injected delay and are not used
+as performance claims.
+
+#### Retention and applicability
+
+Host: macOS 26.7, Node 24.16.0. All three final journeys passed without retries,
+skips or timeout changes. The required runner now discovers 186 tests in ten
+files, including one dense-export case per engine. Discovery is not a full
+suite run. Future publication budgeting must include this case; no hosted
+qualification has been initiated.
+
+Session `20233d90-7a79-4423-a564-f75af5b08662` retains:
+
+- `files/dense-export-qualified-local` and `dense-export-summary.json`: source-
+  linked final receipts, allocation/encoding observations and the nine actual
+  downloaded PNGs across the three engines.
+- `files/dense-export-initial-chromium`: original unacknowledged-wait observation.
+- `files/dense-export-final`: natural Chromium/Firefox results and the failed
+  WebKit safety-limit run, not an all-engine passing campaign.
+- `files/dense-export-webkit-cancel-fix` and
+  `dense-export-webkit-encoding-cancel`: unsuccessful natural-input harness
+  attempts, retained with audits, screenshots and traces.
+- `files/dense-export-controlled-webkit`: the first successful controlled
+  pending-encoding case, superseded by the final source-linked campaign.
+
+The early failed runs' preliminary downloads were not retained; their audit
+records and traces identify the bounded requests. The final harness now retains
+unverified received files on failure before cleanup, and the final passing
+campaign retains the required first/last/player files. Synthetic fixtures and
+historical outcomes are unchanged. No cache/profile cleanup was performed.
+
+This closes the bounded F05 page-allocation, selected-file validity,
+controlled-cancellation, retry and source-preservation gap. It does not establish
+full-batch completion, native heap/GPU peaks, natural WebKit cancellation
+latency, cold/offline loading, representative hardware or physical printing.
+Only export-dialog cancellation feedback changed in application code;
+unrelated render/gesture campaigns were not invalidated or repeated.
+
+**Accounting:** zero hosted triggers/reservations against zero approved runner
+minutes. No push, PR mutation, deployment, workflow run, dependency installation,
+paid-provider call, agent delegation, native setting change or physical print.
+Local compute/disk were not metered; account-wide usage remains unknown.
+
 ## Remaining release gates
 
 Subsequent housekeeping removes 68 of the original 73 hook warnings and

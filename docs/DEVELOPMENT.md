@@ -620,6 +620,38 @@ hardware and measurement methodology are agreed. Do not lower the roadmap
 targets or interpret a green diagnostic as performance acceptance.
 See [actual local results and remaining bottleneck](./UX-09-HANDOFF.md#dense-map-diagnostic-milestone).
 
+### Dense-map export lifecycle
+
+`ux09DenseExport.browser.mjs` adds one F05 journey per engine through the
+existing production runner:
+
+```bash
+QA_OUTPUT=/absolute/path/to/dense-export npm run test:browser -- src/test/ux09.spec.mjs --grep="F05 dense export"
+```
+
+It reuses the unchanged dense fixture for a color DM 300-DPI Letter batch,
+selected last-page error/retry and a player PNG. The case caps batch download
+requests at three and holds the second real encoding callback to make
+cancellation deterministic. It never claims to export all 252 pages. Browser
+encoding is real; the hold and null-result fault injection are recorded
+explicitly in the retained audit.
+
+Per-surface checks retain the 16 MP / 8192-side limits. Known page/content
+surfaces must stay within the two-surface capacity and be explicitly zeroed
+after normal completion, error and cancellation. PNG URLs must be revoked.
+Completed downloads are browser-decoded and checked for dimensions, DPI,
+nonblank content and unchanged backup/IndexedDB data. These observations do
+not measure native/GPU/decoder memory or establish physical-print quality.
+
+ExportDialog shows cancellation requested as soon as the input is handled, but waits for the current
+operation to settle before enabling another export. Native encoding cannot be
+preempted by AbortSignal. The unit regression holds an operation pending to
+verify feedback and locking without adding a cancellation race.
+
+Use a fresh `QA_OUTPUT` for each attempt. Failures retain their audit and any
+unverified received PNGs before restoring instrumentation and aborting the
+owned export. See [results and natural-timing limitations](./UX-09-HANDOFF.md#dense-f05-export-and-cancellation-milestone).
+
 ### Bounded editor token repaint
 
 `tokenRepaint.ts` plans conservative token-only damage. `tokenSceneBounds.ts`
