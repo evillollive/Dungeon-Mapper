@@ -13,6 +13,7 @@ import libraryJourneys from './ux09Library.browser.mjs';
 import preservationJourneys from './ux09Preservation.browser.mjs';
 import editingJourneys from './ux09Editing.browser.mjs';
 import denseExport from './ux09DenseExport.browser.mjs';
+import creatorSharing from './creatorSharing.browser.mjs';
 
 const journeys = [
   ['guided creation and library continuity', creation],
@@ -27,6 +28,7 @@ const journeys = [
   ...preservationJourneys,
   ...editingJourneys,
   ['F05 dense export allocation cancellation and retry', denseExport],
+  ['Creator sharing reviewed ZIP and independent Library import', creatorSharing],
 ];
 
 for (const [name, journey] of journeys) {

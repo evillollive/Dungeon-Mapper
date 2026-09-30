@@ -1,5 +1,4 @@
 import { readFileSync } from 'node:fs';
-import { crc32 } from 'node:zlib';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { creatorLevelImagePixels, inspectCreatorImage } from '../creatorAssets';
 import { inspectCreatorSvg, CREATOR_SVG_LIMITS } from '../creatorSvg';
@@ -12,6 +11,16 @@ const svg = (body: string, attributes = '') =>
   `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" ${attributes}>${body}</svg>`;
 const dataUrl = (text: string) => `data:image/svg+xml;base64,${Buffer.from(text).toString('base64')}`;
 const png = Uint8Array.from(readFileSync('public/pwa-192x192.png'));
+const crcTable = Uint32Array.from({ length: 256 }, (_, index) => {
+  let value = index;
+  for (let bit = 0; bit < 8; bit++) value = value & 1 ? 0xedb88320 ^ value >>> 1 : value >>> 1;
+  return value >>> 0;
+});
+function crc32(bytes: Uint8Array): number {
+  let crc = 0xffffffff;
+  for (const byte of bytes) crc = crcTable[(crc ^ byte) & 255] ^ crc >>> 8;
+  return (crc ^ 0xffffffff) >>> 0;
+}
 
 function paddedPNG(size: number): Uint8Array<ArrayBuffer> {
   const result = new Uint8Array(size);

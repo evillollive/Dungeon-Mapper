@@ -725,6 +725,51 @@ file. PNG/SVG exports, third-party VTT formats and separate session recovery
 records are not project imports. Use **Trace an image** or background-image
 tools for raster artwork rather than expecting editable geometry from a PNG.
 
+### Creator-sharing packages
+
+Choose **Share a creator copy** on a saved Library card or inside the editor's
+Export dialog. This is a separate author-to-author flow, not **Share with
+players** or **Back up project**. Both profiles expose the selected full layout,
+including secret geometry. **Map layout** omits notes, tokens and encounter
+annotations; **DM encounter** lets you include specific notes, tokens, hidden
+furnishings, annotations and markers. No encounter items are automatically
+selected. Publication titles/level names are reviewed separately from private
+source names. Play progress, separate sessions, recovery data and unknown fields
+are not published.
+
+Choose a contribution license explicitly: CC BY 4.0 or CC BY-SA 4.0 for original
+content, with an inherited-license path for existing AGPL material. Existing
+map/asset notices are preserved, not relicensed. Newly created sample copies
+carry notices; older saved copies may lack provenance and need manual source
+declarations. The app cannot prove ownership or legal compatibility.
+
+Review custom asset rights, the exact package previews/files and image metadata,
+then acknowledge the sharing copy before **Download creator ZIP**. Accepted image
+bytes are preserved. Raster files may contain private metadata not shown in the
+preview. Static PNG/JPEG/WebP and a restricted SVG path/shape subset are supported;
+unsupported effects, animation or active/external SVG content fail explicitly.
+No original map or image is rewritten to make a package pass.
+
+The ZIP contains ordinary files under `maps/<package-id>/`: editable map data,
+previews, manifest/checksums and attribution/license notes. In **Your maps**,
+choose **Import creator package** for the ZIP or **Import creator folder** for
+the extracted map directory. Both validate before preview, then create a new
+local identity only after **Import as new project**. Rejected or cancelled
+imports leave existing records unchanged. Imported copies start with fresh
+visibility state; they are still author-facing, not player-safe.
+
+Sharing limits are 32 MiB ZIP, 64 MiB expanded members, 16 MiB map JSON, 256
+members and 32 levels totaling 262,144 cells. Each image is limited to 10 MiB
+encoded source and 24 million pixels; distinct images for one level share a
+24-million-pixel decoding budget. Levels render sequentially. These limits
+do not restrict private backups or certify total browser/GPU memory.
+
+**No GitHub login, connection or upload is implemented.** Manual upload is a
+separate action requiring deliberate repository visibility, rights review and
+any workflow/budget approvals. Creator sharing is implemented locally with
+bounded browser evidence, not hosted release qualification. See the
+[contract and evidence](./CREATOR-PACKAGE-CONTRACT.md).
+
 ## Mobile & Touch Support
 
 The initial release scope is desktop-first. Responsive layouts and touch

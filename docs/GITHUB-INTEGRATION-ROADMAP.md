@@ -1,8 +1,9 @@
 # Optional GitHub publishing and map reuse roadmap
 
 **Date:** September 30, 2026.
-**Status:** Local GH-N01 contract decisions accepted; GH-N02 content-selection
-foundation implemented. The package workflow is not yet available or qualified.
+**Status:** GH-N01 through GH-N04 implemented/covered locally with the selected
+GH-N10 checks. GitHub-specific network features and hosted qualification remain
+unimplemented/unassessed.
 **Parent:** [UX-11 in the primary execution roadmap](./USER-EXPERIENCE-ROADMAP.md#ux-11-optional-github-publishing-and-map-reuse).
 
 The owner requested a substantial GitHub integration plan, with non-Actions
@@ -17,6 +18,15 @@ The owner also approved the measured first-version sharing limits.
 See the [field-level contract, input envelope and local core evidence](./CREATOR-PACKAGE-CONTRACT.md).
 GitHub registration, connection,
 publication, hosting and Actions remain unauthorized.
+
+**Local slice completed:** The Library/editor now offers reviewed creator-copy
+export and independent ZIP/folder import, including the inherited-license path
+and source preservation. The owner selected restricted SVG support and the
+lower 24-million-pixel aggregate image budget per level. Necessary provenance
+preservation from GH-N06 was brought forward; upstream GitHub version comparison
+is not implemented. [Actual local evidence and remaining limits](./CREATOR-PACKAGE-CONTRACT.md#complete-local-package-workflow)
+include production journeys and a stopped-origin offline exercise, not hosted
+or legal certification.
 
 ## 1. Product outcome and boundaries
 
@@ -238,10 +248,12 @@ A remote write can still trigger Actions in its target repository: GH-A00 then
 applies before the write. Non-Actions does not mean free, safe to publish, or
 authorized under the current zero budget.
 
-GH-N01's decisions are accepted and GH-N02 is **in progress**; the internal
-content-selection foundation is not a complete downloadable package. Other
-feature tasks remain planned, with the existing evidence archive noted in
-GH-N11. Dependencies describe technical prerequisites, not spending approval.
+GH-N01 through GH-N04 and their scoped local GH-N10 work are complete locally.
+The provenance-preservation portion of GH-N06 is implemented; GitHub-linked
+upstream checks remain planned. Other feature tasks remain planned, with the
+existing evidence archive noted in GH-N11. Dependencies describe technical
+prerequisites, not spending approval. Local completion never authorizes a remote
+trigger or marks hosted qualification as passed.
 Owner decisions in section 8 gate the corresponding implementation.
 
 | ID | Work / execution | Prerequisites | Completion evidence and stop condition |

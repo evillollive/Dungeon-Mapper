@@ -197,11 +197,13 @@ export function prepareCreatorProject(source: DungeonProject, options: CreatorPr
   }
   const selections = [...options.levels].sort((a, b) => a.index - b.index);
   const provenance = readCreatorProvenance(source.creatorProvenance);
-  for (const selection of selections) {
+  for (const [outputIndex, selection] of selections.entries()) {
     const levelProvenance = readCreatorProvenance(source.levels[selection.index].creatorProvenance);
     provenance.mapSources = mergeCreatorSources(provenance.mapSources, levelProvenance.mapSources);
-    provenance.assetCredits.push(...levelProvenance.assetCredits);
+    provenance.assetCredits.push(...levelProvenance.assetCredits.map(credit =>
+      credit.key === 'background' ? { ...credit, key: `level:${outputIndex}:background` } : credit));
   }
+  provenance.assetCredits = [...new Map(provenance.assetCredits.map(credit => [JSON.stringify(credit), credit])).values()];
   provenance.mapSources = mergeCreatorSources(provenance.mapSources, options.sources ?? []);
   if (!creatorLicenseChoices(provenance.mapSources).some(license => license === options.license)) {
     throw new Error('Choose an explicit creator license compatible with the inherited map license.');

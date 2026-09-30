@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
 import type { DungeonProject } from '../types/map';
 import { changeLibraryProject, duplicateLibraryProject, listProjects, recordProjectOpened, type LibraryChange, type ProjectStatus, type ProjectSummary } from '../utils/projectRepository';
 import { decodeProject } from '../utils/projectSchema';
@@ -9,6 +9,11 @@ import './ProjectLibrary.css';
 import OfflineStatus from './OfflineStatus';
 import Icon from './Icon';
 import FirstUseIllustration from './FirstUseIllustration';
+import type { ImportedCreatorPackage } from '../utils/creatorPackageImport';
+import { CREATOR_PACKAGE_LIMITS } from '../utils/creatorProject';
+
+const CreatorShareDialog = lazy(() => import('./CreatorShareDialog'));
+const CreatorPreviewImages = lazy(() => import('./CreatorShareDialog').then(module => ({ default: module.CreatorPreviewImages })));
 
 export function ProjectThumbnail({ item }: { item: ProjectSummary }) {
   const [attempt, setAttempt] = useState(0);
@@ -65,9 +70,13 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
   const [name, setName] = useState('');
   const [tags, setTags] = useState('');
   const [candidate, setCandidate] = useState<DungeonProject | null>(null);
+  const [creatorCandidate, setCreatorCandidate] = useState<ImportedCreatorPackage | null>(null);
+  const [creatorPreviewFailed, setCreatorPreviewFailed] = useState(false);
+  const [sharing, setSharing] = useState<DungeonProject | null>(null);
   const [reading, setReading] = useState(false);
   const importEpoch = useRef(0);
-  const invalidateImport = useCallback(() => { importEpoch.current++; }, []);
+  const creatorImportController = useRef<AbortController | null>(null);
+  const invalidateImport = useCallback(() => { importEpoch.current++; creatorImportController.current?.abort(); }, []);
   const heading = useRef<HTMLHeadingElement>(null);
   const refresh = async () => { setProjects(await listProjects()); };
   useEffect(() => {
@@ -98,6 +107,27 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
   const recent = projects.filter(item => item.status === 'active' && !item.diagnostic)
     .sort((a, b) => (b.lastOpenedAt || b.updatedAt).localeCompare(a.lastOpenedAt || a.updatedAt))[0];
   const locked = busy || disabled || reading;
+  const readCreator = async (files: File[], directory = false) => {
+    if (!files.length) return;
+    const epoch = ++importEpoch.current;
+    creatorImportController.current?.abort();
+    const job = new AbortController(); creatorImportController.current = job;
+    setReading(true); setCandidate(null); setCreatorCandidate(null); setCreatorPreviewFailed(false); setError('');
+    try {
+      if (!directory && files[0].size > CREATOR_PACKAGE_LIMITS.zipBytes) throw new Error('Creator ZIP downloads must not exceed 32 MiB.');
+      const { inspectCreatorZip, inspectCreatorDirectory } = await import('../utils/creatorPackageImport');
+      job.signal.throwIfAborted();
+      const loaded = directory ? await inspectCreatorDirectory(files, job.signal)
+        : await inspectCreatorZip(new Uint8Array(await files[0].arrayBuffer()), job.signal);
+      if (epoch === importEpoch.current && !job.signal.aborted) {
+        setCandidate(loaded.project); setCreatorCandidate(loaded);
+      }
+    } catch (error) {
+      if (epoch === importEpoch.current && !job.signal.aborted) setError(error instanceof Error ? error.message : 'Creator package import failed. No project was changed.');
+    } finally {
+      if (epoch === importEpoch.current) { setReading(false); creatorImportController.current = null; }
+    }
+  };
   return <main className="project-library">
     <header className="library-masthead"><span>DUNGEON MAPPER / LOCAL COLLECTION</span>
       <OfflineStatus blocked={locked} />
@@ -117,21 +147,46 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
             const file = event.target.files?.[0]; event.target.value = '';
             if (!file) return;
             const epoch = ++importEpoch.current;
-            setReading(true); setCandidate(null); setError('');
+            creatorImportController.current?.abort();
+            setReading(true); setCandidate(null); setCreatorCandidate(null); setError('');
             try { const loaded = await importProjectJSON(file); if (epoch === importEpoch.current) setCandidate(loaded); }
             catch (error) { if (epoch === importEpoch.current) setError(error instanceof Error ? error.message : 'Import failed.'); }
             finally { if (epoch === importEpoch.current) setReading(false); }
-          }} /></label></div>
+          }} /></label>
+        <label className={`library-file ${locked ? 'disabled' : ''}`}><span>Import creator package</span>
+          <input type="file" accept=".zip,application/zip" aria-label="Import creator package" disabled={locked} onChange={event => {
+            const file = event.target.files?.[0]; event.target.value = '';
+            if (file) void readCreator([file]);
+          }} /></label>
+        <label className={`library-file ${locked ? 'disabled' : ''}`}><span>Import creator folder</span>
+          <input type="file" multiple aria-label="Import creator folder" disabled={locked}
+            ref={element => { element?.setAttribute('webkitdirectory', ''); }}
+            onChange={event => { const files = Array.from(event.target.files ?? []); event.target.value = ''; void readCreator(files, true); }} /></label></div>
     </section>
     {disabled && <p role="status">Project actions are paused until your current work is saved. Recovery and backup controls remain above.</p>}
     {error && <p className="library-error" role="alert">{error}</p>}
     {reading && <section aria-label="Reading import"><p>Reading project without changing your work...</p>
-      <button onClick={() => { importEpoch.current++; setReading(false); }}>Cancel import</button></section>}
+      <button onClick={() => { invalidateImport(); setReading(false); }}>Cancel import</button></section>}
     {candidate && <section className="library-import" aria-label="Import preview">
       <h2>Import {candidate.name}</h2><p>{candidate.levels.length} levels. This makes a new editable project. Existing work is not replaced.</p>
       {candidate.levels.map((level, index) => <p key={index}>{level.meta.name}: {level.meta.width} x {level.meta.height}, {level.notes.length} notes</p>)}
-      <button className="library-primary" disabled={locked} onClick={() => { if (onImport(candidate)) setCandidate(null); }}>Import as new project</button>
-      <button onClick={() => setCandidate(null)}>Cancel import</button>
+      {creatorCandidate && <>
+        <p><strong>Creator copy, not a player-safe display.</strong> {creatorCandidate.manifest.profile === 'encounter' ? 'Includes selected DM encounter material.' : 'Includes the full map layout, including secret geometry.'}</p>
+        <p>By {creatorCandidate.manifest.author} / {creatorCandidate.manifest.license} / version {creatorCandidate.manifest.contentVersion}</p>
+        <p>{creatorCandidate.manifest.description}</p><p>{creatorCandidate.imageMetadataWarning}</p>
+        <Suspense fallback={<p role="status">Opening creator previews...</p>}><CreatorPreviewImages files={creatorCandidate.previews}
+          onError={message => { setCreatorPreviewFailed(true); setError(message); }} /></Suspense>
+        <details><summary>Inherited source notices</summary>{creatorCandidate.sourceNotices.map((source, index) => <p key={index}>
+          {source.title} / {source.author} / {source.license}<br />{source.url}<br />{source.notice}</p>)}</details>
+      </>}
+      <button className="library-primary" disabled={locked || (creatorCandidate !== null && creatorPreviewFailed)}
+        onClick={() => {
+          try {
+            if (onImport(structuredClone(candidate))) { setCandidate(null); setCreatorCandidate(null); }
+            else setError('The new project was not opened. Your preview is retained. Resolve the save/recovery warning, then try again.');
+          } catch (error) { setError(error instanceof Error ? error.message : 'The new project could not be opened. Your preview is retained.'); }
+        }}>Import as new project</button>
+      <button onClick={() => { setCandidate(null); setCreatorCandidate(null); }}>Cancel import</button>
     </section>}
     <div className="library-filters">
       <label>Search names and tags<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Crypt, campaign, one-shot..." /></label>
@@ -161,6 +216,10 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
             if (item.diagnostic) downloadRecoveryData(item.original, `project-${item.id}-source.json`);
             else exportProjectJSON(decodeProject(item.original));
           }}>{item.diagnostic ? 'Download retained source' : 'Export backup'}</button>
+          {!item.diagnostic && <button disabled={locked} onClick={() => {
+            try { setSharing(decodeProject(item.original)); }
+            catch (error) { setError(error instanceof Error ? error.message : 'The saved sharing source could not be read.'); }
+          }}>Share a creator copy</button>}
         </div>
         {!item.diagnostic && <details><summary>Manage {item.name}</summary><div className="library-actions">
           <button disabled={locked} onClick={() => { setEdit(item); setName(item.name); setTags(item.tags.join(', ')); }}>Rename and tags</button>
@@ -183,5 +242,8 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
         </form>}
       </div>
     </article>)}</div>
+    {sharing && <Suspense fallback={<p role="status">Opening creator sharing...</p>}>
+      <CreatorShareDialog project={sharing} onClose={() => setSharing(null)} />
+    </Suspense>}
   </main>;
 }

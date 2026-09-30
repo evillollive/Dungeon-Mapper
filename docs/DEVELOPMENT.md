@@ -195,6 +195,41 @@ reuse `dist`. Only the latter uses `QA_ENGINES` and defaults to port 5308.
 The UX-08 runner owns its server so it can stop the sole origin and control
 worker updates. Do not run both suites concurrently on the same custom port.
 
+### Local creator-package qualification
+
+The registered `Creator sharing reviewed ZIP and independent Library import`
+journey reuses the required production runner:
+
+```bash
+npm run build
+QA_OUTPUT=/absolute/fresh/creator-evidence \
+  npm run test:browser:run -- src/test/ux09.spec.mjs --grep="Creator sharing"
+```
+
+It covers explicit profile/content/license selection, custom image rights,
+actual ZIP member hashes and disclosure sentinels, short-viewport review,
+native downloads, independent IndexedDB import, cancellation/error preservation,
+inherited-license choices from the editor entry point and native directory
+selection on all three engines. Existing required suites/timeouts are unchanged.
+Future Actions budgets must include these three additional cases.
+
+Core tests are `creatorProject`, `creatorProvenance`, `creatorAssets`,
+`creatorPackageFormat`, `creatorZipIntake` and `creatorPackage` under
+`src/utils/__tests__`, plus the provenance hook and sharing component tests.
+They distinguish mocked native codecs/previews from the actual browser evidence.
+Untrusted intake uses bounded ZIP directory/stream checks, actual output lengths
+and CRC, full member hashes, content/profile/rights validation and independent
+storage confirmation; do not replace it with unrestricted `unzipSync`.
+`fflate` is the only added runtime dependency.
+
+The retained manual offline campaign reuses this exact production journey with
+its sole preview origin stopped after cache readiness, before opening creator
+sharing. It verifies cached lazy modules and worker-based compression, not just
+an already-open dialog. Source/build identities and artifacts are recorded in
+the [creator contract](./CREATOR-PACKAGE-CONTRACT.md). Neither local campaign is
+a hosted receipt or a total-memory, legal, screen-reader or physical-device
+certification.
+
 CI runs every registered journey plus UX-08 for Chromium, Firefox and WebKit, with
 independent engine jobs, no fail-fast cancellation and fourteen-day artifacts.
 The checked-in workflow now creates the production distribution once in Build

@@ -1760,8 +1760,9 @@ because its human work moved to a later milestone.
 ### UX-11: Optional GitHub publishing and map reuse
 
 **Priority:** P2. **Status:** Local task execution authorized September 30, 2026;
-GH-N01 decisions accepted and GH-N02 content-selection foundation implemented
-locally. No downloadable package/UI is available. Remote operations remain unauthorized.
+GH-N01 through GH-N04 and selected GH-N10 work completed locally: reviewed
+creator ZIPs, directory intake and independent Library import are available.
+No GitHub connection/upload or hosted qualification. Remote operations remain unauthorized.
 **Depends on:** UX-01 preservation,
 UX-05 audience boundaries and UX-08 portability. Independent of UX-10 live
 collaboration; applicable qualification is required before a selected slice ships.
@@ -1938,7 +1939,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-09B | Deferred from early access; not accepted | Broader physical-device, native zoom, assistive-technology and remaining device-performance qualification; printing stays in A |
 | UX-09C | Deferred from early access; no participant acceptance | Existing first-use, routine-play, comprehension and aesthetic/readability criteria require real participants |
 | UX-10 | Deferred | Explicit approval of remote scope |
-| UX-11 | GH-N01 decisions accepted; GH-N02 content-selection foundation implemented locally | [GitHub integration tasks](./GITHUB-INTEGRATION-ROADMAP.md) and [creator contract](./CREATOR-PACKAGE-CONTRACT.md): both profiles, explicit CC BY/CC BY-SA choice and resource envelope approved. Safe asset/member assembly, archive intake and UI remain; no feature/publication qualification |
+| UX-11 | Account-free GH-N01 through GH-N04 plus scoped GH-N10 complete locally; GitHub-specific work remains planned | [GitHub integration tasks](./GITHUB-INTEGRATION-ROADMAP.md) and [creator contract](./CREATOR-PACKAGE-CONTRACT.md): reviewed creator ZIP/folder workflow, both profiles, explicit/inherited licenses and preserved provenance. No hosted publication or account connection; original release gates remain open |
 
 ## 10. Relationship to the previous roadmap
 

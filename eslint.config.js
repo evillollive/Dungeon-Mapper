@@ -22,6 +22,7 @@ export default defineConfig([
       'src/test/ux09Keyboard.browser.mjs',
       'src/test/ux09Library.browser.mjs',
       'src/test/ux09DenseExport.browser.mjs',
+      'src/test/creatorSharing.browser.mjs',
       'src/test/ux09Performance.spec.mjs',
       'src/test/ux09EdgeBlend.spec.mjs',
       'src/test/ux09FolioTiles.spec.mjs',

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { lazy, Suspense, useMemo, useRef, useState, useEffect } from 'react';
 import type { CustomThemeDefinition, DungeonMap, DungeonProject, StampDef, ViewMode } from '../types/map';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { exportHighResPNG, exportMapSVG, exportProjectJSON } from '../utils/export';
@@ -10,6 +10,7 @@ import ExportPreview from './ExportPreview';
 import Icon, { type IconName } from './Icon';
 import FirstUseIllustration from './FirstUseIllustration';
 import './ExportDialog.css';
+const CreatorShareDialog = lazy(() => import('./CreatorShareDialog'));
 
 export type ExportChoice = 'share' | 'share-svg' | 'backup' | 'print' | 'image' | 'image-svg';
 type Intent = 'share' | 'backup' | 'print' | 'image';
@@ -55,6 +56,7 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
   const [cancelling, setCancelling] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [creatorSharing, setCreatorSharing] = useState(false);
   const controller = useRef<AbortController | null>(null);
   const isPrint = intent === 'print';
   const isBackup = intent === 'backup';
@@ -117,6 +119,9 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
     }
   }
 
+  if (creatorSharing && project) return <Suspense fallback={<div className="export-backdrop"><p role="status">Opening creator sharing...</p></div>}>
+    <CreatorShareDialog project={project} onClose={onClose} />
+  </Suspense>;
   return <div className="export-backdrop" onClick={event => { if (event.target === event.currentTarget) close(); }}>
     <div ref={focusTrap} className="export-dialog" role="dialog" aria-modal="true" aria-label="Export"
       onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } }}>
@@ -132,6 +137,9 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
           <strong>{item.title}</strong><span>{item.detail}</span>
         </button>)}
       </fieldset>
+      {project && <p>Sharing editable work with other map authors?
+        {' '}<button type="button" disabled={busy} onClick={() => setCreatorSharing(true)}>Share a creator copy</button>
+        {' '}Review spoilers, licenses and source notices separately from player exports.</p>}
       <div className="export-layout">
         <div>
           <p className={isBackup || exportView === 'gm' ? 'export-warning' : 'export-audience'}>

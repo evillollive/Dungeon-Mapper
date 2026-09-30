@@ -1,8 +1,8 @@
 # Creator package v1 contract
 
-**Status:** GH-N01 decisions accepted; GH-N02 selection, image admission and
-byte-transport foundations implemented locally, September 30, 2026.
-No complete downloadable package or UI yet.
+**Status:** Complete account-free local package workflow, September 30, 2026.
+GH-N01 through GH-N04 and scoped GH-N10 are locally covered; GitHub connection
+and hosted release qualification are not implemented/passed.
 **Parent:** [GitHub integration roadmap](./GITHUB-INTEGRATION-ROADMAP.md).
 **Source inspected:** `76c921ed763176ae196f3a42a0a92adcc51daa1a`.
 
@@ -339,3 +339,77 @@ clipboard/templates and edit history. Application/fixture types and targeted
 lint pass. This is not an ownership detector or proof of legal compatibility;
 declarations, preserved source notices and publication review remain necessary.
 Full package assembly, import and UI are still not available.
+
+## Complete local package workflow
+
+The subsequent integration completes the first account-free slice. The preceding
+foundation entries remain chronological evidence, not the current availability
+statement. `CreatorShareDialog` is available from Library cards and the editor's
+Export dialog. It captures an independent source snapshot, requires explicit
+publication identity/profile/license/rights choices, shows exact previews,
+omissions (with pagination), member hashes and source/image notices, and requires
+a second acknowledgement before requesting the ZIP download.
+
+`creatorPackage.ts` assembles canonical metadata, component notices and reviewed
+content. Images are externalized by hash without byte changes; preview levels
+render sequentially with the approved per-level image budget and released
+surfaces. Identical input produces identical members within each tested engine;
+native PNG encoding differs across engines and is not claimed byte-identical
+between browser implementations.
+
+`creatorZipIntake.ts` validates regular-file paths, directory/local-header
+agreement, flags, CRC and actual streamed expanded lengths. Unsupported links,
+encryption, ZIP64, duplicate/colliding paths, mixed package roots, hidden extra
+members, excessive declared/actual sizes and malformed streams fail explicitly.
+`creatorPackageImport.ts` checks all member identities, schema/catalog/profile,
+asset dependencies, source notices, image admission and decoded budgets before
+returning an isolated candidate. Directory input uses the same member inspection.
+The Library writes only after confirmation through its existing fresh-project
+path. No public URL, token or arbitrary repository code is fetched/executed.
+
+Inherited background credits are stored with their level, so reordering/selecting
+levels does not relabel an asset as newly owned. Project-wide reusable asset
+credits remain separate. Known inherited credits are read-only in the publishing
+review. Ordinary opaque future provenance remains recoverable in private
+backups but blocks sharing until understood. Attribution is not an ownership
+detector, legal review or compatibility guarantee.
+
+The required runner has one new `Creator sharing reviewed ZIP and independent
+Library import` case per engine. It checks real production UI selection,
+downloads/member hashes, absence of unselected disclosure sentinels, a 390x440
+review viewport, unchanged native records, cancelled/malformed input, new local
+identity, editor re-entry with inherited license choices and native directory
+selection. No existing timeout, retry, required check or acceptance bound changed.
+Initial label-selector failure is retained in `files/github-creator-ui-first`;
+the actual combobox accessible names were used for the correction.
+
+Retained local evidence in session `20233d90-7a79-4423-a564-f75af5b08662`:
+
+- `files/github-package-roundtrip-initial/`: real source-module assembly/ZIP
+  roundtrip and repeated-member-byte checks on all three engines, with actual
+  ZIP/PNG files and source/probe hashes. Not a production-bundle receipt.
+- `files/github-creator-ui-second/` and `github-creator-ui-other-engines/`:
+  initial successful production journeys; later final receipts supersede these
+  for code that changed afterward.
+- `files/github-creator-offline-final/`: the same production journey completed
+  after cache readiness and shutdown of its sole HTTP origin, before opening
+  creator sharing. All three engines reloaded the Library and completed
+  download, independent import, malformed/cancelled input and directory
+  selection. Receipt records build-file hashes and the journey identity.
+- `files/github-creator-workflow-unit.json`: the prior 276-case selected
+  regression run; later additions include directory equivalence and
+  refused-import retry, recorded in the final receipt rather than retroactively
+  changing this report.
+
+The Vite App chunk still exceeds the existing 500 kB advisory; it is not
+suppressed. Creator screens, import logic and ZIP code have their own lazy
+chunks and are included in the production offline precache. Dependency/runtime
+usage adds no remote service and no hosted trigger.
+
+This is bounded local implementation/qualification, not a final release receipt.
+No legal compatibility certification, screen-reader/device/participant
+acceptance, total native/GPU-memory guarantee or broad hostile-image-corpus
+assessment is claimed. Physical printing and the original UX-09 gates are
+unchanged. GH-N05 public-link fetching, GitHub-linked version checks, account
+authorization, remote publishing, evidence transfer and hosted qualification
+remain distinct subsequent work.
