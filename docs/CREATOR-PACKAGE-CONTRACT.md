@@ -1,7 +1,8 @@
 # Creator package v1 contract
 
-**Status:** GH-N01 decisions accepted; GH-N02 content-selection foundation
-implemented locally, September 30, 2026. No downloadable package format or UI yet.
+**Status:** GH-N01 decisions accepted; GH-N02 selection, image admission and
+byte-transport foundations implemented locally, September 30, 2026.
+No complete downloadable package or UI yet.
 **Parent:** [GitHub integration roadmap](./GITHUB-INTEGRATION-ROADMAP.md).
 **Source inspected:** `76c921ed763176ae196f3a42a0a92adcc51daa1a`.
 
@@ -17,6 +18,9 @@ implemented locally, September 30, 2026. No downloadable package format or UI ye
   not new restrictions on existing private backups or saved projects.
 - Include restricted SVG alongside PNG/JPEG/WebP. Reject unsupported SVG
   features explicitly rather than altering the original artwork.
+- Use the lower aggregate image budget: 24 million decoded pixels per level
+  across distinct images, processing levels sequentially. This is approximately
+  96 MiB of raw RGBA pixels before browser overhead, not an absolute heap limit.
 
 Implementation evidence must distinguish the internal review draft from a
 complete, licensed package and from a shipped feature.
@@ -156,7 +160,7 @@ counts, not latency, native memory or reference-hardware acceptance.
 
 Owner-approved v1 sharing limits:
 
-| Boundary | Proposed maximum | Reason / required follow-through |
+| Boundary | Approved maximum | Reason / required follow-through |
 | --- | --- | --- |
 | Downloaded ZIP | 32 MiB | Bounded read before archive inspection; directory import uses the expanded limits |
 | Sum of actual expanded member bytes | 64 MiB | Independent of ZIP header claims; stop decompression before crossing the bound |
@@ -164,6 +168,7 @@ Owner-approved v1 sharing limits:
 | Levels / aggregate tile cells | 32 / 262,144 | Headroom over the measured 8-level/131,072-cell fixture; not a change to existing editor or backup limits |
 | Archive members / nesting depth | 256 / 32 | Bound file bookkeeping and structured traversal; paths remain flat except the approved asset directory |
 | Individual decoded custom image | 10 MiB encoded source and 24 million pixels | Reuse the current trace-image safety ceilings as a starting point, then exercise rich multi-asset cases before acceptance |
+| Distinct decoded images needed by one level | 24 million pixels in aggregate | Owner selected the lower ceiling; repeated references to the same bytes count once and levels are processed sequentially |
 
 Also bound vector points, metadata/text and total decoded image work during
 implementation using measured/adversarial cases, not untrusted declared sizes.
@@ -262,4 +267,42 @@ This is not a production-bundle, complete package, license-compliance or broad
 image-corpus qualification receipt. GH-N02 still needs per-package asset/rights
 accounting, deterministic members and preview generation. GH-N03/GH-N04 still
 need archive intake, independent Library import and the review/download UI.
-No GitHub connection, upload, dependency addition or hosted run has occurred.
+The image-admission milestone required no GitHub connection, upload, dependency
+addition or hosted run.
+
+### Canonical members and ZIP transport foundation
+
+The subsequent transport work adds `creatorPackageFormat.ts` and `creatorZip.ts`.
+The former defines the format identifiers, exact member-path allowlist,
+canonical JSON and SHA-256 identities. It rejects missing/duplicate/unsafe
+members, unsupported JSON values and excessive bytes/counts. Byte-view checks
+work across realms, rather than rejecting valid encoder/worker output based
+on its JavaScript constructor.
+
+ZIP encoding uses the inspected MIT-licensed `fflate` 0.8.3 dependency, with
+fixed timestamps and path order. An owned snapshot protects reviewed input
+buffers from transfer or later mutation. Compression operations run sequentially;
+completed workers are terminated, cancellation terminates outstanding work,
+and accumulated ZIP output is checked against the 32 MiB limit before copying
+another chunk. This is not an absolute native-memory measurement.
+
+The retained `files/github-creator-transport-unit.json` records 92 passing
+cases across transport and asset guards. Coverage includes actual
+incompressible ZIP output crossing its ceiling, below/at/above map/expanded
+byte and member-count limits, deterministic roundtrip bytes, one compression
+operation at a time, cancellation/retry and the selected per-level image
+budget. Application/fixture types and targeted lint pass. Initial cross-realm
+byte detection and constructor-sensitive test comparisons were corrected
+without weakening byte-by-byte comparisons.
+
+These helpers encode a byte envelope; they do not yet assemble a complete
+creator package, validate an incoming archive or authorize its content.
+Rights/manifest assembly, preview generation, archive intake and Library/UI
+integration remain in progress. The inherited-license path for existing
+AGPL-licensed maps needs a scope decision before final package licensing is
+wired. The existing Creative Commons decision covers original creator
+contributions, not permission to relicense an existing map.
+
+The dependency installation followed the manifest change and added only
+`fflate`, without lifecycle scripts or unrelated upgrades. No GitHub connection,
+upload, remote mutation or hosted run has occurred.

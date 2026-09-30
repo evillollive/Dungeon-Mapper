@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { crc32 } from 'node:zlib';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { inspectCreatorImage } from '../creatorAssets';
+import { creatorLevelImagePixels, inspectCreatorImage } from '../creatorAssets';
 import { inspectCreatorSvg, CREATOR_SVG_LIMITS } from '../creatorSvg';
 import { creatorImageDimensions } from '../creatorImageDimensions';
 import { CREATOR_PACKAGE_LIMITS } from '../creatorProject';
@@ -180,6 +180,21 @@ describe('bounded static raster headers', () => {
     const oversizedChunk = png.slice();
     new DataView(oversizedChunk.buffer).setUint32(33, 0x7fffffff);
     expect(() => creatorImageDimensions(oversizedChunk, 'image/png')).toThrow();
+  });
+
+  describe('per-level sharing image budget', () => {
+    const first = { sha256: 'a'.repeat(64), width: 3000, height: 4000 };
+    const second = { sha256: 'b'.repeat(64), width: 3000, height: 4000 };
+    it('counts repeated image bytes only once and admits the selected 24-million-pixel total', () => {
+      expect(creatorLevelImagePixels([first, first])).toBe(12_000_000);
+      expect(creatorLevelImagePixels([first, second, first])).toBe(24_000_000);
+    });
+    it('rejects one pixel over the total, conflicting dimensions and invalid identities', () => {
+      expect(() => creatorLevelImagePixels([first, second, { sha256: 'c'.repeat(64), width: 1, height: 1 }])).toThrow('24 million');
+      expect(() => creatorLevelImagePixels([first, { ...first, width: 1 }])).toThrow('conflicting');
+      expect(() => creatorLevelImagePixels([{ ...first, sha256: 'unknown' }])).toThrow('identity');
+      expect(() => creatorLevelImagePixels([{ ...first, width: -1, height: -1 }])).toThrow('dimensions');
+    });
   });
 
   it('reads synthetic JPEG frame dimensions, not a claim of native decode validity', () => {

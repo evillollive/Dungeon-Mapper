@@ -12,6 +12,28 @@ export interface CreatorImageAsset {
   svg?: CreatorSvgInspection;
 }
 
+export function creatorLevelImagePixels(images: Iterable<{ sha256: string; width: number; height: number }>): number {
+  const seen = new Map<string, { width: number; height: number }>();
+  let pixels = 0;
+  for (const image of images) {
+    if (!/^[a-f0-9]{64}$/.test(image.sha256) ||
+        !Number.isSafeInteger(image.width) || !Number.isSafeInteger(image.height) ||
+        image.width <= 0 || image.height <= 0) throw new Error('Invalid reviewed image dimensions or identity.');
+    const previous = seen.get(image.sha256);
+    if (previous) {
+      if (previous.width !== image.width || previous.height !== image.height) throw new Error('A repeated image has conflicting decoded dimensions.');
+      continue;
+    }
+    const area = image.width * image.height;
+    if (!Number.isSafeInteger(area) || area > CREATOR_PACKAGE_LIMITS.levelImagePixels - pixels) {
+      throw new Error('This level exceeds 24 million decoded pixels across its distinct sharing images. Choose smaller source images; the original project is unchanged.');
+    }
+    seen.set(image.sha256, image);
+    pixels += area;
+  }
+  return pixels;
+}
+
 function matches(bytes: Uint8Array, expected: readonly number[], offset = 0): boolean {
   return expected.every((value, index) => bytes[offset + index] === value);
 }

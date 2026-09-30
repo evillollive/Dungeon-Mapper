@@ -17,6 +17,7 @@
     "test:ux08:run": "node src/test/ux08.browser.mjs"
   },
   "dependencies": {
+    "fflate": "^0.8.3",
     "react": "^19.2.5",
     "react-dom": "^19.2.5"
   },

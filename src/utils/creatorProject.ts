@@ -17,6 +17,7 @@ export const CREATOR_PACKAGE_LIMITS = {
   depth: 32,
   imageBytes: 10 * 1024 * 1024,
   imagePixels: 24_000_000,
+  levelImagePixels: 24_000_000,
 } as const;
 
 export interface CreatorLevelSelection {
