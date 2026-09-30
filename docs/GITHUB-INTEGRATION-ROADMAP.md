@@ -1,7 +1,8 @@
 # Optional GitHub publishing and map reuse roadmap
 
 **Date:** September 30, 2026.
-**Status:** Local GH-N01 contract work started; features are not implemented or release-qualified.
+**Status:** Local GH-N01 contract decisions accepted; GH-N02 content-selection
+foundation implemented. The package workflow is not yet available or qualified.
 **Parent:** [UX-11 in the primary execution roadmap](./USER-EXPERIENCE-ROADMAP.md#ux-11-optional-github-publishing-and-map-reuse).
 
 The owner requested a substantial GitHub integration plan, with non-Actions
@@ -12,8 +13,9 @@ The current hosted runner-minute budget remains **zero**.
 **Execution update, September 30:** The owner subsequently authorized starting
 the local tasks, selected both Map layout and DM encounter profiles, and chose
 an explicit CC BY 4.0 / CC BY-SA 4.0 choice for creator-owned contributions.
-See the [field-level contract and measured input envelope](./CREATOR-PACKAGE-CONTRACT.md).
-Package limits remain a pending decision. GitHub registration, connection,
+The owner also approved the measured first-version sharing limits.
+See the [field-level contract, input envelope and local core evidence](./CREATOR-PACKAGE-CONTRACT.md).
+GitHub registration, connection,
 publication, hosting and Actions remain unauthorized.
 
 ## 1. Product outcome and boundaries
@@ -236,9 +238,10 @@ A remote write can still trigger Actions in its target repository: GH-A00 then
 applies before the write. Non-Actions does not mean free, safe to publish, or
 authorized under the current zero budget.
 
-GH-N01 is **in progress**; other feature tasks remain planned, with the existing
-evidence archive noted in GH-N11. Dependencies describe technical prerequisites,
-not spending approval.
+GH-N01's decisions are accepted and GH-N02 is **in progress**; the internal
+content-selection foundation is not a complete downloadable package. Other
+feature tasks remain planned, with the existing evidence archive noted in
+GH-N11. Dependencies describe technical prerequisites, not spending approval.
 Owner decisions in section 8 gate the corresponding implementation.
 
 | ID | Work / execution | Prerequisites | Completion evidence and stop condition |

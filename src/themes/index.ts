@@ -71,9 +71,13 @@ const THEME_ALIASES: Record<string, string> = {
   scifi: 'starship',
 };
 
-export function getTheme(id: string): TileTheme {
+export function findTheme(id: string): TileTheme | undefined {
   const resolved = THEME_ALIASES[id] ?? id;
-  return THEME_REGISTRY[resolved] ?? dungeonTheme;
+  return Object.hasOwn(THEME_REGISTRY, resolved) ? THEME_REGISTRY[resolved] : undefined;
+}
+
+export function getTheme(id: string): TileTheme {
+  return findTheme(id) ?? dungeonTheme;
 }
 
 // ── Per-theme paper tint colours ──────────────────────────────────────────

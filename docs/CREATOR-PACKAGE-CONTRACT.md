@@ -1,6 +1,7 @@
 # Creator package v1 contract
 
-**Status:** GH-N01 draft, September 30, 2026. Not an implemented format.
+**Status:** GH-N01 decisions accepted; GH-N02 content-selection foundation
+implemented locally, September 30, 2026. No downloadable package format or UI yet.
 **Parent:** [GitHub integration roadmap](./GITHUB-INTEGRATION-ROADMAP.md).
 **Source inspected:** `76c921ed763176ae196f3a42a0a92adcc51daa1a`.
 
@@ -12,10 +13,11 @@
   requiring an explicit choice with no preselected default.
 - Existing artwork/content licenses remain unchanged. Imported material needs
   separate rights information. A license choice does not publish anything.
+- The owner approved the v1 resource envelope below. These are sharing limits,
+  not new restrictions on existing private backups or saved projects.
 
-The remaining package resource envelope below needs owner approval before the
-builder/importer contract is finalized. Implementation and its acceptance
-evidence must subsequently distinguish this draft from shipped behavior.
+Implementation evidence must distinguish the internal review draft from a
+complete, licensed package and from a shipped feature.
 
 ## Profiles and field policy
 
@@ -150,7 +152,7 @@ Receipt: session `20233d90-7a79-4423-a564-f75af5b08662`,
 script `files/github-package-contract-measure.mjs`. These are input sizes and
 counts, not latency, native memory or reference-hardware acceptance.
 
-Proposed v1 sharing limits, **pending owner approval**:
+Owner-approved v1 sharing limits:
 
 | Boundary | Proposed maximum | Reason / required follow-through |
 | --- | --- | --- |
@@ -193,6 +195,32 @@ the actual generated member bytes, omission review, immutable source and
 storage outcomes. Build each profile's allowlist explicitly, with coverage that
 fails when an application field is added without a sharing-policy decision.
 
-GH-N01 closes only when the field/dependency/rights policy and resource
-envelope are accepted. GH-N02 through GH-N04 and their local GH-N10 evidence
-remain separate implementation milestones. Hosted usage remains zero.
+## Local content-selection foundation
+
+`src/utils/creatorPackageFields.ts` defines recursive field allowlists checked
+against the application types. A newly added model field requires an explicit
+policy, rather than being spread into shared content automatically.
+`src/utils/creatorProject.ts` prepares an isolated trusted review draft with
+the selected profile, publication names, explicit encounter selections,
+dependency closure, reference errors and fresh visibility state.
+
+The draft returns local omission paths and assets requiring rights review.
+Neither is a public manifest or permission to download/upload the content.
+Byte/member/image bounds belong to final package assembly and intake; do not
+apply the `map.json` limit prematurely to an internal draft containing embedded
+images that will be extracted and deduplicated. Level/cell limits are enforced
+before allocating the sharing copy.
+
+Local coverage uses `src/test/creatorPackageFixture.ts`, unchanged F05 inputs
+and existing private-backup cases. It covers disclosure sentinels, selected
+DM content, stale/ambiguous references, library closure, legacy theme aliases,
+determinism and independent copies, plus below/at/above level/cell limits.
+The current targeted run has 39 passing cases in two files; application and
+fixture type checks and changed-file lint also pass. The retained report is
+`files/github-creator-core-unit.json` in the current session. These are core
+unit results, not browser, archive, license-compliance or release qualification.
+
+GH-N02 still needs safe asset admission, rights notices, deterministic member
+assembly and preview generation. GH-N03/GH-N04 still need archive intake,
+independent Library import and the review/download UI. No GitHub connection,
+upload, dependency addition or hosted run has occurred.
