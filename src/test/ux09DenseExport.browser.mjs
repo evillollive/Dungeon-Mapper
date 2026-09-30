@@ -18,7 +18,7 @@ function observeExport() {
   const data = {
     phase: 'setup', surfaces: [], encodings: [], requests: [], timerGaps: [], blocked: [],
     maxSurfacePixels: 0, peakManagedPixels: 0, cancel: null, limitReached: false,
-    failNextEncoding: false,
+    failNextEncoding: false, encodingHeld: false,
   };
   const editor = canvas => canvas.getAttribute('role') === 'application' || canvas.classList.contains('minimap-canvas');
   const identify = canvas => {
@@ -63,13 +63,26 @@ function observeExport() {
     const fail = data.failNextEncoding;
     data.failNextEncoding = false;
     data.encodings.push(entry);
+    const hold = data.phase === 'batch' && data.encodings.filter(encoding => encoding.phase === 'batch').length === 2;
     native.toBlob.call(this, blob => {
       entry.end = performance.now();
       entry.bytes = blob?.size ?? 0;
-      if (fail) {
-        entry.injectedFailure = true;
-        callback(null);
-      } else callback(blob);
+      const deliver = () => {
+        if (fail) {
+          entry.injectedFailure = true;
+          callback(null);
+        } else callback(blob);
+      };
+      if (hold) {
+        entry.injectedCallbackHold = true;
+        data.encodingHeld = true;
+        window.releaseDenseEncoding = () => {
+          data.encodingHeld = false;
+          entry.releasedAt = performance.now();
+          delete window.releaseDenseEncoding;
+          deliver();
+        };
+      } else deliver();
     }, ...args);
   };
   HTMLAnchorElement.prototype.click = function (...args) {
@@ -117,7 +130,7 @@ function observeExport() {
   window.readDenseExport = () => ({
     ...data, surfaces: [...surfaces.values()], urls: [...urls.values()],
   });
-  window.restoreDenseExport = () => {
+  window.restoreDenseExport = (abort = false) => {
     clearInterval(timer);
     messages.disconnect();
     document.removeEventListener('click', click, true);
@@ -126,6 +139,10 @@ function observeExport() {
     HTMLAnchorElement.prototype.click = native.click;
     URL.createObjectURL = native.createURL;
     URL.revokeObjectURL = native.revokeURL;
+    if (abort || data.encodingHeld) {
+      document.querySelector('button[aria-label="Close Export"]')?.click();
+      window.releaseDenseEncoding?.();
+    }
   };
 }
 
@@ -206,25 +223,39 @@ export default async function denseExport(page, { output }) {
   let complete = false;
   try {
     await page.evaluate(() => { window.denseExport.phase = 'batch'; });
-    const first = page.waitForEvent('download');
-    await dialog.getByRole('button', { name: 'Download all 252 pages', exact: true }).click();
-    const firstPage = await first;
-    assert(firstPage.suggestedFilename().endsWith('_page_1-1.png'));
-    const cancelStart = performance.now();
-    await dialog.getByRole('button', { name: 'Cancel export', exact: true }).click();
-    await expect(dialog.getByText('Export cancelled. Completed downloads are kept; your project is unchanged.', { exact: true })).toBeVisible();
-    const cancelDriverMs = performance.now() - cancelStart;
+    let cancelDriverMs;
+    await Promise.all([
+      dialog.getByRole('button', { name: 'Download all 252 pages', exact: true }).click({ noWaitAfter: true }),
+      (async () => {
+        const cancel = dialog.getByRole('button', { name: 'Cancel export', exact: true });
+        await cancel.focus();
+        await page.waitForFunction(() => window.denseExport.encodingHeld);
+        await expect(cancel).toBeFocused();
+        const cancelStart = performance.now();
+        await page.keyboard.press('Enter');
+        await expect(dialog.getByText('Cancelling export. Waiting for the current operation to finish.', { exact: true })).toBeVisible();
+        await expect(dialog.getByRole('button', { name: 'Cancellation requested', exact: true })).toBeDisabled();
+        await expect(dialog.getByLabel('Resolution (DPI)')).toBeDisabled();
+        await page.evaluate(() => window.releaseDenseEncoding());
+        await expect(dialog.getByText('Export cancelled. Completed downloads are kept; your project is unchanged.', { exact: true })).toBeVisible();
+        cancelDriverMs = performance.now() - cancelStart;
+      })(),
+    ]);
     const cancelled = await page.evaluate(() => window.readDenseExport());
     assert(cancelled.cancel?.trusted && cancelled.cancel.shown !== null);
+    assert(cancelled.encodings.some(encoding => encoding.phase === 'batch' && encoding.start <= cancelled.cancel.received));
     assert.equal(cancelled.limitReached, false, 'Audit safety limit was reached before cancellation');
     assert(cancelled.requests.filter(request => request.phase === 'batch').every(request => request.at <= cancelled.cancel.received));
-    result.cancellation = { driverRequestToCompletionMs: cancelDriverMs,
+    result.cancellation = { input: 'Native Enter while the second real encoding callback is held',
+      injectedCallbackHold: true,
+      driverRequestToCompletionMs: cancelDriverMs,
       inputQueueMs: cancelled.cancel.received - cancelled.cancel.requested,
       receivedToFeedbackMs: (cancelled.cancel.pendingShown ?? cancelled.cancel.shown) - cancelled.cancel.received,
       receivedToCompletionMs: cancelled.cancel.shown - cancelled.cancel.received,
       completedRequests: cancelled.requests.length };
     await expect.poll(async () => (await page.evaluate(() => window.readDenseExport()))
       .surfaces.filter(surface => surface.managed && surface.width * surface.height > 0).length).toBe(0);
+    await expect.poll(() => pngs.length).toBe(cancelled.requests.length);
     for (const [index, download] of pngs.entries()) {
       result.files.push(await verifyPNG(page.context(), download, output, `cancelled-batch-page-${index + 1}.png`, 2550, 3300, 300));
     }
@@ -271,10 +302,11 @@ export default async function denseExport(page, { output }) {
     const data = await page.evaluate(() => window.readDenseExport());
     assert.deepEqual(data.blocked, []);
     assert(data.maxSurfacePixels <= 16_000_000);
+    assert(data.peakManagedPixels <= 2250 * 3000 + 2550 * 3300, 'Export page surfaces accumulated instead of being released sequentially');
     assert(data.encodings.some(encoding => encoding.injectedFailure));
     assert(data.surfaces.filter(surface => surface.managed).every(surface => surface.width === 0 && surface.height === 0));
     result.allocation = data;
-    result.limits = 'Tracks declared canvas dimensions, managed export surfaces and PNG URL lifetimes, not total GPU/process or decoded-image memory. Cancellation timing includes local browser-driver overhead and is diagnostic only.';
+    result.limits = 'Tracks declared canvas dimensions, managed export surfaces and PNG URL lifetimes, not total GPU/process or decoded-image memory. A second encoding callback is held for deterministic cancellation coverage; those timings include injected delay and driver overhead, not natural cancellation latency.';
     complete = true;
     return result;
   } finally {
@@ -285,6 +317,14 @@ export default async function denseExport(page, { output }) {
       source: process.env.QA_SOURCE_SHA ?? process.env.GITHUB_SHA ?? 'working tree',
       outcome: complete ? 'completed' : 'incomplete-or-failed', result, observations,
     }, null, 2));
-    if (!page.isClosed()) await page.evaluate(() => window.restoreDenseExport());
+    try {
+      if (!complete) {
+        for (const [index, download] of pngs.entries()) {
+          await download.saveAs(join(output, `unverified-download-${index + 1}.png`));
+        }
+      }
+    } finally {
+      if (!page.isClosed()) await page.evaluate(abort => window.restoreDenseExport(abort), !complete);
+    }
   }
 }
