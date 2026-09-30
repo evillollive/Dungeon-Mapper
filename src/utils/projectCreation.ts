@@ -127,7 +127,7 @@ function aborted(): DOMException {
   return new DOMException('Creation cancelled.', 'AbortError');
 }
 
-function loadImage(dataUrl: string, signal: AbortSignal): Promise<HTMLImageElement> {
+export function loadImage(dataUrl: string, signal: AbortSignal): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     if (signal.aborted) { reject(aborted()); return; }
     const image = new Image();

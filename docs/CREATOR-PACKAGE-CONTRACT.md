@@ -15,6 +15,8 @@ implemented locally, September 30, 2026. No downloadable package format or UI ye
   separate rights information. A license choice does not publish anything.
 - The owner approved the v1 resource envelope below. These are sharing limits,
   not new restrictions on existing private backups or saved projects.
+- Include restricted SVG alongside PNG/JPEG/WebP. Reject unsupported SVG
+  features explicitly rather than altering the original artwork.
 
 Implementation evidence must distinguish the internal review draft from a
 complete, licensed package and from a shipped feature.
@@ -220,7 +222,44 @@ fixture type checks and changed-file lint also pass. The retained report is
 `files/github-creator-core-unit.json` in the current session. These are core
 unit results, not browser, archive, license-compliance or release qualification.
 
-GH-N02 still needs safe asset admission, rights notices, deterministic member
-assembly and preview generation. GH-N03/GH-N04 still need archive intake,
-independent Library import and the review/download UI. No GitHub connection,
-upload, dependency addition or hosted run has occurred.
+### Image admission foundation
+
+`creatorAssets.ts`, `creatorImageDimensions.ts` and `creatorSvg.ts` now inspect
+embedded static PNG/JPEG/WebP and restricted SVG inputs without fetching remote
+resources or rewriting accepted bytes. Encoded size and declared raster
+dimensions are checked before invoking the existing native image loader.
+Decoded dimensions are checked afterward; the validation image is released.
+Cancellation and decoding errors propagate explicitly.
+
+SVG admission supports basic paths, groups, rectangles, circles, ellipses,
+lines, polylines/polygons and bounded numeric transforms/paint attributes.
+It requires an explicit viewBox and UTF-8 input. Scripts, event handlers,
+external references, styles, embedded HTML, fonts/rendered text, animation,
+nested SVGs, gradients and filters are rejected. There is no automatic
+rasterization or partial sanitization. Titles, descriptions and comments are
+retained and surfaced as metadata for subsequent publication review.
+Animated PNG/WebP is outside the static-image contract.
+
+The vector guards bound markup before DOM parsing, then elements (4,096),
+numeric/path/transform work (200,000), metadata text (16,384 characters),
+nesting and finite coordinate magnitudes. Numeric dimensions are checked
+against the pixel ceiling, including a size inferred from an explicit single
+axis and extreme aspect ratio. These guards do not certify total native
+decoder/GPU memory or hostile-image safety beyond the recorded coverage.
+
+The retained local unit report `files/github-creator-assets-unit.json` covers
+112 cases across asset admission, creator selection and existing creation
+behavior, including the actual encoded-byte boundary. Application/fixture
+type checks and changed-file lint pass. The isolated source-module browser
+probe in `files/github-creator-assets-browser-final.json` decoded the same
+four synthetic PNG/JPEG/WebP/SVG files in Chromium, Firefox and WebKit, retained
+their exact bytes/dimensions and rejected the controlled unsafe inputs without
+external requests. It records engine versions and exact source/probe hashes.
+An initial tooling-only CommonJS import failure occurred before browser launch;
+the earlier successful source-module probe is retained separately.
+
+This is not a production-bundle, complete package, license-compliance or broad
+image-corpus qualification receipt. GH-N02 still needs per-package asset/rights
+accounting, deterministic members and preview generation. GH-N03/GH-N04 still
+need archive intake, independent Library import and the review/download UI.
+No GitHub connection, upload, dependency addition or hosted run has occurred.
