@@ -1759,8 +1759,9 @@ because its human work moved to a later milestone.
 
 ### UX-11: Optional GitHub publishing and map reuse
 
-**Priority:** P2. **Status:** Roadmap requested September 30, 2026; implementation
-and remote operations are not yet authorized. **Depends on:** UX-01 preservation,
+**Priority:** P2. **Status:** Local task execution authorized September 30, 2026;
+GH-N01 contract work is in progress. Remote operations remain unauthorized.
+**Depends on:** UX-01 preservation,
 UX-05 audience boundaries and UX-08 portability. Independent of UX-10 live
 collaboration; applicable qualification is required before a selected slice ships.
 
@@ -1936,7 +1937,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-09B | Deferred from early access; not accepted | Broader physical-device, native zoom, assistive-technology and remaining device-performance qualification; printing stays in A |
 | UX-09C | Deferred from early access; no participant acceptance | Existing first-use, routine-play, comprehension and aesthetic/readability criteria require real participants |
 | UX-10 | Deferred | Explicit approval of remote scope |
-| UX-11 | Planned; no implementation or publication authorized | [GitHub integration tasks](./GITHUB-INTEGRATION-ROADMAP.md): local packages/import first, optional permission-scoped connection later; remote setup and Actions budgets remain separate gates |
+| UX-11 | Local GH-N01 contract work in progress; no feature or publication qualification | [GitHub integration tasks](./GITHUB-INTEGRATION-ROADMAP.md) and [creator contract](./CREATOR-PACKAGE-CONTRACT.md): both profiles and explicit CC BY/CC BY-SA choice selected; package resource envelope pending. Remote setup and Actions budgets remain separate gates |
 
 ## 10. Relationship to the previous roadmap
 
