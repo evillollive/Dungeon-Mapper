@@ -28,6 +28,14 @@ is not implemented. [Actual local evidence and remaining limits](./CREATOR-PACKA
 include production journeys and a stopped-origin offline exercise, not hosted
 or legal certification.
 
+**GH-N05 preparation:** A credential-free public GitHub reader exists as an
+unwired transport prototype in `src/utils/creatorGitHub.ts`. Thirty-six mocked
+tests cover explicit links, one resolved commit, tree/blob identities,
+regular-file admission, response/resource limits, rate-limit failures and
+cancellation/deadline behavior. No live GitHub API read was used to qualify it,
+and the UI does not offer GitHub import yet. An approved public package fixture
+is needed for GH-R03; the local archive has not been uploaded.
+
 ## 1. Product outcome and boundaries
 
 Let a creator publish an intentionally shareable, editable map in a repository
@@ -255,6 +263,9 @@ existing evidence archive noted in GH-N11. Dependencies describe technical
 prerequisites, not spending approval. Local completion never authorizes a remote
 trigger or marks hosted qualification as passed.
 Owner decisions in section 8 gate the corresponding implementation.
+
+GH-N05 is now in progress as the mocked transport prototype above; this does
+not mark public-link integration or real-GitHub acceptance complete.
 
 | ID | Work / execution | Prerequisites | Completion evidence and stop condition |
 | --- | --- | --- | --- |

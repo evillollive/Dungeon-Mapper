@@ -429,3 +429,29 @@ app registration, deployment, delegated agents or native-setting changes.
 Local compute/disk and account-wide quota remain unmetered/unknown. The new
 required-runner journey adds three future engine cases and must be included
 in any later publication budget.
+
+## Public GitHub reader preparation, not enabled
+
+The next local GH-N05 step adds an unwired `creatorGitHub.ts` transport prototype.
+It accepts explicit HTTPS github.com package-folder/manifest links, including
+slash-containing branch names, resolves the reference once, walks only the
+selected regular Git trees and verifies raw blob bytes against their immutable
+Git identity. The returned package still needs the existing full SHA-256,
+schema, rights and image inspection before any preview or Library write.
+
+Requests are unauthenticated GETs to the fixed GitHub API origin, with credentials
+omitted, no referrer, no redirects and no private-repository fallback. Responses
+are streamed with actual-byte bounds; tree metadata has a 2 MiB ceiling.
+The operation has a 120-second total deadline and at most the package member
+count plus six metadata requests. It stops on throttling/denial instead of
+retrying automatically or asking for a broad access token. A large valid package
+may exceed the user's remaining unauthenticated API allowance; this is not a
+claim that API capacity is available.
+
+`files/github-public-reader-mocked.json` records 36 passing synthetic transport
+cases. Application/test types and targeted lint pass. GitHub's
+[raw Git blob media type](https://docs.github.com/en/rest/git/blobs) was checked
+against current public documentation; that is API research, not a live package
+integration test. No UI action imports from GitHub yet, no credentials/service
+were configured, and no package was published. The live fixture/permission
+decision remains a GH-R03 boundary.
