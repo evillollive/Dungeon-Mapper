@@ -21,6 +21,9 @@ No complete downloadable package or UI yet.
 - Use the lower aggregate image budget: 24 million decoded pixels per level
   across distinct images, processing levels sequentially. This is approximately
   96 MiB of raw RGBA pixels before browser overhead, not an absolute heap limit.
+- Include an inherited-license path. AGPL-licensed sample/adapted maps retain
+  their source license/notices; original contributions still have the explicit
+  CC BY / CC BY-SA choice.
 
 Implementation evidence must distinguish the internal review draft from a
 complete, licensed package and from a shipped feature.
@@ -298,11 +301,41 @@ without weakening byte-by-byte comparisons.
 These helpers encode a byte envelope; they do not yet assemble a complete
 creator package, validate an incoming archive or authorize its content.
 Rights/manifest assembly, preview generation, archive intake and Library/UI
-integration remain in progress. The inherited-license path for existing
-AGPL-licensed maps needs a scope decision before final package licensing is
-wired. The existing Creative Commons decision covers original creator
-contributions, not permission to relicense an existing map.
+integration remain in progress. The existing Creative Commons decision covers original creator contributions,
+not permission to relicense an existing map.
 
 The dependency installation followed the manifest change and added only
 `fflate`, without lifecycle scripts or unrelated upgrades. No GitHub connection,
 upload, remote mutation or hosted run has occurred.
+
+### Inherited-license and provenance foundation
+
+The owner approved the inherited-license path. `creatorProvenance.ts` now
+validates source credits separately from the private backup schema and
+restricts sharing choices according to declared inherited terms. Original
+content has the two CC choices; CC BY-SA adaptations retain share-alike;
+declared AGPL adaptations use AGPL-3.0-or-later. Mixed AGPL/CC BY-SA or unknown
+map-license combinations stop for compatibility review rather than inventing
+a conversion. Missing provenance is not proof of authorship.
+
+New bundled sample copies retain source notices as level metadata. Existing
+saved maps are not retroactively rewritten. Project/level/template provenance
+is opaque to ordinary private persistence, including future unknown versions.
+Creator sharing validates it and stops on unresolved formats. Source notices
+travel through copied map content, scene templates, independent template
+creation, level history and undo/redo. New unrelated blank geometry does not
+inherit another map's license just because reusable libraries were copied;
+the libraries/templates retain their own associated credits.
+
+The provenance work brought a necessary part of GH-N06 forward. It exposed a
+history snapshot omission: provenance must be explicitly captured/restored
+with content rather than surviving undo accidentally. The targeted hook case
+now verifies undo and redo across a cross-project paste. Template application
+continues respecting the existing saved-workspace checkpoint gate.
+
+`files/github-creator-provenance-unit.json` retains 115 passing cases across
+seven files for inherited choices, sample copies, creation, source preservation,
+clipboard/templates and edit history. Application/fixture types and targeted
+lint pass. This is not an ownership detector or proof of legal compatibility;
+declarations, preserved source notices and publication review remain necessary.
+Full package assembly, import and UI are still not available.

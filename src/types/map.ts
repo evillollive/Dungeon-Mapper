@@ -678,6 +678,8 @@ export const DEFAULT_LIGHTING_ATMOSPHERE: LightingAtmosphereSettings = {
 
 export interface DungeonMap {
   meta: MapMeta;
+  /** Opaque source notices travel with this level and its undo history. */
+  creatorProvenance?: unknown;
   tiles: Tile[][];
   notes: MapNote[];
   /**
@@ -815,6 +817,7 @@ export interface SceneTemplate {
   height: number;
   /** ISO timestamp when the template was saved. */
   createdAt: string;
+  creatorProvenance?: unknown;
 }
 
 /**
@@ -838,6 +841,8 @@ export interface DungeonProject {
   customStamps?: StampDef[];
   /** Saved scene/room templates for reuse across levels. */
   sceneTemplates?: SceneTemplate[];
+  /** Opaque, versioned sharing attribution. Private backups preserve it; sharing validates it separately. */
+  creatorProvenance?: unknown;
 }
 
 /**

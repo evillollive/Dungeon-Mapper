@@ -4,9 +4,12 @@ import { findTheme } from '../themes';
 import { getStampDef } from './stampCatalog';
 import { decodeProject } from './projectSchema';
 import { copyCreatorFields, creatorProjectFields, type CreatorOmission } from './creatorPackageFields';
+import {
+  creatorLicenseChoices, mergeCreatorSources, readCreatorProvenance,
+  type CreatorCredit, type CreatorLicense, type CreatorProvenance,
+} from './creatorProvenance';
 
-export const CREATOR_LICENSES = ['CC-BY-4.0', 'CC-BY-SA-4.0'] as const;
-export type CreatorLicense = typeof CREATOR_LICENSES[number];
+export { CREATOR_LICENSES, ORIGINAL_CREATOR_LICENSES, type CreatorLicense } from './creatorProvenance';
 export const CREATOR_PACKAGE_LIMITS = {
   zipBytes: 32 * 1024 * 1024,
   expandedBytes: 64 * 1024 * 1024,
@@ -39,6 +42,7 @@ export interface CreatorProjectOptions {
   license: CreatorLicense;
   levels: CreatorLevelSelection[];
   omitCrossLevelLinks?: boolean;
+  sources?: CreatorCredit[];
 }
 export interface CreatorAssetReference {
   key: string;
@@ -52,6 +56,7 @@ export interface CreatorProjectDraft {
   license: CreatorLicense;
   omissions: CreatorOmission[];
   assetsRequiringReview: CreatorAssetReference[];
+  provenance: CreatorProvenance;
 }
 
 function publicationText(value: string, label: string, required = true): string {
@@ -179,7 +184,6 @@ function libraries(project: DungeonProject, source: DungeonProject, omissions: C
 /** Produces a trusted review draft, not a licensed or downloadable package. */
 export function prepareCreatorProject(source: DungeonProject, options: CreatorProjectOptions): CreatorProjectDraft {
   if (options.profile !== 'layout' && options.profile !== 'encounter') throw new Error('Choose a creator-sharing profile.');
-  if (!CREATOR_LICENSES.some(license => license === options.license)) throw new Error('Choose the license for your own contribution explicitly.');
   const title = publicationText(options.title, 'a publication title');
   const author = publicationText(options.author, 'a creator credit');
   const description = publicationText(options.description, 'a publication description', false);
@@ -192,6 +196,16 @@ export function prepareCreatorProject(source: DungeonProject, options: CreatorPr
     throw new Error('The selected levels are missing or duplicated. Review the sharing copy again.');
   }
   const selections = [...options.levels].sort((a, b) => a.index - b.index);
+  const provenance = readCreatorProvenance(source.creatorProvenance);
+  for (const selection of selections) {
+    const levelProvenance = readCreatorProvenance(source.levels[selection.index].creatorProvenance);
+    provenance.mapSources = mergeCreatorSources(provenance.mapSources, levelProvenance.mapSources);
+    provenance.assetCredits.push(...levelProvenance.assetCredits);
+  }
+  provenance.mapSources = mergeCreatorSources(provenance.mapSources, options.sources ?? []);
+  if (!creatorLicenseChoices(provenance.mapSources).some(license => license === options.license)) {
+    throw new Error('Choose an explicit creator license compatible with the inherited map license.');
+  }
   let cells = 0;
   for (const selection of selections) {
     const map = source.levels[selection.index];
@@ -286,5 +300,5 @@ export function prepareCreatorProject(source: DungeonProject, options: CreatorPr
     customStamps: copyCreatorFields(clean.customStamps, creatorProjectFields.customStamps, 'project.customStamps', omissions),
   });
   return { project, profile: options.profile, author, description, license: options.license,
-    omissions, assetsRequiringReview };
+    omissions, assetsRequiringReview, provenance };
 }

@@ -25,6 +25,7 @@ export const creatorTokenFields = {
 } satisfies FieldPolicy<Token>;
 
 export const creatorMapFields = {
+  creatorProvenance: false,
   meta: { name: false, publicName: false, width: true, height: true, tileSize: true, theme: true },
   tiles: [[{
     type: true, floorMaterial: true, discovered: false, discoveredType: false,
@@ -87,6 +88,7 @@ export const creatorProjectFields = {
   stairLinks: [{ fromLevel: true, fromCell: point, toLevel: true, toCell: point }],
   customThemes: [creatorThemeFields], customStamps: [creatorStampFields],
   sceneTemplates: false,
+  creatorProvenance: false,
 } satisfies FieldPolicy<DungeonProject>;
 
 /** This report stays in the trusted review UI, never in a public package. */

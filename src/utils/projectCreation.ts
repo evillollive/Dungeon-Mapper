@@ -4,6 +4,7 @@ import { getGenerator, parseSeed, pickGeneratorForTheme } from './generators';
 import { createEmptyGrid, createFogGrid } from './mapUtils';
 import { buildPremadeProject } from './premadeMaps';
 import { renderMapToCanvas } from './renderMap';
+import { creatorLibraryProvenance } from './creatorProvenance';
 
 export const CREATION_LIMITS = { minDimension: 10, maxDimension: 100, maxImageBytes: 10 * 1024 * 1024, maxImagePixels: 24_000_000 } as const;
 
@@ -26,11 +27,17 @@ export type ProjectCreationOptions =
   | (MapOptions & { path: 'generator'; seed: string; density: number; algorithm?: string })
   | (MapOptions & { path: 'trace'; image: TraceImage; opacity: number });
 
-function copyProjectLibraries(sourceProject?: DungeonProject): Pick<DungeonProject, 'customThemes' | 'customStamps' | 'sceneTemplates'> {
-  const libraries: Pick<DungeonProject, 'customThemes' | 'customStamps' | 'sceneTemplates'> = {};
+function copyProjectLibraries(sourceProject?: DungeonProject): Pick<DungeonProject, 'customThemes' | 'customStamps' | 'sceneTemplates' | 'creatorProvenance'> {
+  const libraries: Pick<DungeonProject, 'customThemes' | 'customStamps' | 'sceneTemplates' | 'creatorProvenance'> = {};
   if (sourceProject?.customThemes) libraries.customThemes = structuredClone(sourceProject.customThemes);
   if (sourceProject?.customStamps) libraries.customStamps = structuredClone(sourceProject.customStamps);
   if (sourceProject?.sceneTemplates) libraries.sceneTemplates = structuredClone(sourceProject.sceneTemplates);
+  if (sourceProject?.creatorProvenance !== undefined) {
+    for (const template of libraries.sceneTemplates ?? []) if (template.creatorProvenance === undefined) {
+      template.creatorProvenance = structuredClone(sourceProject.creatorProvenance);
+    }
+  }
+  if (sourceProject?.creatorProvenance !== undefined) libraries.creatorProvenance = creatorLibraryProvenance(sourceProject.creatorProvenance);
   return libraries;
 }
 
@@ -61,10 +68,12 @@ export function createProjectFromTemplate(sourceProject: DungeonProject, templat
       tokens: [],
       annotations: [],
       markers: [],
+      ...(template.creatorProvenance === undefined ? {} : { creatorProvenance: structuredClone(template.creatorProvenance) }),
     }],
     activeLevelIndex: 0,
     stairLinks: [],
     ...copyProjectLibraries(sourceProject),
+    ...(sourceProject.creatorProvenance === undefined ? {} : { creatorProvenance: structuredClone(sourceProject.creatorProvenance) }),
   };
 }
 

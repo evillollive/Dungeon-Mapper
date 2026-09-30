@@ -4,6 +4,7 @@ import type { ClipboardBuffer } from './mapStateUtils';
 import { nextIdAfter, updateActiveLevel } from './mapStateUtils';
 import { moveRegionContents } from '../utils/regionEditing';
 import type { RegionSelection } from './useEditorSelection';
+import { combineCreatorProvenance } from '../utils/creatorProvenance';
 
 let clipboard: ClipboardBuffer | null = null;
 
@@ -18,6 +19,7 @@ export function useMapClipboard(
   activeLevelIndex: number,
   pushHistory: (prev: DungeonMap, levelIdx: number) => void,
   setNextNoteId: React.Dispatch<React.SetStateAction<number>>,
+  projectProvenance?: unknown,
 ) {
   const copySelection = useCallback((sel: { x: number; y: number; w: number; h: number }) => {
     const { tiles: mapTiles, notes: mapNotes, meta } = map;
@@ -42,8 +44,10 @@ export function useMapClipboard(
     const bufStamps: PlacedStamp[] = (mapStamps ?? [])
       .filter(s => s.x >= sel.x && s.x < sel.x + sel.w && s.y >= sel.y && s.y < sel.y + sel.h)
       .map(s => ({ ...s, x: s.x - sel.x, y: s.y - sel.y }));
-    clipboard = { tiles: bufTiles, notes: bufNotes, stamps: bufStamps, width: sel.w, height: sel.h };
-  }, [map]);
+    const provenance = combineCreatorProvenance(map.creatorProvenance, projectProvenance);
+    clipboard = { tiles: bufTiles, notes: bufNotes, stamps: bufStamps, width: sel.w, height: sel.h,
+      ...(provenance === undefined ? {} : { creatorProvenance: provenance }) };
+  }, [map, projectProvenance]);
 
   const cutSelection = useCallback((sel: { x: number; y: number; w: number; h: number }) => {
     copySelection(sel);
@@ -132,11 +136,15 @@ export function useMapClipboard(
         const validStamps = remappedStamps.filter(
           s => s.x >= 0 && s.x < m.meta.width && s.y >= 0 && s.y < m.meta.height
         );
+        const intersects = ox < m.meta.width && oy < m.meta.height && ox + buf.width > 0 && oy + buf.height > 0;
+        const provenance = intersects || validNotes.length || validStamps.length
+          ? combineCreatorProvenance(m.creatorProvenance, buf.creatorProvenance) : m.creatorProvenance;
         return {
           ...m,
           tiles: newTiles,
           notes: [...m.notes, ...validNotes],
           stamps: [...(m.stamps ?? []), ...validStamps],
+          ...(provenance === undefined ? {} : { creatorProvenance: provenance }),
         };
       });
       debouncedSave(updated);

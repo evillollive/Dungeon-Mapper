@@ -180,5 +180,14 @@ export function buildLaunchSample(id: string): DungeonProject {
   if (!summary) throw new Error(`Unknown launch sample: ${id}`);
   const map = id === 'launch-lantern-crypt' ? crypt(summary)
     : id === 'launch-alder-crossing' ? crossing(summary) : ship(summary);
+  map.creatorProvenance = {
+      version: 1,
+      mapSources: [{
+        title: summary.name, author: 'Dungeon Mapper contributors', license: 'AGPL-3.0-or-later',
+        url: 'https://github.com/evillollive/Dungeon-Mapper/blob/main/src/utils/launchSamples.ts',
+        notice: 'Original launch encounter composition and text. Preserve its inherited license when adapting it.',
+      }],
+      assetCredits: [],
+  };
   return { name: summary.name, activeLevelIndex: 0, stairLinks: [], levels: [map] };
 }
