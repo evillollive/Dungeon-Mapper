@@ -342,7 +342,8 @@ Full package assembly, import and UI are still not available.
 
 ## Complete local package workflow
 
-The subsequent integration completes the first account-free slice. The preceding
+Source `4525a58f3653a4631b44e2ec563c576deec7acf9` completes the first account-free
+slice. The preceding
 foundation entries remain chronological evidence, not the current availability
 statement. `CreatorShareDialog` is available from Library cards and the editor's
 Export dialog. It captures an independent source snapshot, requires explicit
@@ -400,6 +401,14 @@ Retained local evidence in session `20233d90-7a79-4423-a564-f75af5b08662`:
   regression run; later additions include directory equivalence and
   refused-import retry, recorded in the final receipt rather than retroactively
   changing this report.
+- `files/github-creator-workflow-unit-final.json` and `github-creator-ui-final/`:
+  the final selected run has 276 passing cases across fifteen unit/component/hook
+  files and three passing production browser journeys, without skips/retries.
+  This is not the entire application test suite.
+- `files/github-creator-final-source.json` and `github-creator-final-dist/`:
+  source, report and production-byte identities. Every production file and the
+  journey source from the stopped-origin campaign were checked against this
+  final candidate; no offline run was relabeled by revision alone.
 
 The Vite App chunk still exceeds the existing 500 kB advisory; it is not
 suppressed. Creator screens, import logic and ZIP code have their own lazy
@@ -413,3 +422,10 @@ assessment is claimed. Physical printing and the original UX-09 gates are
 unchanged. GH-N05 public-link fetching, GitHub-linked version checks, account
 authorization, remote publishing, evidence transfer and hosted qualification
 remain distinct subsequent work.
+
+**Accounting:** zero hosted runner minutes approved, zero triggers and zero
+queued/running reservations for this slice. No pushes, PR mutations, uploads,
+app registration, deployment, delegated agents or native-setting changes.
+Local compute/disk and account-wide quota remain unmetered/unknown. The new
+required-runner journey adds three future engine cases and must be included
+in any later publication budget.
