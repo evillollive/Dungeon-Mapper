@@ -8,6 +8,15 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
+**Portable evidence preparation, September 30, 2026:** A checksummed local
+archive now packages source `98cdada`, selected original reports/failures,
+retained builds and reviewed artwork. Fresh extraction verified 2,170 payload
+files; profiles, dependencies and redundant working copies are excluded.
+[Archive identity, omissions and transfer procedure](./UX-09-HANDOFF.md#portable-local-evidence-archive)
+are retained. This is local staging, not a durable off-device copy or a new
+qualification receipt. No upload or hosted run occurred; destination selection
+and public-distribution review remain open.
+
 **Dense-export milestone, September 30, 2026:** F05 selected-page allocation,
 PNG validity, controlled cancellation, encoding-failure retry and unchanged
 project data now pass locally in all three locked engines. A reproduced
@@ -1663,7 +1672,7 @@ successful bounded milestones.
 | A-DOCS | Reconcile README, Features, Sharing, help/demo guidance and release notes with Your maps -> Create/open -> Edit -> Prepare -> Run -> Player display. State local-only display, project-backup versus session scope, offline readiness and supported limits accurately. | Copilot; actual UI source, UX-02/05/06/08 contracts and targeted help/action component assertions | Completed locally September 28: public guides, help text and action labels corrected; historical GIFs labeled, support/release gaps explicit. Not yet published, no support-scope exception or release approval |
 | A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | Passed for the outstanding initial-release digital-art owner decisions, completed September 29. Local technical evidence retained; new sample-guide text is not blanket copy/playtest acceptance. A-PRINT and exact-head hosted qualification remain separate open gates; [art closeout ledger](#initial-release-art-closeout) |
 | A-PRINT | Complete the physical-printing launch gate below, including both paper sizes, overview/miniature scale, assembled overlaps and monochrome readability. | Agents prepare exports; a person prints/measures/reviews and supplies evidence from documented printer/app setups | Not assessed on physical paper; digital layout and DPI evidence do not close this gate |
-| A-RELEASE | Require successful qualification of the exact revision before Pages publication; retain strict merge protection. Publish a versioned evidence/limitations summary and rehearse documented rollback/recovery. Preserve release evidence beyond the current 14-day CI artifact window. | Approved local workflow implementation, synthetic verifier tests and artifact-consumer evidence; remote baseline unchanged | Core gating implemented locally at `96b1b70`; [evidence and resume requirements](./UX-09-HANDOFF.md#local-exact-artifact-deployment-implementation). No hosted enforcement/deployment receipt. Zero budget blocks publication; durable retention and formal release approval remain open |
+| A-RELEASE | Require successful qualification of the exact revision before Pages publication; retain strict merge protection. Publish a versioned evidence/limitations summary and rehearse documented rollback/recovery. Preserve release evidence beyond the current 14-day CI artifact window. | Approved local workflow implementation, synthetic verifier tests and artifact-consumer evidence; remote baseline unchanged | Core gating implemented locally at `96b1b70`; [evidence and resume requirements](./UX-09-HANDOFF.md#local-exact-artifact-deployment-implementation). [Portable evidence archive](./UX-09-HANDOFF.md#portable-local-evidence-archive) staged locally, not retained off-device. No hosted enforcement/deployment receipt. Zero budget blocks publication; durable destination and formal release approval remain open |
 | B-DEVICE | Complete the broader hardware, native zoom, mobile/input, assistive-technology and device-performance matrix without implying that emulation is physical qualification. | Appropriate devices/OS tools plus human nonvisual/input task observations | Deferred from early access, not waived for full release; supported claims must reflect the gap |
 | C-USERS | Apply the unchanged section 8 participant criteria and retain sample sizes, failures and preference/recognition results separately. | Real DM/player sessions; agents may prepare tasks and analyze observations | Deferred from early access; UX-00 records zero participants, not a simulated success rate |
 

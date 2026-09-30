@@ -1825,6 +1825,85 @@ minutes. No push, PR mutation, deployment, workflow run, dependency installation
 paid-provider call, agent delegation, native setting change or physical print.
 Local compute/disk were not metered; account-wide usage remains unknown.
 
+### Portable local evidence archive
+
+September 30, 2026. The owner approved preparing a portable evidence archive
+without uploads or new qualification campaigns. The snapshot is source
+`98cdada6dc7cd152071cb49b6300e89b1474e6b7`; this later handoff documentation
+does not retroactively change the archive's source or historical results.
+
+Session `20233d90-7a79-4423-a564-f75af5b08662` retains these files under
+`files/portable-evidence-2026-09-30/`:
+
+| File | Purpose |
+| --- | --- |
+| `dungeon-mapper-evidence-98cdada-2026-09-30.tar.gz` | Portable archive, 346,352,032 bytes (330.3 MiB) |
+| `dungeon-mapper-evidence-98cdada-2026-09-30.tar.gz.sha256` | Whole-archive SHA-256 |
+| `packaging-result.json` | Selection counts, archive identity and absent historical references |
+| `roundtrip-result.json` | Actual extraction/integrity results and original-file preservation check |
+| `archive-readme.txt`, `verify.mjs` | Transfer guidance and dependency-free Node verifier, also inside the archive |
+| `package.mjs`, `check-roundtrip.mjs` | Task-local assembly and roundtrip scripts, not application tooling |
+
+Archive SHA-256:
+`230fad77514811b361e72b28c00d27e7971faf8b125893ef012b8e2dcdc12203`.
+
+The archive contains 2,170 manifest-covered payload files plus the manifest and
+its checksum. These include 1,644 unchanged original evidence files, 62 raw
+browser campaign reports, the tracked source/fixtures/licenses/review sheets,
+and binary-capable commit patches from the included upgrade predecessor
+`72f32e1` to `98cdada`. Existing baseline/candidate/rejected distributions and
+identities remain distinct. Failed CI, rendering experiments and natural
+WebKit cancellation attempts remain failures or incomplete observations.
+
+The package's `selection.json` lists included roots and exclusions. Thirty
+exact historical artifact-root references in this handoff are not present in
+this session, including earlier Library, preservation and renderer campaigns.
+They were not searched for in other sessions, recreated or represented as
+packaged. This is a portable selection of available evidence, not a complete
+archive of all project history. Raw reports preserve original paths and
+source metadata. Six standalone review pages also have derived portable
+copies; nine absolute file links were rewritten with originals and replacement
+paths recorded separately.
+
+Persistent browser profiles, dependencies/symlinks, duplicate HTML report
+viewers, native validator executables, conversation attachments and redundant
+iterations are excluded. Source licenses and asset notices are preserved.
+Synthetic private project/session files, traces, local paths and source/author
+metadata remain in the selected evidence. **The archive is not sanitized for
+public distribution and is not a community map-sharing export.**
+
+Fresh extraction into an empty task-owned directory verified all payload
+hashes. Modified, missing and extra payloads, symlinks, hardlinks and modified
+manifests were rejected. All 1,644 selected originals still matched after
+packaging; the twelve dense-export file digests and both eighteen-file
+baseline/token-candidate manifests matched their retained historical identities.
+Only temporary assembly/extraction copies were removed after these checks.
+Original evidence and the final archive remain unchanged.
+
+For an authorized transfer, retain the tarball and its external digest,
+check the received tarball's SHA-256, extract into a fresh directory, then run
+`node verify.mjs` from its root. No dependency installation is needed.
+Checksums establish byte integrity, not a signature or independent provenance.
+Record the destination, access policy, retention policy and verification of
+the received copy before closing durable retention. Current session staging
+on the same filesystem does not satisfy that requirement.
+
+The owner suggested GitHub as a possible destination and a future optional
+community-map publishing integration. A repository
+[Release attachment](https://docs.github.com/en/repositories/releasing-projects-on-github/about-releases)
+is a candidate home for this evidence archive, not an approved upload.
+User-owned editable map repositories with previews, explicit licensing and
+publication review are separate product scope. A GitHub login alone does not
+authorize application writes; any integrated flow needs explicit access
+authorization. No repository, Release, authentication service, map-publishing
+feature, storage policy or public license was created or selected here.
+
+**Accounting:** zero hosted triggers/reservations against zero approved runner
+minutes. No push, PR mutation, workflow run, deployment, upload, paid-provider
+call, agent, application rebuild/test campaign or native-setting change.
+Archive integrity checks do not replace application or hosted qualification.
+Local disk/compute were not metered; account-wide usage remains unknown.
+
 ## Remaining release gates
 
 Subsequent housekeeping removes 68 of the original 73 hook warnings and
