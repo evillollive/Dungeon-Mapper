@@ -15,8 +15,9 @@ import folioNotice from '../themes/folio-v1/NOTICE.txt?raw';
 import furnishingNotice from '../assets/folio-furnishings-v1/NOTICE.txt?raw';
 import tokenNotice from '../assets/folio-tokens-v1/NOTICE.txt?raw';
 import printNotice from '../themes/print-companion-v1/NOTICE.txt?raw';
+import { CREATOR_CATALOG_VERSION, isCreatorContentVersion } from './creatorPackageContract';
 
-export const CREATOR_CATALOG_VERSION = 'dungeon-mapper-builtins-2026-09-30';
+export { CREATOR_CATALOG_VERSION } from './creatorPackageContract';
 export interface CreatorPackageOptions extends CreatorProjectOptions {
   packageId: string;
   contentVersion: string;
@@ -73,7 +74,7 @@ export function creatorBuiltinAttribution(): CreatorPackageAttribution['builtins
 export function creatorPackageRights(project: DungeonProject, options: CreatorPackageOptions) {
   if (options.rightsConfirmed !== true) throw new Error('Review ownership, inherited terms, source notices and image metadata before preparing a creator package.');
   assertCreatorPackageId(options.packageId);
-  if (!/^[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?$/.test(options.contentVersion) || options.contentVersion.length > 64) {
+  if (!isCreatorContentVersion(options.contentVersion)) {
     throw new Error('Provide an explicit package content version, for example 1.0.0.');
   }
   const draft = prepareCreatorProject(project, options);

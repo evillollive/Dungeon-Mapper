@@ -1,26 +1,79 @@
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { chromium, firefox, webkit } from 'playwright';
 import { expect } from 'playwright/test';
 import { startLocalPublisher } from './local.ts';
 import { BASE, COOKIE } from '../src/app.ts';
+import { build } from 'vite';
+import { zipSync } from 'fflate';
+import { CREATOR_PACKAGE_LIMITS } from '../../src/utils/creatorPackageContract.ts';
 
 assert(process.env.QA_OUTPUT, 'Set QA_OUTPUT to a new prototype evidence directory.');
 const output = resolve(process.env.QA_OUTPUT);
 mkdirSync(output);
 const results = [];
+const fixtureBuild = await build({
+  configFile: false, publicDir: false, logLevel: 'warn',
+  build: { write: false, minify: false, lib: {
+    entry: resolve('publisher/test/package-fixture.browser.mjs'), formats: ['iife'], name: 'PublisherFixture',
+  } },
+});
+assert(!Array.isArray(fixtureBuild) || fixtureBuild.length === 1);
+const fixtureOutput = Array.isArray(fixtureBuild) ? fixtureBuild[0] : fixtureBuild;
+assert('output' in fixtureOutput);
+const fixtureChunk = fixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry);
+assert(fixtureChunk);
+
+async function createFixture(browser, url, engine) {
+  const context = await browser.newContext();
+  const consoleErrors = [];
+  try {
+    const origin = new URL(url).origin;
+    await context.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
+    const page = await context.newPage();
+    page.on('console', entry => { if (entry.type() === 'error') consoleErrors.push(entry.text()); });
+    await page.goto(url);
+    await page.waitForLoadState('networkidle');
+    await page.evaluate(fixtureChunk.code);
+    const prepared = await page.evaluate(() => window.PublisherFixture.generate());
+    const files = Object.fromEntries(prepared.files.map(file =>
+      [`maps/${prepared.packageId}/${file.path}`, Uint8Array.from(file.bytes)]));
+    // The publisher forbids compression workers. Assemble only this small test ZIP in Node.
+    const bytes = zipSync(files, { level: 6, mtime: new Date(1980, 0, 1) });
+    assert.deepEqual(consoleErrors, []);
+    return {
+      bytes,
+      metadata: {
+        packageId: prepared.packageId, contentVersion: prepared.contentVersion,
+        packageSha256: createHash('sha256').update(bytes).digest('hex'), zipBytes: bytes.length,
+        expandedBytes: prepared.files.reduce((sum, file) => sum + file.bytes.length, 0), memberCount: prepared.files.length,
+      },
+    };
+  } finally {
+    writeFileSync(join(output, `${engine}-fixture-console.json`), JSON.stringify(consoleErrors, null, 2));
+    await context.close();
+  }
+}
 
 for (const [engine, browserType] of Object.entries({ chromium, firefox, webkit })) {
   const serverErrors = [];
   const server = await startLocalPublisher({ onError: error => serverErrors.push(error) });
   let browser;
   let page;
+  let deadline;
+  let deadlineExpired = false;
   try {
     browser = await browserType.launch({ headless: true });
+    deadline = setTimeout(() => { deadlineExpired = true; void browser.close(); }, 90_000);
+    console.log(`${engine}: generating synthetic package with the real package builder`);
+    const fixture = await createFixture(browser, server.url, engine);
+    console.log(`${engine}: running simulated publisher journey`);
+    const upload = { name: 'LOCAL_FILENAME_DO_NOT_TRANSMIT.zip', mimeType: 'application/zip', buffer: Buffer.from(fixture.bytes) };
+    writeFileSync(join(output, `${engine}-synthetic-package.zip`), upload.buffer);
     const context = await browser.newContext({ viewport: { width: 1280, height: 900 }, reducedMotion: 'reduce' });
-    const requests = [], errors = [], responses = [], callbacks = [];
+    const requests = [], errors = [], responses = [], callbacks = [], posts = [];
     await context.exposeBinding('recordPublisherResponse', (_source, body) => {
       assert.equal(typeof body, 'string');
       responses.push(body);
@@ -36,23 +89,28 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox, webkit }
       };
     });
     await context.route('**/*', route => {
-      if (!route.request().url().startsWith(server.origin + '/')) {
+      const url = new URL(route.request().url());
+      if (!route.request().url().startsWith(server.origin + '/') && !(url.protocol === 'blob:' && url.origin === server.origin)) {
         requests.push(route.request().url());
         return route.abort();
       }
       return route.continue();
     });
     page = await context.newPage();
+    await page.clock.install();
     page.setDefaultTimeout(15_000);
     page.on('pageerror', error => errors.push(error.message));
     page.on('request', request => {
       const url = new URL(request.url());
+      if (request.method() === 'POST') posts.push({ path: url.pathname, body: request.postData() });
       if (url.pathname === BASE + 'auth/callback' && url.searchParams.has('code')) callbacks.push(url.href);
     });
     await page.goto(server.url);
     await page.waitForLoadState('networkidle');
     await expect(page.getByRole('button', { name: 'Simulate GitHub sign-in', exact: true })).toBeEnabled();
     await expect(page.getByText(/Simulated provider only/)).toBeVisible();
+    await expect(page.locator('#package-section')).toBeHidden();
+    await expect(page.locator('#package-file')).toBeDisabled();
     assert.deepEqual(await page.evaluate(async () => ({
       local: localStorage.length, session: sessionStorage.length, databases: (await indexedDB.databases()).length,
     })), { local: 0, session: 0, databases: 0 });
@@ -79,6 +137,92 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox, webkit }
     assert.equal(await page.evaluate(() => document.cookie), '');
     await page.getByRole('button', { name: 'List simulated repositories', exact: true }).click();
     await expect(page.getByRole('listitem')).toHaveText('fixture-creator/synthetic-maps: simulated write access');
+    await page.getByLabel('Simulated destination', { exact: true }).selectOption('2001');
+    const beforeFile = posts.length;
+    await page.getByLabel('Creator ZIP', { exact: true }).setInputFiles(upload);
+    await expect(page.locator('#package-status')).toContainText('Inspected locally');
+    await expect(page.locator('#package-summary')).toContainText('Publisher local review fixture');
+    await expect(page.locator('#package-summary')).toContainText('encounter');
+    await expect(page.locator('#package-previews img')).toHaveCount(2);
+    assert(await page.locator('#package-previews img').evaluateAll(images => images.every(image => image.complete && image.naturalWidth > 0)));
+    assert.equal(posts.length, beforeFile, 'File selection must not submit any request');
+    await page.getByRole('button', { name: 'Review simulated destination', exact: true }).click();
+    await expect(page.locator('#plan-detail')).toBeVisible();
+    await expect(page.locator('#plan-summary')).toContainText(fixture.metadata.packageSha256);
+    await expect(page.locator('#plan-summary')).toContainText('a'.repeat(40));
+    await expect(page.getByRole('button', { name: 'Publish branch (not implemented)', exact: true })).toBeDisabled();
+    await page.getByRole('button', { name: 'Recheck simulated destination', exact: true }).click();
+    await expect(page.locator('#message')).toContainText('still matches');
+    server.provider.repositoryState.headSha = 'c'.repeat(40);
+    await page.getByRole('button', { name: 'Recheck simulated destination', exact: true }).click();
+    await expect(page.getByRole('alert')).toContainText('changed');
+    await expect(page.locator('#plan-detail')).toBeHidden();
+    await page.getByRole('button', { name: 'Review simulated destination', exact: true }).click();
+    await expect(page.locator('#plan-summary')).toContainText('c'.repeat(40));
+    await page.setViewportSize({ width: 390, height: 844 });
+    assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+    await page.screenshot({ path: join(output, `${engine}-destination-390.png`), fullPage: true });
+    await page.getByLabel('Simulated destination', { exact: true }).selectOption('');
+    await expect(page.locator('#plan-detail')).toBeHidden();
+    await page.getByLabel('Simulated destination', { exact: true }).selectOption('2001');
+    const beforeInvalid = posts.length;
+    await page.evaluate(() => { window.oldFixturePreview = document.querySelector('#package-previews img'); });
+    await page.getByLabel('Creator ZIP', { exact: true }).setInputFiles({
+      name: 'not-a-creator.zip', mimeType: 'application/zip', buffer: Buffer.from('{"privateProject":"DO_NOT_SEND"}'),
+    });
+    await expect(page.getByRole('alert')).toBeVisible();
+    await expect(page.locator('#package-detail')).toBeHidden();
+    await expect(page.locator('#plan')).toBeDisabled();
+    assert.equal(posts.length, beforeInvalid);
+    await page.evaluate(() => {
+      const original = File.prototype.arrayBuffer;
+      window.fixtureFileReads = 0;
+      window.restoreFixtureFileRead = () => { File.prototype.arrayBuffer = original; };
+      File.prototype.arrayBuffer = function () { window.fixtureFileReads++; return original.call(this); };
+    });
+    await page.getByLabel('Creator ZIP', { exact: true }).setInputFiles({
+      name: 'oversized.zip', mimeType: 'application/zip', buffer: Buffer.alloc(CREATOR_PACKAGE_LIMITS.zipBytes + 1),
+    });
+    await expect(page.getByRole('alert')).toContainText('32 MiB');
+    assert.equal(await page.evaluate(() => window.fixtureFileReads), 0);
+    await page.getByLabel('Creator ZIP', { exact: true }).setInputFiles({
+      name: 'at-limit-invalid.zip', mimeType: 'application/zip', buffer: Buffer.alloc(CREATOR_PACKAGE_LIMITS.zipBytes),
+    });
+    await expect(page.getByRole('alert')).toContainText('Cannot import this creator ZIP');
+    assert.equal(await page.evaluate(() => window.fixtureFileReads), 1);
+    await page.evaluate(() => window.restoreFixtureFileRead());
+    assert.equal(posts.length, beforeInvalid);
+    await page.evaluate(() => {
+      const original = File.prototype.arrayBuffer;
+      File.prototype.arrayBuffer = async function () {
+        const bytes = await original.call(this);
+        await new Promise(resolve => { window.releaseFixtureRead = resolve; });
+        File.prototype.arrayBuffer = original;
+        return bytes;
+      };
+    });
+    await page.getByLabel('Creator ZIP', { exact: true }).setInputFiles(upload);
+    await page.waitForFunction(() => typeof window.releaseFixtureRead === 'function');
+    await page.getByRole('button', { name: 'Cancel current request', exact: true }).click();
+    await expect(page.locator('#package-file')).toBeDisabled();
+    await page.evaluate(() => window.releaseFixtureRead());
+    await expect(page.locator('#message')).toContainText('Request cancelled');
+    await expect(page.locator('#package-status')).toHaveText('No package selected.');
+    await expect(page.locator('#package-file')).toBeEnabled();
+    await page.getByLabel('Creator ZIP', { exact: true }).setInputFiles(upload);
+    await expect(page.locator('#package-status')).toContainText('Inspected locally');
+    await page.evaluate(() => window.oldFixturePreview.dispatchEvent(new Event('error')));
+    await expect(page.locator('#package-status')).toContainText('Inspected locally');
+    await expect(page.locator('#package-previews img')).toHaveCount(2);
+    await page.getByRole('button', { name: 'Review simulated destination', exact: true }).click();
+    await expect(page.locator('#plan-detail')).toBeVisible();
+    const planned = posts.filter(item => item.path === BASE + 'api/plans');
+    assert.equal(planned.length, 3);
+    for (const request of planned) assert.deepEqual(JSON.parse(request.body), { repositoryId: 2001, package: fixture.metadata });
+    for (const request of posts) for (const text of [
+      'PUBLISHER_LOCAL_DM_NOTE_DO_NOT_TRANSMIT', upload.name, 'Publisher local review fixture',
+      'Synthetic fixture author', 'data:image', 'DO_NOT_SEND',
+    ]) assert(!request.body?.includes(text), `Non-metadata package material reached the server: ${text}`);
     const tokens = server.provider.tokensForTest();
     assert.equal(tokens.length, 1);
     for (const body of responses) assert(!body.includes(tokens[0]), 'A provider token reached the browser');
@@ -100,6 +244,8 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox, webkit }
     await expect(page.getByRole('alert')).toContainText('Simulated sign-in failed');
     assert.equal(page.url(), server.url, 'Failed callback query parameters must also be removed');
     await expect(page.getByRole('status').filter({ hasText: /Simulated account: fixture-creator/ })).toBeVisible();
+    await expect(page.locator('#package-status')).toHaveText('No package selected.');
+    await expect(page.locator('#plan-detail')).toBeHidden();
     assert.equal((await context.cookies(server.url)).find(cookie => cookie.name === COOKIE).value, authenticated.value);
     await page.getByRole('button', { name: 'Disconnect simulated account', exact: true }).click();
     await expect(page.getByRole('status').filter({ hasText: /Simulated account disconnected/ })).toBeVisible();
@@ -112,14 +258,31 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox, webkit }
     await expect(page.getByRole('status').filter({ hasText: /Simulated account: second-fixture-user/ })).toBeVisible();
     await page.getByRole('button', { name: 'List simulated repositories', exact: true }).click();
     await expect(page.getByRole('listitem')).toContainText('second-fixture-user/synthetic-maps');
+    await page.getByLabel('Creator ZIP', { exact: true }).setInputFiles(upload);
+    await expect(page.locator('#package-status')).toContainText('Inspected locally');
     const secondToken = server.provider.tokensForTest()[0];
     tokens.push(secondToken);
     await server.provider.revoke(secondToken, new AbortController().signal);
     await page.getByRole('button', { name: 'List simulated repositories', exact: true }).click();
     await expect(page.getByRole('alert')).toContainText('revoked');
     await expect(page.getByRole('listitem')).toHaveCount(0);
+    await expect(page.locator('#package-detail')).toBeHidden();
+    await expect(page.locator('#package-notices')).toBeEmpty();
     await page.getByRole('button', { name: 'Refresh session', exact: true }).click();
     await expect(page.getByRole('button', { name: 'Simulate GitHub sign-in', exact: true })).toBeEnabled();
+    await page.getByRole('button', { name: 'Simulate GitHub sign-in', exact: true }).click();
+    await page.getByRole('button', { name: 'Allow simulated sign-in', exact: true }).click();
+    await expect(page.locator('#package-file')).toBeEnabled();
+    tokens.push(server.provider.tokensForTest()[0]);
+    await page.getByLabel('Creator ZIP', { exact: true }).setInputFiles(upload);
+    await expect(page.locator('#package-status')).toContainText('Inspected locally');
+    await page.clock.fastForward(60 * 60_000 + 10_000);
+    await expect(page.locator('#connection')).toContainText('session expired');
+    await expect(page.locator('#package-section')).toBeHidden();
+    await expect(page.locator('#package-status')).toHaveText('No package selected.');
+    await expect(page.locator('#package-summary')).toBeEmpty();
+    await expect(page.locator('#package-notices')).toBeEmpty();
+    await expect(page.locator('#package-previews img')).toHaveCount(0);
     assert.deepEqual(await page.evaluate(async () => ({
       local: localStorage.length, session: sessionStorage.length, databases: (await indexedDB.databases()).length,
     })), { local: 0, session: 0, databases: 0 });
@@ -130,20 +293,32 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox, webkit }
     results.push({ engine, browser: browser.version(), simulatedProvider: true, externalRequests: 0,
       denial: true, keyboardSignIn: true, sessionRotation: true, csrfRejection: true, callbackReplayRejected: true,
       cleanCallbackAddress: true, disconnect: true, accountChange: true, revocation: true,
+      localPackageInspection: true, actualPreviews: 2, metadataOnlyPlans: planned.length,
+      changedBaseRejected: true, destinationReset: true, invalidPackageRejected: true,
+      stalePreviewFailureIgnored: true,
+      zipLimit: { exactBoundaryRead: true, aboveBoundaryRejectedBeforeRead: true },
+      clientExpiry: 'Browser clock advanced to test memory/UI cleanup; server expiry is covered separately by HTTP tests',
+      cancellation: 'Native File.arrayBuffer completion deliberately held, then released; no timing qualification',
+      fixtureMetadata: fixture.metadata, filenameAndContentsNotPosted: true,
       noBrowserTokenOrMapStorage: true, cookie: { httpOnly: true, sameSite: 'Lax', path: BASE, secure: false } });
+    writeFileSync(join(output, `${engine}-result.json`), JSON.stringify(results.at(-1), null, 2));
     await context.close();
   } catch (error) {
-    if (page) await page.screenshot({ path: join(output, `${engine}-failure.png`), fullPage: true });
-    writeFileSync(join(output, `${engine}-failure.json`), JSON.stringify({ message: error.message, stack: error.stack }, null, 2));
+    if (page && !page.isClosed()) await page.screenshot({ path: join(output, `${engine}-failure.png`), fullPage: true, timeout: 5000 });
+    writeFileSync(join(output, `${engine}-failure.json`), JSON.stringify({ message: error.message, stack: error.stack, deadlineExpired }, null, 2));
     throw error;
   } finally {
+    clearTimeout(deadline);
     if (browser) await browser.close();
     await server.close();
   }
 }
-const files = ['publisher/src/app.ts', 'publisher/src/provider.ts', 'publisher/test/local.ts',
+const files = ['publisher/src/app.ts', 'publisher/src/provider.ts', 'publisher/src/plans.ts', 'publisher/src/static.ts', 'publisher/test/local.ts',
   'publisher/test/provider.ts', 'publisher/client/client.mjs', 'publisher/client/index.html',
-  'publisher/client/style.css', 'publisher/test/session.browser.mjs'];
+  'publisher/client/style.css', 'publisher/client/package-review.mjs', 'publisher/test/session.browser.mjs',
+  'publisher/test/package-fixture.browser.mjs', 'src/utils/creatorPackageContract.ts',
+  'publisher/dist/index.html', 'publisher/dist/.vite/manifest.json',
+  ...readdirSync('publisher/dist/assets').map(name => 'publisher/dist/assets/' + name)];
 writeFileSync(join(output, 'receipt.json'), JSON.stringify({
   observedAt: new Date().toISOString(), scope: 'Loopback HTTP and simulated provider only; no production TLS or real GitHub qualification',
   responseCapture: 'Native fetch responses cloned and recorded before client navigation; no latency claims',

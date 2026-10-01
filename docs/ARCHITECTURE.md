@@ -3,8 +3,10 @@
 The Dungeon Mapper editor remains a client-only React + TypeScript + Vite application.
 The planned [optional GitHub publisher](./GITHUB-PUBLISHER-DESIGN.md) is a separate
 first-party publishing page/service, not a move of this editor or its local
-storage. A loopback-only Node authentication simulation now lives under
-`publisher/`, outside the Pages build. No backend or account connection has
+storage. A loopback-only Node authentication and metadata-planning simulation
+now lives under `publisher/`, outside the Pages build. Its separate browser
+bundle reuses creator ZIP inspection; the server receives scalar metadata only.
+No backend or account connection has
 been deployed.
 
 ## High-level layers

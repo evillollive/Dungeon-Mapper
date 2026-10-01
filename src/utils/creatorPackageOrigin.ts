@@ -4,6 +4,7 @@ import {
   type CreatorMemberIdentity,
 } from './creatorPackageFormat';
 import { CREATOR_PACKAGE_LIMITS } from './creatorProject';
+import { isCreatorContentVersion } from './creatorPackageContract';
 
 export interface CreatorPackageOrigin {
   version: 1;
@@ -54,7 +55,7 @@ export function readCreatorPackageOrigin(value: unknown): CreatorPackageOrigin |
   if (raw.version !== 1) invalid();
   const packageId = text(raw.packageId), contentVersion = text(raw.contentVersion);
   assertCreatorPackageId(packageId);
-  if (contentVersion.length > 64 || !/^[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?$/.test(contentVersion) ||
+  if (!isCreatorContentVersion(contentVersion) ||
       (raw.profile !== 'layout' && raw.profile !== 'encounter')) invalid();
   if (!Array.isArray(raw.files) || raw.files.length > CREATOR_PACKAGE_LIMITS.members) invalid();
   const seen = new Set<string>();

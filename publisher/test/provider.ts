@@ -1,5 +1,5 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { ProviderError, type LocalAuthProvider, type PublisherGrant, type PublisherUser } from '../src/provider.ts';
+import { ProviderError, type LocalAuthProvider, type PublisherGrant, type PublisherUser, type PublisherRepositorySnapshot } from '../src/provider.ts';
 import { BASE } from '../src/app.ts';
 
 export class TestProvider implements LocalAuthProvider {
@@ -9,6 +9,9 @@ export class TestProvider implements LocalAuthProvider {
   private now: () => number;
   user: PublisherUser = { id: 1001, login: 'fixture-creator' };
   failRevocation = false;
+  repositoryState: Omit<PublisherRepositorySnapshot, 'fullName'> & { fullName?: string } = {
+    id: 2001, installationId: 3001, private: true, canWrite: true, defaultBranch: 'main', headSha: 'a'.repeat(40),
+  };
   constructor(now: () => number = Date.now) { this.now = now; }
   private prune(): void {
     for (const [code, value] of this.codes) if (value.expiresAt <= this.now()) this.codes.delete(code);
@@ -46,7 +49,14 @@ export class TestProvider implements LocalAuthProvider {
     signal.throwIfAborted(); this.prune();
     const grant = this.grants.get(accessToken);
     if (!grant) throw new ProviderError('revoked');
-    return [{ id: 2001, fullName: `${grant.user.login}/synthetic-maps`, canWrite: true }];
+    return [{ id: this.repositoryState.id, fullName: this.repositoryState.fullName ?? `${grant.user.login}/synthetic-maps`, canWrite: this.repositoryState.canWrite }];
+  }
+  async repository(accessToken: string, repositoryId: number, signal: AbortSignal): Promise<PublisherRepositorySnapshot> {
+    signal.throwIfAborted(); this.prune();
+    const grant = this.grants.get(accessToken);
+    if (!grant) throw new ProviderError('revoked');
+    if (repositoryId !== this.repositoryState.id) throw new ProviderError('denied');
+    return { ...this.repositoryState, fullName: this.repositoryState.fullName ?? `${grant.user.login}/synthetic-maps` };
   }
   async revoke(accessToken: string, signal: AbortSignal): Promise<void> {
     signal.throwIfAborted();

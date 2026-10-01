@@ -1,11 +1,8 @@
-import { CREATOR_PACKAGE_LIMITS } from './creatorProject';
-
-export const CREATOR_PACKAGE_FORMAT = 'dungeon-mapper-creator-package';
-export const CREATOR_MAP_FORMAT = 'dungeon-mapper-creator-map';
-export const CREATOR_FORMAT_VERSION = 1;
-export const CREATOR_REQUIRED_FILES = [
-  'manifest.json', 'map.json', 'preview.png', 'README.md', 'LICENSE.txt', 'ATTRIBUTION.json',
-] as const;
+import { CREATOR_PACKAGE_LIMITS, CREATOR_REQUIRED_FILES, assertCreatorMemberPath } from './creatorPackageContract';
+export {
+  CREATOR_PACKAGE_FORMAT, CREATOR_MAP_FORMAT, CREATOR_FORMAT_VERSION, CREATOR_REQUIRED_FILES,
+  assertCreatorPackageId, assertCreatorMemberPath,
+} from './creatorPackageContract';
 
 export interface CreatorPackageFile {
   path: string;
@@ -15,20 +12,6 @@ export interface CreatorMemberIdentity {
   path: string;
   bytes: number;
   sha256: string;
-}
-
-export function assertCreatorPackageId(value: string): void {
-  if (typeof value !== 'string' || !/^[a-z0-9][a-z0-9-]{0,63}$/.test(value)) {
-    throw new Error('A creator package ID must contain 1 to 64 lowercase letters, digits or hyphens, starting with a letter or digit.');
-  }
-}
-
-export function assertCreatorMemberPath(path: string): void {
-  if (typeof path !== 'string' || (!CREATOR_REQUIRED_FILES.some(file => file === path) &&
-      !/^preview-(?:0[2-9]|[12]\d|3[0-2])\.png$/.test(path) &&
-      !/^assets\/[a-f0-9]{64}\.(?:png|jpg|webp|svg)$/.test(path))) {
-    throw new Error('The creator package contains an unsupported or unsafe member path.');
-  }
 }
 
 export function assertCreatorMembers(files: readonly CreatorPackageFile[], complete = true): number {

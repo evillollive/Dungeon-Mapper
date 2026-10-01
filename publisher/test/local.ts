@@ -43,7 +43,7 @@ export async function startLocalPublisher(options: {
       }
       response.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
       response.end(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-        <link rel="stylesheet" href="${BASE}style.css"><title>Simulated authorization</title><main>
+        ${app.stylePaths.map(path => `<link rel="stylesheet" href="${html(path)}">`).join('')}<title>Simulated authorization</title><main>
         <p class="eyebrow">LOCAL TEST PROVIDER / NOT GITHUB</p><h1>Simulated authorization</h1>
         <p>No real account, password, access token or repository is involved.</p><p>Fixture account: ${html(provider.user.login)}</p>
         <form method="get" action="${BASE}test/authorize">

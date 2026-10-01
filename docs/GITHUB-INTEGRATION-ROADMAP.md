@@ -62,6 +62,15 @@ and three-engine browser coverage. It is not a live authentication service and
 has no package-upload or publication endpoint. See the
 [prototype boundary and evidence](./GITHUB-PUBLISHER-DESIGN.md#11-local-authentication-prototype).
 
+**GH-N09 local preparation:** The separate publisher now inspects explicitly
+selected creator ZIPs in the browser and sends bounded identity/size metadata
+only for simulated destination planning. Plans bind the session, ZIP digest,
+repository/installation, visibility, permission and base; rechecks reject stale
+destinations. This is not completed publication/recovery work: there is no
+file-body submission, independent server package validation, branch writer,
+durable operation receipt or live provider. See
+[the local planning boundary](./GITHUB-PUBLISHER-DESIGN.md#12-local-package-review-and-metadata-only-destination-plans).
+
 ## 1. Product outcome and boundaries
 
 Let a creator publish an intentionally shareable, editable map in a repository
@@ -312,7 +321,7 @@ activation or package publication is authorized.
 | GH-N06 | Add upstream attribution and deliberate version comparison/remix metadata. Local. | GH-N03 | License/credit persistence, independent edits, renamed/deleted upstream handling and no background polling or overwrite. GitHub-native contribution links before integrated writes. |
 | GH-N07 | Decide authentication/service architecture and produce permission, data-flow, threat and operations contracts. Local design plus owner decisions. | Section 2 boundaries | Explicit hosting/cost decision, secret lifecycle, endpoint authority, disconnect behavior and review scope. Stop if the project should remain manual-only. |
 | GH-N08 | Implement optional connection UI and approved auth/service boundary using local fakes. Local. | GH-N04, GH-N07 | Login denial, wrong account, expiry/revocation, CSRF/state failures, cache isolation and offline fallback. No live credentials, registration or deployment. |
-| GH-N09 | Implement reviewed publish/update and recovery receipts against mocked APIs. Local. | GH-N02, GH-N06, GH-N08 | Multi-file publication, concurrent edits, protected branches, unknown outcomes, readback verification and duplicate-prevention cases. No remote writes or silent repo creation. |
+| GH-N09 | Implement reviewed publish/update and recovery receipts against mocked APIs. Local metadata-only destination preparation is implemented; publication/recovery remain pending. | GH-N02, GH-N06, GH-N08 | Multi-file publication, concurrent edits, protected branches, unknown outcomes, readback verification and duplicate-prevention cases. No remote writes or silent repo creation. |
 | GH-N10 | Integrate each selected slice's focused regression coverage and documentation into the existing qualification approach. Local. | The selected GH-N02 through GH-N09 slice, not every optional feature | Fixture/source-bound results, accurate implemented/support claims and measured package limits. Keep existing required checks; do not invent a parallel full application pipeline. |
 | GH-N11 | Prepare a separately reviewed release-evidence transfer selection and destination proposal. Local operational work. | [Existing staged archive](./UX-09-HANDOFF.md#portable-local-evidence-archive) | Archive already exists; this task adds destination/access/retention decisions and publication review, not another archive campaign. Missing historical evidence remains listed. No upload. |
 | GH-N12 | Design and locally exercise an optional map-repository validator/template. Local. | GH-N01, GH-N03 | Validate schema, references, hashes, licenses and resources without executing repository content. Template contains no tokens or implicit deployment. Enabling its workflow belongs to GH-A03. |

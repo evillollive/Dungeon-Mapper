@@ -5,6 +5,7 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- Browser-local creator ZIP review and metadata-only destination planning in the separate publisher prototype, with session/digest/base binding, expiry, cancellation and changed-destination rejection. Still no package-body upload, real GitHub access or branch writes.
 - A separate loopback-only Node publisher authentication prototype with an explicit simulated provider, session/state/PKCE/CSRF controls and local browser checks. No real GitHub connection, package upload, hosting or publication is enabled.
 - Offline comparison of creator package versions against the original import receipt, with file/declared-license changes and independent new-project import. Local edits are never overwritten; package IDs and version labels are not treated as verified publisher identity.
 - Local creator-sharing packages with separately reviewed layout/DM-encounter profiles, explicit contribution licenses, inherited notices, bounded ZIP/folder import and independent Library copies. No GitHub authentication or upload is enabled.

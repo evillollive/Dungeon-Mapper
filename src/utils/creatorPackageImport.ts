@@ -11,6 +11,7 @@ import { inspectCreatorImage, creatorLevelImagePixels } from './creatorAssets';
 import { creatorMapImageURLs, inspectCreatorStampPaths } from './creatorPackageAssets';
 import { decodeCreatorZip } from './creatorZipIntake';
 import { createCreatorPackageOrigin } from './creatorPackageOrigin';
+import { isCreatorContentVersion } from './creatorPackageContract';
 
 export interface ImportedCreatorPackage {
   manifest: CreatorPackageManifest;
@@ -84,7 +85,7 @@ export async function inspectCreatorPackage(input: readonly CreatorPackageFile[]
   assertCreatorPackageId(packageId);
   if (expectedPackageId !== undefined && packageId !== expectedPackageId) throw new Error('The archive folder and manifest identify different packages.');
   const contentVersion = string(raw.contentVersion, 'content version');
-  if (!/^[0-9]+\.[0-9]+\.[0-9]+(?:-[a-zA-Z0-9.-]+)?$/.test(contentVersion) || contentVersion.length > 64) throw new Error('Invalid package content version.');
+  if (!isCreatorContentVersion(contentVersion)) throw new Error('Invalid package content version.');
   if (raw.profile !== 'layout' && raw.profile !== 'encounter') throw new Error('Invalid creator package audience profile.');
   if (!['CC-BY-4.0', 'CC-BY-SA-4.0', 'AGPL-3.0-or-later'].includes(string(raw.license, 'license'))) throw new Error('Unsupported contribution license.');
   const license = raw.license as CreatorLicense;

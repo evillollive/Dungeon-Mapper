@@ -8,20 +8,10 @@ import {
   creatorLicenseChoices, mergeCreatorSources, readCreatorProvenance,
   type CreatorCredit, type CreatorLicense, type CreatorProvenance,
 } from './creatorProvenance';
+import { CREATOR_PACKAGE_LIMITS } from './creatorPackageContract';
 
 export { CREATOR_LICENSES, ORIGINAL_CREATOR_LICENSES, type CreatorLicense } from './creatorProvenance';
-export const CREATOR_PACKAGE_LIMITS = {
-  zipBytes: 32 * 1024 * 1024,
-  expandedBytes: 64 * 1024 * 1024,
-  mapBytes: 16 * 1024 * 1024,
-  levels: 32,
-  cells: 262_144,
-  members: 256,
-  depth: 32,
-  imageBytes: 10 * 1024 * 1024,
-  imagePixels: 24_000_000,
-  levelImagePixels: 24_000_000,
-} as const;
+export { CREATOR_PACKAGE_LIMITS } from './creatorPackageContract';
 
 export interface CreatorLevelSelection {
   index: number;

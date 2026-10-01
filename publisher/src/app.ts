@@ -1,7 +1,9 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { ProviderError, type LocalAuthProvider, type PublisherGrant } from './provider.ts';
+import { publisherStaticFiles } from './static.ts';
+import { RequestError } from './errors.ts';
+import { createPublicationPlan, publicationMetadata, reviewedRepository, sameRepository, validRepositoryName, type PublicationPlan } from './plans.ts';
 
 export const BASE = '/publisher/';
 export const COOKIE = 'dm_publisher_local';
@@ -12,14 +14,7 @@ interface Login { state: string; verifier: string; expiresAt: number; generation
 interface Session {
   id: string; csrf: string; expiresAt: number; generation: number;
   login?: Login; grant?: PublisherGrant; notice?: string;
-}
-class RequestError extends Error {
-  readonly status: number;
-  readonly code: string;
-  constructor(status: number, code: string, message: string) {
-    super(message);
-    this.status = status; this.code = code;
-  }
+  plan?: PublicationPlan; planGeneration?: number;
 }
 const token = () => randomBytes(32).toString('base64url');
 const equal = (left: string, right: string) => {
@@ -42,11 +37,6 @@ function awaitProvider<T>(work: Promise<T>, signal: AbortSignal, late?: (value: 
     if (signal.aborted) abort();
   });
 }
-const staticFiles = new Map([
-  [BASE, { type: 'text/html; charset=utf-8', bytes: readFileSync(new URL('../client/index.html', import.meta.url)) }],
-  [BASE + 'client.mjs', { type: 'text/javascript; charset=utf-8', bytes: readFileSync(new URL('../client/client.mjs', import.meta.url)) }],
-  [BASE + 'style.css', { type: 'text/css; charset=utf-8', bytes: readFileSync(new URL('../client/style.css', import.meta.url)) }],
-]);
 
 function headers(response: ServerResponse): void {
   response.setHeader('Cache-Control', 'no-store');
@@ -54,7 +44,7 @@ function headers(response: ServerResponse): void {
   response.setHeader('X-Content-Type-Options', 'nosniff');
   response.setHeader('X-Frame-Options', 'DENY');
   response.setHeader('X-Publisher-Mode', 'local-prototype');
-  response.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
+  response.setHeader('Content-Security-Policy', "default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self' data: blob:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'");
 }
 function json(response: ServerResponse, status: number, value: unknown): void {
   response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -81,7 +71,7 @@ function parameter(url: URL, name: string): string {
   if (values.length !== 1 || values[0].length > 512 || !values[0]) throw new RequestError(400, 'invalid_callback', 'The authorization response is invalid. Start sign-in again.');
   return values[0];
 }
-async function emptyBody(request: IncomingMessage, signal: AbortSignal): Promise<void> {
+async function objectBody(request: IncomingMessage, signal: AbortSignal): Promise<Record<string, unknown>> {
   if (request.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') {
     throw new RequestError(415, 'json_required', 'Use an application/json request.');
   }
@@ -117,7 +107,13 @@ async function emptyBody(request: IncomingMessage, signal: AbortSignal): Promise
     if (!(error instanceof SyntaxError)) throw error;
     throw new RequestError(400, 'invalid_json', 'The request is not valid JSON.');
   }
-  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.keys(value).length) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new RequestError(400, 'unexpected_fields', 'This endpoint requires a bounded JSON object, not a package upload.');
+  }
+  return value as Record<string, unknown>;
+}
+async function emptyBody(request: IncomingMessage, signal: AbortSignal): Promise<void> {
+  if (Object.keys(await objectBody(request, signal)).length) {
     throw new RequestError(400, 'unexpected_fields', 'This endpoint accepts an empty JSON object, not credentials or package content.');
   }
 }
@@ -128,6 +124,8 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
   const address = new URL(origin);
   if (address.origin !== origin || address.protocol !== 'http:' || address.hostname !== '127.0.0.1' || !address.port ||
       provider.kind !== 'local-test') throw new Error('The prototype supports only an explicit loopback HTTP origin and local test provider.');
+  const assets = publisherStaticFiles(BASE);
+  const staticFiles = assets.files;
   const now = options.now ?? Date.now;
   const log = options.onError ?? (event => console.error(event.code));
   const sessions = new Map<string, Session>();
@@ -158,6 +156,16 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
     const timeout = AbortSignal.timeout(LIMITS.requestMs);
     void awaitProvider(Promise.resolve().then(() => provider.revoke(accessToken, timeout)), timeout)
       .catch(() => log({ code: 'discarded_test_grant_revocation_unconfirmed' }));
+  }
+  function providerFailure(error: unknown, current: Session, response: ServerResponse): never {
+    if (error instanceof ProviderError && error.code === 'revoked') {
+      if (sessions.get(current.id) === current) { sessions.delete(current.id); cookie(response, undefined, now()); }
+      throw new RequestError(401, 'access_revoked', 'Simulated access was revoked. Sign in again; no fallback credentials are used.');
+    }
+    if (error instanceof ProviderError && error.code === 'denied') {
+      throw new RequestError(403, 'repository_denied', 'This account cannot access the selected simulated repository.');
+    }
+    throw error;
   }
   async function route(request: IncomingMessage, response: ServerResponse, signal: AbortSignal): Promise<void> {
     if (request.headers.host !== address.host || !request.url?.startsWith('/') || request.url.startsWith('//') ||
@@ -250,16 +258,62 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
         signal.throwIfAborted();
         if (sessions.get(current.id) !== current || current.expiresAt <= now()) throw new RequestError(401, 'sign_in_required', 'The publisher session ended.');
         if (!Array.isArray(repositories) || repositories.length > 50 || repositories.some(repo =>
-          !Number.isSafeInteger(repo.id) || repo.id <= 0 || typeof repo.fullName !== 'string' ||
-          !/^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/.test(repo.fullName) || repo.fullName.length > 150 || typeof repo.canWrite !== 'boolean')) throw new Error('Invalid simulated repository response.');
+          !Number.isSafeInteger(repo.id) || repo.id <= 0 ||
+          !validRepositoryName(repo.fullName) || typeof repo.canWrite !== 'boolean')) throw new Error('Invalid simulated repository response.');
         json(response, 200, { mode: 'local-prototype', repositories: repositories.map(repo => ({ id: repo.id, fullName: repo.fullName, canWrite: repo.canWrite })) });
       } catch (error) {
-        if (error instanceof ProviderError && error.code === 'revoked') {
-          if (sessions.get(current.id) === current) { sessions.delete(current.id); cookie(response, undefined, now()); }
-          throw new RequestError(401, 'access_revoked', 'Simulated access was revoked. Sign in again; no fallback credentials are used.');
-        }
-        throw error;
+        providerFailure(error, current, response);
       }
+      return;
+    }
+    if (method === 'POST' && url.pathname === BASE + 'api/plans') {
+      const current = session(request, response);
+      if (!current.grant) throw new RequestError(401, 'sign_in_required', 'Sign in before reviewing a simulated destination.');
+      csrf(request, current);
+      const metadata = publicationMetadata(await objectBody(request, signal));
+      signal.throwIfAborted();
+      if (sessions.get(current.id) !== current || current.expiresAt <= now()) throw new RequestError(401, 'obsolete_session', 'The local session ended.');
+      const generation = current.planGeneration = (current.planGeneration ?? 0) + 1;
+      delete current.plan;
+      try {
+        const repo = reviewedRepository(await awaitProvider(provider.repository(current.grant.accessToken, metadata.repositoryId, signal), signal), metadata.repositoryId);
+        signal.throwIfAborted();
+        if (sessions.get(current.id) !== current || current.expiresAt <= now()) throw new RequestError(401, 'obsolete_session', 'The local session ended.');
+        if (current.planGeneration !== generation) throw new RequestError(409, 'superseded_plan', 'A newer destination review replaced this request.');
+        current.plan = createPublicationPlan(metadata, repo, now(), current.expiresAt);
+        json(response, 200, current.plan);
+      } catch (error) { providerFailure(error, current, response); }
+      return;
+    }
+    const planRoute = new RegExp(`^${BASE}api/plans/([A-Za-z0-9_-]{43})(/recheck)?$`).exec(url.pathname);
+    if (planRoute && ((method === 'GET' && !planRoute[2]) || (method === 'POST' && planRoute[2]))) {
+      const current = session(request, response);
+      if (!current.grant) throw new RequestError(401, 'sign_in_required', 'Sign in before reviewing a simulated destination.');
+      const plan = current.plan;
+      if (!plan || plan.id !== planRoute[1]) throw new RequestError(404, 'plan_unavailable', 'This destination plan is not available in the current session.');
+      if (plan.expiresAt <= now()) {
+        delete current.plan;
+        throw new RequestError(410, 'plan_expired', 'The destination plan expired. Review the package and destination again.');
+      }
+      if (method === 'POST') {
+        csrf(request, current); await emptyBody(request, signal);
+        try {
+          signal.throwIfAborted();
+          if (sessions.get(current.id) !== current || current.expiresAt <= now()) throw new RequestError(401, 'obsolete_session', 'The local session ended.');
+          if (current.plan !== plan) throw new RequestError(409, 'superseded_plan', 'A newer destination plan replaced this one.');
+          if (plan.expiresAt <= now()) throw new RequestError(410, 'plan_expired', 'The destination plan expired. Review it again.');
+          const repo = reviewedRepository(await awaitProvider(provider.repository(current.grant.accessToken, plan.repository.id, signal), signal), plan.repository.id);
+          signal.throwIfAborted();
+          if (sessions.get(current.id) !== current || current.expiresAt <= now()) throw new RequestError(401, 'obsolete_session', 'The local session ended.');
+          if (current.plan !== plan) throw new RequestError(409, 'superseded_plan', 'A newer destination plan replaced this one.');
+          if (plan.expiresAt <= now()) throw new RequestError(410, 'plan_expired', 'The destination plan expired. Review it again.');
+          if (!sameRepository(plan.repository, repo)) throw new RequestError(409, 'destination_changed', 'The repository identity, visibility, permission or base changed. Review a fresh plan; nothing was published.');
+        } catch (error) {
+          if (current.plan === plan) delete current.plan;
+          providerFailure(error, current, response);
+        }
+      }
+      json(response, 200, plan);
       return;
     }
     if (method === 'POST' && url.pathname === BASE + 'api/disconnect') {
@@ -280,6 +334,7 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
     throw new RequestError(404, 'not_implemented', 'This local prototype has no upload, publication, repository-creation or GitHub write endpoint.');
   }
   return {
+    stylePaths: assets.stylePaths,
     async handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
       headers(response);
       const controller = new AbortController();

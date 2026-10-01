@@ -398,3 +398,92 @@ capacity. All test servers are stopped after the bounded checks. No GitHub
 App, public repository, upload, deployment, DNS change, hosted run, agent or
 automatic schedule was created for this milestone. Hosted use/reservations
 remain zero; the fixture task's separate conditional budget is untouched.
+
+## 12. Local package review and metadata-only destination plans
+
+GH-N09 now has a bounded preparation slice, not a completed publishing engine.
+After simulated sign-in, the separate publisher can inspect a creator ZIP with
+the editor's existing browser validator, show real package previews and declared
+rights, and review a simulated repository destination. The editor's origin,
+Library and recovery data are not read. No real GitHub provider is involved.
+
+`npm run build:publisher` builds only `publisher/dist`; local dev and publisher
+test scripts invoke it before starting the Node server. There is no PWA plugin
+or editor public-directory copy in this build. The browser shares the existing
+archive/content/image inspector. Node imports only portable scalar limits,
+package identifiers and version rules from `creatorPackageContract.ts`.
+The existing limits and accepted version/path formats are preserved.
+
+Selecting a file does not submit it. The explicit planning action sends only
+repository ID, package ID/version, ZIP SHA-256, ZIP/expanded-byte counts and
+member count. Title, author, local filename, notes, images, project JSON and ZIP
+contents stay out of those requests. Client inspection is not a substitute for
+future independent server validation. Every receipt reports `metadata-only`,
+`packageReceived: false` and `writesPerformed: false`.
+
+A plan belongs to one current session and captures the package metadata,
+repository/installation identity, name, visibility, permission and base commit.
+It proposes a new branch name but creates nothing. It lasts no more than ten
+minutes or the session's remaining lifetime. GET retrieves a captured receipt;
+explicit recheck reads the simulated provider again without extending expiry.
+Changed, denied, unavailable or expired destinations fail closed. Session and
+plan generations are checked after pending reads so old requests cannot replace
+newer reviews or resurrect a disconnected login.
+
+Browser selections, displayed metadata and object URLs are cleared on
+replacement, inspection cancellation, navigation, disconnect, detected
+revocation and session expiry. Old preview error callbacks cannot erase a newer
+selection. Cancellation waits for a native file read to settle before unlocking
+controls. A cancelled planning request may already have submitted scalar
+metadata, not package contents. Local Clear does not delete a previously
+submitted server receipt. Expired receipts are immediately unusable, while
+memory reclamation is request-driven or happens at disconnect/shutdown, not
+a guaranteed timed deletion.
+
+### Local evidence and limitations
+
+Session `20233d90-7a79-4423-a564-f75af5b08662` retains:
+
+- `files/github-publisher-planning-unit-complete.tap`: 37 local cases, including
+  the original 20 authentication cases, exact metadata boundaries,
+  cross-session isolation, changed repository fields, expired/replaced plans,
+  provider failures and stale in-flight reads.
+- `files/github-publisher-planning-creator-regression.json`: 132 passing cases
+  across five existing creator contract/package/origin/ZIP test files.
+- `files/github-publisher-planning-browser-closeout/`: complete Chromium,
+  Firefox and WebKit journeys with source/build hashes, synthetic ZIPs and
+  screenshots. Each checks metadata-only request bodies, actual previews,
+  changed-base rejection, invalid files, stale preview callbacks, exact
+  32 MiB intake versus rejection before reading at 32 MiB + 1 byte, and
+  cleanup without browser persistence.
+- `files/github-publisher-planning-source.json`: committed source, retained
+  result/build identities and zero-hosted-use accounting.
+
+The browser fixture uses the real package builder and native preview rendering;
+only compression of its small synthetic members happens in Node. An initial
+browser-side compression attempt stalled because the publisher CSP correctly
+blocked blob workers. The explicit timeout diagnostic is retained in
+`github-publisher-planning-fixture-diagnostic`; the publisher policy was not
+relaxed. The first Vite fixture-output assumption and a destination-label
+issue were also corrected. WebKit exposes same-origin blob image loads to
+request interception, unlike the other observed engines: the initial guard
+incorrectly aborted those local previews. The corrected guard permits only
+same-origin HTTP and same-origin blob resources, still rejecting external
+traffic. Earlier attempts are not final qualification receipts.
+
+Cancellation uses a deliberately held and released native File read; expiry
+cleanup advances the browser clock. These prove state/cleanup behavior, not
+natural cancellation latency or real elapsed session lifetime. HTTP cases
+separately exercise server-clock expiry. Rebuilt editor assets are not claimed
+byte-identical to the previous milestone after the shared-module extraction.
+Root lint, publisher typing and both separate builds pass; the existing editor
+chunk-size advisory remains visible.
+
+There is still no file upload endpoint, server ZIP/content validator, durable
+publication operation store, branch writer, reconciliation/readback, real
+authentication, production deployment or hosting-capacity qualification.
+These remain GH-N09 and production decision gates. All local test servers are
+stopped. No repositories, hosted runs, uploads, agents or new sessions were
+created. This task's approved/used/reserved hosted minutes remain **0/0/0**.
+The fixture-only 24-minute ceiling remains unspent and unavailable until actual
+allowance is confirmed; it does not authorize this app's CI or service costs.

@@ -5,6 +5,7 @@ import { BASE, COOKIE, createLocalPublisher, LIMITS } from '../src/app.ts';
 import { ProviderError } from '../src/provider.ts';
 import { startLocalPublisher } from './local.ts';
 import { TestProvider } from './provider.ts';
+import { PLAN_TTL_MS, type PublicationPlan } from '../src/plans.ts';
 
 interface Jar { cookie: string; csrf: string }
 interface SessionView {
@@ -77,6 +78,177 @@ async function setup(t: TestContext, options: Parameters<typeof startLocalPublis
   return { ...server, send, session, start, callback, login, errors };
 }
 const jar = (): Jar => ({ cookie: '', csrf: '' });
+const planMetadata = () => ({
+  repositoryId: 2001,
+  package: { packageId: 'reviewed-vault', contentVersion: '1.0.0', packageSha256: 'b'.repeat(64),
+    zipBytes: 1000, expandedBytes: 2000, memberCount: 7 },
+});
+async function readPlan(response: Response): Promise<PublicationPlan> {
+  assert.equal(response.status, 200, await response.clone().text());
+  const value: unknown = await response.json();
+  assert(value && typeof value === 'object' && 'id' in value && typeof value.id === 'string');
+  assert('status' in value && value.status === 'metadata-only');
+  assert('packageReceived' in value && value.packageReceived === false);
+  assert('writesPerformed' in value && value.writesPerformed === false);
+  assert('package' in value && value.package && typeof value.package === 'object');
+  assert('repository' in value && value.repository && typeof value.repository === 'object');
+  assert('expiresAt' in value && typeof value.expiresAt === 'number');
+  assert('mode' in value && value.mode === 'local-prototype');
+  assert('branch' in value && typeof value.branch === 'string');
+  return value as PublicationPlan;
+}
+const plansPath = BASE + 'api/plans';
+function gate() {
+  let resolve!: () => void;
+  const promise = new Promise<void>(done => { resolve = done; });
+  return { promise, resolve };
+}
+
+test('plans require authentication, CSRF, exact bounded metadata and an allowed destination', async t => {
+  const app = await setup(t), client = jar();
+  const send = (body: unknown = planMetadata(), headers: Record<string, string> = {}) =>
+    app.send(plansPath, client, 'POST', headers, JSON.stringify(body));
+  assert.equal((await send()).status, 401);
+  await app.login(client);
+  assert.equal((await send(planMetadata(), { 'X-Publisher-CSRF': 'wrong' })).status, 403);
+  assert.equal((await send(planMetadata(), { Origin: 'https://untrusted.example' })).status, 403);
+  assert.equal((await send({ ...planMetadata(), packageBody: 'map contents' })).status, 400);
+  assert.equal((await send({ ...planMetadata(), package: { ...planMetadata().package, notes: 'private note' } })).status, 400);
+  assert.equal((await send({ bytes: 'x'.repeat(LIMITS.bodyBytes) })).status, 413);
+  assert.equal((await send({ ...planMetadata(), repositoryId: 9999 })).status, 403);
+  app.provider.repositoryState.canWrite = false;
+  assert.equal((await send()).status, 403);
+  app.provider.repositoryState.canWrite = true;
+  app.provider.repositoryState.headSha = null;
+  assert.equal((await send()).status, 409);
+  assert.deepEqual(app.errors, []);
+});
+
+test('metadata plans bind exact package/base snapshots and cannot cross session boundaries', async t => {
+  const app = await setup(t), client = jar(), other = jar();
+  await app.login(client); await app.login(other);
+  const plan = await readPlan(await app.send(plansPath, client, 'POST', {}, JSON.stringify(planMetadata())));
+  assert.deepEqual(plan.package, planMetadata().package);
+  assert.equal(plan.repository.headSha, 'a'.repeat(40));
+  assert.equal(plan.repository.installationId, 3001);
+  assert.equal(plan.repository.private, true);
+  assert.deepEqual(await readPlan(await app.send(`${plansPath}/${plan.id}`, client)), plan);
+  assert.equal((await app.send(`${plansPath}/${plan.id}`, other)).status, 404);
+  assert.equal((await app.send(`${plansPath}/${plan.id}/recheck`, other, 'POST')).status, 404);
+  assert.equal((await app.send(`${plansPath}/${plan.id}/recheck`, client, 'POST', { 'X-Publisher-CSRF': 'wrong' })).status, 403);
+  assert.deepEqual(await readPlan(await app.send(`${plansPath}/${plan.id}/recheck`, client, 'POST')), plan);
+  for (const path of ['/upload', '/publish', '/commit']) assert.equal((await app.send(`${plansPath}/${plan.id}${path}`, client, 'POST')).status, 404);
+  await app.send(BASE + 'api/disconnect', client, 'POST');
+  assert.equal((await app.send(`${plansPath}/${plan.id}`, client)).status, 401);
+});
+
+test('plan expiry is fixed, checked during recheck, and never extends the owning session', async t => {
+  let time = Date.now();
+  const app = await setup(t, { now: () => time }), client = jar();
+  await app.login(client);
+  const plan = await readPlan(await app.send(plansPath, client, 'POST', {}, JSON.stringify(planMetadata())));
+  assert.equal(plan.expiresAt, time + PLAN_TTL_MS);
+  time += PLAN_TTL_MS - 1;
+  assert.equal((await readPlan(await app.send(`${plansPath}/${plan.id}/recheck`, client, 'POST'))).expiresAt, plan.expiresAt);
+  time++;
+  assert.equal((await app.send(`${plansPath}/${plan.id}/recheck`, client, 'POST')).status, 410);
+  assert.equal((await app.send(`${plansPath}/${plan.id}`, client)).status, 404);
+  const second = await readPlan(await app.send(plansPath, client, 'POST', {}, JSON.stringify(planMetadata())));
+  const original = app.provider.repository.bind(app.provider);
+  app.provider.repository = async (...args) => {
+    const value = await original(...args); time += PLAN_TTL_MS; return value;
+  };
+  assert.equal((await app.send(`${plansPath}/${second.id}/recheck`, client, 'POST')).status, 410);
+  assert.equal((await app.send(`${plansPath}/${second.id}`, client)).status, 404);
+});
+
+for (const [field, changed, expected] of [
+  ['headSha', 'c'.repeat(40), 409], ['installationId', 3002, 409], ['private', false, 409],
+  ['defaultBranch', 'next', 409], ['fullName', 'changed-owner/renamed', 409], ['canWrite', false, 403], ['id', 2002, 403],
+] as const) test(`recheck invalidates a changed ${field} instead of approving stale destination metadata`, async t => {
+  const app = await setup(t), client = jar();
+  await app.login(client);
+  const plan = await readPlan(await app.send(plansPath, client, 'POST', {}, JSON.stringify(planMetadata())));
+  Object.assign(app.provider.repositoryState, { [field]: changed });
+  assert.equal((await app.send(`${plansPath}/${plan.id}/recheck`, client, 'POST')).status, expected);
+  assert.equal((await app.send(`${plansPath}/${plan.id}`, client)).status, 404);
+});
+
+test('a superseded in-flight plan cannot replace a newer package review', async t => {
+  const app = await setup(t), client = jar();
+  await app.login(client);
+  const started = gate(), finish = gate();
+  const original = app.provider.repository.bind(app.provider);
+  let first = true;
+  app.provider.repository = async (...args) => {
+    const value = await original(...args);
+    if (first) { first = false; started.resolve(); await finish.promise; }
+    return value;
+  };
+  const earlier = app.send(plansPath, client, 'POST', {}, JSON.stringify(planMetadata()));
+  await started.promise;
+  const metadata = planMetadata(); metadata.package.packageSha256 = 'd'.repeat(64);
+  const latest = await readPlan(await app.send(plansPath, client, 'POST', {}, JSON.stringify(metadata)));
+  finish.resolve();
+  assert.equal((await earlier).status, 409);
+  assert.deepEqual(await readPlan(await app.send(`${plansPath}/${latest.id}`, client)), latest);
+  assert.equal(latest.package.packageSha256, 'd'.repeat(64));
+});
+
+test('a stale recheck cannot invalidate a newer plan when its provider read fails', async t => {
+  const app = await setup(t), client = jar();
+  await app.login(client);
+  const plan = await readPlan(await app.send(plansPath, client, 'POST', {}, JSON.stringify(planMetadata())));
+  const started = gate(), finish = gate();
+  const original = app.provider.repository.bind(app.provider);
+  let first = true;
+  app.provider.repository = async (...args) => {
+    if (first) { first = false; started.resolve(); await finish.promise; throw new ProviderError('denied'); }
+    return original(...args);
+  };
+  const earlier = app.send(`${plansPath}/${plan.id}/recheck`, client, 'POST');
+  await started.promise;
+  const latest = await readPlan(await app.send(plansPath, client, 'POST', {}, JSON.stringify(planMetadata())));
+  finish.resolve();
+  assert.equal((await earlier).status, 403);
+  assert.deepEqual(await readPlan(await app.send(`${plansPath}/${latest.id}`, client)), latest);
+});
+
+test('disconnect while planning cannot resurrect an old session or clear a newer login', async t => {
+  const app = await setup(t), client = jar();
+  await app.login(client);
+  const started = gate(), finish = gate();
+  const original = app.provider.repository.bind(app.provider);
+  app.provider.repository = async (...args) => {
+    const value = await original(...args); started.resolve(); await finish.promise; return value;
+  };
+  const earlier = app.send(plansPath, client, 'POST', {}, JSON.stringify(planMetadata()));
+  await started.promise;
+  await app.send(BASE + 'api/disconnect', client, 'POST');
+  await app.login(client);
+  const cookie = client.cookie;
+  finish.resolve();
+  assert.equal((await earlier).status, 401);
+  assert.equal(client.cookie, cookie);
+  assert.equal((await app.session(client)).authenticated, true);
+});
+
+test('provider read failures invalidate a plan, and revoked access also ends its session', async t => {
+  const app = await setup(t), client = jar();
+  await app.login(client);
+  const first = await readPlan(await app.send(plansPath, client, 'POST', {}, JSON.stringify(planMetadata())));
+  const original = app.provider.repository.bind(app.provider);
+  app.provider.repository = async () => { throw new ProviderError('unavailable'); };
+  assert.equal((await app.send(`${plansPath}/${first.id}/recheck`, client, 'POST')).status, 502);
+  assert.equal((await app.send(`${plansPath}/${first.id}`, client)).status, 404);
+  assert.equal((await app.session(client)).authenticated, true);
+  app.provider.repository = original;
+  const second = await readPlan(await app.send(plansPath, client, 'POST', {}, JSON.stringify(planMetadata())));
+  await app.provider.revoke(app.provider.tokensForTest()[0], new AbortController().signal);
+  assert.equal((await app.send(`${plansPath}/${second.id}/recheck`, client, 'POST')).status, 401);
+  assert.equal(client.cookie, '');
+  assert.equal((await app.session(client)).authenticated, false);
+});
 
 test('loopback-only simulation rejects production origins and non-test provider modes', () => {
   const provider = new TestProvider();

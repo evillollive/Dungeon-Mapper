@@ -5,16 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="referrer" content="no-referrer">
     <title>Local publisher prototype</title>
-    <link rel="stylesheet" href="/publisher/style.css">
-    <script type="module" src="/publisher/client.mjs"></script>
+    <link rel="stylesheet" href="./style.css">
+    <script type="module" src="./client.mjs"></script>
   </head>
   <body>
     <main>
       <p class="eyebrow">DUNGEON MAPPER / LOCAL PUBLISHER LAB</p>
       <h1>Try the connection,<br>not a real account.</h1>
       <p class="warning"><strong>Simulated provider only.</strong> This loopback prototype never contacts GitHub.
-        Do not enter real credentials. It cannot upload packages, create repositories or publish maps.</p>
-      <p>Your editor stays at its existing address. No Library, recovery records or map files are read by this page.</p>
+        Do not enter real credentials. It can inspect creator ZIPs locally and plan against simulated repositories,
+        but cannot upload packages, create repositories or publish maps.</p>
+      <p>Your editor stays at its existing address. This page never reads its Library or recovery records.
+        Only a creator ZIP you explicitly select is inspected.</p>
       <section aria-labelledby="connection-title">
         <h2 id="connection-title">Publisher session</h2>
         <p id="connection" role="status">Reading local session...</p>
@@ -23,6 +25,24 @@
           <button id="signin" class="primary" disabled>Simulate GitHub sign-in</button>
           <button id="disconnect" hidden>Disconnect simulated account</button>
           <button id="refresh">Refresh session</button>
+          <button id="cancel" hidden>Cancel current request</button>
+        </div>
+      </section>
+      <section id="package-section" aria-labelledby="package-title" hidden>
+        <h2 id="package-title">Inspect a creator ZIP locally</h2>
+        <p>Choose a reviewed creator package, not a private project/session backup.
+          Its contents stay in this browser tab. No file is uploaded.</p>
+        <label>Creator ZIP<input id="package-file" type="file" accept=".zip,application/zip" disabled></label>
+        <p id="package-status" role="status">No package selected.</p>
+        <div id="package-detail" hidden>
+          <p id="package-summary"></p>
+          <p>Names, licenses and hashes are declarations, not verified authorship or permission.
+            Review LICENSE.txt and ATTRIBUTION.json in the ZIP before sharing.</p>
+          <p class="warning">Creator content is not player-safe. Full geometry, selected DM notes and hidden entities can contain spoilers.</p>
+          <div id="package-previews" class="previews"></div>
+          <details><summary>Declared sources and package members</summary><pre id="package-notices"></pre></details>
+          <p id="package-warning"></p>
+          <button id="clear-package">Clear selected package</button>
         </div>
       </section>
       <section id="repositories" aria-labelledby="repositories-title" hidden>
@@ -30,10 +50,24 @@
         <p>This list tests the authenticated boundary. It is not a real GitHub permission check.</p>
         <button id="list">List simulated repositories</button>
         <ul id="repository-list"></ul>
+        <label for="repository">Simulated destination</label>
+        <select id="repository" disabled><option value="">Choose a destination</option></select>
+        <p>Requesting a plan sends only package ID, version, SHA-256 and byte/member counts to this local server.
+          It does not send the map, notes, images, filename or ZIP contents.</p>
+        <button id="plan" class="primary" disabled>Review simulated destination</button>
+        <section id="plan-detail" aria-labelledby="plan-title" hidden>
+          <h3 id="plan-title" tabindex="-1">Destination plan: metadata only</h3>
+          <dl id="plan-summary"></dl>
+          <p class="warning">The server has not received or validated the ZIP. No GitHub objects, branch, PR or workflow run has been created.</p>
+          <p>Real publication would require independent server package validation, a fresh permission/base check and explicit confirmation.
+            Repository writes can trigger workflows and need their own allowance.</p>
+          <button id="recheck">Recheck simulated destination</button>
+          <button id="publish" disabled>Publish branch (not implemented)</button>
+        </section>
       </section>
       <section aria-labelledby="publication-title">
         <h2 id="publication-title">Publishing is not connected</h2>
-        <p>Real GitHub authorization, package selection/upload, destination review, durable operation recovery
+        <p>Real GitHub authorization, server package upload/validation, durable operation recovery
           and branch publication remain separate work. No production host or operating budget is configured.</p>
         <button disabled>Publish package (not implemented)</button>
       </section>
