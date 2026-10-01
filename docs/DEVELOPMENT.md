@@ -791,9 +791,17 @@ render path. It compares complete images across six DPRs and 20/24/32-pixel
 tiles, overlapping artwork, token footprints, movement/cancel/commit and
 former fallback scenes. Every observation must now increase the candidate's
 complete-draw counter and keep its partial-draw counter at zero. This replaces
-the former optimization-activation assertion, not the visual assertions.
-Alpha must match exactly, RGB differs by at most 1/255 with a
-0.01/255 mean limit. It uses synthetic events for differential pixels, while
+the former optimization-activation assertion.
+
+The owner subsequently approved removing only this retired optimization
+test's single-pixel RGB maximum gate. Alpha must still match exactly and
+whole-image mean difference must remain at most 0.01 byte levels per channel
+(0.01/255 normalized). Maximum RGB and worst-pixel details are still recorded,
+but isolated color-byte differences are not a release blocker in this one
+full-vs-full comparison. Boundary controls explicitly reject any alpha
+difference or mean above 0.01. No other rendering test, scenario, movement,
+cancellation, commit, redraw or allocation assertion changes.
+It uses synthetic events for differential pixels, while
 existing production journeys and F05 retain genuine input/persistence checks.
 An eighty-move case observes no new DOM canvas allocations; this is not a
 total browser-memory ceiling or physical-device soak test.
@@ -802,6 +810,9 @@ The case remains in the required runner under its existing name, without a new
 job, dependency, timeout or retry. Source-linked evidence, expected loss of the
 preview speedup, and the Linux-first gate for any reintroduction are recorded
 in the [correctness restoration handoff](./UX-09-HANDOFF.md#owner-approved-full-token-redraw-restoration).
+The later [owner-approved policy change](./UX-09-HANDOFF.md#owner-approved-release-candidate-comparison-policy)
+is an explicit acceptance decision, not a claim that the native discrepancy
+was diagnosed or fixed.
 The earlier optimization measurements remain historical and must not be
 reported as current performance. This rollback does not close A-PERF or
 replace exact-head hosted qualification. The App chunk-size advisory remains.

@@ -1534,6 +1534,79 @@ local-only with zero hosted triggers/reservations, no agents and no native
 setting changes. The result section below records why the bounded implementation
 was retained; the wider layer/cache redesign is not approved.
 
+### Owner-approved release-candidate comparison policy
+
+October 1, 2026. The owner wants the core application updated and available
+for real user testing as soon as practical, using that feedback to reach full
+release rather than waiting for every optional roadmap item. After receiving
+the specific tradeoff, the owner explicitly approved removing **only the
+single-pixel RGB maximum requirement** from the retired optimization's
+full-vs-full comparison.
+
+This is an informed acceptance-policy change, not a source fix for the
+underlying native-raster discrepancy and not an infrastructure-rerun claim.
+The previously failed WebKit run remains failed under its original policy.
+This decision does not grant blanket permission to relax other tests.
+
+#### Exact scope
+
+In `src/test/tokenRepaint.spec.mjs`, the complete-frame comparison keeps:
+
+- exact alpha equality;
+- its existing whole-image mean difference limit of 0.01 byte levels per
+  channel, or 0.01/255 normalized;
+- zero candidate partial draws and a newly observed complete draw at every
+  comparison;
+- all six DPRs, tile sizes, token footprints, overlapping artwork and former
+  fallback scenes;
+- movement, cancellation, commit-position/reference-state checks and the
+  eighty-move no-new-canvas allocation exercise.
+
+Only `maximum <= 1` is no longer an acceptance condition in this test.
+Maximum/worst-pixel observations remain in the attached evidence. Focused
+policy controls exercise the retained mean boundary and reject alpha changes
+or mean overflow. The RGB maximum is diagnostic rather than silently omitted.
+Every other pixel/art, privacy/fog, editing, export, data-preservation and
+required CI check is unchanged, as are retries, timeouts and workflow topology.
+
+Residual risk is explicit: isolated color differences can now pass this
+comparison when the whole image and transparency stay within its remaining
+limits. It no longer promises per-pixel RGB equality. This is considered
+proportionate for two ordinary full redraws after withdrawal of the optimization.
+Any future partial renderer still requires a separately approved validation
+plan and cannot bypass the full-draw assertions or inherit permission to
+reintroduce itself.
+
+#### Candidate-first execution order
+
+1. Consolidate the current core-app fixes, permanent owner guidance and this
+   approved policy update into one candidate. Do not add optional features.
+2. Obtain any necessary publication/CI budget scope, then require the complete
+   agreed exact-head checks and existing merge gates. Verify the qualified
+   Pages deployment before sharing an updated hosted candidate.
+3. Run a small first round with real DMs, using new test maps or independent
+   copies and downloadable backups. Cover create/edit/undo, save/reload,
+   backup/reimport, player-safe display and export. Capture blockers and the
+   highest-value friction, not an elaborate new analytics system.
+4. Fix material issues and feed results into the remaining release decisions.
+   Defer live GitHub hosting, collaboration, extra art and further micro-
+   optimization unless user feedback establishes a real need.
+
+This ordering makes user testing part of reaching release, not a reward for
+finishing the entire roadmap. It does not assert general availability, waive
+the existing physical-print gate for a release that promises printing, claim
+representative hardware/accessibility qualification, or approve a merge.
+The eventual supported release scope must match its actual evidence and any
+explicit owner-approved deferrals.
+
+Local result and exact-source identities are retained in
+`files/pr185-release-candidate-policy-source.json` and
+`files/pr185-release-candidate-policy/` in session
+`20233d90-7a79-4423-a564-f75af5b08662`. A new hosted result must qualify the
+candidate under this explicitly revised policy; local results are not relabeled
+as Linux evidence. No additional hosted trigger or budget increase is implied
+by this test-policy approval.
+
 ### Owner value judgment: proportionate quality work
 
 October 1, 2026. The owner explicitly asked for a permanent project and
@@ -1594,12 +1667,13 @@ treated as the recommended default next step.
 
 #### Authorization boundary
 
-This is a durable prioritization and recommendation policy, **not** approval
+At this decision, this was a durable prioritization and recommendation policy, **not** approval
 to relax, replace or remove the current comparison, skip required CI, alter
 budgets, declare the failure fixed, or merge without qualification. A narrow
 test-policy change still needs an explicit, informed owner decision with its
 retained coverage and residual risk stated. Until then, the required check
-remains failed and publication remains held.
+remained failed and publication remained held. The later specific approval
+above changes only the named RGB-maximum condition, not these general safeguards.
 
 The cross-project preference is also saved in the owner's personal Copilot
 instructions. Repository-scoped guidance is in

@@ -8,6 +8,27 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
+**Immediate release focus, October 1, 2026:** Prioritize an updated desktop
+candidate for real DM/user testing on the path to full release. Freeze optional
+feature expansion while qualifying and publishing that candidate. Existing
+editing, save/recovery, undo, player-safe display, exports and local creator
+packages are the useful testing surface. Live GitHub publishing, collaboration,
+additional art and speculative optimization are not prerequisites.
+
+Keep material data-loss, hidden-information disclosure, broken critical flows,
+the agreed required checks and verified deployment blocking. Physical printing,
+broader device/assistive coverage and representative performance remain
+unqualified where recorded; an informed user-testing candidate is not a claim
+that those full-release gates passed. Use participant feedback to identify
+high-value fixes rather than waiting for every roadmap item before learning.
+Formal supported scope and release approval remain explicit decisions.
+
+The owner approved a narrow change to the retired optimization comparison:
+single-pixel RGB maxima become diagnostic; exact alpha, whole-image mean,
+full-redraw and movement/cancel/commit requirements remain. All other CI stays
+intact. [Policy and candidate sequence](./UX-09-HANDOFF.md#owner-approved-release-candidate-comparison-policy)
+are recorded, with no claim that historical failing receipts now pass.
+
 **Standing owner priority, October 1, 2026:** Evaluate value before pursuing
 more exactness. When expected user benefit is negligible relative to time,
 effort, complexity or compute/CI cost, proactively recommend against continuing
