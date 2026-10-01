@@ -69,11 +69,13 @@ repository/installation, visibility, permission and base; rechecks reject stale
 destinations. A separately consented loopback ZIP submission now performs
 independent archive/content/rights-declaration checks and native image decoding
 in a bounded Node child. Package bodies are not saved or sent to GitHub.
-The next bounded slice adds a fake-provider branch-writing/readback engine and
-owner-approved metadata-only SQLite receipts with read-only restart
-reconciliation. It is not wired to the authenticated HTTP/UI publication flow;
-the Publish button stays disabled. No live provider exists. See
-[the simulation boundary](./GITHUB-PUBLISHER-DESIGN.md#14-fake-publication-engine-and-local-restart-receipts).
+The fake-provider branch-writing/readback engine and owner-approved metadata-only
+SQLite receipts now connect to authenticated simulation endpoints and a separate
+browser confirmation/status/recovery flow. An explicit local journal path is
+required. The real GitHub Publish button stays disabled; no live provider exists.
+Restart recovery requires fresh same-account sign-in, and reconciliation never
+repeats writes. See
+[the simulation boundary](./GITHUB-PUBLISHER-DESIGN.md#15-authenticated-simulation-and-browser-recovery).
 
 ## 1. Product outcome and boundaries
 
@@ -325,7 +327,7 @@ activation or package publication is authorized.
 | GH-N06 | Add upstream attribution and deliberate version comparison/remix metadata. Local. | GH-N03 | License/credit persistence, independent edits, renamed/deleted upstream handling and no background polling or overwrite. GitHub-native contribution links before integrated writes. |
 | GH-N07 | Decide authentication/service architecture and produce permission, data-flow, threat and operations contracts. Local design plus owner decisions. | Section 2 boundaries | Explicit hosting/cost decision, secret lifecycle, endpoint authority, disconnect behavior and review scope. Stop if the project should remain manual-only. |
 | GH-N08 | Implement optional connection UI and approved auth/service boundary using local fakes. Local. | GH-N04, GH-N07 | Login denial, wrong account, expiry/revocation, CSRF/state failures, cache isolation and offline fallback. No live credentials, registration or deployment. |
-| GH-N09 | Implement reviewed publish/update and recovery receipts against mocked APIs. Local preparation/validation plus a separate fake-write/readback engine and SQLite restart journal are implemented; authenticated publication UI/API integration remains pending. | GH-N02, GH-N06, GH-N08 | Multi-file publication, concurrent edits, protected branches, unknown outcomes, readback verification and duplicate-prevention cases. No remote writes or silent repo creation. |
+| GH-N09 | Implement reviewed publish/update and recovery receipts against mocked APIs. Local preparation, native validation, fake-write/readback engine, SQLite restart journal and authenticated simulation UI/API are implemented locally; production storage, operating scope and live qualification remain gated. | GH-N02, GH-N06, GH-N08 | Multi-file publication, concurrent edits, protected branches, unknown outcomes, readback verification and duplicate-prevention cases. No remote writes or silent repo creation. |
 | GH-N10 | Integrate each selected slice's focused regression coverage and documentation into the existing qualification approach. Local. | The selected GH-N02 through GH-N09 slice, not every optional feature | Fixture/source-bound results, accurate implemented/support claims and measured package limits. Keep existing required checks; do not invent a parallel full application pipeline. |
 | GH-N11 | Prepare a separately reviewed release-evidence transfer selection and destination proposal. Local operational work. | [Existing staged archive](./UX-09-HANDOFF.md#portable-local-evidence-archive) | Archive already exists; this task adds destination/access/retention decisions and publication review, not another archive campaign. Missing historical evidence remains listed. No upload. |
 | GH-N12 | Design and locally exercise an optional map-repository validator/template. Local. | GH-N01, GH-N03 | Validate schema, references, hashes, licenses and resources without executing repository content. Template contains no tokens or implicit deployment. Enabling its workflow belongs to GH-A03. |

@@ -610,6 +610,9 @@ isolation and hosted qualification remain separately gated.
 
 ## 14. Fake publication engine and local restart receipts
 
+This section records the engine-only milestone at `6e1b98f`. Section 15 connects
+it to the explicitly enabled local simulation UI and authenticated routes.
+
 The owner approved continuing with simulated publication/recovery, retaining
 metadata-only receipts across restart, and using Node's built-in SQLite locally.
 This is a bounded engine slice, not web publication activation. The existing
@@ -740,3 +743,139 @@ Approved/used/reserved hosted minutes remain **0/0/0** with no pending runs.
 The separate fixture-only 24-minute ceiling remains unused and unavailable
 until actual allowance is confirmed. This is not approval of any service,
 storage, CI or account-wide spending.
+
+## 15. Authenticated simulation and browser recovery
+
+The owner approved connecting the completed fake engine to the separate
+publisher page. This milestone adds explicit browser confirmation, account-bound
+operation endpoints, saved progress/outcomes and read-only recovery. It does
+not activate real GitHub credentials, repository access, uploads, workflows,
+PRs, hosting or production storage.
+
+The test composition enables simulation only when `PUBLISHER_RECEIPTS` names
+an absolute SQLite path in an existing private local directory. It opens the
+owner-approved metadata-only journal and uses the concrete in-memory
+`TestGitProvider` for both authentication and fake Git operations. The service
+factory rejects mismatched authentication/simulation providers. Without this
+explicit path, the validation-only composition remains available, no database
+is created, and simulation controls remain unavailable. The setting cannot
+select a live provider or production identity.
+
+### User flow and API ownership
+
+The user signs in to the simulated account, selects a creator ZIP, reviews the
+destination and completes independent server validation. A separate confirmation
+then enables **Simulate publication**. This sends the exact ZIP again, with
+the reviewed plan ID in `X-Publisher-Confirm`. It does not reuse a supposed
+server copy or trust a client validity flag. The engine validates again before
+writing to the fake repository's memory. Real **Publish package to GitHub**
+remains disabled.
+
+`POST /publisher/api/plans/<id>/simulate` requires the current session's
+server-validated plan, exact confirmation, Host/Origin and CSRF. Extra JSON
+identity/credential payloads are rejected because this is a bounded ZIP
+endpoint. Owner ID and access token are taken only from the server session.
+The reviewed length/digest, encoding restrictions and full package limits
+remain in force.
+
+`GET /publisher/api/operations` returns only the current account's bounded
+saved receipts and active state. `GET /publisher/api/operations/<id>` checks the
+same ownership; another account gets 404 for a guessed ID. These are historical
+observations, not fresh permission claims. The list supports recovery without
+knowing the ID of an interrupted request.
+
+`POST /publisher/api/operations/<id>/reconcile` performs authenticated reads
+only, without ZIP resubmission, new blobs or branch changes.
+`POST /publisher/api/operations/cancel` cancels work originating from the
+current session only, not a different session with the same account. Both
+require CSRF, same origin and an empty JSON object. Cancellation is not rollback
+or proof that the fake provider never accepted a request.
+
+Validation and publication uploads share a local admission gate; reconciliation
+waits for active work to settle. The engine also checks the originating session
+around provider access, not merely before the upload. Expiry, logout, plan
+replacement, client disconnect and server shutdown stop future work while
+preserving any operation receipt. The service waits for cancellation cleanup
+before closing the journal. Simulation/reconciliation requests have a
+30-second application deadline, with the existing ten-second Node body
+deadline and eight-second validator-child deadline unchanged.
+
+### Visible outcomes and restart behavior
+
+The receipt view distinguishes preparation/writing, verified readback, conflict,
+blocked work and unknown outcomes. It displays the operation ID, fake branch,
+package digest, expected commit, last stage and failure code as inert text.
+No result claims a real GitHub object, passing CI, merge or release.
+
+While the user-requested simulation or its cleanup is active, saved progress
+is read at one-second intervals. Errors stop automatic refresh; settled work
+does not create a background polling loop. Refresh and reconciliation are
+explicit controls afterwards. Duplicate confirmation still returns the same
+operation rather than writing again.
+
+Logout/account change clears browser package data, object URLs and visible
+receipts, not durable metadata or accepted fake objects. Reload can recover
+saved receipts without selecting another ZIP. Server restart invalidates its
+ephemeral sessions, so the user must sign in again as the same simulated account.
+Neither browser local/session storage nor IndexedDB is used for receipt or
+credential persistence.
+
+The browser campaign exercises both restart models. Retaining the fake provider
+outside the restarted service models a remote repository surviving its caller.
+A normal local composition restart instead creates a fresh in-memory provider;
+the journal survives but fake objects do not. Reconciliation then leaves a
+missing branch **unknown**, not verified and not permission to retry writes.
+
+This exposed a journal invariant that needed correction: several historically
+verified operations can become unresolved at once when repository objects
+disappear. Reopen replaces the old partial unique unresolved-destination index
+with a nonunique lookup index, retaining every receipt. New admission still
+checks for any unresolved destination inside `BEGIN IMMEDIATE`, while the
+exclusive journal-owner lock and per-journal admission guard remain unchanged.
+No new operation can bypass an unresolved receipt, and no older receipt is
+deleted or marked successful to clear a reservation.
+
+### Local evidence and open gates
+
+Session `20233d90-7a79-4423-a564-f75af5b08662` retains:
+
+- `files/github-publisher-ui-service-closeout.json` and its corresponding
+  directory: 27 engine/storage/service cases, including the prior engine
+  corpus, multiple unresolved historical receipts, exact confirmation and
+  submission bounds, account/CSRF isolation, same-account distinct-session
+  cancellation, fresh sign-in recovery, logout/expiry and replaced plans.
+- `files/github-publisher-ui-http-closeout.tap`: the 42 existing HTTP/domain
+  cases preserving the original authentication, validation and body boundaries.
+- `files/github-publisher-ui-browser-closeout/`: Chromium, Firefox and WebKit
+  flows covering explicit keyboard confirmation, a lost fake branch response,
+  visible unknown/verified/conflict outcomes, duplicate prevention, progress,
+  cancellation, account isolation, reload, both restart models and zero browser
+  persistence or external requests.
+- `files/github-publisher-ui-baseline-browser-closeout/`: the existing
+  validation-only three-engine journey with simulation disabled, preserving
+  local inspection, native validation, consent, changed-destination rejection
+  and auth/expiry cleanup.
+- `files/github-publisher-ui-source.json`: committed source, result/journal/
+  build hashes, runtime identities and zero-hosted-use accounting.
+
+The simulation campaign holds a fake blob response to exercise visible
+cancellation; it does not measure natural provider latency. A navigation race
+in the initial browser harness was corrected by waiting for disconnect
+completion before starting another sign-in. The initial restart failure and
+its receipt-journal fix remain recorded separately. No tests were skipped,
+assertions loosened or unknown outcomes relabeled as successes.
+
+Publisher types, root lint and both publisher builds pass. No editor source,
+origin, storage schema or release workflow changes in this slice. All owned
+test servers, browsers and native validators close after their bounded runs.
+No real GitHub request, application push, PR mutation, hosted job, deployment,
+agent or new session was started. This task remains **0 approved / 0 used /
+0 reserved hosted minutes**, with no pending run. The fixture-only ceiling of
+24 remains unused and unavailable without confirmed allowance.
+
+The local simulated GH-N09 user flow is implemented; this is not live
+qualification. Real provider registration, operating ownership, retention,
+encrypted production credentials, hosting/native-memory isolation, disposable
+remote exercises and approved hosted qualification remain separate gates.
+The deliberately conservative no-auto-retry/no-intentional-same-ZIP-republish
+policy and capacity limits remain documented rather than bypassed in the UI.

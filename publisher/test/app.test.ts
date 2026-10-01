@@ -354,7 +354,7 @@ test('serves an explicit prototype with no-store and framing/referrer protection
   assert.equal(response.headers.get('x-publisher-mode'), 'local-prototype');
   const html = await response.text();
   assert.match(html, /Simulated provider only/);
-  assert.match(html, /Publish package \(not implemented\)/);
+  assert.match(html, /id="publish" disabled>Publish package to GitHub \(not implemented\)/);
   assert.equal(client.cookie, '');
   const session = await app.send(BASE + 'api/session', client);
   const cookie = session.headers.get('set-cookie')!;

@@ -15,7 +15,8 @@
       <p class="warning"><strong>Simulated provider only.</strong> This loopback prototype never contacts GitHub.
         Do not enter real credentials. It can inspect creator ZIPs locally and plan against simulated repositories,
         and independently validate an explicitly submitted ZIP on this machine.
-        It cannot send packages to GitHub, create repositories or publish maps.</p>
+        With an explicitly configured receipt journal, it can simulate branch publication in memory.
+        It cannot send packages to GitHub, create real repositories or publish real maps.</p>
       <p>Your editor stays at its existing address. This page never reads its Library or recovery records.
         Only a creator ZIP you explicitly select is inspected.</p>
       <section aria-labelledby="connection-title">
@@ -33,7 +34,7 @@
         <h2 id="package-title">Inspect a creator ZIP locally</h2>
         <p>Choose a reviewed creator package, not a private project/session backup.
           Selection stays in this browser tab. Only the separate, explicitly approved
-          validation action sends ZIP contents to the loopback server on this machine.</p>
+          validation or simulation actions send ZIP contents to the loopback server on this machine.</p>
         <label>Creator ZIP<input id="package-file" type="file" accept=".zip,application/zip" disabled></label>
         <p id="package-status" role="status">No package selected.</p>
         <div id="package-detail" hidden>
@@ -69,14 +70,40 @@
             Uploaded bytes are held only in process memory during validation, not saved or sent to GitHub.</label>
           <button id="validate" disabled>Validate ZIP on local server</button>
           <p id="validation-status" role="status"></p>
-          <button id="publish" disabled>Publish branch (not implemented)</button>
+          <div id="simulation-confirmation" hidden>
+            <h3>One fake branch. No GitHub writes.</h3>
+            <p>The exact ZIP will be sent again and independently validated. The fake repository keeps
+              its package contents in memory until this local server stops. Only operation metadata is
+              saved in the SQLite journal.</p>
+            <label class="check"><input id="simulate-consent" type="checkbox">
+              Simulate creating the reviewed branch and replacing only this package directory.
+              Keep unrelated files and the default branch unchanged.</label>
+            <button id="simulate" class="primary" disabled>Simulate publication</button>
+          </div>
+          <p id="simulation-unavailable">Fake publication is disabled until a local receipt journal is configured.</p>
         </section>
       </section>
+      <section id="operations" aria-labelledby="operations-title" hidden>
+        <p class="eyebrow">LOCAL RECEIPT JOURNAL / READS NEVER RETRY WRITES</p>
+        <h2 id="operations-title">Recover simulated operations</h2>
+        <p>Sign back in as the same simulated account after a reload or restart.
+          Saved receipts describe past observations. Reconcile explicitly to read the fake repository again.
+          No package selection or repeated upload is needed.</p>
+        <div class="actions">
+          <button id="recover">Refresh saved receipts</button>
+          <button id="stop-simulation" hidden>Cancel this session's simulation</button>
+        </div>
+        <p id="operation-progress" role="status"></p>
+        <div id="operation-list"></div>
+        <p class="warning">A full server restart loses fake repository objects, not the receipt journal.
+          A missing branch stays unresolved. Cancellation never promises to undo an accepted write.
+          No checks, merge or release are implied by a verified simulation.</p>
+      </section>
       <section aria-labelledby="publication-title">
-        <h2 id="publication-title">Publishing is not connected</h2>
-        <p>Real GitHub authorization, durable operation recovery
-          and branch publication remain separate work. No production host or operating budget is configured.</p>
-        <button disabled>Publish package (not implemented)</button>
+        <h2 id="publication-title">Real publishing is not connected</h2>
+        <p>Real GitHub authorization and publication remain separate work.
+          No production host or operating budget is configured.</p>
+        <button id="publish" disabled>Publish package to GitHub (not implemented)</button>
       </section>
       <footer>This HTTP loopback test uses synthetic sessions. Production HTTPS, Secure cookies,
         encrypted persistence and live GitHub behavior are not qualified here.</footer>

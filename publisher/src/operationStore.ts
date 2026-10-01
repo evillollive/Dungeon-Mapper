@@ -40,7 +40,8 @@ export class OperationStore {
           owner_id INTEGER NOT NULL, repository_id INTEGER NOT NULL,
           phase TEXT NOT NULL, record TEXT NOT NULL, active INTEGER NOT NULL DEFAULT 0
         );
-        CREATE UNIQUE INDEX IF NOT EXISTS one_unresolved_destination ON operations(repository_id)
+        DROP INDEX IF EXISTS one_unresolved_destination;
+        CREATE INDEX IF NOT EXISTS unresolved_destinations ON operations(repository_id)
           WHERE phase IN ('prepared','writing','outcome-unknown');
         UPDATE operations SET phase='outcome-unknown',active=0 WHERE active=1 OR phase='writing';`);
     } catch (error) { this.db.close(); this.lock.close(); throw error; }
@@ -63,6 +64,14 @@ export class OperationStore {
   }
   existing(fingerprint: string): StoredOperation | undefined {
     return this.decode(this.db.prepare('SELECT * FROM operations WHERE fingerprint=?').get(fingerprint));
+  }
+  forOwner(ownerId: number): StoredOperation[] {
+    return this.db.prepare('SELECT * FROM operations WHERE owner_id=? ORDER BY rowid DESC LIMIT ?')
+      .all(ownerId, OPERATION_LIMITS.records).map(value => {
+        const stored = this.decode(value);
+        if (!stored) throw new Error('A local operation could not be read.');
+        return stored;
+      });
   }
   reserved(repositoryId: number): boolean {
     return !!this.db.prepare("SELECT id FROM operations WHERE repository_id=? AND phase IN ('prepared','writing','outcome-unknown')").get(repositoryId);

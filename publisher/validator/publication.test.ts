@@ -14,6 +14,7 @@ import { OperationStore, OPERATION_LIMITS } from '../src/operationStore.ts';
 import { LocalPublicationEngine, PUBLICATION_DEADLINE_MS } from '../src/publication.ts';
 import { createPublicationPlan, type PublicationMetadata } from '../src/plans.ts';
 import { TestGitProvider, type FakeWrite } from '../test/gitProvider.ts';
+import { startLocalPublisher } from '../test/local.ts';
 
 vi.mock('../../src/utils/creatorPackagePreview', () => ({ renderCreatorPreviews: vi.fn() }));
 const marker = 'SIMULATED_PRIVATE_MAP_TEXT_SENTINEL';
@@ -25,6 +26,7 @@ let metadata: PublicationMetadata, nextMetadata: PublicationMetadata;
 const stores = new Set<OperationStore>();
 const signal = () => new AbortController().signal;
 const paths: string[] = [];
+const servers = new Set<Awaited<ReturnType<typeof startLocalPublisher>>>();
 const gate = () => {
   let release!: () => void;
   const promise = new Promise<void>(resolve => { release = resolve; });
@@ -54,10 +56,189 @@ beforeAll(async () => {
   writeFileSync(join(output!, 'fixture-identities.json'), JSON.stringify({ metadata, nextMetadata,
     preview: 'Synthetic two-pixel color swatch, not rendered map artwork', hostedTriggers: 0 }, null, 2));
 });
-afterEach(() => {
+afterEach(async () => {
   vi.useRealTimers();
+  for (const server of servers) await server.close();
+  servers.clear();
   for (const store of stores) store.close();
   stores.clear();
+});
+
+async function httpSetup(now?: () => number) {
+  const path = join(mkdtempSync(join(output!, 'http-')), 'operations.sqlite');
+  const provider = new TestGitProvider(now);
+  const errors: { code: string }[] = [];
+  let server = await startLocalPublisher({ provider, receiptPath: path, now, onError: error => errors.push(error) });
+  servers.add(server);
+  const jar = () => ({ cookie: '', csrf: '' });
+  type Jar = ReturnType<typeof jar>;
+  async function send(route: string, client: Jar, method = 'GET', body: string | Uint8Array = '{}',
+    headers: Record<string, string> = {}) {
+    const response = await fetch(server.origin + '/publisher/api/' + route, { method, redirect: 'manual',
+      headers: { Cookie: client.cookie, ...(method === 'POST' ? { Origin: server.origin,
+        'Content-Type': 'application/json', 'X-Publisher-CSRF': client.csrf } : {}), ...headers },
+      ...(method === 'POST' ? { body } : {}) });
+    const cookie = response.headers.get('set-cookie');
+    if (cookie) client.cookie = cookie.includes('Max-Age=0') ? '' : cookie.split(';')[0];
+    return response;
+  }
+  async function session(client: Jar) {
+    const response = await send('session', client);
+    expect(response.status).toBe(200);
+    const body = await response.json();
+    client.csrf = body.csrf;
+    return body;
+  }
+  async function login(client: Jar, userId = 1001) {
+    provider.user = { id: userId, login: userId === 1001 ? 'fixture-creator' : 'other-fixture' };
+    await session(client);
+    const started = await send('auth/start', client, 'POST');
+    const url = new URL((await started.json()).authorizationURL);
+    const redirectURI = url.searchParams.get('redirect_uri')!;
+    const callback = new URL(redirectURI);
+    callback.searchParams.set('state', url.searchParams.get('state')!);
+    callback.searchParams.set('code', provider.issueCode(url.searchParams.get('code_challenge')!, redirectURI));
+    const response = await fetch(callback, { redirect: 'manual', headers: { Cookie: client.cookie } });
+    expect(response.status).toBe(303);
+    client.cookie = response.headers.get('set-cookie')!.split(';')[0];
+    await session(client);
+  }
+  async function plan(client: Jar) {
+    const response = await send('plans', client, 'POST', JSON.stringify({ repositoryId: 2001, package: metadata }));
+    expect(response.status).toBe(200);
+    const value = await response.json();
+    return value;
+  }
+  async function validated(client: Jar) {
+    const value = await plan(client);
+    const response = await send(`plans/${value.id}/validate`, client, 'POST', zip, { 'Content-Type': 'application/zip' });
+    expect(response.status, await response.clone().text()).toBe(200);
+    return response.json();
+  }
+  const client = jar();
+  await login(client);
+  return { provider, errors, client, jar, send, session, login, plan, validated, path,
+    simulate: (id: string, who = client) => send(`plans/${id}/simulate`, who, 'POST', zip,
+      { 'Content-Type': 'application/zip', 'X-Publisher-Confirm': id }),
+    restart: async (retainProvider = true) => {
+      const port = Number(new URL(server.origin).port);
+      await server.close(); servers.delete(server);
+      server = await startLocalPublisher({ port, ...(retainProvider ? { provider } : {}), receiptPath: path, now });
+      servers.add(server);
+    },
+  };
+}
+
+describe('authenticated local publication endpoints', () => {
+  it('requires server validation, exact consent, origin/CSRF and current owner rather than client identity fields', async () => {
+    const app = await httpSetup(), raw = await app.plan(app.client);
+    expect((await app.simulate(raw.id)).status).toBe(409);
+    const plan = await app.validated(app.client), endpoint = `plans/${plan.id}/simulate`;
+    expect((await app.send(endpoint, app.jar(), 'POST', zip)).status).toBe(401);
+    expect((await app.send(endpoint, app.client, 'POST', zip, { 'Content-Type': 'application/zip' })).status).toBe(400);
+    expect((await app.send(endpoint, app.client, 'POST', zip, { 'Content-Type': 'application/zip',
+      'X-Publisher-Confirm': plan.id, 'Content-Encoding': 'gzip' })).status).toBe(415);
+    expect((await app.send(endpoint, app.client, 'POST', new Uint8Array(zip.length + 1),
+      { 'Content-Type': 'application/zip', 'X-Publisher-Confirm': plan.id })).status).toBe(413);
+    const mismatched = Uint8Array.from(zip); mismatched[0] ^= 1;
+    expect((await app.send(endpoint, app.client, 'POST', mismatched,
+      { 'Content-Type': 'application/zip', 'X-Publisher-Confirm': plan.id })).status).toBe(409);
+    for (const headers of [
+      { Origin: 'https://untrusted.example' }, { 'X-Publisher-CSRF': 'wrong' },
+    ]) expect((await app.send(endpoint, app.client, 'POST', zip,
+      { 'Content-Type': 'application/zip', 'X-Publisher-Confirm': plan.id, ...headers })).status).toBe(403);
+    const other = app.jar(); await app.login(other, 1002);
+    expect((await app.simulate(plan.id, other)).status).toBe(404);
+    expect((await app.send(endpoint, app.client, 'POST', JSON.stringify({ ownerId: 1002, token: 'injected' }),
+      { 'X-Publisher-Confirm': plan.id })).status).toBe(415);
+    expect(app.provider.writes).toEqual([]);
+    const response = await app.simulate(plan.id);
+    expect(response.status).toBe(200);
+    const receipt = await response.json();
+    expect(receipt.phase).toBe('branch-verified');
+    expect((await app.send('operations', other)).status).toBe(200);
+    expect((await (await app.send('operations', other)).json()).operations).toEqual([]);
+    expect((await app.send(`operations/${receipt.id}`, other)).status).toBe(404);
+    expect((await app.send(`operations/${receipt.id}/reconcile`, other, 'POST')).status).toBe(404);
+    expect((await app.send(`operations/${receipt.id}/reconcile`, app.client, 'POST', '{}', { 'X-Publisher-CSRF': 'wrong' })).status).toBe(403);
+    const writes = [...app.provider.writes];
+    expect((await (await app.simulate(plan.id)).json()).id).toBe(receipt.id);
+    expect((await app.send(`operations/${receipt.id}/reconcile`, app.client, 'POST')).status).toBe(200);
+    expect(app.provider.writes).toEqual(writes);
+    expect(readFileSync(app.path).includes(marker)).toBe(false);
+    expect(app.errors).toEqual([]);
+  });
+
+  it('recovers a saved receipt after server restart only following fresh same-account sign-in', async () => {
+    const app = await httpSetup(), plan = await app.validated(app.client);
+    app.provider.dropResponseAfter = 'branch';
+    const receipt = await (await app.simulate(plan.id)).json();
+    expect(receipt.phase).toBe('outcome-unknown');
+    await app.restart();
+    expect((await app.send('operations', app.client)).status).toBe(401);
+    await app.login(app.client);
+    const saved = await (await app.send('operations', app.client)).json();
+    expect(saved.operations).toHaveLength(1);
+    expect(saved.operations[0].id).toBe(receipt.id);
+    const writes = [...app.provider.writes];
+    expect((await (await app.send(`operations/${receipt.id}/reconcile`, app.client, 'POST')).json()).phase).toBe('branch-verified');
+    expect(app.provider.writes).toEqual(writes);
+  });
+
+  it('cancels on disconnect while a fake write is pending, retaining uncertainty without further writes', async () => {
+    const app = await httpSetup(), plan = await app.validated(app.client), started = gate(), finish = gate();
+    app.provider.afterWrite = async kind => { if (kind === 'blob') { started.release(); await finish.promise; } };
+    const pending = app.simulate(plan.id);
+    await started.promise;
+    const progress = await (await app.send('operations', app.client)).json();
+    expect(progress.operations[0]).toMatchObject({ phase: 'writing', active: true });
+    expect((await app.send('disconnect', app.client, 'POST')).status).toBe(200);
+    expect((await pending).status).toBe(401);
+    finish.release();
+    await app.login(app.client);
+    const saved = await (await app.send('operations', app.client)).json();
+    expect(saved.operations[0]).toMatchObject({ phase: 'outcome-unknown', active: false });
+    expect(app.provider.writes).toEqual(['blob']);
+  });
+
+  it('isolates session cancellation even when two sessions use the same account', async () => {
+    const app = await httpSetup(), plan = await app.validated(app.client), started = gate(), finish = gate();
+    const same = app.jar(); await app.login(same);
+    app.provider.afterWrite = async kind => { if (kind === 'blob') { started.release(); await finish.promise; } };
+    const pending = app.simulate(plan.id);
+    await started.promise;
+    const otherCancel = await app.send('operations/cancel', same, 'POST');
+    expect((await otherCancel.json()).cancellationRequested).toBe(false);
+    expect((await app.send('operations/cancel', app.client, 'POST', '{}', { 'X-Publisher-CSRF': 'bad' })).status).toBe(403);
+    const cancellation = await app.send('operations/cancel', app.client, 'POST');
+    expect((await cancellation.json()).cancellationRequested).toBe(true);
+    expect((await pending).status).toBe(409);
+    finish.release();
+    expect(app.provider.writes).toEqual(['blob']);
+  });
+
+  it('rechecks session expiry before the next fake mutation, even if the provider read advances time', async () => {
+    let time = Date.now();
+    const app = await httpSetup(() => time), plan = await app.validated(app.client);
+    app.provider.afterWrite = async kind => { if (kind === 'blob') time += 60 * 60_000; };
+    const response = await app.simulate(plan.id);
+    expect(response.status).toBe(401);
+    expect(app.provider.writes).toEqual(['blob']);
+    await app.login(app.client);
+    expect((await (await app.send('operations', app.client)).json()).operations[0].phase).toBe('outcome-unknown');
+  });
+
+  it('invalidates a replaced plan during simulation without overwriting the newer review', async () => {
+    const app = await httpSetup(), plan = await app.validated(app.client), started = gate(), finish = gate();
+    app.provider.afterWrite = async kind => { if (kind === 'blob') { started.release(); await finish.promise; } };
+    const pending = app.simulate(plan.id);
+    await started.promise;
+    const next = await app.plan(app.client);
+    expect((await pending).status).toBe(409);
+    finish.release();
+    expect((await app.send(`plans/${next.id}`, app.client)).status).toBe(200);
+    expect(app.provider.writes).toEqual(['blob']);
+  });
 });
 function open(path: string) {
   const store = new OperationStore(path);
@@ -171,6 +352,20 @@ describe('local simulated publication and durable metadata recovery', () => {
   it('refuses a second journal owner instead of resetting live operation claims', async () => {
     const state = await setup();
     expect(() => new OperationStore(state.path)).toThrow('already open');
+  });
+  it('can mark multiple historical receipts unknown without losing the destination admission block', async () => {
+    const state = await setup();
+    const first = await state.engine.submit(state.plan, state.grant.user.id, state.grant.accessToken, zip, signal());
+    const secondPlan = createPublicationPlan({ repositoryId: 2001, package: nextMetadata },
+      state.plan.repository, Date.now(), Date.now() + 600_000);
+    const second = await state.engine.submit(secondPlan, state.grant.user.id, state.grant.accessToken, alternative, signal());
+    expect(first.phase).toBe('branch-verified'); expect(second.phase).toBe('branch-verified');
+    state.provider.branches.delete(state.plan.branch); state.provider.branches.delete(secondPlan.branch);
+    expect((await state.engine.reconcile(first.id, state.grant.user.id, state.grant.accessToken, signal())).phase).toBe('outcome-unknown');
+    expect((await state.engine.reconcile(second.id, state.grant.user.id, state.grant.accessToken, signal())).phase).toBe('outcome-unknown');
+    expect(state.store.reserved(2001)).toBe(true);
+    expect(() => state.store.insert({ id: 'z'.repeat(43), fingerprint: sha256('new-operation'),
+      ownerId: 1001, repositoryId: 2001, phase: 'prepared', record: '{}', active: false })).toThrow('unresolved operation');
   });
 
   it('enforces exact receipt and repository-tree bounds without evicting old operations', async () => {

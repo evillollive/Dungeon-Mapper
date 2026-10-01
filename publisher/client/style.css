@@ -29,6 +29,12 @@ summary { cursor: pointer; min-height: 44px; padding: 8px 0; }
 .previews img { width: 100%; max-height: 340px; object-fit: contain; }
 .previews figcaption { color: #c4bdd7; font-size: 13px; }
 #plan-detail { border-left: 4px solid #ff9569; padding: 12px 18px; background: #161322; }
+#simulation-confirmation { border-top: 1px solid #817696; margin-top: 24px; padding-top: 12px; }
+.receipt { border: 1px solid #817696; border-left: 4px solid #ff9569; padding: 18px; margin: 18px 0; background: #161322; }
+.receipt[data-phase="branch-verified"] { border-left-color: #80d9b3; }
+.receipt[data-phase="outcome-unknown"], .receipt[data-phase="conflict"] { border-left-color: #ffd283; }
+.receipt h3 { margin-top: 0; }
+.receipt code { overflow-wrap: anywhere; }
 :focus-visible { outline: 3px solid #8dbbff; outline-offset: 3px; }
 [hidden] { display: none !important; }
 #message[role="alert"] { color: #ffb9b9; border-left: 3px solid #ffadad; padding-left: 14px; }

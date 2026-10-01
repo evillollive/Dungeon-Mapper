@@ -21,7 +21,8 @@
     "test:publisher:browser": "npm run build:publisher && node publisher/test/session.browser.mjs",
     "build:publisher": "vite build --config publisher/vite.config.ts && vite build --config publisher/validator/vite.config.ts",
     "test:publisher:validation": "npm run build:publisher && vitest run --config publisher/validator/vitest.config.ts",
-    "test:publisher:publication": "npm run build:publisher && vitest run --config publisher/validator/publication.config.ts"
+    "test:publisher:publication": "npm run build:publisher && vitest run --config publisher/validator/publication.config.ts",
+    "test:publisher:simulation": "npm run build:publisher && node publisher/test/publication.browser.mjs"
   },
   "dependencies": {
     "fflate": "^0.8.3",

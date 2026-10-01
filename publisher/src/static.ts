@@ -1,9 +1,9 @@
 import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export function publisherStaticFiles(base: string) {
-  const root = fileURLToPath(new URL('../dist/', import.meta.url));
+  const root = join(dirname(fileURLToPath(import.meta.url)), '../dist');
   if (!existsSync(join(root, 'index.html'))) throw new Error('Build the local publisher client with npm run build:publisher before starting it.');
   const rootStat = lstatSync(root), manifestStat = lstatSync(join(root, '.vite/manifest.json'));
   if (!rootStat.isDirectory() || rootStat.isSymbolicLink() || !manifestStat.isFile() || manifestStat.isSymbolicLink()) {

@@ -1771,7 +1771,9 @@ provider. GH-N09 preparation adds browser-local ZIP inspection, metadata-only
 simulated destination plans and separately consented loopback ZIP validation
 in an independent native Node process. A separate fake-publication engine now
 exercises create-only branch writes, exact readback and metadata-only SQLite
-restart receipts; it is not connected to the web Publish button or GitHub. Hosting, real
+restart receipts. Authenticated browser confirmation/status/recovery is now
+connected to that local simulation only when an explicit receipt journal is
+configured, never to GitHub. Hosting, real
 credentials, package publication and operations remain
 separately gated. See the [publisher design](./GITHUB-PUBLISHER-DESIGN.md).
 **Depends on:** UX-01 preservation,

@@ -5,6 +5,9 @@ import { publisherStaticFiles } from './static.ts';
 import { RequestError } from './errors.ts';
 import { createPublicationPlan, publicationMetadata, reviewedRepository, sameRepository, validRepositoryName, type PublicationPlan } from './plans.ts';
 import { validatePackage } from './validation.ts';
+import { LocalPublicationEngine, PUBLICATION_DEADLINE_MS } from './publication.ts';
+import type { OperationStore } from './operationStore.ts';
+import type { LocalGitProvider } from './gitObjects.ts';
 
 export const BASE = '/publisher/';
 export const COOKIE = 'dm_publisher_local';
@@ -128,7 +131,8 @@ async function emptyBody(request: IncomingMessage, signal: AbortSignal): Promise
 
 /** No production composition exists. This handler admits only the local simulated provider. */
 export function createLocalPublisher(origin: string, provider: LocalAuthProvider,
-  options: { now?: () => number; onError?: (event: { code: string }) => void } = {}) {
+  options: { now?: () => number; onError?: (event: { code: string }) => void;
+    simulation?: { store: OperationStore; provider: LocalGitProvider & LocalAuthProvider } } = {}) {
   const address = new URL(origin);
   if (address.origin !== origin || address.protocol !== 'http:' || address.hostname !== '127.0.0.1' || !address.port ||
       provider.kind !== 'local-test') throw new Error('The prototype supports only an explicit loopback HTTP origin and local test provider.');
@@ -137,14 +141,29 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
   const now = options.now ?? Date.now;
   const log = options.onError ?? (event => console.error(event.code));
   const sessions = new Map<string, Session>();
+  if (options.simulation && options.simulation.provider !== provider) throw new Error('Simulation and authentication must use the same local provider.');
+  const engine = options.simulation ? new LocalPublicationEngine(options.simulation.store, options.simulation.provider, now,
+    (ownerId, accessToken) => {
+      const current = activePublication?.owner;
+      if (!current || sessions.get(current.id) !== current || current.expiresAt <= now() ||
+          current.grant?.user.id !== ownerId || current.grant.accessToken !== accessToken) {
+        throw new RequestError(401, 'obsolete_session', 'The originating simulation session ended. Sign in again to recover receipts.');
+      }
+    }) : undefined;
+  let closed = false;
   let activeValidation: { owner: Session; controller: AbortController; finished: Promise<void> } | undefined;
+  let activePublication: { owner: Session; controller: AbortController; finished: Promise<void>; operationId?: string } | undefined;
   function cancelValidation(owner: Session, status = 409): void {
     if (activeValidation?.owner === owner) activeValidation.controller.abort(
       new RequestError(status, 'obsolete_validation', 'The session or destination review changed. Package validation was cancelled.'));
   }
+  function cancelPublication(owner: Session, status = 409): void {
+    if (activePublication?.owner === owner) activePublication.controller.abort(
+      new RequestError(status, 'simulation_cancelled', 'The simulated request was cancelled. Accepted fake writes may remain; recover and reconcile its receipt.'));
+  }
   function prune(): void {
     for (const [id, session] of sessions) if (session.expiresAt <= now()) {
-      sessions.delete(id); cancelValidation(session, 401);
+      sessions.delete(id); cancelValidation(session, 401); cancelPublication(session, 401);
     }
   }
   function session(request: IncomingMessage, response: ServerResponse, create = false): Session {
@@ -175,7 +194,7 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
   function providerFailure(error: unknown, current: Session, response: ServerResponse): never {
     if (error instanceof ProviderError && error.code === 'revoked') {
       if (sessions.get(current.id) === current) {
-        sessions.delete(current.id); cancelValidation(current, 401); cookie(response, undefined, now());
+        sessions.delete(current.id); cancelValidation(current, 401); cancelPublication(current, 401); cookie(response, undefined, now());
       }
       throw new RequestError(401, 'access_revoked', 'Simulated access was revoked. Sign in again; no fallback credentials are used.');
     }
@@ -185,11 +204,12 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
     throw error;
   }
   async function route(request: IncomingMessage, response: ServerResponse, signal: AbortSignal): Promise<void> {
+    if (closed) throw new RequestError(503, 'publisher_stopped', 'The local publisher stopped.');
     if (request.headers.host !== address.host || !request.url?.startsWith('/') || request.url.startsWith('//') ||
         request.url.includes('\\') || request.url.length > 4096) throw new RequestError(400, 'host_rejected', 'Invalid local publisher host or request target.');
     const url = new URL(request.url, origin), method = request.method;
     if (url.origin !== origin) throw new RequestError(400, 'host_rejected', 'Invalid local publisher origin.');
-    if (method === 'POST' && url.pathname.startsWith(BASE + 'api/plans/') && url.pathname.endsWith('/validate')) {
+    if (method === 'POST' && url.pathname.startsWith(BASE + 'api/plans/') && /\/(?:validate|simulate)$/.test(url.pathname)) {
       response.setHeader('Connection', 'close');
     }
     const asset = staticFiles.get(url.pathname);
@@ -206,6 +226,7 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
       const notice = current.notice;
       delete current.notice;
       json(response, 200, { mode: 'local-prototype', authenticated: !!current.grant,
+        simulationAvailable: !!engine,
         user: current.grant ? { id: current.grant.user.id, login: current.grant.user.login } : null,
         csrf: current.csrf, expiresAt: current.expiresAt, ...(notice ? { notice } : {}) });
       return;
@@ -295,6 +316,7 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
       if (sessions.get(current.id) !== current || current.expiresAt <= now()) throw new RequestError(401, 'obsolete_session', 'The local session ended.');
       const generation = current.planGeneration = (current.planGeneration ?? 0) + 1;
       cancelValidation(current);
+      cancelPublication(current);
       delete current.plan;
       try {
         const repo = reviewedRepository(await awaitProvider(provider.repository(current.grant.accessToken, metadata.repositoryId, signal), signal), metadata.repositoryId);
@@ -306,7 +328,53 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
       } catch (error) { providerFailure(error, current, response); }
       return;
     }
-    const planRoute = new RegExp(`^${BASE}api/plans/([A-Za-z0-9_-]{43})(/recheck|/validate)?$`).exec(url.pathname);
+    const operationsRoot = BASE + 'api/operations';
+    const operationRoute = new RegExp(`^${operationsRoot}/([A-Za-z0-9_-]{43})(/reconcile)?$`).exec(url.pathname);
+    if (engine && ((method === 'GET' && url.pathname === operationsRoot) ||
+        (method === 'POST' && url.pathname === operationsRoot + '/cancel') ||
+        (operationRoute && ((method === 'GET' && !operationRoute[2]) || (method === 'POST' && operationRoute[2]))))) {
+      const current = session(request, response);
+      const grant = current.grant;
+      if (!grant) throw new RequestError(401, 'sign_in_required', 'Sign in to recover your simulated operation receipts.');
+      if (method === 'POST') {
+        csrf(request, current); await emptyBody(request, signal);
+        signal.throwIfAborted();
+        if (sessions.get(current.id) !== current || current.expiresAt <= now()) throw new RequestError(401, 'obsolete_session', 'The local session ended.');
+      }
+      if (url.pathname === operationsRoot + '/cancel') {
+        // Session-scoped even when multiple sessions use the same synthetic account.
+        cancelPublication(current);
+        json(response, 200, { mode: 'local-simulation', cancellationRequested: activePublication?.owner === current,
+          message: 'Only this session was cancelled. Existing or delayed fake writes are not undone. Recover receipts before any further submission.' });
+        return;
+      }
+      if (!operationRoute) {
+        json(response, 200, { mode: 'local-simulation', operations: engine.list(grant.user.id),
+          sessionBusy: activePublication?.owner === current });
+        return;
+      }
+      const saved = engine.status(operationRoute[1], grant.user.id);
+      if (method === 'GET') { json(response, 200, saved); return; }
+      if (activePublication || activeValidation) throw new RequestError(409, 'simulation_busy', 'Another local operation is still settling. Read saved receipts and wait before reconciliation.');
+      const controller = new AbortController(), combined = AbortSignal.any([signal, controller.signal]);
+      let finish!: () => void;
+      const work = { owner: current, controller, operationId: saved.id, finished: new Promise<void>(resolve => { finish = resolve; }) };
+      activePublication = work;
+      const expiry = setTimeout(() => cancelPublication(current, 401), Math.max(0, current.expiresAt - now()));
+      try {
+        await engine.reconcile(saved.id, grant.user.id, grant.accessToken, combined);
+        combined.throwIfAborted();
+        if (sessions.get(current.id) !== current || current.expiresAt <= now()) throw new RequestError(401, 'obsolete_session', 'The local session ended. Sign in again to recover the saved receipt.');
+        json(response, 200, engine.status(saved.id, grant.user.id));
+      } catch (error) { providerFailure(error, current, response); }
+      finally {
+        clearTimeout(expiry); controller.abort();
+        if (activePublication === work) activePublication = undefined;
+        finish();
+      }
+      return;
+    }
+    const planRoute = new RegExp(`^${BASE}api/plans/([A-Za-z0-9_-]{43})(/recheck|/validate|/simulate)?$`).exec(url.pathname);
     if (planRoute && ((method === 'GET' && !planRoute[2]) || (method === 'POST' && planRoute[2]))) {
       const current = session(request, response);
       if (!current.grant) throw new RequestError(401, 'sign_in_required', 'Sign in before reviewing a simulated destination.');
@@ -316,10 +384,45 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
         delete current.plan;
         throw new RequestError(410, 'plan_expired', 'The destination plan expired. Review the package and destination again.');
       }
+      if (planRoute[2] === '/simulate') {
+        csrf(request, current);
+        if (!engine) throw new RequestError(404, 'simulation_unavailable', 'Start the local test server with an explicit receipt database to enable simulation.');
+        if (request.headers['x-publisher-confirm'] !== plan.id) throw new RequestError(400, 'confirmation_required', 'Explicitly confirm the reviewed plan before sending a ZIP to the fake publisher.');
+        if (plan.status !== 'server-validated') throw new RequestError(409, 'validation_required', 'Validate the package on the local server before confirming simulation.');
+        if (activePublication || activeValidation) throw new RequestError(503, 'simulation_busy', 'Another local upload or operation is still settling. Wait before retrying.');
+        const grant = current.grant;
+        const controller = new AbortController(), combined = AbortSignal.any([signal, controller.signal]);
+        let finish!: () => void;
+        const work = { owner: current, controller, finished: new Promise<void>(resolve => { finish = resolve; }) };
+        activePublication = work;
+        const expiry = setTimeout(() => cancelPublication(current, 401), Math.max(0, Math.min(current.expiresAt, plan.expiresAt) - now()));
+        const checkCurrent = () => {
+          combined.throwIfAborted();
+          if (sessions.get(current.id) !== current || current.expiresAt <= now()) throw new RequestError(401, 'obsolete_session', 'The local session ended. Sign in again to recover saved receipts.');
+          if (current.plan !== plan || plan.expiresAt <= now()) throw new RequestError(409, 'obsolete_plan', 'The reviewed plan changed or expired.');
+        };
+        try {
+          checkCurrent();
+          const repo = reviewedRepository(await awaitProvider(provider.repository(grant.accessToken, plan.repository.id, combined), combined), plan.repository.id);
+          checkCurrent();
+          if (!sameRepository(plan.repository, repo)) throw new RequestError(409, 'destination_changed', 'The destination changed. Review it again before simulation.');
+          const bytes = await boundedBody(request, combined, plan.package.zipBytes, 'application/zip');
+          checkCurrent();
+          const result = await engine.submit(plan, grant.user.id, grant.accessToken, bytes, combined);
+          checkCurrent();
+          json(response, 200, result);
+        } catch (error) { providerFailure(error, current, response); }
+        finally {
+          clearTimeout(expiry); controller.abort();
+          if (activePublication === work) activePublication = undefined;
+          finish();
+        }
+        return;
+      }
       if (planRoute[2] === '/validate') {
         csrf(request, current);
         if (plan.status !== 'metadata-only') throw new RequestError(409, 'already_validated', 'This plan already has a validation receipt. Create a fresh review to submit again.');
-        if (activeValidation) {
+        if (activeValidation || activePublication) {
           response.setHeader('Connection', 'close');
           throw new RequestError(503, 'validation_busy', 'Another local upload or validation is running. Wait for its cleanup before retrying.');
         }
@@ -391,7 +494,7 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
       csrf(request, current); await emptyBody(request, signal);
       signal.throwIfAborted();
       if (sessions.get(current.id) !== current || current.expiresAt <= now()) throw new RequestError(401, 'obsolete_session', 'The local session already changed.');
-      sessions.delete(current.id); cancelValidation(current, 401); cookie(response, undefined, now());
+      sessions.delete(current.id); cancelValidation(current, 401); cancelPublication(current, 401); cookie(response, undefined, now());
       if (current.grant) {
         try { await awaitProvider(provider.revoke(current.grant.accessToken, signal), signal); }
         catch {
@@ -401,14 +504,17 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
       }
       json(response, 200, { mode: 'local-prototype', authenticated: false }); return;
     }
-    throw new RequestError(404, 'not_implemented', 'Only plan-bound local ZIP validation is available. No publication, repository-creation or GitHub write endpoint exists.');
+    throw new RequestError(404, 'not_implemented', 'Only local validation and explicitly enabled fake simulation are available. No real GitHub write endpoint exists.');
   }
   return {
     stylePaths: assets.stylePaths,
     async handle(request: IncomingMessage, response: ServerResponse): Promise<void> {
       headers(response);
       const controller = new AbortController();
-      const timer = setTimeout(() => controller.abort(new RequestError(504, 'request_timeout', 'The local publisher request timed out.')), LIMITS.requestMs);
+      const simulationRequest = request.method === 'POST' &&
+        /^\/publisher\/api\/(?:plans\/[A-Za-z0-9_-]{43}\/simulate|operations\/[A-Za-z0-9_-]{43}\/reconcile)$/.test(request.url ?? '');
+      const timer = setTimeout(() => controller.abort(new RequestError(504, 'request_timeout', 'The local publisher request timed out.')),
+        simulationRequest ? PUBLICATION_DEADLINE_MS : LIMITS.requestMs);
       timer.unref();
       const close = () => { if (!response.writableFinished) controller.abort(new Error('Client disconnected')); };
       response.once('close', close);
@@ -439,11 +545,15 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
       }
     },
     async close(): Promise<void> {
+      closed = true;
       sessions.clear();
+      const running = activePublication;
+      running?.controller.abort(new RequestError(503, 'publisher_stopped', 'The local publisher stopped. Recover its receipts after a fresh sign-in.'));
       if (activeValidation) {
         activeValidation.controller.abort(new RequestError(503, 'publisher_stopped', 'The local publisher stopped.'));
         await activeValidation.finished;
       }
+      await running?.finished;
     },
   };
 }

@@ -6,56 +6,13 @@ import { chromium, firefox, webkit } from 'playwright';
 import { expect } from 'playwright/test';
 import { startLocalPublisher } from './local.ts';
 import { BASE, COOKIE } from '../src/app.ts';
-import { build } from 'vite';
-import { zipSync } from 'fflate';
+import { createPublisherFixture } from './fixture.browser.mjs';
 import { CREATOR_PACKAGE_LIMITS } from '../../src/utils/creatorPackageContract.ts';
 
 assert(process.env.QA_OUTPUT, 'Set QA_OUTPUT to a new prototype evidence directory.');
 const output = resolve(process.env.QA_OUTPUT);
 mkdirSync(output);
 const results = [];
-const fixtureBuild = await build({
-  configFile: false, publicDir: false, logLevel: 'warn',
-  build: { write: false, minify: false, lib: {
-    entry: resolve('publisher/test/package-fixture.browser.mjs'), formats: ['iife'], name: 'PublisherFixture',
-  } },
-});
-assert(!Array.isArray(fixtureBuild) || fixtureBuild.length === 1);
-const fixtureOutput = Array.isArray(fixtureBuild) ? fixtureBuild[0] : fixtureBuild;
-assert('output' in fixtureOutput);
-const fixtureChunk = fixtureOutput.output.find(item => item.type === 'chunk' && item.isEntry);
-assert(fixtureChunk);
-
-async function createFixture(browser, url, engine) {
-  const context = await browser.newContext();
-  const consoleErrors = [];
-  try {
-    const origin = new URL(url).origin;
-    await context.route('**/*', route => route.request().url().startsWith(origin + '/') ? route.continue() : route.abort());
-    const page = await context.newPage();
-    page.on('console', entry => { if (entry.type() === 'error') consoleErrors.push(entry.text()); });
-    await page.goto(url);
-    await page.waitForLoadState('networkidle');
-    await page.evaluate(fixtureChunk.code);
-    const prepared = await page.evaluate(() => window.PublisherFixture.generate());
-    const files = Object.fromEntries(prepared.files.map(file =>
-      [`maps/${prepared.packageId}/${file.path}`, Uint8Array.from(file.bytes)]));
-    // The publisher forbids compression workers. Assemble only this small test ZIP in Node.
-    const bytes = zipSync(files, { level: 6, mtime: new Date(1980, 0, 1) });
-    assert.deepEqual(consoleErrors, []);
-    return {
-      bytes,
-      metadata: {
-        packageId: prepared.packageId, contentVersion: prepared.contentVersion,
-        packageSha256: createHash('sha256').update(bytes).digest('hex'), zipBytes: bytes.length,
-        expandedBytes: prepared.files.reduce((sum, file) => sum + file.bytes.length, 0), memberCount: prepared.files.length,
-      },
-    };
-  } finally {
-    writeFileSync(join(output, `${engine}-fixture-console.json`), JSON.stringify(consoleErrors, null, 2));
-    await context.close();
-  }
-}
 
 for (const [engine, browserType] of Object.entries({ chromium, firefox, webkit })) {
   const serverErrors = [];
@@ -68,7 +25,7 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox, webkit }
     browser = await browserType.launch({ headless: true });
     deadline = setTimeout(() => { deadlineExpired = true; void browser.close(); }, 90_000);
     console.log(`${engine}: generating synthetic package with the real package builder`);
-    const fixture = await createFixture(browser, server.url, engine);
+    const fixture = await createPublisherFixture(browser, server.url, output, engine);
     console.log(`${engine}: running simulated publisher journey`);
     const upload = { name: 'LOCAL_FILENAME_DO_NOT_TRANSMIT.zip', mimeType: 'application/zip', buffer: Buffer.from(fixture.bytes) };
     writeFileSync(join(output, `${engine}-synthetic-package.zip`), upload.buffer);
@@ -155,7 +112,8 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox, webkit }
     await expect(page.locator('#plan-detail')).toBeVisible();
     await expect(page.locator('#plan-summary')).toContainText(fixture.metadata.packageSha256);
     await expect(page.locator('#plan-summary')).toContainText('a'.repeat(40));
-    await expect(page.getByRole('button', { name: 'Publish branch (not implemented)', exact: true })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Publish package to GitHub (not implemented)', exact: true })).toBeDisabled();
+    await expect(page.locator('#simulation-confirmation')).toBeHidden();
     await page.getByRole('button', { name: 'Recheck simulated destination', exact: true }).click();
     await expect(page.locator('#message')).toContainText('still matches');
     server.provider.repositoryState.headSha = 'c'.repeat(40);
@@ -370,7 +328,7 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox, webkit }
 const files = ['publisher/src/app.ts', 'publisher/src/provider.ts', 'publisher/src/plans.ts', 'publisher/src/static.ts', 'publisher/test/local.ts',
   'publisher/test/provider.ts', 'publisher/client/client.mjs', 'publisher/client/index.html',
   'publisher/client/style.css', 'publisher/client/package-review.mjs', 'publisher/test/session.browser.mjs',
-  'publisher/test/package-fixture.browser.mjs', 'src/utils/creatorPackageContract.ts',
+  'publisher/test/package-fixture.browser.mjs', 'publisher/test/fixture.browser.mjs', 'src/utils/creatorPackageContract.ts',
   'src/utils/creatorAssets.ts', 'src/utils/creatorPackageImport.ts', 'publisher/src/validation.ts',
   'publisher/validator/worker.mjs', 'publisher/validator/inspect.ts', 'publisher/validator/dist/inspect.js',
   'publisher/package.json', 'publisher/package-lock.json',

@@ -77,14 +77,16 @@ function problem(error: unknown, signal: AbortSignal): NonNullable<Intent['probl
     ? 'destination-or-plan-changed' : 'provider-or-readback-failed';
 }
 
-/** Test-provider engine only. No HTTP route or real GitHub adapter is wired to this class. */
+/** Test-provider engine only. No real GitHub adapter is wired to this class. */
 export class LocalPublicationEngine {
   private store: OperationStore;
   private provider: LocalGitProvider;
   private now: () => number;
-  constructor(store: OperationStore, provider: LocalGitProvider, now: () => number = Date.now) {
+  private authorize?: (ownerId: number, token: string) => void;
+  constructor(store: OperationStore, provider: LocalGitProvider, now: () => number = Date.now,
+    authorize?: (ownerId: number, token: string) => void) {
     if (provider.kind !== 'local-test') throw new Error('Publication is available only with a local simulated provider.');
-    this.store = store; this.provider = provider; this.now = now;
+    this.store = store; this.provider = provider; this.now = now; this.authorize = authorize;
   }
   private load(id: string, ownerId: number): StoredOperation {
     owner(ownerId);
@@ -93,11 +95,17 @@ export class LocalPublicationEngine {
     return value;
   }
   status(id: string, ownerId: number): PublicationReceipt { return receipt(this.load(id, ownerId)); }
+  list(ownerId: number): (PublicationReceipt & { active: boolean })[] {
+    owner(ownerId);
+    return this.store.forOwner(ownerId).map(stored => ({ ...receipt(stored), active: stored.active }));
+  }
   private async destination(intent: Intent, token: string, signal: AbortSignal, historical = false): Promise<void> {
     signal.throwIfAborted();
+    this.authorize?.(intent.ownerId, token);
     if (!historical && intent.expiresAt <= this.now()) throw new RequestError(410, 'plan_expired', 'The reviewed plan expired before the next simulated request.');
     const current = reviewedRepository(await waitFor(this.provider.repository(token, intent.repository.id, signal), signal), intent.repository.id);
     signal.throwIfAborted();
+    this.authorize?.(intent.ownerId, token);
     if (!sameRepository(intent.repository, historical ? { ...current, headSha: intent.repository.headSha } : current)) {
       throw new RequestError(409, 'destination_changed', 'The simulated destination changed. No automatic rebase or permission fallback is allowed.');
     }

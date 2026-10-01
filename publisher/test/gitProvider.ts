@@ -14,8 +14,8 @@ export class TestGitProvider extends TestProvider implements LocalGitProvider {
   protectBranches = false;
   beforeWrite?: (kind: FakeWrite) => Promise<void>;
   afterWrite?: (kind: FakeWrite) => Promise<void>;
-  constructor() {
-    super();
+  constructor(now?: () => number) {
+    super(now);
     const entries = [
       this.seedBlob('README.md', 'Unrelated repository notes\n'),
       this.seedBlob('.github/workflows/existing.yml', 'Synthetic existing workflow, never executed\n'),

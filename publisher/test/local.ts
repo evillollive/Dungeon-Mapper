@@ -2,13 +2,18 @@ import { createServer } from 'node:http';
 import { pathToFileURL } from 'node:url';
 import { BASE, createLocalPublisher } from '../src/app.ts';
 import { TestProvider } from './provider.ts';
+import { TestGitProvider } from './gitProvider.ts';
+import { OperationStore } from '../src/operationStore.ts';
 
 const html = (value: string) => value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;');
 
 export async function startLocalPublisher(options: {
   port?: number; now?: () => number; provider?: TestProvider; onError?: (event: { code: string }) => void;
+  receiptPath?: string;
 } = {}) {
-  const provider = options.provider ?? new TestProvider(options.now);
+  const provider = options.provider ?? (options.receiptPath ? new TestGitProvider(options.now) : new TestProvider(options.now));
+  if (options.receiptPath && !(provider instanceof TestGitProvider)) throw new Error('Receipt-backed simulation requires the concrete in-memory TestGitProvider.');
+  const store = options.receiptPath ? new OperationStore(options.receiptPath) : undefined;
   const ready: { app?: ReturnType<typeof createLocalPublisher> } = {};
   let origin = '';
   const server = createServer({ maxHeaderSize: 8192, requestTimeout: 10_000, headersTimeout: 5000, keepAliveTimeout: 1000 }, (request, response) => {
@@ -57,17 +62,21 @@ export async function startLocalPublisher(options: {
     void app.handle(request, response);
   });
   server.maxHeadersCount = 32;
-  await new Promise<void>((resolve, reject) => {
+  try { await new Promise<void>((resolve, reject) => {
     server.once('error', reject);
     server.listen(options.port ?? 0, '127.0.0.1', () => { server.removeListener('error', reject); resolve(); });
-  });
+  }); } catch (error) { store?.close(); throw error; }
   const address = server.address();
   if (!address || typeof address === 'string') throw new Error('Local publisher did not obtain a loopback address.');
   origin = `http://127.0.0.1:${address.port}`;
-  try { ready.app = createLocalPublisher(origin, provider, { now: options.now, onError: options.onError }); }
+  try {
+    ready.app = createLocalPublisher(origin, provider, { now: options.now, onError: options.onError,
+      ...(store && provider instanceof TestGitProvider ? { simulation: { store, provider } } : {}) });
+  }
   catch (error) {
     server.closeAllConnections();
     await new Promise<void>(resolve => server.close(() => resolve()));
+    store?.close();
     throw error;
   }
   return {
@@ -75,6 +84,7 @@ export async function startLocalPublisher(options: {
     async close(): Promise<void> {
       await ready.app?.close(); provider.close(); server.closeAllConnections();
       await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+      store?.close();
     },
   };
 }
@@ -82,9 +92,12 @@ export async function startLocalPublisher(options: {
 if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) {
   const port = Number(process.argv[2] ?? 5390);
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Choose a local port between 1024 and 65535.');
-  const running = await startLocalPublisher({ port });
+  const running = await startLocalPublisher({ port, receiptPath: process.env.PUBLISHER_RECEIPTS });
   console.log(`LOCAL SIMULATION ONLY: ${running.url}`);
   console.log('Explicit ZIP validation stays on this machine. No real GitHub connection, credentials or publication. Stop with Ctrl+C.');
+  console.log(process.env.PUBLISHER_RECEIPTS
+    ? 'Fake publication enabled. Metadata-only receipts survive restart; in-memory fake repository objects do not.'
+    : 'Fake publication disabled. Set PUBLISHER_RECEIPTS to an absolute SQLite path in an existing private directory to enable it.');
   let closing = false;
   const stop = () => { if (!closing) { closing = true; void running.close(); } };
   process.once('SIGINT', stop); process.once('SIGTERM', stop);

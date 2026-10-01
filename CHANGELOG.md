@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
-- A local fake-publication engine with create-only branches, exact package readback, unrelated-file preservation and SQLite metadata-only restart receipts. Lost responses are reconciled through reads, never automatic repeat writes. Web publication and real GitHub access remain disabled.
+- A local fake-publication engine with create-only branches, exact package readback, unrelated-file preservation and SQLite metadata-only restart receipts. With an explicit local journal, authenticated browser simulation adds confirmation, account-bound progress, cancellation and read-only recovery. Lost responses never trigger automatic repeat writes. Real GitHub publication remains disabled.
 - Browser-local creator ZIP review, destination planning and separately consented loopback server validation in the publisher prototype. A bounded native Node child independently checks package contents and images, with session/digest/base binding and cancellation. No remote upload, real GitHub access or branch writes.
 - A separate loopback-only Node publisher authentication prototype with an explicit simulated provider, session/state/PKCE/CSRF controls and local browser checks. No real GitHub connection, hosting or publication is enabled.
 - Offline comparison of creator package versions against the original import receipt, with file/declared-license changes and independent new-project import. Local edits are never overwritten; package IDs and version labels are not treated as verified publisher identity.

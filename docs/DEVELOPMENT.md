@@ -614,10 +614,14 @@ npm run test:publisher
 npm run test:publisher:validation
 QA_OUTPUT=/absolute/fresh/publication-evidence npm run test:publisher:publication
 QA_OUTPUT=/absolute/fresh/publisher-evidence npm run test:publisher:browser
+QA_OUTPUT=/absolute/fresh/simulation-evidence npm run test:publisher:simulation
 ```
 
 The dev command prints a loopback URL and runs a clearly labeled simulated
-provider. Stop with Ctrl+C. The native browser runner owns and stops its local
+provider. Set `PUBLISHER_RECEIPTS=/absolute/private/directory/operations.sqlite`
+to enable authenticated fake publication and durable receipt recovery; the
+directory must already exist. Without that setting the validation-only
+composition creates no journal. Stop with Ctrl+C. The native browser runner owns and stops its local
 servers. The protocol tests include a real ten-second deadline case; do not
 mistake test duration for an authentication performance target.
 Dev and publisher-test scripts build the separate `publisher/dist` client and
@@ -633,24 +637,28 @@ does not post file contents; separate consent sends the exact ZIP to the local
 server for independent native validation. The child receives no provider
 credentials, has an enforced deadline and is awaited through cancellation/exit.
 Its V8 heap ceiling is not a native-memory cap or OS sandbox. Uploaded bodies
-are not saved or returned by the HTTP validator. There is no connected branch writer, production startup
+are not saved or returned by the HTTP validator. Explicitly confirmed simulation
+resubmits the ZIP and writes only to the fake provider's memory. There is no real branch writer, production startup
 composition or real GitHub adapter. HTTP loopback cookies are not production
 TLS/Secure-cookie evidence, and all session state is ephemeral.
 
-The focused publication command exercises a separate fake Git provider and
-SQLite operation journal, not the web Publish button. It verifies exact
+The focused publication command exercises the fake Git provider, SQLite
+operation journal and authenticated HTTP routes. It verifies exact
 package readback, unrelated-file preservation, create-only refs, duplicate
 prevention, lost/delayed responses, cancellation, bounded admission and
 read-only restart reconciliation. Test database files are retained under
 `QA_OUTPUT`, contain metadata only, and should not be confused with production
-credential/session persistence. See the
+credential/session persistence. The simulation browser command adds explicit
+confirmation, progress, lost responses, conflicts, account isolation and
+read-only reload/restart recovery on three engines. The real GitHub button
+remains disabled. See the
 [engine boundary](../publisher/README.md#fake-publication-engine-and-restart-receipts).
 
 These dedicated tests are manual/local commands, not newly required hosted
 checks. Root lint includes the prototype sources; a production service pipeline
 needs separate GH-A02 scope and budget approval. See the
 [prototype README](../publisher/README.md) and
-[publisher design](./GITHUB-PUBLISHER-DESIGN.md#13-independent-loopback-package-validation).
+[publisher design](./GITHUB-PUBLISHER-DESIGN.md#15-authenticated-simulation-and-browser-recovery).
 
 ## Dense-map performance diagnostics (F05)
 

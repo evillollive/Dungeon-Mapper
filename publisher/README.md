@@ -1,10 +1,12 @@
 # Local publisher review prototype
 
 This is a **loopback-only simulation**, not a GitHub login or deployment.
-It does not read the editor's Library, create repositories, publish branches or
+It does not read the editor's Library, create real repositories, publish real branches or
 contact GitHub. After simulated sign-in, it can inspect an explicitly selected
 creator ZIP in the browser, plan a simulated destination, then independently
-validate that ZIP on this machine after separate consent. Never provide real
+validate that ZIP on this machine after separate consent. With an explicit
+local receipt path, the browser can also confirm fake branch publication,
+inspect saved outcomes and reconcile them through reads only. Never provide real
 credentials.
 
 ## Run locally
@@ -12,7 +14,7 @@ credentials.
 Use Node **24.16 or newer**. The prototype uses native TypeScript execution,
 Node HTTP/crypto/test APIs and the existing root development tools. The isolated
 validator adds publisher-only `sharp` 0.35.4 (Apache-2.0) and `jsdom` 29.1.1 (MIT),
-locked under `publisher/`. It does not require Docker, a database, a browser
+locked under `publisher/`. It does not require Docker, an external database, a browser
 installation for server decoding, or an external account. Native image
 dependencies and their notices also need review before any production distribution.
 
@@ -29,10 +31,24 @@ Open the loopback URL printed by the command, normally
 
 The separate page offers clearly labeled simulated authorization, denial,
 repository-access display, local package review, destination recheck, explicit
-local server validation and disconnect.
-Publishing is visibly unavailable.
+local server validation and disconnect. Real GitHub publishing is visibly unavailable.
 There is no production startup entry or environment flag enabling a fake
 identity in a live service.
+
+To enable the **local simulation only**, choose an absolute SQLite filename
+inside an existing private local directory:
+
+```sh
+PUBLISHER_RECEIPTS=/absolute/private/directory/operations.sqlite npm run publisher:dev
+```
+
+The directory must already exist; the journal and lock file are created with
+private file permissions. The selected journal survives server restarts and is
+not automatically deleted. Do not use an editor database, a shared directory,
+a credential store or a journal already open in another process. Without
+`PUBLISHER_RECEIPTS`, simulation controls remain unavailable and no database
+is created. This setting selects only the concrete in-memory test provider,
+not a production mode.
 
 The dev and test commands first run `npm run build:publisher`. That separate Vite
 build produces `publisher/dist`, without the editor's service worker or public
@@ -51,6 +67,7 @@ npm run test:publisher
 npm run test:publisher:validation
 QA_OUTPUT=/absolute/new/publication-evidence npm run test:publisher:publication
 QA_OUTPUT=/absolute/new/publisher-evidence npm run test:publisher:browser
+QA_OUTPUT=/absolute/new/simulation-evidence npm run test:publisher:simulation
 ```
 
 The HTTP checks use real loopback requests and synthetic provider state.
@@ -63,6 +80,8 @@ authentication latency. A test-only bundle creates synthetic package members
 and actual map previews with the existing browser builder; Node compresses the
 small fixture. The publisher CSP is not relaxed to allow compression workers.
 Each engine has a 90-second deadline that closes its owned browser on expiry.
+The separate simulation browser campaign uses a 120-second per-engine deadline
+for confirmation, progress, conflict/cancellation and restart/sign-in flows.
 
 These commands are **not wired into a hosted publisher qualification pipeline**.
 The existing editor tests and required checks are unchanged. A future service
@@ -171,8 +190,8 @@ origin and Secure host-only cookies.
 The web prototype's sessions and provider records live only in memory and are cleared on shutdown.
 There is no production durable/encrypted session store, refresh-token retention, webhook
 receiver, real GitHub adapter, private repository integration, remote upload
-service or connected branch writer. The separate engine simulation below is
-not an enabled web publication endpoint.
+service or real branch writer. The connected engine below writes only to an
+in-memory test repository, never GitHub.
 
 Revocation is exercised through the synthetic provider and enforced when
 provider access is attempted. The local session-status display is not a
@@ -186,8 +205,9 @@ live deployment approval remain separate decisions.
 
 ## Fake publication engine and restart receipts
 
-`LocalPublicationEngine` is a local test-provider engine, deliberately not
-wired to the publisher's HTTP routes or disabled Publish button. Its focused
+`LocalPublicationEngine` is a local test-provider engine, wired only when an
+explicit local journal and the same concrete fake authentication/Git provider
+are configured. Its focused
 command runs synthetic fixtures through independent native validation, fake
 Git object creation, create-only branch publication and exact readback.
 It never calls GitHub or runs workflows, merges, force updates or repository
@@ -206,8 +226,11 @@ The intent is committed before the first fake write. A separate SQLite
 exclusive-lock file prevents two processes from owning one journal and is
 released by the OS after a crash. On reopen, interrupted claims become
 `outcome-unknown`, never successful or automatically replayed.
-One package admission per journal bounds native validation, and one unresolved
-operation per repository blocks a different publication until reconciliation.
+One package admission per journal bounds native validation, and any unresolved
+operation in a repository blocks a different publication until reconciliation.
+Multiple historical receipts may become unresolved if fake objects disappear;
+they are all preserved. Transactional admission checks, not deletion of old
+receipts, prevent overlapping new writes.
 The journal permits 64 receipts, each at most 1 MiB; the reviewed repository
 tree is capped at 4,096 entries and 1 MiB of serialized metadata. Capacity
 failure never evicts an old receipt. No retention/deletion schedule is enabled.
@@ -244,15 +267,57 @@ The restart test retains the fake provider separately from the stopped engine,
 as a stand-in for a remote service surviving the publisher. It also hard-kills
 a child journal writer and verifies recovery. This does not qualify GitHub
 durability, production SQLite placement/scaling, session recovery, or a
-browser restart/reconnect flow. If the fake provider's memory is lost, missing
+production browser restart/reconnect behavior. The local browser campaign
+separately exercises sign-in and recovery across service restart. If the fake provider's memory is lost, missing
 objects remain unresolved. Do not discard unresolved receipts to make a retry
 possible. Review/export the local evidence before any manual cleanup.
 
-Authenticated operation endpoints, current-session owner binding, user-facing
-confirmation/status/reconciliation, and disconnect cancellation still need
-integration. The engine takes an already authenticated owner/token context
-from its caller; it is not a replacement for the web service's authorization.
-No receipt database is opened by normal `publisher:dev` startup.
+## Authenticated simulation flow
+
+Sign in, inspect the ZIP, review a destination, and complete independent server
+validation first. Then review the separate simulation consent and choose
+**Simulate publication**. The exact ZIP is sent again, checked again, and used
+only in the fake provider. Its in-memory repository objects contain package
+bodies until the local composition stops; the SQLite journal contains metadata
+only. Normal dev restart starts a new empty fake repository while retaining
+the selected receipt database, so previously verified branches can become
+unknown on reconciliation. The UI states this rather than recreating them.
+
+`POST /publisher/api/plans/<id>/simulate` requires the active server-validated
+plan, CSRF, same origin and a matching `X-Publisher-Confirm` header.
+The owner and provider token come only from the current session, never the
+request body. ZIP length/digest and every existing package limit still apply.
+Server validation, simulation uploads and reconciliation share an admission
+gate. The originating session is checked around provider access, and fixed
+expiry, plan replacement, disconnect, cancellation or server shutdown stop
+future work. Requests accepted by a provider may still finish.
+
+`GET /publisher/api/operations` lists at most the journal's 64 saved receipts
+for the current account, with active state. `GET /publisher/api/operations/<id>`
+returns one owned receipt. These are saved observations, not current permission
+claims. A guessed ID from another account returns 404.
+`POST /publisher/api/operations/<id>/reconcile` uses fresh session credentials
+for readback, never another ZIP or write.
+`POST /publisher/api/operations/cancel` requests cancellation of this session's
+work only, not another session sharing the same simulated account. All POSTs
+require CSRF and origin checks; receipt operations reject extra body fields.
+
+The browser displays prepared/writing, verified, conflict, blocked and unknown
+outcomes as inert text. It refreshes saved progress once per second only during
+the requested simulation or server cleanup; read errors stop automatic progress
+refresh. There is no background polling after the operation settles.
+**Refresh saved receipts** and **Reconcile saved receipt (reads only)** work
+without a selected ZIP. Reload/restart requires the same simulated account,
+with fresh sign-in after a server restart. Local/session storage and IndexedDB
+are not used. Logout/account change clears the visible package and receipts,
+not durable metadata or accepted fake objects.
+
+Simulation/reconciliation requests have a 30-second application deadline;
+the existing ten-second Node request-body limit and eight-second native worker
+deadline are unchanged. Cancellation does not claim rollback, and errors
+instruct receipt recovery instead of offering an automatic write retry.
+Server restart, native memory and provider behavior are still only locally
+qualified, not production authorization or deployment approval.
 
 See [the publisher design](../docs/GITHUB-PUBLISHER-DESIGN.md) and
 [the integration roadmap](../docs/GITHUB-INTEGRATION-ROADMAP.md).
