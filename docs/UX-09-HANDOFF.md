@@ -1534,6 +1534,78 @@ local-only with zero hosted triggers/reservations, no agents and no native
 setting changes. The result section below records why the bounded implementation
 was retained; the wider layer/cache redesign is not approved.
 
+### Owner value judgment: proportionate quality work
+
+October 1, 2026. The owner explicitly asked for a permanent project and
+cross-project preference: **always recommend against this kind of work when
+the expected value is so small**. Future agents should make that judgment
+proactively, not wait for the owner to interrupt a costly investigation.
+It applies to features, optimizations, testing, polish and maintenance, not
+only this rendering incident.
+
+Before another diagnostic cycle, refactor or budget request, state the likely
+user benefit, material risk, uncertainty and incremental cost. If the remaining
+benefit is negligible, recommend stopping or deferring and suggest a simpler,
+proportionate alternative. An available or previously approved budget is not
+a reason to continue. A red automated check establishes a qualification
+blocker, but does not by itself establish that unlimited engineering effort
+is worthwhile or that its original acceptance criterion still fits the product.
+
+#### Concrete example and limits of the evidence
+
+After the owner-approved full-redraw restoration at `3cb439b`, hosted
+[run 36920945164](https://github.com/evillollive/Dungeon-Mapper/actions/runs/36920945164)
+passed Build and test, Chromium and Firefox. Linux WebKit passed 62 cases and
+failed the specialized token-repaint comparison after 528 successful pixel
+observations. At DPR 3, one pixel out of 2,985,984 differed between two complete
+redraws: maximum RGB difference 23 versus the required limit of 1, alpha
+difference zero, and mean difference about 0.0000041862. Both render counters
+confirmed two full draws and zero partial draws.
+
+Two bounded diagnostic repetitions on the development Mac captured 8,809
+drawing commands/state observations per canvas with identical signatures and
+matching pixels. Instrumentation changes timing and does not prove what Linux
+did. The underlying draw-input, harness or native-raster cause remains
+unisolated. No material editing, map geometry, player-safety, data-preservation
+or export defect was demonstrated by this isolated observation. That is not
+proof of harmlessness, and the original failure must not be erased.
+
+The owner does not want further expensive perfection chasing for such a small
+expected benefit. Keep the simpler full-redraw behavior. Recommend reviewing
+the specialized comparison's purpose now that the optimization it was created
+to validate is absent, instead of reflexively asking for another costly Linux
+run. Preserve meaningful rendering, fog, export, interaction and data-integrity
+coverage. Small differences are not automatically low-value when they affect
+those guarantees.
+
+Retained evidence is in session
+`20233d90-7a79-4423-a564-f75af5b08662`, under:
+
+- `files/pr185-ci-36920945164-failed.log`;
+- `files/pr185-ci-36920945164-webkit-artifacts/`;
+- `files/pr185-ci-36920945164-pixel-disposition.json`;
+- `files/pr185-ci-36920945164-local-draw-commands.json`.
+
+The broader PR qualification task has used approximately 97 rounded standard
+Linux runner minutes across three runs, not all attributable to this pixel
+discrepancy. No further diagnostic run was started. The proposed extra run
+and increase to a 300-minute ceiling were not approved and should not be
+treated as the recommended default next step.
+
+#### Authorization boundary
+
+This is a durable prioritization and recommendation policy, **not** approval
+to relax, replace or remove the current comparison, skip required CI, alter
+budgets, declare the failure fixed, or merge without qualification. A narrow
+test-policy change still needs an explicit, informed owner decision with its
+retained coverage and residual risk stated. Until then, the required check
+remains failed and publication remains held.
+
+The cross-project preference is also saved in the owner's personal Copilot
+instructions. Repository-scoped guidance is in
+`.github/copilot-instructions.md`, and the roadmap links this decision so
+future work does not repeat the same low-value escalation.
+
 ### Owner-approved full token redraw restoration
 
 October 1, 2026. The owner explicitly selected **Restore full redraws** after

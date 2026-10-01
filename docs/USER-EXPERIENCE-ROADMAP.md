@@ -8,6 +8,15 @@
 
 **Audience:** Future product, design, development, art, and QA sessions.
 
+**Standing owner priority, October 1, 2026:** Evaluate value before pursuing
+more exactness. When expected user benefit is negligible relative to time,
+effort, complexity or compute/CI cost, proactively recommend against continuing
+before asking for another run or a larger budget. Prefer reliable, simpler
+behavior and meaningful correctness over low-value perfection. Reassess
+specialized checks when their original optimization no longer exists.
+[Decision, concrete example and safeguards](./UX-09-HANDOFF.md#owner-value-judgment-proportionate-quality-work)
+are permanent guidance, not approval to weaken checks or bypass release gates.
+
 **Optional GitHub integration plan, September 30, 2026:** The owner requested
 a staged roadmap for user-owned map publishing, licensing, import/remix and
 optional GitHub connection. [UX-11](#ux-11-optional-github-publishing-and-map-reuse)
