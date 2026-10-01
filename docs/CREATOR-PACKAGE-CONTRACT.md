@@ -519,3 +519,26 @@ comparison and repository rename/deletion behavior still require the approved
 fixture and subsequent qualified integration. The fixture's separate
 24-minute ceiling remains unavailable for spending until allowance is confirmed;
 this application task has zero approved hosted minutes.
+
+Final local source: `5fbd710e0b9fcbb315e49e8357e3d3ebed43bb70`.
+The current session retains:
+
+- `files/github-version-comparison-unit-final.json`: 182 passing targeted
+  cases across twelve unit/component/hook files, not the full application suite.
+- `files/github-version-comparison-final/`: three passing production journeys,
+  zero skips/retries, with original and revised ZIPs plus focused 390-pixel
+  viewport screenshots.
+- `files/github-version-comparison-offline-final/`: the same comparison and
+  independent revision-import flow on all three engines after stopping the
+  sole application origin. No protocol offline-emulation shortcut is used.
+- `files/github-version-comparison-source.json` and
+  `files/github-version-comparison-dist/`: committed source identities,
+  final results and the retained production build. The offline production
+  file hashes and journey hash were checked against the final source/build.
+
+Build, application/test type checks and zero-warning lint pass. Earlier
+`github-version-comparison-first`, `github-version-comparison-focus` and
+`github-version-comparison-offline` observations remain separate from these
+final receipts. No dependency, required-check policy, timeout or retry setting
+changed. Hosted use and reservations for this application task remain zero;
+this result does not establish GitHub-hosted qualification or publisher identity.
