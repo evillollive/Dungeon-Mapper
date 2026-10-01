@@ -1,6 +1,9 @@
 import type { DungeonProject } from '../types/map';
 import { createDefaultProject } from '../hooks/mapStateUtils';
 import type { CreatorProjectOptions } from '../utils/creatorProject';
+import type { CreatorPackageOrigin } from '../utils/creatorPackageOrigin';
+import { CREATOR_REQUIRED_FILES } from '../utils/creatorPackageFormat';
+import { CREATOR_CATALOG_VERSION } from '../utils/creatorPackage';
 
 export const CREATOR_PRIVATE_SENTINEL = 'CREATOR_PRIVATE_SOURCE';
 export const CREATOR_UNKNOWN_SENTINEL = 'CREATOR_UNKNOWN_EXTENSION';
@@ -67,5 +70,16 @@ export function creatorPackageOptions(): CreatorProjectOptions {
     description: 'A reusable vault layout.', license: 'CC-BY-4.0',
     levels: [{ index: 0, name: 'Vault entrance' }, { index: 2, name: 'Lower vault' }],
     omitCrossLevelLinks: true,
+  };
+}
+
+export function creatorOriginFixture(): CreatorPackageOrigin {
+  return {
+    version: 1, packageId: 'original-vault', contentVersion: '1.0.0',
+    title: 'Original vault', author: 'Declared creator', license: 'CC-BY-4.0',
+    profile: 'layout', catalog: CREATOR_CATALOG_VERSION,
+    files: CREATOR_REQUIRED_FILES.map((path, index) => ({
+      path, bytes: 20, sha256: index.toString(16).padStart(64, '0'),
+    })),
   };
 }

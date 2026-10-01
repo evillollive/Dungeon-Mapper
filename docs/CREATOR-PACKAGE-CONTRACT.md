@@ -455,3 +455,67 @@ against current public documentation; that is API research, not a live package
 integration test. No UI action imports from GitHub yet, no credentials/service
 were configured, and no package was published. The live fixture/permission
 decision remains a GH-R03 boundary.
+
+## Offline package version comparison
+
+September 30, 2026. This bounded GH-N06 slice works without a GitHub connection
+or a published fixture. New successful creator imports add a versioned private
+`creatorPackageOrigin` receipt containing original declarations and every
+validated member's path, byte count and SHA-256, including the actual manifest
+bytes. It contains no local filename, local project ID, access token or inferred
+GitHub publisher identity.
+
+The receipt is an optional opaque project field for private persistence.
+Ordinary edits and backups retain it; creator-sharing allowlists exclude it.
+New blank/template creations do not inherit a parent package's comparison
+identity. Provenance/license obligations remain in their existing separate
+field. Incoming creator packages cannot provide the receipt themselves: the
+inspector creates it only after validating the package.
+
+**Manage > Compare creator package** captures the selected saved receipt and
+reads a supplied local ZIP through the existing full inspection path. The
+comparison uses the original imported files, never the edited local project.
+It identifies added/removed/changed members, changes to declared author,
+license/profile/catalog, different package IDs, and unchanged version labels
+with changed bytes. Equal file size does not hide a changed hash. An inconsistent
+private receipt claiming the same manifest identity for different declarations
+or member bytes is rejected.
+
+The comparison is not authentication or a version-ordering service. Package
+IDs and author/version labels are declarations; private receipts are editable
+and unsigned. Different IDs are explicitly described as a separate map, not
+an upstream update. **Import as new project** always creates an independent
+copy through the existing storage path. Comparison, cancellation and rejected
+input do not write to the original project. Keyboard focus moves to the
+comparison heading and returns to its action when the preview is cancelled.
+
+Older creator imports may lack receipts. Do not backfill them from edited
+geometry or silently fetch an upstream map. The UI explains how to import an
+original creator package separately to establish a baseline. Unknown future
+or malformed receipts are retained in private backups and produce an explicit
+comparison error; they do not prevent ordinary private persistence.
+
+Local evidence is retained under the current session's
+`files/github-version-comparison-*` paths. The existing creator production
+journey now compares an identical package after a local rename, reads a
+synthetically revised package with three exact member changes, exercises narrow
+keyboard focus/scrollport visibility and imports the revision under a fresh
+identity while preserving both prior records. It also retains the previous
+ZIP/folder, cancellation, malformed-input and source-disclosure checks.
+Unit/component coverage exercises receipt boundaries, future data preservation,
+source-receipt forgery rejection, export exclusion, same-label changes,
+different IDs, explicit import, cancellation and focus return.
+
+This extends the existing three-engine case rather than adding a new CI job
+or changing timeouts/retries. The retained earlier comparison screenshots were
+element captures clipped by the Library scrollport; the focused viewport
+captures show the actual heading and file-list views instead. Source/render
+changes and final receipt locations remain distinguished in the handoff.
+The existing App chunk-size advisory remains visible, not suppressed.
+
+No GitHub requests, background polling, publisher verification, remote merges,
+repository creation or hosted runs are part of this slice. Live upstream
+comparison and repository rename/deletion behavior still require the approved
+fixture and subsequent qualified integration. The fixture's separate
+24-minute ceiling remains unavailable for spending until allowance is confirmed;
+this application task has zero approved hosted minutes.

@@ -5,11 +5,12 @@ import { creatorPackageFixture, creatorPackageOptions, CREATOR_PRIVATE_SENTINEL,
 import { prepareCreatorPackage, type CreatorPackageOptions } from '../creatorPackage';
 import { inspectCreatorPackage, inspectCreatorZip, inspectCreatorDirectory } from '../creatorPackageImport';
 import { encodeCreatorZip } from '../creatorZip';
-import { canonicalCreatorJSON, creatorMemberIdentities, type CreatorPackageFile } from '../creatorPackageFormat';
+import { canonicalCreatorJSON, creatorMemberIdentities, creatorSHA256, type CreatorPackageFile } from '../creatorPackageFormat';
 import { renderCreatorPreviews } from '../creatorPackagePreview';
 import { loadImage } from '../projectCreation';
 import { readCreatorProvenance } from '../creatorProvenance';
-import { encodeProject } from '../projectSchema';
+import { readCreatorPackageOrigin } from '../creatorPackageOrigin';
+import { decodeProject, encodeProject } from '../projectSchema';
 
 vi.mock('../creatorPackagePreview', () => ({ renderCreatorPreviews: vi.fn() }));
 vi.mock('../projectCreation', () => ({ loadImage: vi.fn() }));
@@ -68,6 +69,12 @@ describe('reviewable creator package assembly and inspection', () => {
     ]);
     expect(imported.project).not.toHaveProperty('localProjectId');
     expect(imported.project).not.toHaveProperty('storageRevision');
+    const origin = readCreatorPackageOrigin(imported.project.creatorPackageOrigin)!;
+    expect(origin).toMatchObject({ packageId: settings.packageId, contentVersion: settings.contentVersion, author: settings.author });
+    for (const member of result.files) expect(origin.files.find(file => file.path === member.path)).toEqual({
+      path: member.path, bytes: member.bytes.length, sha256: await creatorSHA256(member.bytes),
+    });
+    expect(decodeProject(encodeProject(imported.project)).creatorPackageOrigin).toEqual(origin);
     expect(imported.previews).toHaveLength(2);
     expect(encodeProject(source)).toEqual(before);
   });
@@ -151,7 +158,30 @@ describe('reviewable creator package assembly and inspection', () => {
       project.levels[0].privateField = 'secret';
       return object;
     });
+
     await expect(inspectCreatorPackage(modified, signal())).rejects.toThrow('outside its declared');
+  });
+
+  it('creates its own receipt and rejects a package trying to supply one', async () => {
+    const result = await prepareCreatorPackage(creatorPackageFixture(), options(), signal());
+    const modified = await rewrite(result.files, 'map.json', object => {
+      const project = object.project as Record<string, unknown>;
+      project.creatorPackageOrigin = { version: 1, author: 'Forged receipt' };
+      return object;
+    });
+    await expect(inspectCreatorPackage(modified, signal())).rejects.toThrow('Invalid project fields');
+  });
+
+  it('excludes private comparison receipts from creator exports without changing the source', async () => {
+    const source = creatorPackageFixture();
+    source.creatorPackageOrigin = { version: 99, privateComparisonData: 'NEVER_EXPORT_COMPARISON_DATA' };
+    const before = encodeProject(source);
+    const result = await prepareCreatorPackage(source, options(), signal());
+    const text = result.files.filter(file => !file.path.endsWith('.png'))
+      .map(file => new TextDecoder().decode(file.bytes)).join('\n');
+    expect(text).not.toContain('creatorPackageOrigin');
+    expect(text).not.toContain('NEVER_EXPORT_COMPARISON_DATA');
+    expect(encodeProject(source)).toEqual(before);
   });
 
   it('rejects stripped or conflicting attribution even with recomputed hashes', async () => {

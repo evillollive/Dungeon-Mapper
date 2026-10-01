@@ -770,6 +770,27 @@ any workflow/budget approvals. Creator sharing is implemented locally with
 bounded browser evidence, not hosted release qualification. See the
 [contract and evidence](./CREATOR-PACKAGE-CONTRACT.md).
 
+#### Compare a creator package without connecting an account
+
+For a map imported from a creator package, choose **Manage > Compare creator
+package** in Your maps and select another creator ZIP. The preview compares
+the original imported member hashes with the selected package, not with your
+current edits. It shows added, removed and changed files, declared versions,
+creator/license changes and different package IDs. A changed file is still
+flagged when its byte count or version label is unchanged.
+
+Matching IDs, author names and version labels do not verify a publisher or
+establish which file is newer. The saved receipt is private, editable metadata,
+not a signature. Comparison never replaces a map: **Import as new project**
+creates a separate copy, and cancelling leaves existing records unchanged.
+There is no GitHub request, polling or automatic merge.
+
+New creator imports retain the original package receipt in private backups;
+creator exports exclude it. Older imports may have no receipt, and unsupported
+future/damaged receipts remain preserved but cannot be used for comparison.
+Import the original creator ZIP as a separate project to establish a baseline
+instead of reconstructing it from an edited map.
+
 ## Mobile & Touch Support
 
 The initial release scope is desktop-first. Responsive layouts and touch

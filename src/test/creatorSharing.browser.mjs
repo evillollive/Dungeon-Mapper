@@ -2,10 +2,24 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { createHash } from 'node:crypto';
-import { unzipSync } from 'fflate';
+import { unzipSync, zipSync } from 'fflate';
 import { expect } from 'playwright/test';
 import { records } from './ux02Creation.browser.mjs';
-import { landing, library, fixture, file, saved, projectId, card } from './ux09Library.browser.mjs';
+import { landing, library, fixture, file, saved, projectId, card, manage } from './ux09Library.browser.mjs';
+
+function canonicalJSON(value) {
+  const canonical = input => Array.isArray(input) ? input.map(canonical)
+    : input && typeof input === 'object' ? Object.fromEntries(Object.keys(input).sort().map(key => [key, canonical(input[key])])) : input;
+  return Buffer.from(JSON.stringify(canonical(value)) + '\n');
+}
+async function compareFile(page, name, path) {
+  const chooser = page.waitForEvent('filechooser');
+  await manage(page, name, 'Compare creator package');
+  await (await chooser).setFiles(path);
+  const comparison = page.getByRole('region', { name: 'Creator package comparison', exact: true });
+  await expect(comparison).toBeVisible();
+  return comparison;
+}
 
 export default async function creatorSharing(page, { output, engine, beforeSharing }) {
   const requests = [];
@@ -115,6 +129,65 @@ export default async function creatorSharing(page, { output, engine, beforeShari
   await expect(dialog).not.toBeVisible();
   await expect(page.getByRole('dialog', { name: 'Export', exact: true })).not.toBeVisible();
   await library(page);
+  await manage(page, 'Shared rescue vault', 'Rename and tags');
+  await page.getByLabel('Project title', { exact: true }).fill('Locally edited rescue vault');
+  await page.getByRole('button', { name: 'Save name and tags', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Refresh library', exact: true })).toBeEnabled();
+  const beforeComparison = await records(page);
+  const originalReceipt = beforeComparison[`project:${importedId}`].project.creatorPackageOrigin;
+  assert.equal(originalReceipt.contentVersion, '1.0.0');
+  assert.equal(originalReceipt.files.find(file => file.path === 'manifest.json').sha256,
+    createHash('sha256').update(members[root + 'manifest.json']).digest('hex'));
+  const identical = await compareFile(page, 'Locally edited rescue vault', zipPath);
+  await expect(identical.getByRole('status')).toContainText('All imported package file bytes match');
+  assert.deepEqual(await records(page), beforeComparison, 'Comparison must not treat local edits as package changes');
+  await preview.getByRole('button', { name: 'Cancel import', exact: true }).click();
+  await expect(card(page, 'Locally edited rescue vault').getByRole('button', { name: 'Compare creator package', exact: true })).toBeFocused();
+
+  const updateMembers = Object.fromEntries(Object.entries(members).map(([path, bytes]) => [path, bytes.slice()]));
+  const updateMap = JSON.parse(Buffer.from(updateMembers[root + 'map.json']).toString('utf8'));
+  updateMap.project.levels[0].notes[0].description = 'Updated synthetic objective for the independent revision.';
+  updateMembers[root + 'map.json'] = canonicalJSON(updateMap);
+  const updateReadme = Buffer.from(updateMembers[root + 'README.md']).toString('utf8');
+  assert(updateReadme.includes('Content version: 1.0.0'));
+  updateMembers[root + 'README.md'] = Buffer.from(updateReadme.replace('Content version: 1.0.0', 'Content version: 1.1.0'));
+  const updateManifest = structuredClone(manifest);
+  updateManifest.contentVersion = '1.1.0';
+  for (const member of updateManifest.members) {
+    const bytes = updateMembers[root + member.path];
+    member.bytes = bytes.length;
+    member.sha256 = createHash('sha256').update(bytes).digest('hex');
+  }
+  updateMembers[root + 'manifest.json'] = canonicalJSON(updateManifest);
+  const updatePath = join(output, `${engine}-creator-update.zip`);
+  await writeFile(updatePath, zipSync(updateMembers, { mtime: new Date(1980, 0, 1) }));
+  await page.setViewportSize({ width: 390, height: 844 });
+  const comparison = await compareFile(page, 'Locally edited rescue vault', updatePath);
+  await expect(comparison.getByRole('status')).toHaveText('3 package files differ from the original import.');
+  await expect(comparison).toContainText('declared version 1.0.0');
+  await expect(comparison).toContainText('declared version 1.1.0');
+  await expect(comparison).toContainText('not verified publisher identity');
+  await expect(comparison.getByRole('heading', { name: 'Compare with Locally edited rescue vault', exact: true })).toBeFocused();
+  assert.deepEqual(await records(page), beforeComparison, 'Version preview must not modify either saved source');
+  await expect.poll(() => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1)).toBe(true);
+  const titleBounds = await comparison.getByRole('heading').boundingBox();
+  const libraryBounds = await page.locator('.project-library').boundingBox();
+  assert(titleBounds && libraryBounds && titleBounds.y >= Math.max(0, libraryBounds.y) &&
+    titleBounds.y + titleBounds.height <= Math.min(844, libraryBounds.y + libraryBounds.height), 'Comparison heading must be fully visible in the Library scrollport');
+  await page.screenshot({ path: join(output, `${engine}-creator-comparison-390.png`) });
+  await comparison.getByRole('list').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: join(output, `${engine}-creator-comparison-files-390.png`) });
+  await preview.getByRole('button', { name: 'Import as new project', exact: true }).click();
+  await saved(page);
+  const revisionId = projectId(page);
+  assert(revisionId && revisionId !== originalId && revisionId !== importedId);
+  const afterRevision = await records(page);
+  assert.deepEqual(afterRevision[`project:${importedId}`], beforeComparison[`project:${importedId}`], 'Local edits must survive independent revision import');
+  assert.deepEqual(afterRevision[`project:${originalId}`], baseline[`project:${originalId}`]);
+  assert.equal(afterRevision[`project:${revisionId}`].project.creatorPackageOrigin.contentVersion, '1.1.0');
+  assert.equal(afterRevision[`project:${revisionId}`].project.levels[0].notes[0].description, updateMap.project.levels[0].notes[0].description);
+  await page.setViewportSize({ width: 1440, height: 900 });
+  await library(page);
   const beforeBad = await records(page);
   await page.getByLabel('Import creator package', { exact: true }).setInputFiles({
     name: 'broken.zip', mimeType: 'application/zip', buffer: Buffer.from('not a zip'),
@@ -134,10 +207,11 @@ export default async function creatorSharing(page, { output, engine, beforeShari
   assert.deepEqual(await records(page), beforeBad);
   assert.deepEqual(requests, []);
   return {
-    originalId, importedId, zipBytes: bytes.length,
+    originalId, importedId, revisionId, zipBytes: bytes.length,
     zipSha256: createHash('sha256').update(bytes).digest('hex'),
     manifest, unchangedSourceRecord: true, noWritesOnPreviewCancelOrError: true,
     directorySelection: 'native selection passed',
+    offlineVersionComparison: 'Original file identity preserved through local rename; exact file differences reviewed; revision imported independently without source writes',
     hostedTriggers: 0,
   };
 }

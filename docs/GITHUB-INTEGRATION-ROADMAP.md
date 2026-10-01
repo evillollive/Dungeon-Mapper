@@ -38,6 +38,15 @@ cancellation/deadline behavior. No live GitHub API read was used to qualify it,
 and the UI does not offer GitHub import yet. An approved public package fixture
 is needed for GH-R03; the local archive has not been uploaded.
 
+**GH-N06 local comparison:** New creator imports retain bounded private package
+receipts. Your maps now offers **Manage > Compare creator package** to compare
+another local ZIP against original imported file identities, independently of
+local edits. Version labels, changed declarations and file changes are explicit;
+confirmation still imports a separate project. No GitHub identity is inferred
+from matching package IDs. [Scope and retained evidence](./CREATOR-PACKAGE-CONTRACT.md#offline-package-version-comparison)
+remain separate from future live upstream checks and repository rename/deletion
+handling.
+
 ## 1. Product outcome and boundaries
 
 Let a creator publish an intentionally shareable, editable map in a repository
@@ -259,8 +268,8 @@ applies before the write. Non-Actions does not mean free, safe to publish, or
 authorized under the current zero budget.
 
 GH-N01 through GH-N04 and their scoped local GH-N10 work are complete locally.
-The provenance-preservation portion of GH-N06 is implemented; GitHub-linked
-upstream checks remain planned. Other feature tasks remain planned, with the
+GH-N06 provenance preservation and explicit local package comparison are
+implemented; GitHub-linked upstream checks remain planned. Other feature tasks remain planned, with the
 existing evidence archive noted in GH-N11. Dependencies describe technical
 prerequisites, not spending approval. Local completion never authorizes a remote
 trigger or marks hosted qualification as passed.

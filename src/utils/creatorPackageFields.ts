@@ -89,6 +89,7 @@ export const creatorProjectFields = {
   customThemes: [creatorThemeFields], customStamps: [creatorStampFields],
   sceneTemplates: false,
   creatorProvenance: false,
+  creatorPackageOrigin: false,
 } satisfies FieldPolicy<DungeonProject>;
 
 /** This report stays in the trusted review UI, never in a public package. */

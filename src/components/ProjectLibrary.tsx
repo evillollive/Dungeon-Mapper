@@ -11,6 +11,9 @@ import Icon from './Icon';
 import FirstUseIllustration from './FirstUseIllustration';
 import type { ImportedCreatorPackage } from '../utils/creatorPackageImport';
 import { CREATOR_PACKAGE_LIMITS } from '../utils/creatorProject';
+import { compareCreatorPackageOrigins, readCreatorPackageOrigin,
+  type CreatorPackageOrigin, type CreatorPackageComparison as PackageComparison } from '../utils/creatorPackageOrigin';
+import CreatorPackageComparison from './CreatorPackageComparison';
 
 const CreatorShareDialog = lazy(() => import('./CreatorShareDialog'));
 const CreatorPreviewImages = lazy(() => import('./CreatorShareDialog').then(module => ({ default: module.CreatorPreviewImages })));
@@ -59,6 +62,7 @@ interface Props {
   onChangedActive: (id: string) => Promise<void>;
   onDeleted: (id: string) => void;
 }
+interface ComparisonTarget { name: string; origin: CreatorPackageOrigin }
 
 export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, onImport, onChangedActive, onDeleted }: Props) {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
@@ -72,10 +76,14 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
   const [candidate, setCandidate] = useState<DungeonProject | null>(null);
   const [creatorCandidate, setCreatorCandidate] = useState<ImportedCreatorPackage | null>(null);
   const [creatorPreviewFailed, setCreatorPreviewFailed] = useState(false);
+  const [comparison, setComparison] = useState<{ name: string; value: PackageComparison } | null>(null);
   const [sharing, setSharing] = useState<DungeonProject | null>(null);
   const [reading, setReading] = useState(false);
   const importEpoch = useRef(0);
   const creatorImportController = useRef<AbortController | null>(null);
+  const comparisonInput = useRef<HTMLInputElement | null>(null);
+  const comparisonTarget = useRef<ComparisonTarget | null>(null);
+  const comparisonReturnFocus = useRef<HTMLButtonElement | null>(null);
   const invalidateImport = useCallback(() => { importEpoch.current++; creatorImportController.current?.abort(); }, []);
   const heading = useRef<HTMLHeadingElement>(null);
   const refresh = async () => { setProjects(await listProjects()); };
@@ -107,12 +115,12 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
   const recent = projects.filter(item => item.status === 'active' && !item.diagnostic)
     .sort((a, b) => (b.lastOpenedAt || b.updatedAt).localeCompare(a.lastOpenedAt || a.updatedAt))[0];
   const locked = busy || disabled || reading;
-  const readCreator = async (files: File[], directory = false) => {
+  const readCreator = async (files: File[], directory = false, target?: ComparisonTarget) => {
     if (!files.length) return;
     const epoch = ++importEpoch.current;
     creatorImportController.current?.abort();
     const job = new AbortController(); creatorImportController.current = job;
-    setReading(true); setCandidate(null); setCreatorCandidate(null); setCreatorPreviewFailed(false); setError('');
+    setReading(true); setCandidate(null); setCreatorCandidate(null); setCreatorPreviewFailed(false); setComparison(null); setError('');
     try {
       if (!directory && files[0].size > CREATOR_PACKAGE_LIMITS.zipBytes) throw new Error('Creator ZIP downloads must not exceed 32 MiB.');
       const { inspectCreatorZip, inspectCreatorDirectory } = await import('../utils/creatorPackageImport');
@@ -120,6 +128,8 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
       const loaded = directory ? await inspectCreatorDirectory(files, job.signal)
         : await inspectCreatorZip(new Uint8Array(await files[0].arrayBuffer()), job.signal);
       if (epoch === importEpoch.current && !job.signal.aborted) {
+        if (target) setComparison({ name: target.name,
+          value: compareCreatorPackageOrigins(target.origin, loaded.project.creatorPackageOrigin) });
         setCandidate(loaded.project); setCreatorCandidate(loaded);
       }
     } catch (error) {
@@ -129,6 +139,12 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
     }
   };
   return <main className="project-library">
+    <input ref={comparisonInput} type="file" accept=".zip,application/zip" hidden aria-label="Compare creator package file"
+      onChange={event => {
+        const file = event.target.files?.[0], target = comparisonTarget.current;
+        event.target.value = ''; comparisonTarget.current = null;
+        if (file && target) void readCreator([file], false, target);
+      }} />
     <header className="library-masthead"><span>DUNGEON MAPPER / LOCAL COLLECTION</span>
       <OfflineStatus blocked={locked} />
       <button disabled={locked} onClick={() => void run(refresh)}>Refresh library</button></header>
@@ -148,7 +164,7 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
             if (!file) return;
             const epoch = ++importEpoch.current;
             creatorImportController.current?.abort();
-            setReading(true); setCandidate(null); setCreatorCandidate(null); setError('');
+            setReading(true); setCandidate(null); setCreatorCandidate(null); setComparison(null); setError('');
             try { const loaded = await importProjectJSON(file); if (epoch === importEpoch.current) setCandidate(loaded); }
             catch (error) { if (epoch === importEpoch.current) setError(error instanceof Error ? error.message : 'Import failed.'); }
             finally { if (epoch === importEpoch.current) setReading(false); }
@@ -170,6 +186,7 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
     {candidate && <section className="library-import" aria-label="Import preview">
       <h2>Import {candidate.name}</h2><p>{candidate.levels.length} levels. This makes a new editable project. Existing work is not replaced.</p>
       {candidate.levels.map((level, index) => <p key={index}>{level.meta.name}: {level.meta.width} x {level.meta.height}, {level.notes.length} notes</p>)}
+      {comparison && <CreatorPackageComparison comparison={comparison.value} name={comparison.name} />}
       {creatorCandidate && <>
         <p><strong>Creator copy, not a player-safe display.</strong> {creatorCandidate.manifest.profile === 'encounter' ? 'Includes selected DM encounter material.' : 'Includes the full map layout, including secret geometry.'}</p>
         <p>By {creatorCandidate.manifest.author} / {creatorCandidate.manifest.license} / version {creatorCandidate.manifest.contentVersion}</p>
@@ -182,11 +199,17 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
       <button className="library-primary" disabled={locked || (creatorCandidate !== null && creatorPreviewFailed)}
         onClick={() => {
           try {
-            if (onImport(structuredClone(candidate))) { setCandidate(null); setCreatorCandidate(null); }
+            if (onImport(structuredClone(candidate))) { setCandidate(null); setCreatorCandidate(null); setComparison(null); }
             else setError('The new project was not opened. Your preview is retained. Resolve the save/recovery warning, then try again.');
           } catch (error) { setError(error instanceof Error ? error.message : 'The new project could not be opened. Your preview is retained.'); }
         }}>Import as new project</button>
-      <button onClick={() => { setCandidate(null); setCreatorCandidate(null); }}>Cancel import</button>
+      <button onClick={() => {
+        setCandidate(null); setCreatorCandidate(null); setComparison(null);
+        if (comparison) {
+          if (comparisonReturnFocus.current?.isConnected) comparisonReturnFocus.current.focus();
+          else heading.current?.focus();
+        }
+      }}>Cancel import</button>
     </section>}
     <div className="library-filters">
       <label>Search names and tags<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Crypt, campaign, one-shot..." /></label>
@@ -222,6 +245,16 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
           }}>Share a creator copy</button>}
         </div>
         {!item.diagnostic && <details><summary>Manage {item.name}</summary><div className="library-actions">
+          <button disabled={locked} onClick={event => {
+            try {
+              const origin = readCreatorPackageOrigin(decodeProject(item.original).creatorPackageOrigin);
+              if (!origin) throw new Error('This map has no saved original creator-package receipt. Import the original ZIP as a separate project before comparing versions.');
+              comparisonTarget.current = { name: item.name, origin };
+              comparisonReturnFocus.current = event.currentTarget;
+              setError('');
+              comparisonInput.current?.click();
+            } catch (error) { setError(error instanceof Error ? error.message : 'The original creator-package receipt could not be read.'); }
+          }}>Compare creator package</button>
           <button disabled={locked} onClick={() => { setEdit(item); setName(item.name); setTags(item.tags.join(', ')); }}>Rename and tags</button>
           <button disabled={locked} onClick={() => void run(async () => {
             const id = await duplicateLibraryProject(item);

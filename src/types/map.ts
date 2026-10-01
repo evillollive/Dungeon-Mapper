@@ -843,6 +843,8 @@ export interface DungeonProject {
   sceneTemplates?: SceneTemplate[];
   /** Opaque, versioned sharing attribution. Private backups preserve it; sharing validates it separately. */
   creatorProvenance?: unknown;
+  /** Private receipt of the originally imported package, independent of subsequent local edits. */
+  creatorPackageOrigin?: unknown;
 }
 
 /**

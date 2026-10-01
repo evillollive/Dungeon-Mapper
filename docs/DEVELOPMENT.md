@@ -230,6 +230,16 @@ the [creator contract](./CREATOR-PACKAGE-CONTRACT.md). Neither local campaign is
 a hosted receipt or a total-memory, legal, screen-reader or physical-device
 certification.
 
+The same creator journey also covers **Manage > Compare creator package**:
+an identical package against a locally renamed copy, a changed package with
+reviewed file differences, focus/scrollport visibility at 390 pixels, and a
+second independent import while both original records stay unchanged.
+`creatorPackageOrigin.test.ts` and `creatorPackageComparison.test.tsx` cover
+receipt bounds, private backup preservation, malformed/future receipts,
+different IDs, unchanged labels with changed bytes, cancellation and focus
+return. The receipt is created from validated imported files, not accepted
+from an incoming package or inferred from local edits.
+
 CI runs every registered journey plus UX-08 for Chromium, Firefox and WebKit, with
 independent engine jobs, no fail-fast cancellation and fourteen-day artifacts.
 The checked-in workflow now creates the production distribution once in Build

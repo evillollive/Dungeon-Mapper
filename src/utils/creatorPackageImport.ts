@@ -10,6 +10,7 @@ import { normalizeCreatorCredit, mergeCreatorSources, type CreatorAssetCredit, t
 import { inspectCreatorImage, creatorLevelImagePixels } from './creatorAssets';
 import { creatorMapImageURLs, inspectCreatorStampPaths } from './creatorPackageAssets';
 import { decodeCreatorZip } from './creatorZipIntake';
+import { createCreatorPackageOrigin } from './creatorPackageOrigin';
 
 export interface ImportedCreatorPackage {
   manifest: CreatorPackageManifest;
@@ -207,6 +208,7 @@ export async function inspectCreatorPackage(input: readonly CreatorPackageFile[]
     });
   }
   project.creatorProvenance = structuredClone(provenance);
+  project.creatorPackageOrigin = await createCreatorPackageOrigin(manifest, get('manifest.json').bytes);
   signal.throwIfAborted();
   return { manifest, project, previews, sourceNotices: provenance.mapSources,
     imageMetadataWarning: 'Original images can retain author notices, embedded text and private metadata. Package hashes do not prove ownership or safety.' };
