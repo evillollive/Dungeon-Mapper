@@ -595,6 +595,37 @@ The template approval and subsequent six-artwork revision request are recorded
 in the UX roadmap. Screenshots in `docs/media/ux07-tokens` preserve the original
 reference; `docs/media/ux07-token-catalog` contains the current complete kit.
 
+## Local publisher authentication prototype
+
+The optional publisher's test composition is isolated under `publisher/`.
+It requires Node 24.16+ for native TypeScript execution; the editor's existing
+runtime/build and hosted checks are unchanged. No additional dependency,
+database, container engine, GitHub App or real credentials are needed.
+
+```bash
+npm run publisher:dev
+npm run check:publisher
+npm run test:publisher
+QA_OUTPUT=/absolute/fresh/publisher-evidence npm run test:publisher:browser
+```
+
+The dev command prints a loopback URL and runs a clearly labeled simulated
+provider. Stop with Ctrl+C. The native browser runner owns and stops its local
+servers. The protocol tests include a real ten-second deadline case; do not
+mistake test duration for an authentication performance target.
+
+This shell exercises sign-in state/PKCE, first-party session/CSRF behavior,
+rotation, denial, expiry, revocation, stale callbacks and bounded repository
+responses. It has no package upload, branch writer, production startup
+composition or real GitHub adapter. HTTP loopback cookies are not production
+TLS/Secure-cookie evidence, and all session state is ephemeral.
+
+These dedicated tests are manual/local commands, not newly required hosted
+checks. Root lint includes the prototype sources; a production service pipeline
+needs separate GH-A02 scope and budget approval. See the
+[prototype README](../publisher/README.md) and
+[publisher design](./GITHUB-PUBLISHER-DESIGN.md#11-local-authentication-prototype).
+
 ## Dense-map performance diagnostics (F05)
 
 `src/test/denseMapFixture.mjs` builds a deterministic 128 x 128 dungeon with

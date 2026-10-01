@@ -14,7 +14,11 @@
     "test:browser": "npm run build && playwright test",
     "test:browser:run": "playwright test",
     "test:upgrade:run": "playwright test --config playwright.upgrade.config.mjs",
-    "test:ux08:run": "node src/test/ux08.browser.mjs"
+    "test:ux08:run": "node src/test/ux08.browser.mjs",
+    "publisher:dev": "node publisher/test/local.ts",
+    "test:publisher": "node --test publisher/test/*.test.ts",
+    "check:publisher": "tsc --project publisher/tsconfig.json",
+    "test:publisher:browser": "node publisher/test/session.browser.mjs"
   },
   "dependencies": {
     "fflate": "^0.8.3",

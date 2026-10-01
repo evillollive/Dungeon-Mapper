@@ -13,6 +13,16 @@ export default defineConfig([
     languageOptions: { globals: globals.node },
   },
   {
+    files: ['publisher/client/**/*.mjs'],
+    extends: [js.configs.recommended],
+    languageOptions: { globals: globals.browser },
+  },
+  {
+    files: ['publisher/test/*.browser.mjs'],
+    extends: [js.configs.recommended],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
+  {
     files: [
       'playwright.config.mjs',
       'src/test/ux09.spec.mjs',
@@ -60,5 +70,9 @@ export default defineConfig([
     languageOptions: {
       globals: { ...globals.browser },
     },
+  },
+  {
+    files: ['publisher/**/*.ts'],
+    languageOptions: { globals: globals.node },
   },
 ])

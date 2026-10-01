@@ -1,0 +1,9 @@
+{
+  "name": "dungeon-mapper-publisher-prototype",
+  "private": true,
+  "type": "module",
+  "license": "AGPL-3.0-or-later",
+  "engines": {
+    "node": ">=24.16.0"
+  }
+}

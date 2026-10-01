@@ -1,0 +1,21 @@
+:root { color-scheme: dark; font: 16px/1.6 "Avenir Next", Avenir, sans-serif; color: #f6f3ff; background: #100d19; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+main { max-width: 820px; margin: 0 auto; padding: clamp(24px, 6vw, 72px) 24px; }
+.eyebrow { color: #d1b6ff; font-size: 12px; letter-spacing: .12em; font-weight: 700; }
+h1 { font-size: clamp(34px, 6vw, 58px); line-height: 1.15; letter-spacing: -.035em; }
+h2 { font-size: 23px; }
+.warning { background: #302338; border-left: 4px solid #ff9569; padding: 16px 20px; }
+section { border-top: 1px solid #817696; margin-top: 28px; padding-top: 16px; }
+.actions, form { display: flex; gap: 12px; flex-wrap: wrap; }
+button { font: inherit; min-height: 44px; padding: 9px 15px; border: 1px solid #817696; border-radius: 7px; color: inherit; background: #272344; cursor: pointer; }
+button:hover:not(:disabled) { background: #34294f; }
+button:disabled { opacity: .55; cursor: not-allowed; }
+button.primary { color: #201018; background: #ff9569; font-weight: 700; border-color: #ff9569; }
+button.primary:hover:not(:disabled) { background: #ffb593; }
+:focus-visible { outline: 3px solid #8dbbff; outline-offset: 3px; }
+[hidden] { display: none !important; }
+#message[role="alert"] { color: #ffb9b9; border-left: 3px solid #ffadad; padding-left: 14px; }
+p, li { overflow-wrap: anywhere; }
+footer { margin-top: 40px; color: #c4bdd7; font-size: 13px; }
+@media (forced-colors: active) { button, .warning, section { border-color: ButtonText; } }

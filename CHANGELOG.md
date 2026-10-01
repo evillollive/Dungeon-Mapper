@@ -5,6 +5,7 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- A separate loopback-only Node publisher authentication prototype with an explicit simulated provider, session/state/PKCE/CSRF controls and local browser checks. No real GitHub connection, package upload, hosting or publication is enabled.
 - Offline comparison of creator package versions against the original import receipt, with file/declared-license changes and independent new-project import. Local edits are never overwritten; package IDs and version labels are not treated as verified publisher identity.
 - Local creator-sharing packages with separately reviewed layout/DM-encounter profiles, explicit contribution licenses, inherited notices, bounded ZIP/folder import and independent Library copies. No GitHub authentication or upload is enabled.
 - Three authored launch encounters: The Lantern Crypt, Alder Crossing and Kestrel Docking Bay, with player-safe creation previews and independent editable copies containing public and private notes.

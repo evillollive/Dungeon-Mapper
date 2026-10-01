@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="referrer" content="no-referrer">
+    <title>Local publisher prototype</title>
+    <link rel="stylesheet" href="/publisher/style.css">
+    <script type="module" src="/publisher/client.mjs"></script>
+  </head>
+  <body>
+    <main>
+      <p class="eyebrow">DUNGEON MAPPER / LOCAL PUBLISHER LAB</p>
+      <h1>Try the connection,<br>not a real account.</h1>
+      <p class="warning"><strong>Simulated provider only.</strong> This loopback prototype never contacts GitHub.
+        Do not enter real credentials. It cannot upload packages, create repositories or publish maps.</p>
+      <p>Your editor stays at its existing address. No Library, recovery records or map files are read by this page.</p>
+      <section aria-labelledby="connection-title">
+        <h2 id="connection-title">Publisher session</h2>
+        <p id="connection" role="status">Reading local session...</p>
+        <p id="message" role="status"></p>
+        <div class="actions">
+          <button id="signin" class="primary" disabled>Simulate GitHub sign-in</button>
+          <button id="disconnect" hidden>Disconnect simulated account</button>
+          <button id="refresh">Refresh session</button>
+        </div>
+      </section>
+      <section id="repositories" aria-labelledby="repositories-title" hidden>
+        <h2 id="repositories-title">Simulated repository access</h2>
+        <p>This list tests the authenticated boundary. It is not a real GitHub permission check.</p>
+        <button id="list">List simulated repositories</button>
+        <ul id="repository-list"></ul>
+      </section>
+      <section aria-labelledby="publication-title">
+        <h2 id="publication-title">Publishing is not connected</h2>
+        <p>Real GitHub authorization, package selection/upload, destination review, durable operation recovery
+          and branch publication remain separate work. No production host or operating budget is configured.</p>
+        <button disabled>Publish package (not implemented)</button>
+      </section>
+      <footer>This HTTP loopback test uses synthetic sessions. Production HTTPS, Secure cookies,
+        encrypted persistence and live GitHub behavior are not qualified here.</footer>
+    </main>
+  </body>
+</html>

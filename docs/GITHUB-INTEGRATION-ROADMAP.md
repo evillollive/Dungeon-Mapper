@@ -53,7 +53,14 @@ the existing editor URL and local storage unchanged. The
 [publisher design](./GITHUB-PUBLISHER-DESIGN.md) covers explicit ZIP handoff,
 GitHub authority, server-held credentials, branch-only publication and
 uncertain-outcome recovery. Provider, operating ownership, retention, costs and
-deployment remain undecided; no authentication service is implemented.
+deployment remain undecided; no live authentication service is implemented.
+
+**GH-N08 local prototype:** The owner approved a portable Node prototype with
+test providers and deferred actual host selection. `publisher/` now provides a
+loopback-only simulated sign-in/session/repository-access shell, with local HTTP
+and three-engine browser coverage. It is not a live authentication service and
+has no package-upload or publication endpoint. See the
+[prototype boundary and evidence](./GITHUB-PUBLISHER-DESIGN.md#11-local-authentication-prototype).
 
 ## 1. Product outcome and boundaries
 
@@ -290,9 +297,10 @@ Owner decisions in section 8 gate the corresponding implementation.
 
 GH-N05 is now in progress as the mocked transport prototype above; this does
 not mark public-link integration or real-GitHub acceptance complete.
-GH-N07 is in design, with the separate publisher-page direction approved but
-its provider/operating decisions still open. GH-N08 remains gated on the
-corresponding architecture approval; no live activation is authorized.
+GH-N07's separate publisher-page and portable prototype directions are approved;
+production provider/operating decisions remain open. The bounded GH-N08 local
+authentication shell is implemented with a test provider only. No live
+activation or package publication is authorized.
 
 | ID | Work / execution | Prerequisites | Completion evidence and stop condition |
 | --- | --- | --- | --- |

@@ -1,8 +1,10 @@
 # Optional GitHub publisher design
 
 **Date:** September 30, 2026.
-**Status:** GH-N07 design in progress. No publisher, authentication service,
-GitHub App registration, domain or infrastructure has been created.
+**Status:** Local architecture direction approved and a bounded GH-N08
+authentication simulation implemented. Production operating decisions remain
+open. No live authentication service, GitHub App, domain or infrastructure
+has been created.
 **Parent:** [GitHub integration roadmap](./GITHUB-INTEGRATION-ROADMAP.md).
 
 ## 1. Approved direction
@@ -10,6 +12,8 @@ GitHub App registration, domain or infrastructure has been created.
 The owner approved planning a minimal optional hosted service and selected
 **keep the existing editor URL and add a separate publishing page**.
 These are architecture decisions, not provisioning or spending approval.
+The owner subsequently approved a portable Node prototype using local test
+providers, explicitly deferring host selection until local sizing.
 
 The existing editor remains local-first at its current Pages origin.
 Its IndexedDB Library, recovery records, player-display channel and offline
@@ -236,12 +240,13 @@ Do not auto-rebase, force-update, merge, rerun CI or delete remote data as recov
 
 ## 8. Hosting and operating decisions still needed
 
-**Proposed implementation target:** a small portable Node service and separately
-built publishing UI in this repository. A normal Node host is a better initial
+**Approved local prototype target:** a small portable Node service and separate
+publishing UI in this repository. The test composition uses Node 24.16+ without
+new dependencies. A normal Node host is a better initial
 fit for the existing TypeScript/ZIP validators than assuming an edge runtime
 can handle the accepted archive limits unchanged.
 
-This is a recommendation, not a selected provider or approved deployment.
+This is not a selected provider or approved deployment.
 Avoid committing vendor SDKs, a database engine or a memory/concurrency tier
 until the operating shape is agreed and locally measured. The existing Pages
 build remains separate; a publisher must not be silently added to its deploy
@@ -297,7 +302,9 @@ ordinary packages, private backups and user-owned repositories remain usable.
 
 Source inspection: `vite.config.ts`, `src/service-worker.ts`,
 `docs/ARCHITECTURE.md` and the existing creator-package/roadmap contracts.
-No application code or deployment configuration changed in this design step.
+The initial design step changed no application or deployment configuration.
+The subsequent local prototype is isolated under `publisher/`; it is not part
+of the Pages application or its service-worker routing.
 
 - [GitHub App user access tokens and web flow](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-a-user-access-token-for-a-github-app):
   permission intersection, server-side exchange, PKCE/state and expiry.
@@ -312,3 +319,60 @@ No application code or deployment configuration changed in this design step.
 No GitHub registration, credential access, repository mutation, domain/DNS
 change, deployment, paid-provider call, agent or new session. Provider operating
 cost and account allowance remain unverified.
+
+## 11. Local authentication prototype
+
+The owner approved continuing with a portable local-test-provider prototype,
+while leaving production hosting and operating costs deferred. The bounded
+implementation lives under `publisher/` and can be run with
+`npm run publisher:dev`. See [its README](../publisher/README.md) for commands
+and explicit limitations.
+
+The local server admits only a configured `http://127.0.0.1:<port>` origin and
+the `local-test` provider contract. Its only concrete provider creates synthetic
+authorization codes, tokens, identities and repository metadata in memory.
+The UI and response metadata prominently identify simulation mode. No real
+credentials or GitHub endpoints are configured or read.
+
+This slice implements state/PKCE and single-use callback handling, session and
+CSRF rotation, expiry, Host/origin checks, bounded bodies/session count, response
+deadlines, repository-access denial, disconnect/revocation and obsolete callback
+protection. It cannot resurrect a disconnected session with a late exchange or
+clear a newer session because an older provider request failed. Callback error
+pages remove code/state from their address when the local UI initializes.
+
+The browser page uses native first-party fetch and cookies. Only opaque session
+IDs enter cookies; synthetic provider tokens remain server-side. Local browser
+storage/IndexedDB stay empty. The HTTP test cookie is deliberately not Secure,
+and cookie isolation by port is not promised. **Production TLS, host-only Secure
+cookies, real GitHub callbacks and provider privacy behavior are not qualified.**
+Do not deploy this test composition or treat it as a public service.
+
+Twenty local HTTP tests cover positive and negative protocol cases, including
+a deliberately non-settling provider and the actual ten-second response
+deadline. The native-browser probe covers denial, session rotation, wrong-CSRF
+rejection, callback replay, clean callback addresses, disconnect, account
+changes, revocation and narrow-layout readability on all three locked engines.
+The first browser attempt used a protocol response-body read after navigation
+and failed as a test harness issue. The corrected probe records cloned native
+fetch responses before handing them to the client; no response-timing claim is
+made.
+
+Initial browser evidence is retained in the session's
+`files/github-publisher-browser-initial/` and
+`files/github-publisher-browser-capture/`. The latter records exact source
+hashes and simulation/cookie limitations. Final source-linked receipt locations
+are recorded at closeout rather than inferred from an earlier successful run.
+
+Root lint and the standalone publisher type check pass. The editor rebuild was
+compared with `github-version-comparison-dist`: all 22 production files remained
+byte-identical. The existing App chunk-size advisory remains visible; no
+renderer, editor origin, private storage or release workflow changed.
+
+The prototype does not implement package submission, server package validation,
+durable/encrypted credentials or operation receipts, real repository discovery,
+webhooks, GitHub branch writes or PR actions. No production provider, operating
+owner, retention schedule, service capacity or operating budget is selected.
+Authentication-body tests cannot size future large package processing.
+GH-N09 publication simulation and all live operating/qualification gates remain
+separate work.
