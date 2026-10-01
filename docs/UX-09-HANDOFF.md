@@ -1534,9 +1534,146 @@ local-only with zero hosted triggers/reservations, no agents and no native
 setting changes. The result section below records why the bounded implementation
 was retained; the wider layer/cache redesign is not approved.
 
+### Owner-approved full token redraw restoration
+
+October 1, 2026. The owner explicitly selected **Restore full redraws** after
+reviewing the correctness/performance tradeoff, then requested complete
+documentation. This withdraws the `e55bc1e` regional token-preview path from
+production across **all browsers**, not only the failing platform. It is a
+local correction pending a separately authorized push and fresh hosted CI.
+
+#### Why it was withdrawn
+
+The WebKit job in
+[run 36914937106](https://github.com/evillollive/Dungeon-Mapper/actions/runs/36914937106/job/110547346896)
+tested published source `96757fedaeb0afcf491216019e5d1ca61eba1a99` on
+`ubuntu-latest`. The required `token-only repaint matches the complete editor
+across movement and cancellation` case failed at `move-5-5`, DPR 1,
+24-pixel tiles and a one-cell token with fog/text fallback disabled.
+The candidate had one full draw and one partial draw; its independent
+full-frame reference had two full draws.
+
+Maximum RGB difference was **3 byte levels**, exceeding the unchanged limit
+of **1**. Alpha difference was zero and mean difference was about 0.002526,
+within the 0.01 limit; passing the mean does not excuse the failed maximum.
+The worst pixel at `(80, 48)` was `[159,144,118,255]` versus
+`[160,147,120,255]`. This was a PR-caused fidelity failure in the new partial
+path, not an established registry/runner flake or a defect in the fail-closed
+Browser qualification aggregate.
+
+A focused macOS WebKit attempt at local `80b1b31` passed all 632 comparisons.
+That did not reproduce or disprove the Linux defect. The exact regional
+clipping/compositing cause was not isolated. The owner chose to remove the
+unqualified fast path instead of spending another diagnostic cycle trying
+to retain it. The original evidence remains unchanged in:
+
+- `files/pr185-browser-36914937106-webkit-disposition-80b1b31.json`;
+- `files/pr185-browser-36914937106-webkit-failed-xYpx3v`;
+- `files/pr185-browser-36914937106-webkit-aggregate-sDXgRb`;
+- `files/pr185-browser-36914937106-webkit-repaint-local-cAO4TQ`.
+
+The two separate file-input ambiguities in that workflow were already fixed
+locally by `80b1b31`, using the exact **Import project** label in the audience
+and session journeys. That selector correction and this renderer correction
+must both be included in the next candidate. No rerun of unchanged `96757fe`
+would establish either fix.
+
+#### Implementation and preserved behavior
+
+`MapCanvas` now unconditionally resets the main canvas dimensions for each
+required frame, then runs its existing complete painter in the existing
+layer order. Last-painted-frame metadata, partial-scene eligibility, damage
+planning and regional clipping were removed from its production render path.
+Tile, river-bank, edge-blending and lighting traversal use the complete map,
+without region bounds. There is no platform detection, eligibility exception,
+hidden switch or resolution/detail reduction.
+
+The canvas itself is reused; no additional retained bitmap/canvas cache was
+introduced. Coordinate-only hover suppression, ordinary input comparison,
+bounded edge strips and Folio floor-path caches are preserved. The pure
+damage/scene-bound helpers and their unit tests remain as experimental history
+but are not called by the renderer. `sameRepaintInputs` remains in use for its
+existing prop-change comparison. Drag state, token selection, move commit,
+cancellation, undo, persistence, player projection and export logic were not
+rewritten. The restoration changes the painting strategy, not map contents.
+
+The required pixel test remains registered under its original name, with the
+same six DPRs, 20/24/32-pixel tiles, token footprints, overlapping artwork,
+edge movements, return-to-origin, cancel/commit and eighty-move allocation
+exercise. The visual assertions still require alpha equality, maximum RGB
+difference at most 1 and mean difference at most 0.01. No tolerance, case,
+timeout, retry or required check was removed or weakened.
+
+The former `partial >= 4` activation assertion is intentionally replaced:
+the owner-approved behavior no longer performs partial paints. Every
+comparison now requires the candidate's partial count to remain zero and
+its complete-draw count to increase since the previous observation. This
+proves the restored production path actually drew each sampled frame instead
+of silently accepting stale pixels or just suppressing the failing comparison.
+A component regression also verifies complete canvas resets for token edits
+in a formerly eligible Folio scene.
+
+#### Performance tradeoff and reintroduction gate
+
+The former eligible-preview gains, roughly 143-146 to 22-23 ms in Chromium
+and 141-143 to 22-23 ms in Firefox on the September 29 development Mac,
+are **historical measurements of the withdrawn implementation**. They are
+not current results. Full redraws can make token dragging less responsive on
+dense maps. The owner accepted that tradeoff to prefer correct map pixels.
+No fresh broad F05 performance campaign was run for this correction, and no
+exact current slowdown, representative-device pass or release-scope exception
+is claimed. A-PERF remains open.
+
+Any future partial-redraw proposal must be separately scoped. Before it can
+return to production it must address the retained Linux WebKit reproducer,
+preserve these exact pixel and allocation requirements across the full matrix,
+pass required exact-head hosted qualification for all three engines, and show
+source/build-matched performance benefit without hiding failures behind an OS
+exception or widening tolerances. Reuse the retained failures and baseline
+instead of discarding them. New hosted experiments need their own approved
+trigger scope and accounting; the current CI budget is not an unlimited
+optimization allowance.
+
+#### Local evidence and publication boundary
+
+The corrected working tree was based on `80b1b31`. Final source and built-file
+hashes are retained in `files/pr185-full-redraw-source.json`; browser reports
+marked as working-tree runs are not relabeled as hosted receipts.
+
+| Evidence | Result |
+| --- | --- |
+| `files/pr185-full-redraw-unit.json` | 37 selected component/planner/cache cases passed, including the new complete-reset regression |
+| `files/pr185-full-redraw-browser/` | Three engines passed, 632 complete-frame comparisons each, 1,896 total; candidate partial draws zero throughout |
+| Chromium pixel maxima | RGB 0, alpha 0, mean 0 |
+| Firefox pixel maxima | RGB 0, alpha 0, mean 0 |
+| WebKit pixel maxima | RGB 1, alpha 0, mean 0.0000015070408950617283 |
+| `files/pr185-full-redraw-production/` | Six native production journeys passed: token placement/affiliation/player export and mouse cancellation/first-token drag on each engine |
+| Lint / production build | Passed; existing App chunk-size advisory remains visible |
+
+The local browsers are Chromium 151.0.7922.34, Firefox 153.0 and WebKit 26.5
+on the development Mac. Synthetic pixel comparisons and native production
+journeys are distinguished; neither is a fresh Linux receipt, physical-input
+latency measurement or release approval. All local checks used the existing
+single-worker, no-retry and timeout settings, with no skipped cases. Owned
+preview/browser processes were stopped by the runners.
+
+No push or hosted job was started for this local restoration. Observed rounded
+usage across the two completed PR runs is 49 minutes of the approved 200,
+with 100 conditionally reserved for eventual main/Pages and 51 unallocated.
+The two approved PR-update triggers are consumed. A third push/run needs
+explicit additional scope and sufficient ceiling before publication; no merge,
+reviewer request or automatic retry is authorized. Actual billing, storage and
+account balance remain independently unverified.
+
 ### Token-drag partial repaint implementation and local results
 
-September 29, 2026. **Retained locally** at
+**Historical implementation, withdrawn from production on October 1, 2026.**
+The source, measurements and failed intermediate experiments below are
+preserved, not rewritten as passing Linux evidence. See the
+[owner-approved restoration](#owner-approved-full-token-redraw-restoration)
+for current behavior and the performance tradeoff.
+
+September 29, 2026. **Originally retained locally** at
 `e55bc1e358780b7ba44110ffb0702eeccb5fca79`, following the explicitly approved
 prototype, complete-overlap expansion and conservative native-grid rule.
 The subsequent test-only tile-size expansion and comment punctuation cleanup

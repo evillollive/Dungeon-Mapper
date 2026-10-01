@@ -43,11 +43,15 @@ test('token-only repaint matches the complete editor across movement and cancell
           await page.evaluate(async scenario => {
             window.tokenProof = await window.mountTokenProof(scenario.size, scenario.fog, scenario.text, false, scenario.tileSize ?? 24);
           }, scenario);
+          let previousFull = 0;
           const compare = async phase => {
             const result = await page.evaluate(() => window.tokenProof.compare());
             results.push({ dpr, scenario, phase, ...result });
             assert(result.alpha === 0 && result.maximum <= 1 && result.mean <= 0.01,
               `Editor repaint mismatch: ${JSON.stringify(results.at(-1))}`);
+            assert.equal(result.stats.candidate.partial, 0, 'Token changes must not use regional drawing');
+            assert(result.stats.candidate.full > previousFull, `No complete redraw observed at ${phase}`);
+            previousFull = result.stats.candidate.full;
             return result;
           };
           try {
@@ -91,8 +95,6 @@ test('token-only repaint matches the complete editor across movement and cancell
             assert.equal(committed.committed.candidate.x, 6);
             assert.deepEqual(committed.committed.candidate, committed.committed.reference);
             assert.equal(committed.stats.reference.partial, 0, 'Oracle must use the full-frame path');
-            if (scenario.fog || scenario.text || !Number.isInteger(committed.nativeTilePitch)) assert.equal(committed.stats.candidate.partial, 0);
-            else assert(committed.stats.candidate.partial >= 4, 'Candidate did not exercise partial drawing');
           } catch (error) {
             await page.screenshot({ path: info.outputPath(`failure-${dpr}-${scenario.size}-${scenario.fog}-${scenario.text}.png`) });
             throw error;

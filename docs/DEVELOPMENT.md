@@ -764,19 +764,20 @@ owned export. See [results and natural-timing limitations](./UX-09-HANDOFF.md#de
 
 ### Bounded editor token repaint
 
-`tokenRepaint.ts` plans conservative token-only damage. `tokenSceneBounds.ts`
-expands it to complete intersecting artwork, using at most 2,048 temporary
-bounds and sixteen closure passes. The fast path is limited to trusted Edit
-previews on integral native device-pixel tile grids. Canvas edges, regions
-above 25%, visible fog/FOV, print, unknown glyphs, imported/custom assets and
-other changed scene state use the full renderer. Native scale is read from
-the Canvas transform, not approximated from a DPR whitelist. Existing image
-resolution, art detail and caches are unchanged.
+**Current behavior, October 1, 2026:** MapCanvas always resets and redraws the
+complete main canvas for a required frame, including token-drag previews.
+The owner withdrew the regional path after Linux WebKit exceeded the unchanged
+pixel tolerance. There is no browser/OS exception, hidden toggle or partial
+production branch. Last-frame/damage bookkeeping and region clipping were
+removed; tile, bank, edge and lighting traversal again covers the complete map.
 
-MapCanvas retains the last completed frame's references and rectangle metadata,
-not a second bitmap. Partial paints preserve global coordinates, layer order and
-the complete composed canvas. Commit/cancel and unsupported states continue to
-redraw fully. No export/player renderer or map schema adopts this optimization.
+`tokenRepaint.ts` and `tokenSceneBounds.ts` retain their pure planning helpers
+and unit tests as historical experimental logic, not an enabled renderer.
+Only the existing `sameRepaintInputs` comparer remains imported by MapCanvas.
+Ordinary input comparison, coordinate-only hover suppression, bounded edge
+strips and floor-path caches remain. No second canvas, new bitmap cache,
+export/player renderer change, map schema change or art-detail reduction is
+introduced.
 
 ```bash
 npm test -- src/utils/__tests__/tokenRepaint.test.ts \
@@ -788,16 +789,22 @@ QA_OUTPUT=/absolute/path/to/token-repaint npm run test:browser -- src/test/token
 The source-bundled browser harness compares the actual editor with its full-
 render path. It compares complete images across six DPRs and 20/24/32-pixel
 tiles, overlapping artwork, token footprints, movement/cancel/commit and
-fallbacks. Alpha must match exactly, RGB differs by at most 1/255 with a
+former fallback scenes. Every observation must now increase the candidate's
+complete-draw counter and keep its partial-draw counter at zero. This replaces
+the former optimization-activation assertion, not the visual assertions.
+Alpha must match exactly, RGB differs by at most 1/255 with a
 0.01/255 mean limit. It uses synthetic events for differential pixels, while
 existing production journeys and F05 retain genuine input/persistence checks.
 An eighty-move case observes no new DOM canvas allocations; this is not a
 total browser-memory ceiling or physical-device soak test.
 
-The additional case is included in the existing runner, without a new job,
-dependency, timeout or retry. Local results and known limitations, including
-the still-visible App chunk-size advisory, are recorded in the
-[implementation handoff](./UX-09-HANDOFF.md#token-drag-partial-repaint-implementation-and-local-results).
+The case remains in the required runner under its existing name, without a new
+job, dependency, timeout or retry. Source-linked evidence, expected loss of the
+preview speedup, and the Linux-first gate for any reintroduction are recorded
+in the [correctness restoration handoff](./UX-09-HANDOFF.md#owner-approved-full-token-redraw-restoration).
+The earlier optimization measurements remain historical and must not be
+reported as current performance. This rollback does not close A-PERF or
+replace exact-head hosted qualification. The App chunk-size advisory remains.
 
 ### Bounded edge-cache regressions
 

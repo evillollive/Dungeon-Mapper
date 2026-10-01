@@ -24,8 +24,7 @@ import { polygonBoundingBox } from '../utils/roomRasterizer';
 import { useCanvasEditingDraft } from '../hooks/useCanvasDraft';
 import type { RegionSelection } from '../hooks/useEditorSelection';
 import { readEditorViewport, writeEditorViewport } from '../utils/editorViewport';
-import { expandTokenDamage, sameRepaintInputs, tokenRepaintDamage, type TokenPaintFrame } from '../utils/tokenRepaint';
-import { tokenSceneBounds } from '../utils/tokenSceneBounds';
+import { sameRepaintInputs } from '../utils/tokenRepaint';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
 // evoking traditional engineering / quad-ruled graph paper regardless of theme.
@@ -1091,7 +1090,6 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
   const { map, cancel: cancelDraft, finish: finishDraft, paintCells, onSetTile, onMoveToken, onMoveStamp, onUpdateRiver } =
     useCanvasEditingDraft(sourceMap, { commitTile, onSetTiles, commitMoveToken, commitMoveStamp, commitUpdateRiver });
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const paintedFrameRef = useRef<TokenPaintFrame | null>(null);
   const [paintInputs, setPaintInputs] = useState(props);
   if (!sameRepaintInputs(paintInputs, props)) setPaintInputs(props);
   const minimapRef = useRef<HTMLCanvasElement>(null);
@@ -1280,15 +1278,6 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
   useEffect(() => () => folioTileCache.clear(),
     [folioTileCache, viewportKey, meta.width, meta.height, themeId, customThemes, isPlayerView, printMode]);
 
-  const partialSceneEligible = useMemo(() => {
-    if (activeTool !== 'move-token') return false;
-    const edge = map.edgeBlend;
-    return themeId === folioTheme.id && !backgroundImage && customThemes.length === 0 && customStamps.length === 0 &&
-      !map.handDrawn?.enabled && (!edge?.enabled ||
-        (Number.isFinite(edge.intensity) && edge.intensity >= 0 && edge.intensity <= 1)) &&
-      renderTiles.every(row => row.every(tile => isBuiltInTileType(tile.type) && (!tile.theme || tile.theme === folioTheme.id)));
-  }, [activeTool, themeId, backgroundImage, customThemes, customStamps, map.handDrawn, map.edgeBlend, renderTiles]);
-
   // Main render
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1301,41 +1290,15 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
     const w = meta.width * tileSize;
     const h = meta.height * tileSize;
     const dpr = window.devicePixelRatio || 1;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const nativeScale = ctx.getTransform().a;
-    const frame: TokenPaintFrame = {
-      map, inputs: paintInputs, canvas, width: Math.floor(w * dpr), height: Math.floor(h * dpr), dpr: nativeScale,
-      state: [renderTiles, visibleNotes, isDragging, dragStart, dragEnd, selection, activeStroke,
-        roomEditPreview, roomHoverId, polyVertices, defogStroke, previewMousePos, bgImageReady],
-      eligible: partialSceneEligible && !isPlayerView && !printMode && !gmShowFog && !fovVisible && !fovOrigin &&
-        activeTool === 'move-token' && !activeStroke && !defogStroke && !roomEditPreview && polyVertices.length === 0,
-      draggingTokenId: draggingTokenRef.current?.id ?? null, selectedTokenId: selectedTokenId ?? null,
-    };
-    const tokenDamage = canvas.width === frame.width && canvas.height === frame.height
-      ? tokenRepaintDamage(paintedFrameRef.current, frame) : null;
-    const damage = tokenDamage ? expandTokenDamage(tokenDamage, tokenSceneBounds(ctx, frame, {
-      lightSources, stairLinks, activeLevelIndex, selectedPlacedStampId, selection,
-    }), frame) : null;
-    const tileBounds = damage?.tiles;
-    paintedFrameRef.current = null;
-    if (!damage) {
-      canvas.width = w * dpr;
-      canvas.height = h * dpr;
-    }
+    // Partial token paints exceeded the strict Linux WebKit pixel limit.
+    // Reset the complete surface for every draw, including token drag previews.
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
     canvas.style.width = `${w}px`;
     canvas.style.height = `${h}px`;
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.save();
     try {
-      if (damage) {
-        ctx.setTransform(1, 0, 0, 1, 0, 0);
-        const clip = new Path2D();
-        clip.rect(damage.x, damage.y, damage.width, damage.height);
-        ctx.clip(clip);
-        ctx.clearRect(damage.x, damage.y, damage.width, damage.height);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
-
       ctx.fillStyle = printMode ? PRINT_BG : SCREEN_BG;
       ctx.fillRect(0, 0, w, h);
 
@@ -1380,8 +1343,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
       if (printMode) folioTileCache.clear();
       else folioTileCache.prepare(ctx, tileSize);
 
-      for (let y = tileBounds?.minY ?? 0; y < (tileBounds?.maxY ?? meta.height); y++) {
-        for (let x = tileBounds?.minX ?? 0; x < (tileBounds?.maxX ?? meta.width); x++) {
+      for (let y = 0; y < meta.height; y++) {
+        for (let x = 0; x < meta.width; x++) {
           const tile = renderTiles[y]?.[x];
           if (tile) {
             if (printMode) {
@@ -1405,11 +1368,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         }
       }
 
-      drawRiverBanks(ctx, renderTiles, meta.width, meta.height, tileSize, themeId, printMode, tileBounds);
+      drawRiverBanks(ctx, renderTiles, meta.width, meta.height, tileSize, themeId, printMode);
 
       // Edge blending: render after tiles, before grid lines. Disabled in print mode.
       if (!printMode && map.edgeBlend?.enabled) {
-        drawEdgeBlending(ctx, renderTiles, meta.width, meta.height, tileSize, map.edgeBlend, theme, customThemes, edgeBlendCache, tileBounds);
+        drawEdgeBlending(ctx, renderTiles, meta.width, meta.height, tileSize, map.edgeBlend, theme, customThemes, edgeBlendCache);
       } else {
         edgeBlendCache.clear();
       }
@@ -1439,7 +1402,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
       // Lighting & atmosphere: ambient occlusion, stamp shadows, and color
       // grading rendered after hand-drawn overlay. Disabled in print mode.
       if (!printMode && map.lightingAtmosphere?.enabled) {
-        drawLightingAtmosphere(ctx, renderTiles, meta.width, meta.height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes, customStamps, tileBounds);
+        drawLightingAtmosphere(ctx, renderTiles, meta.width, meta.height, tileSize, map.lightingAtmosphere, map.stamps ?? [], customThemes, customStamps);
       }
 
       // Light source glow halos: rendered right after the grid lines so the
@@ -2113,8 +2076,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
     } finally {
       ctx.restore();
     }
-    paintedFrameRef.current = frame;
-  }, [map, tiles, renderTiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, rivers, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, polyVertices, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, previewMousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType, edgeBlendCache, folioTileCache, viewportKey, partialSceneEligible, paintInputs]);
+  }, [map, tiles, renderTiles, notes, meta, tileSize, selectedNoteId, selectedTokenId, themeId, customThemes, customStamps, printMode, isDragging, dragStart, dragEnd, activeTool, activeTile, selection, tokens, annotations, markers, stamps, wallSegments, pathSegments, rivers, roomShapes, fog, fogActive, isPlayerView, gmShowFog, visibleNotes, visibleTokens, activeStroke, roomEditPreview, roomHoverId, polyVertices, drawColor, drawWidth, gmDrawColor, gmDrawWidth, defogStroke, hasClipboard, clipboardSize, previewMousePos, markerShape, markerColor, markerSize, backgroundImage, bgImageReady, fovVisible, fovOrigin, dynamicFogEnabled, playerVisible, explored, measureShape, measureFeetPerCell, lightSources, lightVisible, lightRadius, lightColor, stairLinks, stairLinkSource, activeLevelIndex, selectedPlacedStampId, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType, edgeBlendCache, folioTileCache, viewportKey, paintInputs]);
 
   // Minimap render
   useEffect(() => {

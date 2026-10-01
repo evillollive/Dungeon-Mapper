@@ -33,12 +33,22 @@ separate natural observations from the injected callback hold; natural WebKit
 cancellation timing and total native/GPU memory remain unqualified. No physical
 printing or hosted resources were used.
 
-**Bounded token-preview optimization, September 29, 2026:** The approved
-same-canvas overlap-aware repaint is retained locally at `e55bc1e`.
-Matched F05 diagnostics show eligible token-preview p95 falling from
+**Token-preview correctness restoration, October 1, 2026:** The owner chose
+full redraws across every browser after the partial path exceeded the strict
+RGB limit in hosted Linux WebKit. MapCanvas no longer selects regional
+token painting. The comparison keeps all six DPRs, tile sizes, movements,
+cancel/commit and allocation checks, and now requires a full redraw at every
+observation. [Decision, tradeoff, evidence and reintroduction gate](./UX-09-HANDOFF.md#owner-approved-full-token-redraw-restoration)
+are recorded. The correction is local until a separately approved push and
+fresh Linux qualification; no current token-preview speedup is claimed.
+
+**Historical token-preview optimization, September 29, 2026:** The former
+same-canvas overlap-aware repaint was implemented at `e55bc1e` and is now
+withdrawn from production, not qualified by its earlier local pass.
+Matched historical F05 diagnostics showed eligible token-preview p95 falling from
 143-146 to 22-23 ms in unprofiled Chromium and 141-143 to 22-23 ms in Firefox;
-WebKit gains are smaller and variable. Commit and paint remain full redraws.
-Full-render fallbacks preserve unsupported scenes, canvas edges and nonintegral
+WebKit gains were smaller and variable. Commit and paint stayed on full redraws.
+Full-render fallbacks covered unsupported scenes, canvas edges and nonintegral
 native pixel grids. [Scope, fidelity and individual measurements](./UX-09-HANDOFF.md#token-drag-partial-repaint-implementation-and-local-results)
 are retained. This is not reference-device, physical-input or release acceptance,
 and it consumed no hosted minutes.
@@ -51,8 +61,9 @@ and full redraw for unsupported or changing scene state. The
 layer order, footprint/halo concerns, fog exclusions, memory tradeoffs and the
 F05 measurement update required to observe a partial paint. The owner then
 approved the bounded prototype and complete-overlap extension, explicitly
-retaining a zero-hosted budget. The completed bounded implementation and local
-results are recorded above. The owner also approved integral native device-pixel
+retaining a zero-hosted budget. The former bounded implementation and local
+results are retained as history above, with its October 1 withdrawal explicit.
+The owner also approved integral native device-pixel
 tile-pitch admission, with unchanged full rendering at other scales. No
 representative-device or release acceptance is claimed.
 
@@ -1679,7 +1690,7 @@ successful bounded milestones.
 | A-DATA | Preserve source records and newer work, prevent resurrection and partial commits, and retain a usable recovery path through legacy migration, deletion tombstones and failed-startup recovery/races. | Copilot review; production UI and native IndexedDB on macOS 26.6.2, locked Chromium/Firefox/WebKit, legacy/rich/failure fixtures | Passed for the ten bounded cases at `ca0dedb`; [revision-linked evidence and startup-conflict fix](./UX-09-HANDOFF.md#a-data-production-preservation-milestone). Exact-head required Linux CI remains the landing gate; physical storage failure is not qualified |
 | A-UPDATE | Exercise an actual supported prior application version upgrading to the candidate with existing projects and sessions. Rehearse safe rollback or documented recovery without lossy writes. Do not invent a schema change merely to exercise migration. | Copilot; source-pinned production rebuilds, isolated synthetic persistent profiles and real recovery downloads on macOS 26.7 | Passed locally for `72f32e1 -> d9036c5 -> 72f32e1` on three engines with harness `db024ac`; [evidence and limits](./UX-09-HANDOFF.md#local-documentation-and-real-version-update-milestone). Supported-version scope and final release candidate remain unaccepted; manual rehearsal is not a new required CI check |
 | A-EDIT | Bring critical `ux04Editing.browser.mjs` object-editing paths into the required runner; cover keyboard access, apply/cancel, undo, failure states, visible focus, contrast and reflow across supported workflows. Preserve player projection/display/export sentinel coverage. | Copilot; production UI and native storage; platform/revision-specific evidence in the handoff | Failed Linux Firefox at `dbba27f`: 200% inspector focus is clipped; aggregate correctly failed. Correction at `aa40a14`, strengthened assertions at `0d0e0bb`, affected local three-engine cases passed. [Fresh exact-head hosted evidence is blocked by zero budget](./UX-09-HANDOFF.md#zero-actions-roadmap-disposition-and-resume-checklist). Earlier macOS results are retained, not relabeled as Linux acceptance |
-| A-PERF | Profile before another bounded optimization. Establish a measured desktop workload/hardware/DPR scope, loading behavior, and F05 export allocation/cancellation behavior. Meet the existing desktop targets or obtain an explicit, evidence-backed early-access scope exception before release. | Agent-led local diagnostics; representative hardware/support decisions remain separate | Token-preview improvement retained at `e55bc1e`; [bounded dense-export lifecycle gap checked](./UX-09-HANDOFF.md#dense-f05-export-and-cancellation-milestone). Paint/commit remain full and Chromium/Firefox paint proxies remain above 100 ms. Reference/loading acceptance, native/GPU memory and natural WebKit cancellation timing remain open |
+| A-PERF | Profile before another bounded optimization. Establish a measured desktop workload/hardware/DPR scope, loading behavior, and F05 export allocation/cancellation behavior. Meet the existing desktop targets or obtain an explicit, evidence-backed early-access scope exception before release. | Agent-led local diagnostics; representative hardware/support decisions remain separate | Owner withdrew the `e55bc1e` token-preview fast path after hosted Linux WebKit pixel failure; [full redraw restoration](./UX-09-HANDOFF.md#owner-approved-full-token-redraw-restoration) is local pending fresh hosted qualification. [Dense-export lifecycle gap checked](./UX-09-HANDOFF.md#dense-f05-export-and-cancellation-milestone). Preview/paint/commit now all redraw fully when needed; earlier Chromium/Firefox paint proxies exceed 100 ms. Reference/loading acceptance, native/GPU memory and natural WebKit cancellation timing remain open |
 | A-DOCS | Reconcile README, Features, Sharing, help/demo guidance and release notes with Your maps -> Create/open -> Edit -> Prepare -> Run -> Player display. State local-only display, project-backup versus session scope, offline readiness and supported limits accurately. | Copilot; actual UI source, UX-02/05/06/08 contracts and targeted help/action component assertions | Completed locally September 28: public guides, help text and action labels corrected; historical GIFs labeled, support/release gaps explicit. Not yet published, no support-scope exception or release approval |
 | A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | Passed for the outstanding initial-release digital-art owner decisions, completed September 29. Local technical evidence retained; new sample-guide text is not blanket copy/playtest acceptance. A-PRINT and exact-head hosted qualification remain separate open gates; [art closeout ledger](#initial-release-art-closeout) |
 | A-PRINT | Complete the physical-printing launch gate below, including both paper sizes, overview/miniature scale, assembled overlaps and monochrome readability. | Agents prepare exports; a person prints/measures/reviews and supplies evidence from documented printer/app setups | Not assessed on physical paper; digital layout and DPI evidence do not close this gate |
@@ -1734,7 +1745,8 @@ Actual hosted qualification/publication waits
 for a numeric budget and refreshed remote state.
 Supported-version scope and a final candidate must still be identified before
 A-UPDATE can serve as release evidence. A-PERF's local baseline, rejected
-floor-batch trial and retained bounded token-preview improvement are recorded;
+floor-batch trial, historical token-preview improvement and its owner-approved
+correctness withdrawal are recorded;
 reuse those results rather than repeating either campaign without a changed
 claim or implementation.
 A larger renderer rewrite or performance-scope exception requires an
