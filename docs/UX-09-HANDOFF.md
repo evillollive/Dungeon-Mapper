@@ -1904,6 +1904,83 @@ call, agent, application rebuild/test campaign or native-setting change.
 Archive integrity checks do not replace application or hosted qualification.
 Local disk/compute were not metered; account-wide usage remains unknown.
 
+### October 1 PR #185 check-fix investigation
+
+The accumulated branch was published once at
+`c87cc4b1ef9f58ec1c46042d1ff4ea267e5fe47f`. Read-only inspection of
+[run 36913680885](https://github.com/evillollive/Dungeon-Mapper/actions/runs/36913680885)
+found it completed with failure, not pending. This updates the preceding
+local-only publication status, but does not turn historical or local evidence
+into a hosted qualification receipt.
+
+The supplied September 15 Firefox failure is the application focus-clipping
+defect documented above. Its correction `aa40a14` and strengthened regression
+`0d0e0bb` are included in the published head. Its Browser qualification failure
+was a correct downstream result, not a second application defect. Neither
+historical failure warrants rerunning the old revision.
+
+The October 1 run failed earlier: Build and test passed lint/build, then
+reported two failed tests and 1,144 passed. Browser journeys never started.
+The aggregate correctly rejected `RESULT: skipped`. Both new failures were
+introduced by this PR's intended provenance addition in `8eaafa0`, not
+infrastructure or pre-existing main behavior:
+
+- The full-catalog sample equality fixture omitted the new inherited license
+  record. The local correction explicitly pins its complete title, author,
+  license, URL, notice, version and empty asset-credit list while retaining
+  whole-project equality. It does not discard or ignore provenance.
+- The print companion's launch-sample fingerprint still identified the source
+  immediately before that provenance addition. Inspection confirmed the source
+  diff only added the intended metadata. The local correction records
+  `sha256:88dd81c171c83ad7ab5cf374a30940b4d50e8c0621a3dc0fe9c87b3393eb9190`.
+  The exact hash assertion and all artwork/legacy-token hashes are unchanged.
+
+Both failures reproduced locally before correction. After correction, all
+55 tests in the Folio-token, print-companion, utility/hook provenance,
+launch-sample and premade-map selections passed on Node 24.16.0. Zero-warning
+lint, the production build and `git diff --check` passed. The build retains
+its existing large-chunk advisory; npm also reports the existing unknown
+global-config warning. No dependencies, renderer geometry, CI configuration
+or qualification assertions were weakened. This selection is not a new
+full-suite or hosted/browser qualification receipt. The previously retained
+current-head focus tests and Firefox 200% production case were not repeated
+for these metadata/fixture changes.
+
+**Hosted accounting and publication hold:** The owner approved 200 aggregate
+runner minutes for one PR-update trigger and one eventual post-merge CI/Pages
+trigger, with merge requiring separate authorization. The PR-update trigger
+has been consumed. The investigation itself initiated no hosted trigger.
+The job timestamps for the completed run are:
+
+| Job | UTC start to finish on October 1 | Duration | Conservative Linux minutes |
+| --- | --- | --- | --- |
+| Build and test, `110542298313` | 19:21:29 to 19:23:34 | 125 seconds | 3 |
+| Browser qualification, `110543160601` | 19:23:37 to 19:23:40 | 3 seconds | 1 |
+| Browser journeys matrix | Skipped before runner execution | None observed | 0 |
+| Package qualified Pages | Skipped before runner execution | None observed | 0 |
+| Deploy qualified Pages | Skipped before runner execution | None observed | 0 |
+
+Thus the run accounts for 4 conservatively rounded runner minutes, with no
+running or queued jobs. The coordinator can release its 90-minute active-run
+reservation, retain 100 minutes for the conditional post-merge run, and
+record 96 minutes unallocated within the 200-minute ceiling. These figures
+are timestamp-based accounting, not an invoice or account-balance lookup.
+
+Publishing this local correction requires renewed scope approval for exactly
+one additional PR-update trigger; no automatic rerun is proposed. The
+September 15 representative run used 35 rounded minutes across all five
+jobs. Given the expanded branch and changed artifact pipeline, estimate
+35 to 60 minutes with uncertainty, and propose a 90-minute ceiling for
+the new trigger, including setup and all three browser legs. If approved,
+4 consumed plus 90 for that run plus the existing 100-minute post-merge
+reservation leaves 6 minutes; this proposal is not approval. The workflow's
+PR job timeouts sum to 77 minutes before extra runner overhead. Build/browser
+artifacts retain for 14 days, conditional Pages packaging for one day, and
+npm caches also consume storage. Actual billed usage, available account
+allowance and storage charges remain independently unverified. Do not push,
+rerun, merge or bypass required checks until the coordinator obtains the
+necessary authorization.
+
 ## Remaining release gates
 
 Subsequent housekeeping removes 68 of the original 73 hook warnings and
