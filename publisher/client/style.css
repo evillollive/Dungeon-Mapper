@@ -14,6 +14,8 @@ button:disabled { opacity: .55; cursor: not-allowed; }
 button.primary { color: #201018; background: #ff9569; font-weight: 700; border-color: #ff9569; }
 button.primary:hover:not(:disabled) { background: #ffb593; }
 label { display: grid; gap: 7px; margin: 16px 0; }
+.check { grid-template-columns: auto 1fr; align-items: start; }
+.check input { min-height: 24px; width: 24px; margin: 0; }
 input, select { font: inherit; color: inherit; background: #272344; border: 1px solid #817696; border-radius: 7px; padding: 9px 12px; min-height: 44px; min-width: 0; max-width: 100%; }
 input[type="file"] { width: 100%; }
 select { width: 100%; }

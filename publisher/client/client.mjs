@@ -24,6 +24,8 @@ function message(text, error = false) {
 function clearPlan() {
   clearTimeout(planTimer);
   plan = null; get('plan-detail').hidden = true; get('plan-summary').replaceChildren();
+  get('validate-consent').checked = false;
+  get('validation-status').textContent = '';
 }
 function clearPackage() {
   selection++;
@@ -50,13 +52,15 @@ function buttons() {
   get('repository').disabled = busy || !authenticated || get('repository').options.length < 2;
   get('plan').disabled = busy || !selected || !get('repository').value;
   get('recheck').disabled = busy || !plan;
+  get('validate-consent').disabled = busy || !plan || plan.status === 'server-validated';
+  get('validate').disabled = busy || !selected || !plan || plan.status === 'server-validated' || !get('validate-consent').checked;
   get('cancel').hidden = !busy || navigating;
 }
-async function api(path, method = 'GET', body = {}) {
+async function api(path, method = 'GET', body = {}, contentType = 'application/json') {
   const response = await fetch('/publisher/api/' + path, {
     method, credentials: 'same-origin', cache: 'no-store', redirect: 'error', signal: job?.signal,
-    headers: method === 'POST' ? { 'Content-Type': 'application/json', 'X-Publisher-CSRF': csrf } : {},
-    ...(method === 'POST' ? { body: JSON.stringify(body) } : {}),
+    headers: method === 'POST' ? { 'Content-Type': contentType, 'X-Publisher-CSRF': csrf } : {},
+    ...(method === 'POST' ? { body: contentType === 'application/zip' ? body : JSON.stringify(body) } : {}),
   });
   const result = await response.json();
   if (!response.ok) {
@@ -103,7 +107,7 @@ async function run(action) {
     navigating = false;
     if (current.signal.aborted) {
       clearPlan();
-      message('Request cancelled. Planning metadata may already have reached the local server, but no package bytes or GitHub writes were sent.');
+      message('Request cancelled. An explicit ZIP submission may already have reached the local validator; uploaded bytes are discarded during cleanup. No GitHub writes were sent.');
     } else {
       if (error.status === 401) {
         clearTimeout(sessionTimer);
@@ -121,9 +125,10 @@ async function run(action) {
   }
 }
 function showPackage(value) {
+  const epoch = selection;
   selected = value;
   const { manifest, metadata } = value;
-  get('package-status').textContent = `Inspected locally: ${metadata.memberCount} files, ${metadata.zipBytes.toLocaleString()} ZIP bytes. File contents have not been sent to the server.`;
+  get('package-status').textContent = `Inspected locally: ${metadata.memberCount} files, ${metadata.zipBytes.toLocaleString()} ZIP bytes. Selection itself does not send file contents.`;
   get('package-summary').textContent = `${manifest.title} / declared creator ${manifest.author} / ${manifest.license} / version ${manifest.contentVersion} / ${manifest.profile}`;
   get('package-notices').textContent = JSON.stringify({ sources: value.notices, members: manifest.members }, null, 2);
   get('package-warning').textContent = value.metadataWarning;
@@ -133,7 +138,7 @@ function showPackage(value) {
     const figure = document.createElement('figure'), image = document.createElement('img'), caption = document.createElement('figcaption');
     image.src = url; image.alt = `Creator package level ${index + 1}`;
     image.addEventListener('error', () => {
-      if (selected !== value) return;
+      if (epoch !== selection || !selected) return;
       clearPackage(); message('A package preview could not be displayed. Select and inspect the file again.', true); buttons();
     });
     caption.textContent = `Level ${index + 1}: author-facing preview`;
@@ -143,11 +148,21 @@ function showPackage(value) {
   get('package-detail').hidden = false;
 }
 function showPlan(value) {
-  if (!selected || value.mode !== 'local-prototype' || value.status !== 'metadata-only' ||
-      value.packageReceived !== false || value.writesPerformed !== false ||
+  const validated = value.status === 'server-validated';
+  if (!selected || value.mode !== 'local-prototype' || !['metadata-only', 'server-validated'].includes(value.status) ||
+      value.packageReceived !== validated || value.packageRetained !== false || value.writesPerformed !== false ||
+      (validated && (value.validation?.decoder !== 'node-native-v1' || !Number.isFinite(value.validation.validatedAt))) ||
       Object.keys(selected.metadata).some(key => value.package[key] !== selected.metadata[key]) ||
       value.repository.id !== Number(get('repository').value)) throw new Error('The planning response does not match the selected local package and destination.');
   plan = value;
+  get('plan-title').textContent = validated ? 'Destination plan: server-validated package' : 'Destination plan: metadata only';
+  get('plan-warning').textContent = validated
+    ? 'The local Node validator checked this ZIP independently and discarded the uploaded bytes. No GitHub objects, branch, PR or workflow run has been created.'
+    : 'The server has not received or validated the ZIP. No GitHub objects, branch, PR or workflow run has been created.';
+  get('validation-status').textContent = validated
+    ? 'Independent archive, profile, reference, rights-declaration and native image checks passed. This does not prove ownership, licensing permission or publication readiness.'
+    : '';
+  get('validate-consent').checked = false;
   clearTimeout(planTimer);
   planTimer = setTimeout(() => {
     clearPlan(); buttons(); message('The destination plan expired. Review the destination again; nothing was published.');
@@ -186,7 +201,7 @@ get('disconnect').addEventListener('click', () => void run(async () => {
 get('refresh').addEventListener('click', () => void run(session));
 get('cancel').addEventListener('click', () => {
   job?.abort();
-  message('Cancellation requested. Controls remain locked until the current read/request settles and cleanup finishes.');
+  message('Cancellation requested. Local controls stay locked until the request settles. A server validation slot stays locked until its child process exits.');
 });
 get('clear-package').addEventListener('click', () => { clearPackage(); buttons(); });
 get('package-file').addEventListener('change', event => {
@@ -233,7 +248,18 @@ get('recheck').addEventListener('click', () => void run(async signal => {
     const value = await api(`plans/${plan.id}/recheck`, 'POST');
     signal.throwIfAborted();
     showPlan(value);
-    message('Simulated destination still matches the reviewed plan. No package was uploaded or published.');
+    message('Simulated destination still matches the reviewed plan. This recheck sends no ZIP and publishes nothing.');
+  } catch (error) { clearPlan(); throw error; }
+}));
+get('validate-consent').addEventListener('change', buttons);
+get('validate').addEventListener('click', () => void run(async signal => {
+  if (!selected || !plan || !get('validate-consent').checked) throw new Error('Review the package and explicitly approve sending it to the local validator first.');
+  get('validation-status').textContent = 'Sending the reviewed ZIP to the loopback-only validator. Nothing is sent to GitHub...';
+  try {
+    const value = await api(`plans/${plan.id}/validate`, 'POST', selected.bytes, 'application/zip');
+    signal.throwIfAborted();
+    showPlan(value);
+    message('The local server independently validated the ZIP and discarded its bytes. Nothing was published.');
   } catch (error) { clearPlan(); throw error; }
 }));
 void run(async () => {

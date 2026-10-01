@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { request as httpRequest } from 'node:http';
 import test, { type TestContext } from 'node:test';
 import { BASE, COOKIE, createLocalPublisher, LIMITS } from '../src/app.ts';
@@ -98,11 +99,95 @@ async function readPlan(response: Response): Promise<PublicationPlan> {
   return value as PublicationPlan;
 }
 const plansPath = BASE + 'api/plans';
+const zipHeaders = { 'Content-Type': 'application/zip' };
+const invalidZipMetadata = () => ({
+  ...planMetadata(), package: { ...planMetadata().package, zipBytes: 4,
+    packageSha256: createHash('sha256').update('junk').digest('hex') },
+});
 function gate() {
   let resolve!: () => void;
   const promise = new Promise<void>(done => { resolve = done; });
   return { promise, resolve };
 }
+
+test('ZIP submission is session/CSRF/origin bound and does not trust a browser-validity claim', async t => {
+  const app = await setup(t), client = jar(), other = jar();
+  await app.login(client); await app.login(other);
+  const plan = await readPlan(await app.send(plansPath, client, 'POST', {}, JSON.stringify(invalidZipMetadata())));
+  const path = `${plansPath}/${plan.id}/validate`;
+  assert.equal((await app.send(path, other, 'POST', zipHeaders, 'junk')).status, 404);
+  assert.equal((await app.send(path, client, 'POST', { ...zipHeaders, Origin: 'https://untrusted.example' }, 'junk')).status, 403);
+  assert.equal((await app.send(path, client, 'POST', { ...zipHeaders, 'X-Publisher-CSRF': 'wrong' }, 'junk')).status, 403);
+  assert.equal((await app.send(path, client, 'POST', {}, 'junk')).status, 415);
+  assert.equal((await app.send(path, client, 'POST', { ...zipHeaders, 'Content-Encoding': 'gzip' }, 'junk')).status, 415);
+  assert.equal((await app.send(path, client, 'POST', zipHeaders, 'junk!')).status, 413);
+  const rejected = await app.send(path, client, 'POST', zipHeaders, 'junk');
+  assert.equal(rejected.status, 422);
+  assert(!JSON.stringify(await rejected.json()).includes('junk'));
+  assert.equal((await readPlan(await app.send(`${plansPath}/${plan.id}`, client))).status, 'metadata-only');
+  assert.deepEqual(app.errors, []);
+});
+
+test('ZIP digest/length mismatch invalidates the plan before native decoding', async t => {
+  const app = await setup(t), client = jar();
+  await app.login(client);
+  for (const body of ['bad!', 'bad']) {
+    const plan = await readPlan(await app.send(plansPath, client, 'POST', {}, JSON.stringify(invalidZipMetadata())));
+    const response = await app.send(`${plansPath}/${plan.id}/validate`, client, 'POST', zipHeaders, body);
+    assert.equal(response.status, 409);
+    assert.equal((await app.send(`${plansPath}/${plan.id}`, client)).status, 404);
+  }
+});
+
+test('chunked ZIP input is bounded by actual bytes, not just Content-Length', async t => {
+  const app = await setup(t), client = jar();
+  await app.login(client);
+  const plan = await readPlan(await app.send(plansPath, client, 'POST', {}, JSON.stringify(invalidZipMetadata())));
+  const status = await new Promise<number>((resolve, reject) => {
+    const request = httpRequest(app.origin + `${plansPath}/${plan.id}/validate`, {
+      method: 'POST', headers: { ...zipHeaders, Cookie: client.cookie, Origin: app.origin,
+        'X-Publisher-CSRF': client.csrf, 'Transfer-Encoding': 'chunked' },
+    }, response => { response.resume(); response.on('end', () => resolve(response.statusCode!)); });
+    request.on('error', reject);
+    request.write('ju'); request.end('nk!');
+  });
+  assert.equal(status, 413);
+});
+
+test('a slow upload holds the single validation slot while control requests remain responsive', async t => {
+  const app = await setup(t), client = jar(), other = jar();
+  await app.login(client); await app.login(other);
+  const plan = await readPlan(await app.send(plansPath, client, 'POST', {}, JSON.stringify(invalidZipMetadata())));
+  const second = await readPlan(await app.send(plansPath, other, 'POST', {}, JSON.stringify(invalidZipMetadata())));
+  const started = gate();
+  const original = app.provider.repository.bind(app.provider);
+  app.provider.repository = async (...args) => { const value = await original(...args); started.resolve(); return value; };
+  let pending!: ReturnType<typeof httpRequest>;
+  const status = new Promise<number>((resolve, reject) => {
+    pending = httpRequest(app.origin + `${plansPath}/${plan.id}/validate`, {
+      method: 'POST', headers: { ...zipHeaders, Cookie: client.cookie, Origin: app.origin,
+        'X-Publisher-CSRF': client.csrf, 'Content-Length': '4' },
+    }, response => { response.resume(); response.on('end', () => resolve(response.statusCode!)); });
+    pending.on('error', reject); pending.write('ju');
+  });
+  t.after(() => pending.destroy());
+  await started.promise;
+  assert.equal((await app.send(`${plansPath}/${second.id}/validate`, other, 'POST', zipHeaders, 'junk')).status, 503);
+  assert.equal((await app.session(other)).authenticated, true);
+  await app.send(BASE + 'api/disconnect', client, 'POST');
+  assert.equal(await status, 401);
+  pending.destroy();
+  assert.equal((await app.send(`${plansPath}/${second.id}/validate`, other, 'POST', zipHeaders, 'junk')).status, 422);
+});
+
+test('a destination change during ZIP submission cannot acquire a validation receipt', async t => {
+  const app = await setup(t), client = jar();
+  await app.login(client);
+  const plan = await readPlan(await app.send(plansPath, client, 'POST', {}, JSON.stringify(invalidZipMetadata())));
+  app.provider.repositoryState.private = false;
+  assert.equal((await app.send(`${plansPath}/${plan.id}/validate`, client, 'POST', zipHeaders, 'junk')).status, 409);
+  assert.equal((await app.send(`${plansPath}/${plan.id}`, client)).status, 404);
+});
 
 test('plans require authentication, CSRF, exact bounded metadata and an allowed destination', async t => {
   const app = await setup(t), client = jar();

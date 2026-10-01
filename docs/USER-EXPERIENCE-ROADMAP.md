@@ -1767,8 +1767,9 @@ package without overwriting edits.
 No GitHub connection/upload or hosted qualification. Remote operations remain unauthorized.
 GH-N07's separate publisher origin and portable Node prototype directions are
 approved. The bounded GH-N08 authentication shell uses only a local simulated
-provider. GH-N09 preparation adds browser-local ZIP inspection and metadata-only
-simulated destination plans, not file uploads or publication. Hosting, real
+provider. GH-N09 preparation adds browser-local ZIP inspection, metadata-only
+simulated destination plans and separately consented loopback ZIP validation
+in an independent native Node process, not remote uploads or publication. Hosting, real
 credentials, package publication and operations remain
 separately gated. See the [publisher design](./GITHUB-PUBLISHER-DESIGN.md).
 **Depends on:** UX-01 preservation,
@@ -1947,7 +1948,7 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-09B | Deferred from early access; not accepted | Broader physical-device, native zoom, assistive-technology and remaining device-performance qualification; printing stays in A |
 | UX-09C | Deferred from early access; no participant acceptance | Existing first-use, routine-play, comprehension and aesthetic/readability criteria require real participants |
 | UX-10 | Deferred | Explicit approval of remote scope |
-| UX-11 | Account-free package/comparison work complete locally; separate publisher auth and metadata-planning prototype uses local fakes only | [GitHub tasks](./GITHUB-INTEGRATION-ROADMAP.md), [creator contract](./CREATOR-PACKAGE-CONTRACT.md) and [publisher design](./GITHUB-PUBLISHER-DESIGN.md). No live account connection, package publication or GitHub update checks. Production operating decisions, hosted qualification and original release gates remain open |
+| UX-11 | Account-free package/comparison work complete locally; separate publisher auth, planning and independent ZIP validation use loopback/local fakes only | [GitHub tasks](./GITHUB-INTEGRATION-ROADMAP.md), [creator contract](./CREATOR-PACKAGE-CONTRACT.md) and [publisher design](./GITHUB-PUBLISHER-DESIGN.md). No live account connection, package publication or GitHub update checks. Production operating decisions, hosted qualification and original release gates remain open |
 
 ## 10. Relationship to the previous roadmap
 

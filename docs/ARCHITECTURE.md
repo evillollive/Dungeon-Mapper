@@ -5,7 +5,9 @@ The planned [optional GitHub publisher](./GITHUB-PUBLISHER-DESIGN.md) is a separ
 first-party publishing page/service, not a move of this editor or its local
 storage. A loopback-only Node authentication and metadata-planning simulation
 now lives under `publisher/`, outside the Pages build. Its separate browser
-bundle reuses creator ZIP inspection; the server receives scalar metadata only.
+bundle reuses creator ZIP inspection. Planning sends scalar metadata only;
+a separately consented loopback ZIP submission is independently checked by a
+Node child with publisher-only DOM/native-image dependencies.
 No backend or account connection has
 been deployed.
 

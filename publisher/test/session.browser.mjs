@@ -102,7 +102,12 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox, webkit }
     page.on('pageerror', error => errors.push(error.message));
     page.on('request', request => {
       const url = new URL(request.url());
-      if (request.method() === 'POST') posts.push({ path: url.pathname, body: request.postData() });
+      if (request.method() === 'POST') {
+        const zip = request.headers()['content-type'] === 'application/zip';
+        const bytes = request.postDataBuffer();
+        posts.push({ path: url.pathname, body: zip ? undefined : request.postData(),
+          ...(zip ? { zip: true, bytes: bytes?.length, sha256: createHash('sha256').update(bytes).digest('hex') } : {}) });
+      }
       if (url.pathname === BASE + 'auth/callback' && url.searchParams.has('code')) callbacks.push(url.href);
     });
     await page.goto(server.url);
@@ -223,6 +228,53 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox, webkit }
       'PUBLISHER_LOCAL_DM_NOTE_DO_NOT_TRANSMIT', upload.name, 'Publisher local review fixture',
       'Synthetic fixture author', 'data:image', 'DO_NOT_SEND',
     ]) assert(!request.body?.includes(text), `Non-metadata package material reached the server: ${text}`);
+    assert.equal(posts.filter(item => item.zip).length, 0, 'Package selection and destination planning must not upload ZIP contents');
+    await expect(page.getByRole('button', { name: 'Validate ZIP on local server', exact: true })).toBeDisabled();
+    await page.locator('#validate-consent').check();
+    await page.getByRole('button', { name: 'Validate ZIP on local server', exact: true }).click();
+    await expect(page.locator('#validation-status')).toContainText('native image checks passed', { timeout: 15_000 });
+    await expect(page.locator('#plan-title')).toHaveText('Destination plan: server-validated package');
+    await expect(page.locator('#validate')).toBeDisabled();
+    const submitted = posts.filter(item => item.zip);
+    assert.equal(submitted.length, 1);
+    assert.equal(submitted[0].sha256, fixture.metadata.packageSha256);
+    assert.equal(submitted[0].bytes, fixture.metadata.zipBytes);
+    await page.getByRole('button', { name: 'Recheck simulated destination', exact: true }).click();
+    await expect(page.locator('#message')).toContainText('still matches');
+    await expect(page.locator('#validation-status')).toContainText('native image checks passed');
+    await page.screenshot({ path: join(output, `${engine}-server-validation-390.png`), fullPage: true });
+
+    const probe = async (metadata, changeAfterValidation = false) => {
+      const prepared = await page.evaluate(async metadata => {
+        const session = await (await fetch('/publisher/api/session')).json();
+        const response = await fetch('/publisher/api/plans', { method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Publisher-CSRF': session.csrf },
+          body: JSON.stringify({ repositoryId: 2001, package: metadata }) });
+        return { csrf: session.csrf, plan: await response.json() };
+      }, metadata);
+      const original = server.provider.repository.bind(server.provider);
+      let reads = 0;
+      if (changeAfterValidation) server.provider.repository = async (...args) => {
+        const repository = await original(...args);
+        return ++reads === 2 ? { ...repository, headSha: 'e'.repeat(40) } : repository;
+      };
+      try {
+        const result = await page.evaluate(async ({ prepared, bytes }) => {
+          const response = await fetch(`/publisher/api/plans/${prepared.plan.id}/validate`, {
+            method: 'POST', headers: { 'Content-Type': 'application/zip', 'X-Publisher-CSRF': prepared.csrf },
+            body: Uint8Array.from(bytes),
+          });
+          const lookup = await fetch(`/publisher/api/plans/${prepared.plan.id}`);
+          return { status: response.status, body: await response.json(), lookup: lookup.status };
+        }, { prepared, bytes: Array.from(fixture.bytes) });
+        if (changeAfterValidation) assert.equal(reads, 2, 'Destination must be checked before and after native validation');
+        assert.equal(result.status, 409);
+        assert.equal(result.lookup, 404);
+        return result.body.error;
+      } finally { server.provider.repository = original; }
+    };
+    assert.equal(await probe({ ...fixture.metadata, memberCount: fixture.metadata.memberCount + 1 }), 'package_metadata_changed');
+    assert.equal(await probe(fixture.metadata, true), 'destination_changed');
     const tokens = server.provider.tokensForTest();
     assert.equal(tokens.length, 1);
     for (const body of responses) assert(!body.includes(tokens[0]), 'A provider token reached the browser');
@@ -299,7 +351,9 @@ for (const [engine, browserType] of Object.entries({ chromium, firefox, webkit }
       zipLimit: { exactBoundaryRead: true, aboveBoundaryRejectedBeforeRead: true },
       clientExpiry: 'Browser clock advanced to test memory/UI cleanup; server expiry is covered separately by HTTP tests',
       cancellation: 'Native File.arrayBuffer completion deliberately held, then released; no timing qualification',
-      fixtureMetadata: fixture.metadata, filenameAndContentsNotPosted: true,
+      fixtureMetadata: fixture.metadata, noAutomaticZipSubmission: true,
+      explicitUiZipSubmissions: 1, directAdversarialZipSubmissions: 2,
+      independentNativeValidation: true, fabricatedMetadataRejected: true, postValidationBaseChangeRejected: true,
       noBrowserTokenOrMapStorage: true, cookie: { httpOnly: true, sameSite: 'Lax', path: BASE, secure: false } });
     writeFileSync(join(output, `${engine}-result.json`), JSON.stringify(results.at(-1), null, 2));
     await context.close();
@@ -317,12 +371,15 @@ const files = ['publisher/src/app.ts', 'publisher/src/provider.ts', 'publisher/s
   'publisher/test/provider.ts', 'publisher/client/client.mjs', 'publisher/client/index.html',
   'publisher/client/style.css', 'publisher/client/package-review.mjs', 'publisher/test/session.browser.mjs',
   'publisher/test/package-fixture.browser.mjs', 'src/utils/creatorPackageContract.ts',
+  'src/utils/creatorAssets.ts', 'src/utils/creatorPackageImport.ts', 'publisher/src/validation.ts',
+  'publisher/validator/worker.mjs', 'publisher/validator/inspect.ts', 'publisher/validator/dist/inspect.js',
+  'publisher/package.json', 'publisher/package-lock.json',
   'publisher/dist/index.html', 'publisher/dist/.vite/manifest.json',
   ...readdirSync('publisher/dist/assets').map(name => 'publisher/dist/assets/' + name)];
 writeFileSync(join(output, 'receipt.json'), JSON.stringify({
   observedAt: new Date().toISOString(), scope: 'Loopback HTTP and simulated provider only; no production TLS or real GitHub qualification',
   responseCapture: 'Native fetch responses cloned and recorded before client navigation; no latency claims',
   files: files.map(path => ({ path, sha256: createHash('sha256').update(readFileSync(path)).digest('hex') })),
-  results, hostedTriggers: 0, mapsUploaded: 0, productionServiceCreated: false,
+  results, hostedTriggers: 0, localZipSubmissions: 9, githubUploads: 0, productionServiceCreated: false,
 }, null, 2));
 console.log(JSON.stringify(results, null, 2));

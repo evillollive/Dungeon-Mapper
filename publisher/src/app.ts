@@ -4,6 +4,7 @@ import { ProviderError, type LocalAuthProvider, type PublisherGrant } from './pr
 import { publisherStaticFiles } from './static.ts';
 import { RequestError } from './errors.ts';
 import { createPublicationPlan, publicationMetadata, reviewedRepository, sameRepository, validRepositoryName, type PublicationPlan } from './plans.ts';
+import { validatePackage } from './validation.ts';
 
 export const BASE = '/publisher/';
 export const COOKIE = 'dm_publisher_local';
@@ -71,13 +72,16 @@ function parameter(url: URL, name: string): string {
   if (values.length !== 1 || values[0].length > 512 || !values[0]) throw new RequestError(400, 'invalid_callback', 'The authorization response is invalid. Start sign-in again.');
   return values[0];
 }
-async function objectBody(request: IncomingMessage, signal: AbortSignal): Promise<Record<string, unknown>> {
-  if (request.headers['content-type']?.split(';')[0].trim().toLowerCase() !== 'application/json') {
-    throw new RequestError(415, 'json_required', 'Use an application/json request.');
+async function boundedBody(request: IncomingMessage, signal: AbortSignal, maximum: number, contentType: string): Promise<Buffer> {
+  const sizeMessage = contentType === 'application/json' ? 'This endpoint does not accept package uploads.'
+    : 'The submitted ZIP exceeds the reviewed package byte limit.';
+  if (request.headers['content-type']?.split(';')[0].trim().toLowerCase() !== contentType ||
+      (request.headers['content-encoding'] !== undefined && request.headers['content-encoding'] !== 'identity')) {
+    throw new RequestError(415, contentType === 'application/json' ? 'json_required' : 'zip_required', `Use an unencoded ${contentType} request.`);
   }
   const length = request.headers['content-length'];
-  if (length !== undefined && (!/^\d+$/.test(length) || Number(length) > LIMITS.bodyBytes)) {
-    throw new RequestError(413, 'body_too_large', 'This endpoint does not accept package uploads.');
+  if (length !== undefined && (!/^\d+$/.test(length) || Number(length) > maximum)) {
+    throw new RequestError(413, 'body_too_large', sizeMessage);
   }
   const chunks = await new Promise<Buffer[]>((resolve, reject) => {
     const chunks: Buffer[] = [];
@@ -91,7 +95,7 @@ async function objectBody(request: IncomingMessage, signal: AbortSignal): Promis
     };
     const data = (chunk: Buffer) => {
       count += chunk.length;
-      if (count > LIMITS.bodyBytes) finish(new RequestError(413, 'body_too_large', 'This endpoint does not accept package uploads.'));
+      if (count > maximum) finish(new RequestError(413, 'body_too_large', sizeMessage));
       else chunks.push(chunk);
     };
     const end = () => finish();
@@ -101,8 +105,12 @@ async function objectBody(request: IncomingMessage, signal: AbortSignal): Promis
     signal.addEventListener('abort', aborted, { once: true });
     if (signal.aborted) aborted();
   });
+  return Buffer.concat(chunks);
+}
+async function objectBody(request: IncomingMessage, signal: AbortSignal): Promise<Record<string, unknown>> {
+  const bytes = await boundedBody(request, signal, LIMITS.bodyBytes, 'application/json');
   let value: unknown;
-  try { value = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
+  try { value = JSON.parse(bytes.toString('utf8')); }
   catch (error) {
     if (!(error instanceof SyntaxError)) throw error;
     throw new RequestError(400, 'invalid_json', 'The request is not valid JSON.');
@@ -129,8 +137,15 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
   const now = options.now ?? Date.now;
   const log = options.onError ?? (event => console.error(event.code));
   const sessions = new Map<string, Session>();
+  let activeValidation: { owner: Session; controller: AbortController; finished: Promise<void> } | undefined;
+  function cancelValidation(owner: Session, status = 409): void {
+    if (activeValidation?.owner === owner) activeValidation.controller.abort(
+      new RequestError(status, 'obsolete_validation', 'The session or destination review changed. Package validation was cancelled.'));
+  }
   function prune(): void {
-    for (const [id, session] of sessions) if (session.expiresAt <= now()) sessions.delete(id);
+    for (const [id, session] of sessions) if (session.expiresAt <= now()) {
+      sessions.delete(id); cancelValidation(session, 401);
+    }
   }
   function session(request: IncomingMessage, response: ServerResponse, create = false): Session {
     prune();
@@ -159,7 +174,9 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
   }
   function providerFailure(error: unknown, current: Session, response: ServerResponse): never {
     if (error instanceof ProviderError && error.code === 'revoked') {
-      if (sessions.get(current.id) === current) { sessions.delete(current.id); cookie(response, undefined, now()); }
+      if (sessions.get(current.id) === current) {
+        sessions.delete(current.id); cancelValidation(current, 401); cookie(response, undefined, now());
+      }
       throw new RequestError(401, 'access_revoked', 'Simulated access was revoked. Sign in again; no fallback credentials are used.');
     }
     if (error instanceof ProviderError && error.code === 'denied') {
@@ -172,6 +189,9 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
         request.url.includes('\\') || request.url.length > 4096) throw new RequestError(400, 'host_rejected', 'Invalid local publisher host or request target.');
     const url = new URL(request.url, origin), method = request.method;
     if (url.origin !== origin) throw new RequestError(400, 'host_rejected', 'Invalid local publisher origin.');
+    if (method === 'POST' && url.pathname.startsWith(BASE + 'api/plans/') && url.pathname.endsWith('/validate')) {
+      response.setHeader('Connection', 'close');
+    }
     const asset = staticFiles.get(url.pathname);
     if (method === 'GET' && asset && !url.search) {
       response.writeHead(200, { 'Content-Type': asset.type }); response.end(asset.bytes); return;
@@ -274,6 +294,7 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
       signal.throwIfAborted();
       if (sessions.get(current.id) !== current || current.expiresAt <= now()) throw new RequestError(401, 'obsolete_session', 'The local session ended.');
       const generation = current.planGeneration = (current.planGeneration ?? 0) + 1;
+      cancelValidation(current);
       delete current.plan;
       try {
         const repo = reviewedRepository(await awaitProvider(provider.repository(current.grant.accessToken, metadata.repositoryId, signal), signal), metadata.repositoryId);
@@ -285,7 +306,7 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
       } catch (error) { providerFailure(error, current, response); }
       return;
     }
-    const planRoute = new RegExp(`^${BASE}api/plans/([A-Za-z0-9_-]{43})(/recheck)?$`).exec(url.pathname);
+    const planRoute = new RegExp(`^${BASE}api/plans/([A-Za-z0-9_-]{43})(/recheck|/validate)?$`).exec(url.pathname);
     if (planRoute && ((method === 'GET' && !planRoute[2]) || (method === 'POST' && planRoute[2]))) {
       const current = session(request, response);
       if (!current.grant) throw new RequestError(401, 'sign_in_required', 'Sign in before reviewing a simulated destination.');
@@ -294,6 +315,55 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
       if (plan.expiresAt <= now()) {
         delete current.plan;
         throw new RequestError(410, 'plan_expired', 'The destination plan expired. Review the package and destination again.');
+      }
+      if (planRoute[2] === '/validate') {
+        csrf(request, current);
+        if (plan.status !== 'metadata-only') throw new RequestError(409, 'already_validated', 'This plan already has a validation receipt. Create a fresh review to submit again.');
+        if (activeValidation) {
+          response.setHeader('Connection', 'close');
+          throw new RequestError(503, 'validation_busy', 'Another local upload or validation is running. Wait for its cleanup before retrying.');
+        }
+        const controller = new AbortController();
+        const workSignal = AbortSignal.any([signal, controller.signal]);
+        let finish!: () => void;
+        const job = { owner: current, controller, finished: new Promise<void>(resolve => { finish = resolve; }) };
+        activeValidation = job;
+        const checkCurrent = () => {
+          workSignal.throwIfAborted();
+          if (sessions.get(current.id) !== current || current.expiresAt <= now()) throw new RequestError(401, 'obsolete_session', 'The local session ended.');
+          if (current.plan !== plan) throw new RequestError(409, 'superseded_plan', 'A newer destination plan replaced this one.');
+          if (plan.expiresAt <= now()) throw new RequestError(410, 'plan_expired', 'The destination plan expired. Review it again.');
+        };
+        const checkDestination = async () => {
+          checkCurrent();
+          const repo = reviewedRepository(await awaitProvider(provider.repository(current.grant!.accessToken, plan.repository.id, workSignal), workSignal), plan.repository.id);
+          checkCurrent();
+          if (!sameRepository(plan.repository, repo)) throw new RequestError(409, 'destination_changed', 'The destination changed. Review a fresh plan; nothing was published.');
+        };
+        try {
+          await checkDestination();
+          const bytes = await boundedBody(request, workSignal, plan.package.zipBytes, 'application/zip');
+          checkCurrent();
+          if (bytes.length !== plan.package.zipBytes || createHash('sha256').update(bytes).digest('hex') !== plan.package.packageSha256) {
+            throw new RequestError(409, 'package_changed', 'The submitted ZIP does not match the reviewed bytes. Select and review it again.');
+          }
+          const result = await validatePackage(bytes, workSignal);
+          checkCurrent();
+          if ((Object.keys(plan.package) as (keyof typeof plan.package)[]).some(key => result.package[key] !== plan.package[key])) {
+            throw new RequestError(409, 'package_metadata_changed', 'The independently inspected package does not match the review metadata.');
+          }
+          await checkDestination();
+          current.plan = { ...plan, status: 'server-validated', packageReceived: true,
+            validation: { validatedAt: now(), decoder: 'node-native-v1', profile: result.profile, license: result.license } };
+          json(response, 200, current.plan);
+        } catch (error) {
+          if (error instanceof RequestError && [401, 403, 409, 410].includes(error.status) && current.plan === plan) delete current.plan;
+          providerFailure(error, current, response);
+        } finally {
+          if (activeValidation === job) activeValidation = undefined;
+          controller.abort(); finish();
+        }
+        return;
       }
       if (method === 'POST') {
         csrf(request, current); await emptyBody(request, signal);
@@ -321,7 +391,7 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
       csrf(request, current); await emptyBody(request, signal);
       signal.throwIfAborted();
       if (sessions.get(current.id) !== current || current.expiresAt <= now()) throw new RequestError(401, 'obsolete_session', 'The local session already changed.');
-      sessions.delete(current.id); cookie(response, undefined, now());
+      sessions.delete(current.id); cancelValidation(current, 401); cookie(response, undefined, now());
       if (current.grant) {
         try { await awaitProvider(provider.revoke(current.grant.accessToken, signal), signal); }
         catch {
@@ -331,7 +401,7 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
       }
       json(response, 200, { mode: 'local-prototype', authenticated: false }); return;
     }
-    throw new RequestError(404, 'not_implemented', 'This local prototype has no upload, publication, repository-creation or GitHub write endpoint.');
+    throw new RequestError(404, 'not_implemented', 'Only plan-bound local ZIP validation is available. No publication, repository-creation or GitHub write endpoint exists.');
   }
   return {
     stylePaths: assets.stylePaths,
@@ -368,6 +438,12 @@ export function createLocalPublisher(origin: string, provider: LocalAuthProvider
         controller.abort();
       }
     },
-    close(): void { sessions.clear(); },
+    async close(): Promise<void> {
+      sessions.clear();
+      if (activeValidation) {
+        activeValidation.controller.abort(new RequestError(503, 'publisher_stopped', 'The local publisher stopped.'));
+        await activeValidation.finished;
+      }
+    },
   };
 }

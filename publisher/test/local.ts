@@ -73,7 +73,7 @@ export async function startLocalPublisher(options: {
   return {
     origin, url: origin + BASE, provider,
     async close(): Promise<void> {
-      ready.app?.close(); provider.close(); server.closeAllConnections();
+      await ready.app?.close(); provider.close(); server.closeAllConnections();
       await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
     },
   };
@@ -84,7 +84,7 @@ if (process.argv[1] && pathToFileURL(process.argv[1]).href === import.meta.url) 
   if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Choose a local port between 1024 and 65535.');
   const running = await startLocalPublisher({ port });
   console.log(`LOCAL SIMULATION ONLY: ${running.url}`);
-  console.log('No GitHub connection, credentials, uploads or publication. Stop with Ctrl+C.');
+  console.log('Explicit ZIP validation stays on this machine. No real GitHub connection, credentials or publication. Stop with Ctrl+C.');
   let closing = false;
   const stop = () => { if (!closing) { closing = true; void running.close(); } };
   process.once('SIGINT', stop); process.once('SIGTERM', stop);

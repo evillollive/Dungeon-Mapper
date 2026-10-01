@@ -14,6 +14,7 @@ export async function inspectLocalPackage(file, signal) {
   const packageSha256 = await creatorSHA256(bytes);
   signal.throwIfAborted();
   return {
+    bytes,
     manifest: inspected.manifest,
     previews: inspected.previews,
     notices: inspected.sourceNotices,

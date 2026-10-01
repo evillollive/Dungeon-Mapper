@@ -401,6 +401,9 @@ remain zero; the fixture task's separate conditional budget is untouched.
 
 ## 12. Local package review and metadata-only destination plans
 
+This section records the metadata-only milestone at `8aff070`. The subsequent
+explicit loopback ZIP-validation step is described in section 13.
+
 GH-N09 now has a bounded preparation slice, not a completed publishing engine.
 After simulated sign-in, the separate publisher can inspect a creator ZIP with
 the editor's existing browser validator, show real package previews and declared
@@ -487,3 +490,115 @@ stopped. No repositories, hosted runs, uploads, agents or new sessions were
 created. This task's approved/used/reserved hosted minutes remain **0/0/0**.
 The fixture-only 24-minute ceiling remains unspent and unavailable until actual
 allowance is confirmed; it does not authorize this app's CI or service costs.
+
+## 13. Independent loopback package validation
+
+The owner approved the next local validation milestone and selected an isolated
+Node-native validator rather than a Chromium-backed service. This remains a
+loopback-only test composition, with no production host, real credentials,
+GitHub transfer, branch write or hosted runner.
+
+After reviewing a ZIP and simulated destination, the user must separately
+check consent and choose **Validate ZIP on local server**. Selection and
+planning still send no package body. The new
+`POST /publisher/api/plans/<id>/validate` sends the exact ZIP as
+`application/zip`, without its local filename. It requires the current
+authenticated session, Origin/Host and CSRF token. Content encodings are
+rejected; actual streamed bytes cannot exceed the reviewed size or the shared
+32 MiB ceiling. Length and SHA-256 must match before native decoding starts.
+
+The server launches a fresh Node child with ZIP bytes on stdin, no provider
+credentials or inherited environment credentials, and a bounded result channel.
+It rebuilds package metadata from the received archive, using the existing
+CRC/member/hash/profile/reference/attribution and resource checks. Shared
+browser validation now accepts an explicit image-decoder adapter; its default
+remains the existing browser decoder. The Node adapter uses publisher-only
+`sharp` 0.35.4, with full native decoding rather than image-header acceptance.
+`jsdom` 29.1.1 provides DOMParser and color parsing for the unchanged restricted
+SVG admission rules, without enabling scripts or resource loading.
+
+Both dependencies are pinned in `publisher/package.json` and
+`publisher/package-lock.json`, not the editor dependency graph. Sharp is
+Apache-2.0 and jsdom is MIT; native transitive notices and production packaging
+remain deployment concerns. Setup is `npm ci --prefix publisher`, followed by
+the existing publisher commands. The local build creates separate browser and
+Node outputs. It does not add hosted workflow requirements or a browser
+dependency to native server decoding.
+
+One upload/validation slot per server instance bounds concurrent buffers and
+decoder children. Additional submissions fail with 503 instead of joining a
+queue. The existing ten-second request deadline includes body receipt and
+provider checks. The parent enforces an eight-second child deadline, native
+image operations have a six-second timeout, and cancellation terminates the
+child and waits for its exit before releasing the slot. Sharp caching is
+disabled and native decoding uses one thread. The 256 MiB V8 heap ceiling
+**does not cap native memory or total RSS**. This is not an OS network/filesystem
+sandbox, an approved public upload service or a qualified hosting memory tier.
+
+Permission, repository/installation identity, visibility and base are checked
+both before and after independent validation. A changed, expired, disconnected
+or superseded plan cannot acquire a receipt. The result must match every
+reviewed metadata field. Successful plans become `server-validated`, with
+`packageReceived: true`, `packageRetained: false`, `writesPerformed: false`,
+validation time and declared profile/license. Recheck still verifies the
+destination without extending plan expiry or resubmitting the ZIP.
+
+The application writes no uploaded package files to disk. Request and child
+buffers are released after cleanup, and the child exits. This is not a
+secure-memory-erasure or OS swap guarantee. The browser retains its selected
+review bytes until normal selection cleanup; the server retains only its
+bounded session receipt. Logs/API failures do not echo ZIP content, parser text
+or native diagnostics. A cancelled or failed request may already have reached
+the local process. No outcome is a publication receipt or proof of copyright
+ownership, licensing permission or general decoder safety.
+
+### Local closeout evidence
+
+Session `20233d90-7a79-4423-a564-f75af5b08662` retains:
+
+- `files/github-publisher-upload-protocol-closeout.tap`: 42 local HTTP/domain
+  cases, including cross-session/origin/CSRF refusal, wrong content type or
+  encoding, digest/length mismatch, actual chunked-byte limits, concurrent
+  admission, responsive control requests and disconnect cleanup.
+- `files/github-publisher-native-validation-closeout.json`: 28 native subprocess
+  cases. They cover full PNG/JPEG/WebP/SVG decoding, malformed pixels with valid
+  headers/CRC and recomputed package hashes, active SVG rejection, profile and
+  attribution inconsistency, archive/member/nesting limits, individual image
+  admission, 24-million aggregate pixels versus overflow, and 16 MiB map JSON
+  versus one extra byte. Cancellation and the parent deadline terminate actual
+  children; the deadline test advances the parent timer, not a natural
+  eight-second hung-decoder workload.
+- `files/github-publisher-native-creator-regression.json`: 190 passing cases in
+  six existing creator-image/package/format/origin/project/ZIP test files.
+- `files/github-publisher-native-browser-closeout/`: three complete native-engine
+  journeys, exact source/build hashes, generated packages and narrow-layout
+  screenshots. Each proves no automatic ZIP upload, disabled validation before
+  consent, one explicit UI upload matching the reviewed bytes, success and
+  recheck, rejection of forged member counts, and rejection when the base changes
+  between pre- and post-validation reads. Two additional direct adversarial
+  submissions per engine are distinguished from the explicit UI upload.
+- `files/github-publisher-native-source.json`: committed source, retained
+  builds/results/dependency identities and task accounting.
+
+The original loopback protocol run caught a changed JSON-body error message;
+the existing auth-specific wording was restored without relaxing its limit.
+The first subprocess corpus hit Vite's transformation of `new URL` in a jsdom
+test: worker resolution now uses Node's file URL/path helpers. Initial failed
+reports are retained separately. The expanded native limits added just before
+the owner-requested pause passed on resumption. Browser preview/cancellation
+and accelerated-expiry qualifications retain the limitations recorded in
+section 12; native/browser decoder equivalence across all files and platforms
+is not claimed.
+
+Root lint, publisher typing, the browser build, native-inspector build and
+editor build pass. The existing editor chunk-size advisory remains visible.
+All task-owned browser/server/validator processes are closed at closeout.
+No application push, PR mutation, GitHub repository, remote upload, deployment,
+agent or new session was created. Approved/used/reserved hosted minutes remain
+**0/0/0**, with no pending runs. The fixture task's separate 24-minute ceiling
+is still unused and unavailable pending confirmation of actual allowance.
+
+GH-N09 still needs simulated multi-file branch writing, readback,
+concurrent-edit handling, uncertain-outcome recovery and durable publication
+receipts. Live provider/hosting/storage/retention/operating ownership, production
+isolation and hosted qualification remain separately gated.

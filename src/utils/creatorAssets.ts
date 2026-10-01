@@ -11,6 +11,13 @@ export interface CreatorImageAsset {
   height: number;
   svg?: CreatorSvgInspection;
 }
+export type CreatorImageDecoder = (dataUrl: string, signal: AbortSignal) => Promise<{ width: number; height: number }>;
+
+const decodeBrowserImage: CreatorImageDecoder = async (dataUrl, signal) => {
+  const image = await loadImage(dataUrl, signal);
+  try { return { width: image.naturalWidth, height: image.naturalHeight }; }
+  finally { image.src = ''; }
+};
 
 export function creatorLevelImagePixels(images: Iterable<{ sha256: string; width: number; height: number }>): number {
   const seen = new Map<string, { width: number; height: number }>();
@@ -39,7 +46,8 @@ function matches(bytes: Uint8Array, expected: readonly number[], offset = 0): bo
 }
 
 /** No fetches, metadata stripping or asset rewrites. The caller still owns rights review. */
-export async function inspectCreatorImage(dataUrl: string, signal: AbortSignal): Promise<CreatorImageAsset> {
+export async function inspectCreatorImage(dataUrl: string, signal: AbortSignal,
+  decodeImage: CreatorImageDecoder = decodeBrowserImage): Promise<CreatorImageAsset> {
   signal.throwIfAborted();
   if (typeof dataUrl !== 'string' || dataUrl.length > Math.ceil(CREATOR_PACKAGE_LIMITS.imageBytes / 3) * 4 + 64) {
     throw new Error('A sharing image exceeds the 10 MiB encoded-source limit.');
@@ -74,16 +82,11 @@ export async function inspectCreatorImage(dataUrl: string, signal: AbortSignal):
   }
   if (mime !== 'image/svg+xml') creatorImageDimensions(bytes, mime);
   signal.throwIfAborted();
-  const image = await loadImage(dataUrl, signal);
-  try {
-    signal.throwIfAborted();
-    const width = image.naturalWidth, height = image.naturalHeight;
-    if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width <= 0 || height <= 0 ||
-        width * height > CREATOR_PACKAGE_LIMITS.imagePixels) {
-      throw new Error('A sharing image exceeds the 24-million-pixel decoded limit.');
-    }
-    return { bytes, mime, extension, width, height, ...(svg ? { svg } : {}) };
-  } finally {
-    image.src = '';
+  const { width, height } = await decodeImage(dataUrl, signal);
+  signal.throwIfAborted();
+  if (!Number.isSafeInteger(width) || !Number.isSafeInteger(height) || width <= 0 || height <= 0 ||
+      width * height > CREATOR_PACKAGE_LIMITS.imagePixels) {
+    throw new Error('A sharing image exceeds the 24-million-pixel decoded limit.');
   }
+  return { bytes, mime, extension, width, height, ...(svg ? { svg } : {}) };
 }

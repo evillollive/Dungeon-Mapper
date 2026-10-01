@@ -14,7 +14,8 @@
       <h1>Try the connection,<br>not a real account.</h1>
       <p class="warning"><strong>Simulated provider only.</strong> This loopback prototype never contacts GitHub.
         Do not enter real credentials. It can inspect creator ZIPs locally and plan against simulated repositories,
-        but cannot upload packages, create repositories or publish maps.</p>
+        and independently validate an explicitly submitted ZIP on this machine.
+        It cannot send packages to GitHub, create repositories or publish maps.</p>
       <p>Your editor stays at its existing address. This page never reads its Library or recovery records.
         Only a creator ZIP you explicitly select is inspected.</p>
       <section aria-labelledby="connection-title">
@@ -31,7 +32,8 @@
       <section id="package-section" aria-labelledby="package-title" hidden>
         <h2 id="package-title">Inspect a creator ZIP locally</h2>
         <p>Choose a reviewed creator package, not a private project/session backup.
-          Its contents stay in this browser tab. No file is uploaded.</p>
+          Selection stays in this browser tab. Only the separate, explicitly approved
+          validation action sends ZIP contents to the loopback server on this machine.</p>
         <label>Creator ZIP<input id="package-file" type="file" accept=".zip,application/zip" disabled></label>
         <p id="package-status" role="status">No package selected.</p>
         <div id="package-detail" hidden>
@@ -58,16 +60,21 @@
         <section id="plan-detail" aria-labelledby="plan-title" hidden>
           <h3 id="plan-title" tabindex="-1">Destination plan: metadata only</h3>
           <dl id="plan-summary"></dl>
-          <p class="warning">The server has not received or validated the ZIP. No GitHub objects, branch, PR or workflow run has been created.</p>
+          <p id="plan-warning" class="warning">The server has not received or validated the ZIP. No GitHub objects, branch, PR or workflow run has been created.</p>
           <p>Real publication would require independent server package validation, a fresh permission/base check and explicit confirmation.
             Repository writes can trigger workflows and need their own allowance.</p>
           <button id="recheck">Recheck simulated destination</button>
+          <label class="check"><input id="validate-consent" type="checkbox">
+            Send this reviewed ZIP to the local Node validator on this machine.
+            Uploaded bytes are held only in process memory during validation, not saved or sent to GitHub.</label>
+          <button id="validate" disabled>Validate ZIP on local server</button>
+          <p id="validation-status" role="status"></p>
           <button id="publish" disabled>Publish branch (not implemented)</button>
         </section>
       </section>
       <section aria-labelledby="publication-title">
         <h2 id="publication-title">Publishing is not connected</h2>
-        <p>Real GitHub authorization, server package upload/validation, durable operation recovery
+        <p>Real GitHub authorization, durable operation recovery
           and branch publication remain separate work. No production host or operating budget is configured.</p>
         <button disabled>Publish package (not implemented)</button>
       </section>

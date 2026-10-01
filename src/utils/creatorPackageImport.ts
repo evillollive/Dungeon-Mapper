@@ -7,7 +7,7 @@ import {
 } from './creatorPackageFormat';
 import { CREATOR_CATALOG_VERSION, creatorBuiltinAttribution, type CreatorPackageManifest } from './creatorPackage';
 import { normalizeCreatorCredit, mergeCreatorSources, type CreatorAssetCredit, type CreatorCredit, type CreatorLicense } from './creatorProvenance';
-import { inspectCreatorImage, creatorLevelImagePixels } from './creatorAssets';
+import { inspectCreatorImage, creatorLevelImagePixels, type CreatorImageDecoder } from './creatorAssets';
 import { creatorMapImageURLs, inspectCreatorStampPaths } from './creatorPackageAssets';
 import { decodeCreatorZip } from './creatorZipIntake';
 import { createCreatorPackageOrigin } from './creatorPackageOrigin';
@@ -66,7 +66,7 @@ function imageURL(file: CreatorPackageFile): string {
 
 /** Validate every member before any rendering or Library write. Native image decoding is bounded. */
 export async function inspectCreatorPackage(input: readonly CreatorPackageFile[], signal: AbortSignal,
-  expectedPackageId?: string): Promise<ImportedCreatorPackage> {
+  expectedPackageId?: string, decodeImage?: CreatorImageDecoder): Promise<ImportedCreatorPackage> {
   signal.throwIfAborted();
   assertCreatorMembers(input);
   const files = new Map(input.map(file => [file.path, { path: file.path, bytes: new Uint8Array(file.bytes) }]));
@@ -165,7 +165,7 @@ export async function inspectCreatorPackage(input: readonly CreatorPackageFile[]
     signal.throwIfAborted();
     const sha256 = await creatorSHA256(file.bytes);
     if (file.path.slice(7, 71) !== sha256) throw new Error('An asset filename does not match its byte identity.');
-    const url = imageURL(file), image = await inspectCreatorImage(url, signal);
+    const url = imageURL(file), image = await inspectCreatorImage(url, signal, decodeImage);
     if (file.path !== `assets/${sha256}.${image.extension}`) throw new Error('An image type disagrees with its package filename.');
     images.set(file.path, { url, sha256, width: image.width, height: image.height });
   }
@@ -194,7 +194,7 @@ export async function inspectCreatorPackage(input: readonly CreatorPackageFile[]
   for (let index = 0; index < levelNames.length; index++) {
     const path = index === 0 ? 'preview.png' : `preview-${String(index + 1).padStart(2, '0')}.png`;
     const file = get(path);
-    await inspectCreatorImage(imageURL(file), signal);
+    await inspectCreatorImage(imageURL(file), signal, decodeImage);
     previews.push(file);
   }
   if ([...files.keys()].filter(path => /^preview(?:-\d+)?\.png$/.test(path)).length !== previews.length) throw new Error('Unexpected preview levels in package.');
@@ -215,9 +215,10 @@ export async function inspectCreatorPackage(input: readonly CreatorPackageFile[]
     imageMetadataWarning: 'Original images can retain author notices, embedded text and private metadata. Package hashes do not prove ownership or safety.' };
 }
 
-export async function inspectCreatorZip(bytes: Uint8Array, signal: AbortSignal): Promise<ImportedCreatorPackage> {
+export async function inspectCreatorZip(bytes: Uint8Array, signal: AbortSignal,
+  decodeImage?: CreatorImageDecoder): Promise<ImportedCreatorPackage> {
   const envelope = await decodeCreatorZip(bytes, signal);
-  return inspectCreatorPackage(envelope.files, signal, envelope.packageId);
+  return inspectCreatorPackage(envelope.files, signal, envelope.packageId, decodeImage);
 }
 
 export async function inspectCreatorDirectory(input: readonly File[], signal: AbortSignal): Promise<ImportedCreatorPackage> {

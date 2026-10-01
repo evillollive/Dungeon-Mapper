@@ -595,18 +595,21 @@ The template approval and subsequent six-artwork revision request are recorded
 in the UX roadmap. Screenshots in `docs/media/ux07-tokens` preserve the original
 reference; `docs/media/ux07-token-catalog` contains the current complete kit.
 
-## Local publisher authentication and planning prototype
+## Local publisher authentication, planning and validation prototype
 
 The optional publisher's test composition is isolated under `publisher/`.
 It requires Node 24.16+ for native TypeScript execution; the editor's existing
-runtime/build and hosted checks are unchanged. No additional dependency,
-database, container engine, GitHub App or real credentials are needed.
+runtime/build and hosted checks are unchanged. The publisher-only native
+validator uses pinned Sharp and jsdom dependencies in its own lockfile.
+No database, container engine, GitHub App or real credentials are needed.
 
 ```bash
+npm ci --prefix publisher
 npm run publisher:dev
 npm run build:publisher
 npm run check:publisher
 npm run test:publisher
+npm run test:publisher:validation
 QA_OUTPUT=/absolute/fresh/publisher-evidence npm run test:publisher:browser
 ```
 
@@ -614,16 +617,20 @@ The dev command prints a loopback URL and runs a clearly labeled simulated
 provider. Stop with Ctrl+C. The native browser runner owns and stops its local
 servers. The protocol tests include a real ten-second deadline case; do not
 mistake test duration for an authentication performance target.
-Dev, protocol-test and browser-test scripts build the separate `publisher/dist`
-client first. The editor's `npm run build` and service worker remain separate.
+Dev and publisher-test scripts build the separate `publisher/dist` client and
+`publisher/validator/dist` Node inspector first. The editor's `npm run build`,
+dependencies and service worker remain separate.
 
 This shell exercises sign-in state/PKCE, first-party session/CSRF behavior,
 rotation, denial, expiry, revocation, stale callbacks and bounded repository
 responses. It also inspects selected creator ZIPs locally with the existing
 browser validator and creates explicit metadata-only simulated destination
-plans. Rechecks reject changed permission/visibility/base snapshots. File bodies,
-notes, images and local filenames are not posted. It has no package upload,
-server content validator, branch writer, production startup
+plans. Rechecks reject changed permission/visibility/base snapshots. Planning
+does not post file contents; separate consent sends the exact ZIP to the local
+server for independent native validation. The child receives no provider
+credentials, has an enforced deadline and is awaited through cancellation/exit.
+Its V8 heap ceiling is not a native-memory cap or OS sandbox. Uploaded bodies
+are not saved or returned. There is no branch writer, production startup
 composition or real GitHub adapter. HTTP loopback cookies are not production
 TLS/Secure-cookie evidence, and all session state is ephemeral.
 
@@ -631,7 +638,7 @@ These dedicated tests are manual/local commands, not newly required hosted
 checks. Root lint includes the prototype sources; a production service pipeline
 needs separate GH-A02 scope and budget approval. See the
 [prototype README](../publisher/README.md) and
-[publisher design](./GITHUB-PUBLISHER-DESIGN.md#12-local-package-review-and-metadata-only-destination-plans).
+[publisher design](./GITHUB-PUBLISHER-DESIGN.md#13-independent-loopback-package-validation).
 
 ## Dense-map performance diagnostics (F05)
 

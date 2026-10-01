@@ -12,17 +12,23 @@ export interface PublicationMetadata {
   memberCount: number;
 }
 export interface PlanRequest { repositoryId: number; package: PublicationMetadata }
-export interface PublicationPlan {
+interface PlanBase {
   id: string;
   mode: 'local-prototype';
-  status: 'metadata-only';
   expiresAt: number;
   package: PublicationMetadata;
   repository: PublisherRepositorySnapshot;
   branch: string;
-  packageReceived: false;
+  packageRetained: false;
   writesPerformed: false;
 }
+export type PublicationPlan = PlanBase & (
+  { status: 'metadata-only'; packageReceived: false } |
+  { status: 'server-validated'; packageReceived: true; validation: {
+    validatedAt: number; decoder: 'node-native-v1'; profile: 'layout' | 'encounter';
+    license: 'CC-BY-4.0' | 'CC-BY-SA-4.0' | 'AGPL-3.0-or-later';
+  } }
+);
 export const PLAN_TTL_MS = 10 * 60_000;
 export function validRepositoryName(value: unknown): value is string {
   return typeof value === 'string' &&
@@ -83,7 +89,7 @@ export function createPublicationPlan(request: PlanRequest, repository: Publishe
     id, mode: 'local-prototype', status: 'metadata-only', expiresAt: Math.min(now + PLAN_TTL_MS, sessionExpiry),
     package: { ...request.package }, repository: { ...repository },
     branch: `dm-maps/${request.package.packageId}-${id.slice(0, 12)}`,
-    packageReceived: false, writesPerformed: false,
+    packageReceived: false, packageRetained: false, writesPerformed: false,
   };
 }
 export function sameRepository(before: PublisherRepositorySnapshot, after: PublisherRepositorySnapshot): boolean {
