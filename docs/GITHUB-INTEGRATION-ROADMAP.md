@@ -47,6 +47,14 @@ from matching package IDs. [Scope and retained evidence](./CREATOR-PACKAGE-CONTR
 remain separate from future live upstream checks and repository rename/deletion
 handling.
 
+**GH-N07 direction selected:** The owner approved planning a minimal optional
+hosted service and chose a separate first-party publishing page while keeping
+the existing editor URL and local storage unchanged. The
+[publisher design](./GITHUB-PUBLISHER-DESIGN.md) covers explicit ZIP handoff,
+GitHub authority, server-held credentials, branch-only publication and
+uncertain-outcome recovery. Provider, operating ownership, retention, costs and
+deployment remain undecided; no authentication service is implemented.
+
 ## 1. Product outcome and boundaries
 
 Let a creator publish an intentionally shareable, editable map in a repository
@@ -195,7 +203,12 @@ Do not overwrite local edits or automatically merge two maps. Open GitHub's
 native fork/PR UI first; integrated fork creation or PR submission is a later,
 separately authorized write capability.
 
-### Connected publishing: recommended architecture, not selected hosting
+### Connected publishing: selected origin boundary, hosting still undecided
+
+The first connected version is a separate publishing page accepting an
+explicitly selected creator ZIP after sign-in. The editor stays at its existing
+origin, without a storage migration, third-party-cookie dependency, credential
+relay or automatic upload. See the [GH-N07 service design](./GITHUB-PUBLISHER-DESIGN.md).
 
 Prefer a GitHub App with selected-repository installation and narrowly scoped
 user authorization over a broad OAuth `repo` grant. Begin with an existing,
@@ -277,6 +290,9 @@ Owner decisions in section 8 gate the corresponding implementation.
 
 GH-N05 is now in progress as the mocked transport prototype above; this does
 not mark public-link integration or real-GitHub acceptance complete.
+GH-N07 is in design, with the separate publisher-page direction approved but
+its provider/operating decisions still open. GH-N08 remains gated on the
+corresponding architecture approval; no live activation is authorized.
 
 | ID | Work / execution | Prerequisites | Completion evidence and stop condition |
 | --- | --- | --- | --- |

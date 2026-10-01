@@ -10,6 +10,7 @@
 | [End-user Experience Roadmap](./USER-EXPERIENCE-ROADMAP.md) | Primary execution plan for the DM/player workflow redesign, local library, visual layout, art assets, infrastructure, and acceptance tests. |
 | [GitHub Integration Roadmap](./GITHUB-INTEGRATION-ROADMAP.md) | UX-11 local creator packages and planned GitHub publishing/import/remix, with local, remote non-Actions and budget-gated Actions tasks. No account connection or upload is implemented. |
 | [Creator Package Contract](./CREATOR-PACKAGE-CONTRACT.md) | Locally implemented account-free sharing slice: disclosure profiles, licenses/provenance, asset/archive bounds, independent import and retained local qualification limits. |
+| [GitHub Publisher Design](./GITHUB-PUBLISHER-DESIGN.md) | Planned separate publishing page and minimal hosted service, with explicit origin, credential, permission, failure and operating-decision boundaries. No service is deployed. |
 | [Roadmap](./ROADMAP.md) | Current feature inventory, competitor reference, forward-looking roadmap, and design decisions. |
 | [Roadmap Archive](./archive/ROADMAP-history.md) | Historical record: full implementation detail for completed Phases 1–12, retrospective analyses, priority ordering, and the dated changes log. |
 | [Sharing Guide](./SHARING.md) | Positioning, audiences, launch copy, demo scripts, repo metadata, and follow-up promotion backlog. |
