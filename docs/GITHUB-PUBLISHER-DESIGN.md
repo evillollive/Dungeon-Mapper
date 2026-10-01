@@ -376,3 +376,25 @@ owner, retention schedule, service capacity or operating budget is selected.
 Authentication-body tests cannot size future large package processing.
 GH-N09 publication simulation and all live operating/qualification gates remain
 separate work.
+
+Final local prototype source:
+`d20cdfbf431a96c5f033289605611974499f9f1a`.
+Session `20233d90-7a79-4423-a564-f75af5b08662` retains:
+
+- `files/github-publisher-unit-final.tap`: twenty passing local HTTP/protocol
+  cases, no skipped tests, including PKCE downgrade rejection and the enforced
+  response deadline.
+- `files/github-publisher-browser-final/`: the three-engine simulated-provider
+  flow, keyboard sign-in, cookie attributes, replay/denial/disconnect/revocation,
+  no browser token/map storage, screenshots and exact source hashes.
+- `files/github-publisher-prototype-source.json`: committed source, result
+  identities and the check that all 22 editor production files match the
+  retained pre-prototype build.
+
+The initial protocol-body capture failure and earlier successful browser
+observations remain separate. No result is described as production TLS,
+live GitHub permissions, durable credential storage or large-package hosting
+capacity. All test servers are stopped after the bounded checks. No GitHub
+App, public repository, upload, deployment, DNS change, hosted run, agent or
+automatic schedule was created for this milestone. Hosted use/reservations
+remain zero; the fixture task's separate conditional budget is untouched.
