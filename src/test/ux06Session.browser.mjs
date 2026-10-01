@@ -37,7 +37,7 @@ export default async function session(page) {
   });
   const project = { name: `UX06 ${sentinel}`, levels: [makeMap('DM lower', 'The Gate'), makeMap(`${sentinel} upper`, 'The Tower')],
     activeLevelIndex: 0, stairLinks: [] };
-  await page.locator('input[type="file"]').evaluate((input, value) => {
+  await page.getByLabel('Import project', { exact: true }).evaluate((input, value) => {
     const transfer = new DataTransfer();
     transfer.items.add(new File([JSON.stringify(value)], 'ux06.json', { type: 'application/json' }));
     input.files = transfer.files;

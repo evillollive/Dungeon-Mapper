@@ -27,7 +27,7 @@ export default async function audience(page) {
     initiative: [2, 3, 1],
   };
   const project = { name: sentinel, levels: [map], activeLevelIndex: 0, stairLinks: [] };
-  await page.locator('input[type="file"]').evaluate((input, project) => {
+  await page.getByLabel('Import project', { exact: true }).evaluate((input, project) => {
     const transfer = new DataTransfer();
     transfer.items.add(new File([JSON.stringify(project)], 'ux05.json', { type: 'application/json' }));
     input.files = transfer.files;

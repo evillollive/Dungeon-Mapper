@@ -1981,6 +1981,95 @@ allowance and storage charges remain independently unverified. Do not push,
 rerun, merge or bypass required checks until the coordinator obtains the
 necessary authorization.
 
+### October 1 follow-up: browser run 36914937106
+
+The owner subsequently authorized one additional PR-update trigger within the
+same 200-minute task ceiling. The provenance correction was published as
+`96757fedaeb0afcf491216019e5d1ca61eba1a99`, consuming that authorization.
+[Run 36914937106](https://github.com/evillollive/Dungeon-Mapper/actions/runs/36914937106)
+is a new run, not a rerun of either historical failure. Local HEAD, the remote
+branch and PR #185 all matched that revision, with a clean working tree, at
+the start of this investigation.
+
+| Reported check | Classification | Evidence and disposition |
+| --- | --- | --- |
+| Browser journeys (chromium), `110547346898` | PR-caused test integration omission | 61 cases passed; publication/player preview and session/player display failed during fixture import because the generic file-input locator matched four controls. Fix the locator in this PR. |
+| Browser journeys (firefox), `110547346677` | PR-caused test integration omission | The same two cases failed at the same fixture selectors; 61 cases passed. The cause is shared with Chromium, not the historical focus-clipping defect or transient infrastructure. |
+
+The base revision `72f32e16` has one Library file input. This PR added creator
+package/folder inputs in `4525a58` and a package-comparison input in `5fbd710`,
+but left the two older journey fixtures selecting every `input[type="file"]`.
+Playwright correctly rejected the ambiguity before either journey could
+exercise its behavior. The tool itself is not broken.
+
+The correction changes only the import locators in
+`src/test/ux05Audience.browser.mjs` and `src/test/ux06Session.browser.mjs` to
+`getByLabel('Import project', { exact: true })`. Strict single-target selection,
+native file-change handling, import review, save/reload, player privacy,
+downloads, session recovery and all downstream assertions remain intact.
+There is no `.first()` fallback, skipped case, weakened assertion or change
+to application code, dependencies, build configuration or CI infrastructure.
+
+**Local validation:** The unchanged production source built successfully on
+Node 24.16.0. Before correction, all four selected Chromium/Firefox executions
+reproduced the exact CI ambiguity. With the two-line correction, both complete
+journeys passed on Chromium 151.0.7922.34, Firefox 153.0 and WebKit 26.5:
+6 passed, zero skipped, zero flaky, in 73.2 seconds. Zero-warning lint and
+`git diff --check` also passed. The existing build chunk-size advisory and npm
+global-config warning remain. This is focused macOS evidence, not a full
+suite or a replacement for exact-head Linux hosted qualification.
+
+The retained evidence in session
+`20233d90-7a79-4423-a564-f75af5b08662/files/` uses the prefix
+`pr185-browser-36914937106`: sanitized Chromium/Firefox job logs, `jobs.json`,
+`build.log`, `baseline.log` and `baseline/`, `candidate.log` and `candidate/`,
+and `lint.log`. The candidate report identifies the tested source as
+`96757fedaeb0afcf491216019e5d1ca61eba1a99-with-import-locator-fix`.
+Reports and generated artifacts are not committed.
+
+**Bounded hosted snapshot:** The saved all-jobs response was observed at
+19:49:00 UTC on October 1. The run was still in progress. No waiting or
+polling loop was used, so the following is not a claim of its final state:
+
+| Job | UTC start to finish | Observed completed duration | Rounded Linux minutes |
+| --- | --- | --- | --- |
+| Build and test, `110546471561` | 19:31:41 to 19:33:46 | 125 seconds | 3 |
+| Browser journeys (chromium), `110547346898` | 19:33:50 to 19:45:04 | 674 seconds | 12 |
+| Browser journeys (firefox), `110547346677` | 19:33:50 to 19:45:49 | 719 seconds | 12 |
+| Browser journeys (webkit), `110547346896` | Started 19:33:50, still running | Not final | Reserved, not counted as completed |
+| Browser qualification | Not yet present in the job response; dependent work remains | Not observed | Reserved |
+| Package/deploy Pages | Not present; PR events do not satisfy their main-only conditions | No execution observed | No PR execution expected |
+
+Both completed browser jobs passed export/offline/update journeys, unchanged
+distribution verification and evidence upload. WebKit's floor preflight had
+passed; its browser suite was still running, with export, verification and
+upload steps pending. No terminal WebKit or aggregate result is inferred.
+
+Completed jobs in this run consumed 1,518 observed seconds, or 27 minutes
+when each job is rounded up separately. Adding the previous run's 4 minutes
+gives **31 known rounded minutes**. Of the active run's original 90-minute
+reservation, 27 is now consumed and 63 remains reserved until completion.
+Keep the separate 100-minute eventual main/Pages reservation, leaving 6
+unallocated: 31 consumed + 63 active-run reservation + 100 post-merge
+reservation + 6 unallocated = 200. Do not release the unfinished run's
+remaining reservation based on these partial results. These are timestamp
+estimates, not an invoice; account balance, billing and artifact/cache storage
+charges remain unverified. The separate unused fixture-only 24-minute ceiling
+is not available to this task.
+
+**Publication hold:** The correction is for a local commit only. This
+investigation initiated no push, rerun, dispatch, hosted review or merge.
+There is no authorized third trigger. After refreshing completed-run accounting,
+the coordinator must obtain explicit approval for one push to
+`evillollive-editing-workflow-qualification`, expected to produce one new PR CI
+run. Estimate 35 to 60 aggregate runner minutes with uncertainty; retain the
+90-minute conservative ceiling for all jobs/setup, without assuming a rerun.
+That ceiling cannot fit within the existing 200-minute total while preserving
+the 100-minute post-merge reservation and already observed usage, so the total
+budget or reservations also require an explicit owner decision. The workflow's
+77-minute summed PR timeouts, 14-day build/browser artifacts and npm caches are
+unchanged. No publication, merge or CI bypass is authorized by local success.
+
 ## Remaining release gates
 
 Subsequent housekeeping removes 68 of the original 73 hook warnings and
