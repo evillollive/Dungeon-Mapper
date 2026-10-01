@@ -1,7 +1,8 @@
 import sharp from 'sharp';
 import { createHash } from 'node:crypto';
 import { CREATOR_PACKAGE_LIMITS } from '../../src/utils/creatorPackageContract';
-import { inspectCreatorZip } from '../../src/utils/creatorPackageImport';
+import { inspectCreatorPackage } from '../../src/utils/creatorPackageImport';
+import { decodeCreatorZip } from '../../src/utils/creatorZipIntake';
 import { readCreatorPackageOrigin } from '../../src/utils/creatorPackageOrigin';
 import type { CreatorImageDecoder } from '../../src/utils/creatorAssets';
 
@@ -30,8 +31,9 @@ const decodeNativeImage: CreatorImageDecoder = async (dataUrl, signal) => {
   }
 };
 
-export async function inspect(bytes: Uint8Array, signal: AbortSignal) {
-  const result = await inspectCreatorZip(bytes, signal, decodeNativeImage);
+export async function inspect(bytes: Uint8Array, signal: AbortSignal, includeMembers = false) {
+  const envelope = await decodeCreatorZip(bytes, signal);
+  const result = await inspectCreatorPackage(envelope.files, signal, envelope.packageId, decodeNativeImage);
   const origin = readCreatorPackageOrigin(result.project.creatorPackageOrigin);
   if (!origin) throw new Error('Missing validated package receipt.');
   return {
@@ -41,5 +43,6 @@ export async function inspect(bytes: Uint8Array, signal: AbortSignal) {
       expandedBytes: origin.files.reduce((sum, file) => sum + file.bytes, 0), memberCount: origin.files.length,
     },
     profile: result.manifest.profile, license: result.manifest.license,
+    ...(includeMembers ? { files: envelope.files } : {}),
   };
 }

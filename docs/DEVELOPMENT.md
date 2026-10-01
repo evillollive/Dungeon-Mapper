@@ -601,7 +601,9 @@ The optional publisher's test composition is isolated under `publisher/`.
 It requires Node 24.16+ for native TypeScript execution; the editor's existing
 runtime/build and hosted checks are unchanged. The publisher-only native
 validator uses pinned Sharp and jsdom dependencies in its own lockfile.
-No database, container engine, GitHub App or real credentials are needed.
+No external database, container engine, GitHub App or real credentials are
+needed. The separate fake-publication engine uses Node's built-in SQLite for
+owner-approved local metadata-only recovery receipts.
 
 ```bash
 npm ci --prefix publisher
@@ -610,6 +612,7 @@ npm run build:publisher
 npm run check:publisher
 npm run test:publisher
 npm run test:publisher:validation
+QA_OUTPUT=/absolute/fresh/publication-evidence npm run test:publisher:publication
 QA_OUTPUT=/absolute/fresh/publisher-evidence npm run test:publisher:browser
 ```
 
@@ -630,9 +633,18 @@ does not post file contents; separate consent sends the exact ZIP to the local
 server for independent native validation. The child receives no provider
 credentials, has an enforced deadline and is awaited through cancellation/exit.
 Its V8 heap ceiling is not a native-memory cap or OS sandbox. Uploaded bodies
-are not saved or returned. There is no branch writer, production startup
+are not saved or returned by the HTTP validator. There is no connected branch writer, production startup
 composition or real GitHub adapter. HTTP loopback cookies are not production
 TLS/Secure-cookie evidence, and all session state is ephemeral.
+
+The focused publication command exercises a separate fake Git provider and
+SQLite operation journal, not the web Publish button. It verifies exact
+package readback, unrelated-file preservation, create-only refs, duplicate
+prevention, lost/delayed responses, cancellation, bounded admission and
+read-only restart reconciliation. Test database files are retained under
+`QA_OUTPUT`, contain metadata only, and should not be confused with production
+credential/session persistence. See the
+[engine boundary](../publisher/README.md#fake-publication-engine-and-restart-receipts).
 
 These dedicated tests are manual/local commands, not newly required hosted
 checks. Root lint includes the prototype sources; a production service pipeline

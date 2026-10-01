@@ -49,6 +49,7 @@ added to the editor bundle or root dependency manifest.
 npm run check:publisher
 npm run test:publisher
 npm run test:publisher:validation
+QA_OUTPUT=/absolute/new/publication-evidence npm run test:publisher:publication
 QA_OUTPUT=/absolute/new/publisher-evidence npm run test:publisher:browser
 ```
 
@@ -167,10 +168,11 @@ HTTP loopback uses a test-only HttpOnly, SameSite=Lax cookie scoped to
 this composition for real accounts. Production requires an isolated HTTPS
 origin and Secure host-only cookies.
 
-Sessions and provider records live only in memory and are cleared on shutdown.
-There is no durable/encrypted state store, refresh-token retention, webhook
+The web prototype's sessions and provider records live only in memory and are cleared on shutdown.
+There is no production durable/encrypted session store, refresh-token retention, webhook
 receiver, real GitHub adapter, private repository integration, remote upload
-service, publication operation store or branch writer.
+service or connected branch writer. The separate engine simulation below is
+not an enabled web publication endpoint.
 
 Revocation is exercised through the synthetic provider and enforced when
 provider access is attempted. The local session-status display is not a
@@ -181,6 +183,76 @@ processing. Boundary tests and isolated native decoding do not qualify a hosting
 memory tier or decoder equivalence on every platform. Provider, storage,
 region, retention, operating owner, costs and
 live deployment approval remain separate decisions.
+
+## Fake publication engine and restart receipts
+
+`LocalPublicationEngine` is a local test-provider engine, deliberately not
+wired to the publisher's HTTP routes or disabled Publish button. Its focused
+command runs synthetic fixtures through independent native validation, fake
+Git object creation, create-only branch publication and exact readback.
+It never calls GitHub or runs workflows, merges, force updates or repository
+creation. Tests use `git hash-object` without `-w` only as an independent
+read-only encoding oracle, not to publish fixture content.
+
+The owner approved Node's built-in SQLite for **local metadata-only receipts**.
+Each test creates private `operations.sqlite` and `operations.sqlite.lock`
+files under the explicit `QA_OUTPUT` directory, without an external database
+or package dependency. These files contain owner/repository identity, package
+digest and member identities, reviewed base, expected Git tree/commit, intended
+branch, phase and bounded failure codes. They contain no archive, note/image
+bytes, provider tokens or session credentials. SQLite metadata is not encrypted.
+
+The intent is committed before the first fake write. A separate SQLite
+exclusive-lock file prevents two processes from owning one journal and is
+released by the OS after a crash. On reopen, interrupted claims become
+`outcome-unknown`, never successful or automatically replayed.
+One package admission per journal bounds native validation, and one unresolved
+operation per repository blocks a different publication until reconciliation.
+The journal permits 64 receipts, each at most 1 MiB; the reviewed repository
+tree is capped at 4,096 entries and 1 MiB of serialized metadata. Capacity
+failure never evicts an old receipt. No retention/deletion schedule is enabled.
+
+A complete replacement of `maps/<package-id>/` is assembled over the pinned
+base while preserving unrelated files, other maps, modes and Git links. File
+collisions at `maps` or the package root fail before writes. Exact members are
+written as blobs, followed by one tree and commit, then one create-only branch
+ref. Default branches are unchanged. The engine checks the destination before
+each mutation, but cannot promise an atomic permission/visibility lock across
+provider calls.
+
+Success requires ref/commit/tree and every package blob to match readback.
+The fake provider keeps its objects in memory as a remote stand-in; the SQLite
+receipt never stores those bodies. A repeated submission with the same
+owner/repository/installation/package identity and ZIP digest returns its
+existing receipt, even if a newer plan proposes another branch. It does not
+start another write. This conservative duplicate policy does not provide an
+automatic retry or a way to republish the same ZIP intentionally.
+Status and duplicate-submission responses describe the last saved observation,
+not current repository permissions or a fresh branch check. Use explicit
+read-only reconciliation to check the provider again.
+
+Lost responses, timeouts, changed permissions, cancellation and failed readback
+remain explicit unresolved outcomes. Cancellation stops future requests where
+possible but cannot undo an accepted object/ref or guarantee a delayed request
+was rejected. `reconcile` performs **reads only**. A matching ref and exact bytes
+can confirm success; an unexpected ref is a conflict; a missing ref remains
+unknown rather than permission to retry. Provider failures retain the receipt
+and return an explicit error. The enforced operation deadline is 30 seconds;
+the existing native-worker deadline remains eight seconds.
+
+The restart test retains the fake provider separately from the stopped engine,
+as a stand-in for a remote service surviving the publisher. It also hard-kills
+a child journal writer and verifies recovery. This does not qualify GitHub
+durability, production SQLite placement/scaling, session recovery, or a
+browser restart/reconnect flow. If the fake provider's memory is lost, missing
+objects remain unresolved. Do not discard unresolved receipts to make a retry
+possible. Review/export the local evidence before any manual cleanup.
+
+Authenticated operation endpoints, current-session owner binding, user-facing
+confirmation/status/reconciliation, and disconnect cancellation still need
+integration. The engine takes an already authenticated owner/token context
+from its caller; it is not a replacement for the web service's authorization.
+No receipt database is opened by normal `publisher:dev` startup.
 
 See [the publisher design](../docs/GITHUB-PUBLISHER-DESIGN.md) and
 [the integration roadmap](../docs/GITHUB-INTEGRATION-ROADMAP.md).

@@ -8,7 +8,9 @@ now lives under `publisher/`, outside the Pages build. Its separate browser
 bundle reuses creator ZIP inspection. Planning sends scalar metadata only;
 a separately consented loopback ZIP submission is independently checked by a
 Node child with publisher-only DOM/native-image dependencies.
-No backend or account connection has
+A separate fake-publication engine and local SQLite metadata journal exercise
+branch writing/readback and restart reconciliation. They are not wired to the
+web Publish button or a real provider. No backend or account connection has
 been deployed.
 
 ## High-level layers

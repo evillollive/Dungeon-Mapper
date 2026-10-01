@@ -3,6 +3,17 @@ import { CREATOR_PACKAGE_LIMITS } from '../../src/utils/creatorPackageContract.t
 
 let window;
 let inspecting = false;
+const includeMembers = process.argv[2] === '--members';
+function reply(value, files = []) {
+  const header = Buffer.from(JSON.stringify(value));
+  if (includeMembers) {
+    const length = Buffer.alloc(4);
+    length.writeUInt32BE(header.length);
+    process.stdout.write(length);
+  }
+  process.stdout.write(header);
+  for (const file of files) process.stdout.write(file.bytes);
+}
 try {
   let domFailed = false;
   const console = new VirtualConsole();
@@ -20,12 +31,12 @@ try {
   const bytes = Buffer.concat(chunks);
   chunks.length = 0;
   inspecting = true;
-  const result = await inspect(bytes, AbortSignal.timeout(8000));
+  const { files = [], ...result } = await inspect(bytes, AbortSignal.timeout(8000), includeMembers);
   if (domFailed) throw new Error('DOM validation failed.');
-  process.stdout.write(JSON.stringify({ ok: true, ...result }));
+  reply({ ok: true, ...result, ...(includeMembers ? { files: files.map(file => ({ path: file.path, bytes: file.bytes.length })) } : {}) }, files);
 } catch {
   // Untrusted archive text and native diagnostics must not become API messages or logs.
-  process.stdout.write(JSON.stringify({ ok: false, error: inspecting ? 'invalid_package' : 'validator_failed' }));
+  reply({ ok: false, error: inspecting ? 'invalid_package' : 'validator_failed' });
 } finally {
   window?.close();
 }

@@ -242,7 +242,9 @@ Do not auto-rebase, force-update, merge, rerun CI or delete remote data as recov
 
 **Approved local prototype target:** a small portable Node service and separate
 publishing UI in this repository. The test composition uses Node 24.16+ without
-new dependencies. A normal Node host is a better initial
+adding dependencies to the editor. Publisher-only native validation dependencies
+and a local metadata-only SQLite simulation journal were subsequently approved;
+these do not select a production credential/session store. A normal Node host is a better initial
 fit for the existing TypeScript/ZIP validators than assuming an edge runtime
 can handle the accepted archive limits unchanged.
 
@@ -493,6 +495,9 @@ allowance is confirmed; it does not authorize this app's CI or service costs.
 
 ## 13. Independent loopback package validation
 
+This section records the validation milestone at `7e6040e`. Section 14 adds
+the separate fake-publication engine without enabling web publication.
+
 The owner approved the next local validation milestone and selected an isolated
 Node-native validator rather than a Chromium-backed service. This remains a
 loopback-only test composition, with no production host, real credentials,
@@ -602,3 +607,136 @@ GH-N09 still needs simulated multi-file branch writing, readback,
 concurrent-edit handling, uncertain-outcome recovery and durable publication
 receipts. Live provider/hosting/storage/retention/operating ownership, production
 isolation and hosted qualification remain separately gated.
+
+## 14. Fake publication engine and local restart receipts
+
+The owner approved continuing with simulated publication/recovery, retaining
+metadata-only receipts across restart, and using Node's built-in SQLite locally.
+This is a bounded engine slice, not web publication activation. The existing
+Publish button and HTTP write routes remain unavailable. There is no real
+GitHub adapter, new external service, hosted workflow or additional dependency.
+
+`LocalPublicationEngine` accepts an already authenticated owner/token context,
+a reviewed plan and the exact ZIP. It independently validates the ZIP again.
+The isolated validator has a private member-output mode: a length-prefixed
+header up to 64 KiB, followed by bounded raw members totaling at most 64 MiB.
+The parent checks framing, allowed paths, counts, lengths and required members.
+The ordinary HTTP validation endpoint continues receiving only its small
+metadata result; it never returns file bodies to the browser.
+
+The engine reads and verifies the pinned base commit/tree, rejects file/link
+collisions at the destination directory, replaces only `maps/<package-id>/`,
+and preserves every unrelated path and mode. It constructs and records the
+expected tree/commit identities before the first fake mutation. Sequential
+blob, tree and commit writes precede a single create-only branch ref. There
+is no ref-update, force, merge, repository-creation, workflow or PR method.
+Destination identity, permissions, visibility and base are rechecked before
+mutations; this is not an atomic lock across provider calls.
+
+`TestGitProvider` keeps its repository objects entirely in memory. It never
+contacts GitHub, opens a repository checkout or executes repository content.
+Its object graph models exact Git blob/tree/commit identities, pinned parents
+and atomic create-only refs. Readback verifies the intended branch twice,
+commit/tree identities and SHA-256/length/Git identity of every package member.
+Unrelated content is preserved through the exact expected tree. The fixture's
+existing workflow file is inert synthetic data, not an enabled workflow.
+
+### Journal, concurrency and recovery
+
+The private SQLite journal contains versioned operation metadata: owner and
+repository/install identity, package digest/counts/member identities, reviewed
+base, intended branch, expected tree/commit, phase and bounded problem codes.
+There are no ZIP bodies, note/image bytes, provider tokens or browser sessions
+in its records. Metadata is not encrypted. Each explicit test output directory
+contains `operations.sqlite` plus an SQLite lock file, created with private
+file permissions. The normal web-prototype startup opens neither file.
+
+The intent is synchronously committed before a mutation. A second process
+cannot open the same journal while its exclusive SQLite lock is held. The OS
+releases that lock after process death; reopen converts interrupted active/
+writing phases to `outcome-unknown`. It never resumes writes automatically.
+One admission slot per journal bounds native validation; a durable unique
+reservation blocks another unresolved operation in the same repository.
+
+Limits are 64 stored operations, 1 MiB per serialized operation, and 4,096
+reviewed repository-tree entries within 1 MiB of tree metadata. Capacity errors
+do not delete older receipts. There is no receipt expiry or cleanup scheduler.
+An explicit production retention/export/deletion policy remains undecided.
+Do not erase unresolved records merely to make a retry succeed.
+
+The overall engine/reconciliation deadline is 30 seconds, in addition to the
+native validator's eight-second deadline. Provider promises are bounded even
+if a test provider ignores its abort signal. Cancellation stops future requests
+where possible, but a provider can still accept a previously submitted write.
+Accepted objects may remain without a branch; an absent ref does not prove
+that a delayed create request can no longer finish.
+
+The duplicate key is owner, repository, installation, package ID and ZIP digest.
+Repeated submission returns the existing receipt, even with a fresh plan or
+proposed branch. There is no automatic retry or intentional same-ZIP republish
+operation in this slice. Outcomes are `prepared`, `writing`, `outcome-unknown`,
+`branch-verified`, `conflict` or `blocked`, with explicit phase/problem metadata.
+`branch-verified` means exact readback, not CI, merge, release or live publishing.
+Status/duplicate responses are saved observations, not fresh permission or ref
+attestations; explicit reconciliation performs a new read.
+
+Reconciliation is read-only and requires the recorded owner plus current
+provider access. It can operate after the original review expires or the
+default branch advances, because it verifies the recorded immutable parent
+and intended new ref, not a new publication base. Changed identity/visibility/
+permission, denied reads or inconsistent data cannot confirm success. A matching
+branch and bytes become verified; an unexpected branch is a conflict; a missing
+branch stays unknown. None of these paths creates or overwrites anything.
+
+The engine API assumes its caller obtained the owner/token from an authenticated
+session. Authenticated operation endpoints, session ownership, final user
+confirmation, visible status/reconciliation and disconnect cancellation are
+still to be integrated. This is not an authorization bypass route: no HTTP
+route exposes this engine. Production session/token persistence, encrypted
+storage, multi-instance placement and SQLite operating suitability are not
+selected by this local test-storage approval.
+
+### Local evidence and limitations
+
+Session `20233d90-7a79-4423-a564-f75af5b08662` retains:
+
+- `files/github-publisher-publication-closeout.json` and
+  `files/github-publisher-publication-closeout/`: twenty engine/storage cases,
+  synthetic fixture identities and private SQLite test journals. They cover
+  exact multi-file readback, independent read-only Git encoding oracles,
+  unrelated-file/Git-link preservation, obsolete own-member removal, duplicate
+  prevention, every lost-write stage, changed destinations, protected or
+  conflicting refs, altered readback, concurrent admission, exact capacity
+  limits, late acceptance after cancellation, ignored aborts and restart.
+- `files/github-publisher-publication-native-regression.json`: twenty-eight
+  existing native validator cases after adding the private member channel.
+- `files/github-publisher-publication-http-regression.tap`: forty-two existing
+  HTTP/domain cases, preserving the metadata-only HTTP validation response
+  and the original auth/session/body boundaries.
+- `files/github-publisher-publication-source.json`: committed source, result/
+  journal/build hashes, runtime/dependency identities and hosted accounting.
+
+Restart cases keep the fake provider outside the stopped engine, modeling a
+remote repository surviving service restart. One case actually hard-kills a
+separate journal-writer process after persisting its interrupted phase. This
+does not prove a real GitHub write occurred or qualify browser reconnect,
+production service restart or remote storage. If the fake provider is discarded,
+its missing objects remain unresolved. Timeout coverage advances the parent
+timer against a deliberately non-settling fake provider; it is not an upstream
+latency measurement.
+
+The publication fixture contains selected synthetic DM text and two-pixel
+placeholder previews, not an art-rendering qualification. Its text exists in
+the fake provider's in-memory blobs but is absent from the SQLite journal, as
+are credentials. The initial compile/lint findings were corrected without
+loosening checks. No browser UI or editor source changed in this slice; their
+previous evidence is not relabeled as a new browser qualification campaign.
+
+Root lint, publisher type checks and both publisher builds pass. The existing
+browser client bytes are compared with the prior retained build at closeout.
+All test processes are stopped. No application push, PR mutation, real GitHub
+objects, remote upload, hosted run, agent, new session or deployment occurred.
+Approved/used/reserved hosted minutes remain **0/0/0** with no pending runs.
+The separate fixture-only 24-minute ceiling remains unused and unavailable
+until actual allowance is confirmed. This is not approval of any service,
+storage, CI or account-wide spending.

@@ -1769,7 +1769,9 @@ GH-N07's separate publisher origin and portable Node prototype directions are
 approved. The bounded GH-N08 authentication shell uses only a local simulated
 provider. GH-N09 preparation adds browser-local ZIP inspection, metadata-only
 simulated destination plans and separately consented loopback ZIP validation
-in an independent native Node process, not remote uploads or publication. Hosting, real
+in an independent native Node process. A separate fake-publication engine now
+exercises create-only branch writes, exact readback and metadata-only SQLite
+restart receipts; it is not connected to the web Publish button or GitHub. Hosting, real
 credentials, package publication and operations remain
 separately gated. See the [publisher design](./GITHUB-PUBLISHER-DESIGN.md).
 **Depends on:** UX-01 preservation,
