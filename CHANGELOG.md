@@ -5,17 +5,32 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 ### Added
+- A local fake-publication engine with create-only branches, exact package readback, unrelated-file preservation and SQLite metadata-only restart receipts. With an explicit local journal, authenticated browser simulation adds confirmation, account-bound progress, cancellation and read-only recovery. Lost responses never trigger automatic repeat writes. Real GitHub publication remains disabled.
+- Browser-local creator ZIP review, destination planning and separately consented loopback server validation in the publisher prototype. A bounded native Node child independently checks package contents and images, with session/digest/base binding and cancellation. No remote upload, real GitHub access or branch writes.
+- A separate loopback-only Node publisher authentication prototype with an explicit simulated provider, session/state/PKCE/CSRF controls and local browser checks. No real GitHub connection, hosting or publication is enabled.
+- Offline comparison of creator package versions against the original import receipt, with file/declared-license changes and independent new-project import. Local edits are never overwritten; package IDs and version labels are not treated as verified publisher identity.
+- Local creator-sharing packages with separately reviewed layout/DM-encounter profiles, explicit contribution licenses, inherited notices, bounded ZIP/folder import and independent Library copies. No GitHub authentication or upload is enabled.
 - Three authored launch encounters: The Lantern Crypt, Alder Crossing and Kestrel Docking Bay, with player-safe creation previews and independent editable copies containing public and private notes.
-- Original monochrome print companions for materials, connected walls, doors, stairs and legacy token affiliations, plus a quarter-inch overview scale for A4/Letter output. New artwork is awaiting owner and physical-paper review.
+- Original monochrome print companions for materials, connected walls, doors, stairs and legacy token affiliations, plus a quarter-inch overview scale for A4/Letter output. Digital artwork is owner-approved; physical-paper qualification remains open.
 - Three owner-approved Folio first-use illustrations for the empty map collection, private project backup and local player display, with solid monitor stands, clear dashed connectors and monochrome/forced-color treatments.
 - A consistent family of 32 original line icons for navigation, project actions, save/offline status, export and player-display controls, with text-scaled SVG artwork and unchanged accessible control names.
 - Twelve original, owner-approved Folio token designs with shape-coded affiliation frames, monochrome print companions and two furnished sample scenes.
 
 ### Fixed
+- Export cancellation now shows immediate pending feedback while keeping output controls locked until the current operation finishes. Dense F05 coverage verifies selected PNGs, allocation limits, cancellation cleanup, encoding-failure retry and unchanged project data.
+- Keep keyboard-focused controls fully visible in short contextual sheets, including Firefox at 200% interface text. Preserve fractional inspector coordinates without native number-input rounding. Local results and outstanding hosted qualification are tracked in the UX-09 handoff.
 - Keep failed-startup recovery controls available when another tab restores the same project first, instead of showing a blank editor. The original remains downloadable and Retry restore opens the newer saved project.
 - Reserve unique token IDs before queued React updates so consecutive placements remain independently selectable and removable.
 
 ### Changed
+- Restored full-canvas token-drag preview redraws in every browser after Linux WebKit exceeded the unchanged pixel-fidelity limit with regional painting. The owner chose correctness over the preview speedup. Existing caches and coordinate-only hover behavior remain; earlier speed measurements are historical, not current performance claims.
+- Owner-approved monochrome stair symbols with shared sloping arrow sides: five treads join the directional outline and central shaft. Color art and stair links are unchanged; physical-paper acceptance remains open.
+- Added role-specific purpose and usage guidance to all 35 bundled samples in both sample pickers and the DM Notes of new copies. Generated examples and art references are no longer described as universally ready-to-play encounters. Saved projects and sample layouts are unchanged.
+- Clarified Kestrel Docking Bay as a rescue encounter, with a locked crew-room entrance, explicit extraction objective, quiet control-room release and cargo-tool bypass. New sample copies receive the revised notes; existing projects and gameplay systems are unchanged.
+- Owner-approved thin print contours between wood, earth and stone floor materials. Matching floor tiles gain no new lines; existing water, wall and doorway contours, color art and map behavior are unchanged.
+- Owner-approved stronger outer contours and interior strokes for all 24 monochrome Folio furnishings. Color artwork, path geometry, saved IDs, tokens and map symbols are unchanged; physical-paper acceptance remains open.
+- Locally implemented exact-artifact Pages gating: one production build is verified and consumed by each browser engine before eligible main runs can package and deploy it. Required check names and suites are preserved. Hosted enforcement and publication remain unverified.
+- Reconciled public guides and in-app shortcut help with Your maps, Edit, Prepare, Run and the local player display. Documented private project backup versus session recovery scope, explicit import copies, offline readiness and unqualified release/device limits.
 - Owner-approved print door revision: capital H/V overlays without the center line, matched letter clearance, and clean lock/trap symbols retaining their outer orientation posts.
 - Print furnishings use neutral charcoal ink, and print fog uses neutral gray with crisp edges. Approved furnishing/token geometry and color-mode artwork are unchanged.
 - Avoid full map/art repaints when only cursor coordinates change, while retaining live tool previews. Added repeatable F05 dense-map diagnostics; painting and representative-device performance qualification remain open.

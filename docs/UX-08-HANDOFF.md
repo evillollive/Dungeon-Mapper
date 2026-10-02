@@ -14,6 +14,13 @@ to UX-09B/C. This does not claim physical-print acceptance or change the export
 implementation; the earlier evidence below remains scoped to its original
 candidate.
 
+**September 28, 2026 follow-up:** A separate
+[manual A-UPDATE rehearsal](./UX-09-HANDOFF.md#local-documentation-and-real-version-update-milestone)
+now exercises different real application bundles for the recorded
+`72f32e1 -> d9036c5 -> 72f32e1` pair, including project/session preservation
+and rollback writes. It does not change this historical worker-only campaign,
+establish arbitrary downgrade support or supply a hosted release receipt.
+
 ## Export contract
 
 The header, command palette and existing JSON/PNG/SVG/print shortcuts all enter

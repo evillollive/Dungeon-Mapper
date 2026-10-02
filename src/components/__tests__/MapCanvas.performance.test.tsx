@@ -70,6 +70,29 @@ describe('MapCanvas render performance', () => {
     expect(getContextSpy).toHaveBeenCalledTimes(2);
   });
 
+  it('resets the complete main canvas for token edits in the formerly eligible Folio scene', () => {
+    const width = vi.spyOn(HTMLCanvasElement.prototype, 'width', 'set');
+    const props = mapCanvasProps();
+    props.viewMode = 'gm';
+    props.activeTool = 'move-token';
+    props.themeId = 'dungeon-folio-v1';
+    props.selectedTokenId = 1;
+    props.map.fogEnabled = false;
+    props.map.tokens = [{ id: 1, kind: 'player', x: 2, y: 2, icon: 'warrior', label: 'Scout' }];
+    const { container, rerender } = render(<MapCanvas {...props} />);
+    const main = container.querySelector('canvas[role="application"]');
+    expect(main).not.toBeNull();
+    const resets = () => width.mock.contexts.filter(canvas => canvas === main).length;
+    const initial = resets();
+    expect(initial).toBeGreaterThan(0);
+    rerender(<MapCanvas {...props} map={{ ...props.map,
+      tokens: props.map.tokens.map(token => ({ ...token, x: 3 })),
+    }} />);
+    expect(resets()).toBe(initial + 1);
+    rerender(<MapCanvas {...props} />);
+    expect(resets()).toBe(initial + 2);
+  });
+
   it('retains edge strips for token and fog edits and frees them on unmount', () => {
     const prepare = vi.spyOn(EdgeBlendCache.prototype, 'prepare');
     const clear = vi.spyOn(EdgeBlendCache.prototype, 'clear');

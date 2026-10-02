@@ -1,7 +1,7 @@
 import { StrictMode, useState, type ReactNode } from 'react';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { useFocusTrap } from '../useFocusTrap';
 
 function Trap({ children, label = 'Test dialog', sheet = false }: { children?: ReactNode; label?: string; sheet?: boolean }) {
@@ -10,6 +10,23 @@ function Trap({ children, label = 'Test dialog', sheet = false }: { children?: R
 }
 
 describe('modal keyboard focus', () => {
+  it('scrolls the keyboard destination fully into view in both directions', async () => {
+    const user = userEvent.setup();
+    const scroll = vi.spyOn(Element.prototype, 'scrollIntoView');
+    try {
+      render(<Trap sheet><button>First</button><button>Last</button></Trap>);
+      for (const [shift, name] of [[false, 'Last'], [false, 'First'], [true, 'Last']] as const) {
+        await user.tab({ shift });
+        const target = screen.getByRole('button', { name });
+        expect(target).toHaveFocus();
+        expect(scroll).toHaveBeenLastCalledWith({ block: 'nearest', inline: 'nearest' });
+        expect(scroll.mock.contexts.at(-1)).toBe(target);
+      }
+    } finally {
+      scroll.mockRestore();
+    }
+  });
+
   it('skips hidden, disabled, inert and collapsed controls and wraps in both directions', async () => {
     const user = userEvent.setup();
     render(<Trap>

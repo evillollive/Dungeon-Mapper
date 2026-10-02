@@ -28,6 +28,7 @@ export const DEFAULT_TILE_SIZE = 20;
 export const MAX_HISTORY_SIZE = 50;
 
 export interface HistorySnapshot {
+  creatorProvenance?: unknown;
   /** Full meta snapshot so undo/redo restores dimensions plus name/theme. */
   meta: MapMeta;
   tiles: Tile[][];
@@ -65,6 +66,7 @@ export interface ClipboardBuffer {
   stamps: PlacedStamp[];
   width: number;
   height: number;
+  creatorProvenance?: unknown;
 }
 
 export function createDefaultMap(name = 'Level 1'): DungeonMap {
@@ -119,6 +121,7 @@ export function withDefaults(map: DungeonMap): DungeonMap {
 
 export function createHistorySnapshot(map: DungeonMap): HistorySnapshot {
   return {
+    creatorProvenance: map.creatorProvenance,
     meta: { ...map.meta },
     tiles: map.tiles,
     fog: map.fog ?? createFogGrid(map.meta.width, map.meta.height, false),
@@ -148,6 +151,7 @@ export function createHistorySnapshot(map: DungeonMap): HistorySnapshot {
 export function restoreHistorySnapshot(map: DungeonMap, snap: HistorySnapshot): DungeonMap {
   return {
     ...map,
+    creatorProvenance: snap.creatorProvenance,
     meta: snap.meta,
     tiles: snap.tiles,
     fog: snap.fog,

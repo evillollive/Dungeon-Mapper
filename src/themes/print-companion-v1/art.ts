@@ -6,6 +6,13 @@ type Shape = ReturnType<typeof folioShapes>[number];
 type Point = readonly [number, number];
 const INK = '#000000';
 const PAPER = '#ffffff';
+const NEIGHBORS = [[0, -1], [1, 0], [0, 1], [-1, 0]] as const;
+const EDGES: readonly (readonly Point[])[] = [
+  [[0, 1], [32, 1]], [[31, 0], [31, 32]],
+  [[0, 31], [32, 31]], [[1, 0], [1, 32]],
+];
+const materialRank = (material: string | undefined) =>
+  material === 'folio-worn-wood-v1' ? 2 : material === 'folio-earth-v1' ? 1 : 0;
 
 /** Original 32-unit pen drawings. Coordinates, not output pixels, set hatch spacing. */
 export function printTileShapes(
@@ -26,11 +33,6 @@ export function printTileShapes(
   if (type === 'empty') return shapes;
 
   if (wall || type === 'water') {
-    const neighbors = [[0, -1], [1, 0], [0, 1], [-1, 0]];
-    const edges: readonly (readonly Point[])[] = [
-      [[0, 1], [32, 1]], [[31, 0], [31, 32]],
-      [[0, 31], [32, 31]], [[1, 0], [1, 32]],
-    ];
     if (wall) {
       // Orthogonal crosshatching stays aligned at cropped page boundaries.
       for (const at of [4, 12, 20, 28]) {
@@ -43,10 +45,10 @@ export function printTileShapes(
           [19, at], [23, at - 1.5], [29, at]], 0.85);
       }
     }
-    neighbors.forEach(([dx, dy], index) => {
+    NEIGHBORS.forEach(([dx, dy], index) => {
       const next = context?.getTileBaseType(x + dx, y + dy);
       const joins = wall ? next === 'wall' || next === 'secret-door' : next === 'water';
-      if (!joins) line(edges[index], wall ? 2 : 1.2);
+      if (!joins) line(EDGES[index], wall ? 2 : 1.2);
     });
     if (type === 'secret-door') {
       rect(10, 7, 12, 18, PAPER);
@@ -77,6 +79,14 @@ export function printTileShapes(
       line([[seam, 0], [seam, 16]], 0.65);
       line([[32 - seam, 16], [32 - seam, 32]], 0.65);
     }
+    // The higher-ranked material owns the seam, so it is drawn only once.
+    const rank = materialRank(material);
+    NEIGHBORS.forEach(([dx, dy], index) => {
+      if (context?.getTileBaseType(x + dx, y + dy) === 'floor' &&
+          rank > materialRank(context.getFloorMaterial?.(x + dx, y + dy))) {
+        line(EDGES[index], 1.2);
+      }
+    });
     return shapes;
   }
 
@@ -105,13 +115,13 @@ export function printTileShapes(
     }
   } else if (type.startsWith('stairs')) {
     const down = type === 'stairs-down';
-    for (let i = 0; i < 5; i++) {
-      const inset = (down ? i : 4 - i) * 1.8;
-      line([[4 + inset, 5 + i * 5.5], [28 - inset, 5 + i * 5.5]], 1.4);
+    const point = (x: number, y: number): Point => [x, down ? 32 - y : y];
+    for (const y of [7, 12, 17, 22, 27]) {
+      const halfWidth = (y - 2) / 2;
+      line([point(16 - halfWidth, y), point(16 + halfWidth, y)], 1.4);
     }
-    line([[16, 4], [16, 28]], 4, PAPER);
-    line([[16, 4], [16, 28]], 1.5);
-    line(down ? [[12, 23], [16, 28], [20, 23]] : [[12, 9], [16, 4], [20, 9]], 1.8);
+    line([point(16, 2), point(16, 30)], 2.2);
+    line([point(3, 28), point(16, 2), point(29, 28)], 2.2);
   } else if (type === 'pillar') {
     dot(16, 16, 10); dot(16, 16, 7.5, PAPER);
     line([[11, 16], [13, 12], [17, 11]], 1);

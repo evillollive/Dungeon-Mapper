@@ -11,6 +11,7 @@ import type { CustomThemeDefinition, LightingAtmosphereSettings, PlacedStamp, St
 import { getSemanticTileType } from './customThemes';
 import { getStampDef } from './stampCatalog';
 import { getFolioFurnishing } from '../assets/folio-furnishings-v1/catalog';
+import type { TileBounds } from './canvasGeometry';
 
 // ── Ambient Occlusion ────────────────────────────────────────────────────
 
@@ -35,6 +36,7 @@ function drawAmbientOcclusion(
   intensity: number,
   radius: number,
   customThemes: readonly CustomThemeDefinition[],
+  bounds?: TileBounds,
 ): void {
   if (intensity <= 0) return;
 
@@ -57,8 +59,8 @@ function drawAmbientOcclusion(
     [0, 1, -1, 1, 0, 1],       // bottom-left corner
   ];
 
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
+  for (let y = bounds?.minY ?? 0; y < (bounds?.maxY ?? height); y++) {
+    for (let x = bounds?.minX ?? 0; x < (bounds?.maxX ?? width); x++) {
       const tile = tiles[y]?.[x];
       if (!tile || isWallLike(tile.type, customThemes)) continue;
       if (tile.type === 'empty') continue;
@@ -193,6 +195,7 @@ export function drawLightingAtmosphere(
   stamps: readonly PlacedStamp[],
   customThemes: readonly CustomThemeDefinition[],
   customStamps: readonly StampDef[] = [],
+  bounds?: TileBounds,
 ): void {
   if (!settings.enabled) return;
 
@@ -203,7 +206,7 @@ export function drawLightingAtmosphere(
   drawAmbientOcclusion(
     ctx, tiles, width, height, tileSize,
     settings.aoIntensity, settings.aoRadius,
-    customThemes,
+    customThemes, bounds,
   );
 
   // 2. Stamp shadows

@@ -10,7 +10,7 @@ const baseURL = `http://127.0.0.1:${port}/Dungeon-Mapper/`;
 
 export default defineConfig({
   testDir: './src/test',
-  testMatch: ['ux09.spec.mjs', 'ux09Performance.spec.mjs', 'ux09EdgeBlend.spec.mjs', 'ux09FolioTiles.spec.mjs', 'ux07Furnishings.spec.mjs', 'ux07Tokens.spec.mjs', 'interfaceIcons.spec.mjs', 'firstUseIllustrations.spec.mjs', 'launchArt.spec.mjs'],
+  testMatch: ['ux09.spec.mjs', 'ux09Performance.spec.mjs', 'ux09EdgeBlend.spec.mjs', 'ux09FolioTiles.spec.mjs', 'ux07Furnishings.spec.mjs', 'ux07Tokens.spec.mjs', 'interfaceIcons.spec.mjs', 'firstUseIllustrations.spec.mjs', 'launchArt.spec.mjs', 'tokenRepaint.spec.mjs'],
   outputDir: join(output, 'browser-results'),
   reporter: [
     ['list'],
@@ -18,6 +18,11 @@ export default defineConfig({
     ['html', { outputFolder: join(output, 'browser-report'), open: 'never' }],
   ],
   forbidOnly: true,
+  metadata: {
+    sourceRevision: process.env.GITHUB_SHA ?? process.env.QA_SOURCE_SHA ?? 'working tree',
+    buildManifestSha256: process.env.EXPECTED_MANIFEST_SHA256 ?? null,
+    canonicalArtifactId: process.env.CANONICAL_ARTIFACT_ID ?? null,
+  },
   retries: 0,
   workers: 1,
   timeout: 180_000,

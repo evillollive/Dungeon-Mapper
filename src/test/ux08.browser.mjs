@@ -46,7 +46,11 @@ for (const engine of (process.env.QA_ENGINES ?? 'chromium,firefox,webkit').split
   let server;
   let browser;
   let context;
-  const evidence = { engine };
+  const evidence = {
+    engine, sourceRevision: process.env.GITHUB_SHA ?? process.env.QA_SOURCE_SHA ?? 'working tree',
+    buildManifestSha256: process.env.EXPECTED_MANIFEST_SHA256 ?? null,
+    canonicalArtifactId: process.env.CANONICAL_ARTIFACT_ID ?? null,
+  };
   try {
     server = await preview({ preview: { host: '127.0.0.1', port, strictPort: true },
       plugins: [{ name: 'ux08-controlled-worker-update', configurePreviewServer(server) {

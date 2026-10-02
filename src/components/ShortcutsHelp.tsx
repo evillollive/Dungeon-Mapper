@@ -79,8 +79,15 @@ const ShortcutsHelp: React.FC<ShortcutsHelpProps> = ({ bindings, onClose }) => {
           <p className="shortcuts-help-note">
             Shortcuts are skipped while you're typing in a text field or while
             a modal dialog is open. Some browser-reserved combinations
-            (Ctrl+N, Ctrl+O, Ctrl+S) may not reach the app — use the header
-            buttons or the listed alternates as a fallback.
+            (Ctrl+N, Ctrl+O, Ctrl+S) may not reach the app. Use Project menu,
+            Export or the listed alternates instead.
+          </p>
+          <p className="shortcuts-help-note">
+            Start or open a project from Your maps. Prepare session opens
+            separately saved play progress; Open player display in Run opens
+            a read-only window in this browser, not a remote share link.
+            Edit and DM view remain private workspaces. Project backups include
+            DM content but not separate session records.
           </p>
         </div>
       </div>

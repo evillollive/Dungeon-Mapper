@@ -4,9 +4,156 @@
 
 **Reviewed baseline:** `4633065`
 
-**Status, updated September 15, 2026:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 and UX-08 are merged. UX-07's initial-release artwork is implemented, with implementation, automated evidence and owner acceptance tracked separately in the [art closeout ledger](#initial-release-art-closeout). UX-09 is split into [early-access closure, device qualification and observed usability](#release-milestones-and-ownership). Desktop-first early access includes physical printing; its release gates remain open. Full release qualification and participant usability acceptance are not claimed.
+**Status, updated September 29, 2026:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 and UX-08 are merged. UX-07's initial-release digital artwork is implemented and owner-approved, with technical evidence and physical-paper acceptance tracked separately in the [art closeout ledger](#initial-release-art-closeout). UX-09 is split into [early-access closure, device qualification and observed usability](#release-milestones-and-ownership). Desktop-first early access includes physical printing; its release gates remain open. Full release qualification and participant usability acceptance are not claimed.
 
 **Audience:** Future product, design, development, art, and QA sessions.
+
+**Immediate release focus, October 1, 2026:** Prioritize an updated desktop
+candidate for real DM/user testing on the path to full release. Freeze optional
+feature expansion while qualifying and publishing that candidate. Existing
+editing, save/recovery, undo, player-safe display, exports and local creator
+packages are the useful testing surface. Live GitHub publishing, collaboration,
+additional art and speculative optimization are not prerequisites.
+
+Keep material data-loss, hidden-information disclosure, broken critical flows,
+the agreed required checks and verified deployment blocking. Physical printing,
+broader device/assistive coverage and representative performance remain
+unqualified where recorded; an informed user-testing candidate is not a claim
+that those full-release gates passed. Use participant feedback to identify
+high-value fixes rather than waiting for every roadmap item before learning.
+Formal supported scope and release approval remain explicit decisions.
+
+The owner approved a narrow change to the retired optimization comparison:
+single-pixel RGB maxima become diagnostic; exact alpha, whole-image mean,
+full-redraw and movement/cancel/commit requirements remain. All other CI stays
+intact. [Policy and candidate sequence](./UX-09-HANDOFF.md#owner-approved-release-candidate-comparison-policy)
+are recorded, with no claim that historical failing receipts now pass.
+
+**Standing owner priority, October 1, 2026:** Evaluate value before pursuing
+more exactness. When expected user benefit is negligible relative to time,
+effort, complexity or compute/CI cost, proactively recommend against continuing
+before asking for another run or a larger budget. Prefer reliable, simpler
+behavior and meaningful correctness over low-value perfection. Reassess
+specialized checks when their original optimization no longer exists.
+[Decision, concrete example and safeguards](./UX-09-HANDOFF.md#owner-value-judgment-proportionate-quality-work)
+are permanent guidance, not approval to weaken checks or bypass release gates.
+
+**Optional GitHub integration plan, September 30, 2026:** The owner requested
+a staged roadmap for user-owned map publishing, licensing, import/remix and
+optional GitHub connection. [UX-11](#ux-11-optional-github-publishing-and-map-reuse)
+separates portable local work, separately authorized remote non-Actions setup,
+and budget-gated Actions qualification. It is planned, not implemented, and
+does not add an early-access prerequisite or authorize remote writes/spending.
+
+**Portable evidence preparation, September 30, 2026:** A checksummed local
+archive now packages source `98cdada`, selected original reports/failures,
+retained builds and reviewed artwork. Fresh extraction verified 2,170 payload
+files; profiles, dependencies and redundant working copies are excluded.
+[Archive identity, omissions and transfer procedure](./UX-09-HANDOFF.md#portable-local-evidence-archive)
+are retained. This is local staging, not a durable off-device copy or a new
+qualification receipt. No upload or hosted run occurred; destination selection
+and public-distribution review remain open.
+
+**Dense-export milestone, September 30, 2026:** F05 selected-page allocation,
+PNG validity, controlled cancellation, encoding-failure retry and unchanged
+project data now pass locally in all three locked engines. A reproduced
+cancellation-feedback delay is fixed: the UI acknowledges the request while
+keeping new exports locked until cleanup finishes. [Evidence and limits](./UX-09-HANDOFF.md#dense-f05-export-and-cancellation-milestone)
+separate natural observations from the injected callback hold; natural WebKit
+cancellation timing and total native/GPU memory remain unqualified. No physical
+printing or hosted resources were used.
+
+**Token-preview correctness restoration, October 1, 2026:** The owner chose
+full redraws across every browser after the partial path exceeded the strict
+RGB limit in hosted Linux WebKit. MapCanvas no longer selects regional
+token painting. The comparison keeps all six DPRs, tile sizes, movements,
+cancel/commit and allocation checks, and now requires a full redraw at every
+observation. [Decision, tradeoff, evidence and reintroduction gate](./UX-09-HANDOFF.md#owner-approved-full-token-redraw-restoration)
+are recorded. The correction is local until a separately approved push and
+fresh Linux qualification; no current token-preview speedup is claimed.
+
+**Historical token-preview optimization, September 29, 2026:** The former
+same-canvas overlap-aware repaint was implemented at `e55bc1e` and is now
+withdrawn from production, not qualified by its earlier local pass.
+Matched historical F05 diagnostics showed eligible token-preview p95 falling from
+143-146 to 22-23 ms in unprofiled Chromium and 141-143 to 22-23 ms in Firefox;
+WebKit gains were smaller and variable. Commit and paint stayed on full redraws.
+Full-render fallbacks covered unsupported scenes, canvas edges and nonintegral
+native pixel grids. [Scope, fidelity and individual measurements](./UX-09-HANDOFF.md#token-drag-partial-repaint-implementation-and-local-results)
+are retained. This is not reference-device, physical-input or release acceptance,
+and it consumed no hosted minutes.
+
+**Token-redraw design investigation, September 29, 2026:** A source trace
+identified a bounded next direction: same-canvas dirty-region repaint for one
+token-drag preview in trusted Edit, with no additional retained raster surface
+and full redraw for unsupported or changing scene state. The
+[proposal](./UX-09-HANDOFF.md#token-drag-partial-repaint-proposal) records actual
+layer order, footprint/halo concerns, fog exclusions, memory tradeoffs and the
+F05 measurement update required to observe a partial paint. The owner then
+approved the bounded prototype and complete-overlap extension, explicitly
+retaining a zero-hosted budget. The former bounded implementation and local
+results are retained as history above, with its October 1 withdrawal explicit.
+The owner also approved integral native device-pixel
+tile-pitch admission, with unchanged full rendering at other scales. No
+representative-device or release acceptance is claimed.
+
+**Local performance investigation, September 29, 2026:** The existing F05
+diagnostic identified repeated floor drawing and edge blending as the dominant
+sampled render costs on this Mac. A bounded floor-state batching trial showed
+modest/mixed gains and failed extended fidelity checks, so it was rejected.
+No renderer change is retained; source and all production files were restored
+exactly. [Current baseline, failed trial and next boundary](./UX-09-HANDOFF.md#september-29-local-render-state-investigation)
+are recorded without claiming representative-device or release acceptance.
+Hosted usage remained zero.
+
+**Digital art closeout, September 29, 2026:** The owner approved the integrated
+print stairs in map context, then the remaining access symbols, feature markers
+and legacy token treatment on the retained print key. This closes the outstanding
+initial-release digital-art decisions. It does not qualify actual paper, native
+devices, participant usability, performance or the unpublished branch's hosted
+checks. A-PRINT and the other release gates remain open.
+
+**A-RELEASE local implementation, September 28, 2026:** The owner explicitly
+approved local implementation of the
+[exact-revision Pages design](./RELEASE-DEPLOYMENT-DESIGN.md). Source `96b1b70`
+builds once, verifies the same artifact in each engine, and gates main-only
+packaging/deployment on the existing required checks. The independent deploy
+workflow is removed in this checkout. Local verifier, workflow lint and bounded
+artifact-consumer checks passed; [hosted enforcement remains unverified](./UX-09-HANDOFF.md#local-exact-artifact-deployment-implementation).
+No remote workflow/environment setting changed and the hosted budget remains
+zero. Durable release retention and any additional human deployment approval
+remain separate decisions.
+
+**Documentation follow-up, September 28, 2026:** README, Features, Sharing,
+demo guidance and in-app shortcut help now follow Your maps -> Edit -> Prepare
+-> Run -> local player display. They distinguish project backups from session
+recovery, Library import previews from direct editor imports, and implemented
+offline/responsive behavior from unqualified support claims. The stale
+editor-overlay PNG action label is corrected without changing export behavior.
+This is local documentation completion, not release approval. A real-bundle
+upgrade/recovery rehearsal now also passes for the source-pinned pair below;
+hosted budget remains zero.
+
+**A-UPDATE local rehearsal, September 28, 2026:** A locally rebuilt prior
+application at the last successful Pages source `72f32e1` upgrades to candidate
+`d9036c5` and rolls back while retaining project/session records and recovery
+data. All three locked engines passed the manual rehearsal at `db024ac`.
+These are real different bundles with unchanged storage schemas, not the
+older comment-only worker update. Supported-version scope, final-candidate
+applicability and hosted release qualification remain unaccepted. See
+[build identities, assertions and retained evidence](./UX-09-HANDOFF.md#local-documentation-and-real-version-update-milestone).
+
+**Local-only follow-up, September 28, 2026:** Hosted budget is **zero**.
+PR #185 remains open at `dbba27f`; its Linux Firefox run
+[`35037146541`](https://github.com/evillollive/Dungeon-Mapper/actions/runs/35037146541)
+failed the 200% editing-inspector focus case. Browser qualification correctly
+failed with it. Earlier local passes below retain their recorded platform and
+revision, not an all-platform acceptance claim. The local correction is
+committed at `aa40a14`, with stronger per-viewport edit assertions at `0d0e0bb`.
+Affected keyboard cases pass locally on all three engines; Linux acceptance
+remains blocked. Original failures are retained. See the
+[local disposition and hosted-resume checklist](./UX-09-HANDOFF.md#zero-actions-roadmap-disposition-and-resume-checklist).
+No push, PR mutation, hosted run or release is authorized.
 
 **Owner-approved launch scope, September 15, 2026:** Proceed toward
 desktop-first early access with local projects, editing, DM sessions, local
@@ -20,12 +167,24 @@ behavior or the existing full-release targets. See the
 Earlier dated milestone limitations remain historical evidence; the scope
 decision here governs which open gates block early access.
 
+**A-EDIT follow-up, September 16, 2026:** Thirteen independent production
+editing cases now join the required runner. They cover six object variants,
+atomic history, cancellation, invalid fields, failed-save recovery, preferences,
+viewport/selection continuity and keyboard inspector focus/contrast/reflow.
+They exposed and fixed clipped inspector actions in short large-text layouts
+and Firefox rounding of edited fractional coordinates. Local three-engine
+evidence at `4f3fad3` is recorded in the
+[A-EDIT handoff](./UX-09-HANDOFF.md#a-edit-production-editing-milestone);
+exact-head required Linux CI remains the landing gate. The next ordered
+implementation slice is A-UPDATE, not a full UX-09 completion claim.
+
 **A-DATA follow-up, September 15, 2026:** Ten production preservation cases
 cover legacy migration, deletion tombstones and failed-startup recovery races.
 The race exposed and fixed a blank-editor transition after another tab won
 recovery. Local three-engine evidence at `ca0dedb` is recorded in the
 [A-DATA handoff](./UX-09-HANDOFF.md#a-data-production-preservation-milestone);
-required Linux CI remains the landing gate. The next ordered slice is A-EDIT.
+required Linux CI remains the landing gate. A-EDIT's subsequent milestone is
+recorded above.
 
 **Library/recovery CI follow-up, September 15, 2026:** Nine independent
 production-browser cases now cover rich duplicate isolation, archive/Trash
@@ -501,6 +660,10 @@ UX-00 baseline and decision gates
        -> UX-09C observed usability acceptance
             -> full UX-09 acceptance after A, B and C
                  -> UX-10 optional remote collaboration
+  -> UX-11 optional GitHub publishing/reuse (uses UX-01, UX-05, UX-08)
+       -> portable creator packages and independent imports
+       -> optional public-link import, attribution and connected publishing
+          (separate decisions/qualification; not an early-access prerequisite)
 ```
 
 Art exploration and usability research may run alongside infrastructure work, but production player display must not precede the visibility contract.
@@ -1055,6 +1218,14 @@ information/help symbols. That addition is implemented; its final appearance
 is shown for review. This accepts the overall family and the other 31 designs,
 not the remaining UX-07 packages or human/device release gates.
 
+**Owner approval, September 28, 2026:** The owner approved the final
+player-display P revision after reviewing the retained 16/20/24-pixel sheet.
+The source and sheet are unchanged from `1b16e68562833c84bb32b5afb3a69dfdc1a42461`
+(#180); sheet SHA-256:
+`47aeb68558cb854484ad7071c06706cdbf55e03a592dce3b1803333db04c5c5a`.
+This closes ART-01's outstanding artwork decision, not device, print or
+full-release qualification.
+
 Editable source and provenance are in `src/assets/interfaceIcons.ts`; no map
 schema or saved artwork ID changes. The source-driven review and reproduction
 command are documented in [Development](./DEVELOPMENT.md#interface-icon-artwork-review).
@@ -1185,11 +1356,213 @@ Review: [print key](./media/launch-art/companions.png),
 Editable source, provenance, source fingerprints and reproduction instructions
 are documented in [Development](./DEVELOPMENT.md#launch-art-and-print-companion-review).
 
-**Acceptance still open:** Owner approval of the remaining new artwork and sample sheets, physical
-A4/Letter printing, participant/device/screen-reader qualification and UX-09
-performance gates. Earlier "ART-06/08 remain open" entries describe their
-historical milestones; this section supersedes their implementation status,
-not their outstanding human acceptance. ART-05/09 remain separate work.
+**Owner review, September 28, 2026:** The owner requested a readability
+revision for the writing desk with papers in the crypt's upper-left study,
+then explicitly expanded the request to stronger outlines across all 24
+monochrome furnishings. Tokens, map symbols, colored artwork and interface
+icons are outside this change.
+
+**Furnishing outline approval, September 28, 2026:** The owner approved the
+stronger monochrome treatment at `68d1bf260cb9dda4bca01ab69d4973bcc6f25a4d`,
+after reviewing equal before/after study enlargements and the complete
+24-furnishing sheet. Pack 1.1.1 / render version 2 uses at least 2.4 frame units
+for outer silhouettes and 1 for interior strokes. Source colors, path geometry,
+IDs, placement, tokens and map symbols are unchanged.
+Retain the [approved furnishing sheet](./media/launch-art/furnishings-outlined-v1.1.1.png)
+and [revised crypt context](./media/launch-art/launch-lantern-crypt-outlined.png);
+the original sheets above remain the pre-revision reference. This approval is
+for the furnishing treatment, not launch-sample composition or physical paper.
+
+The targeted furnishing/launch/print unit selection passed 34 tests. Nine
+production case/engine combinations passed on the locked Chromium, Firefox
+and WebKit engines: the complete furnishing renderer matrix, launch-art
+geometry/page seams, and the crypt's real A4/Letter export journey. Existing
+pixel bounds, cache limits and audience assertions were unchanged. Build and
+lint passed. Evidence is retained in session
+`20233d90-7a79-4423-a564-f75af5b08662`,
+`files/furnishing-outlines-final-{chromium,firefox,webkit}`; the before/after
+review is `files/furnishing-outline-review.html`. Stroke-dependent furnishing
+and composed-print evidence is refreshed; unrelated token/terrain geometry,
+storage and keyboard campaigns retain their original scope and were not rerun.
+These local results are not an exact-head hosted receipt or paper qualification.
+
+**Surface and stair review, September 28, 2026:** The owner clarified that
+the floor, wall, water, background/rock, worn-wood and earth patterns on the
+retained print key are fine; their requested change concerns stairs. The key
+is `docs/media/launch-art/companions.png`, SHA-256
+`d79b2a46474192f77215194897129b2c5e1c225848fb7e46333464462b47a7fa`.
+This accepts those surface patterns only, not other symbols or paper output.
+
+The owner requested a larger stair arrow encompassing the treads, preferred
+the wide-arrow study, then selected **shared sloping sides** from two integrated
+refinements. Preview scripts/pages are retained in session
+`20233d90-7a79-4423-a564-f75af5b08662`, `files/stair-arrow-preview.html` and
+`files/integrated-stair-preview.html`. Print companion 1.2.0 / render version 3
+implements the selected direction: all five treads join the central shaft and
+both sloping arrow sides, with mirrored up/down geometry. The in-context result
+was approved by the owner on September 29, 2026 against source
+`cdba23566c9026f56be2b4ab1729edfefbf0e897`. Colored stair artwork and stair-link
+behavior are unchanged. Previously approved doors, furnishings and floor
+boundaries are outside this revision.
+
+The approved [updated print key](./media/launch-art/companions-stairs-v1.2.0.png)
+and [crypt context](./media/launch-art/launch-lantern-crypt-stairs-v1.2.0.png)
+are retained beside the earlier sheets, not substituted for their historical
+versions. The updated key has SHA-256
+`e522004f024d8ccb4994c1c47a4a91d2675b3fbd7b580bf75abfed8f21ecd1a0`.
+The source fingerprint is
+`93fe45870d8d2e7054a02cb1f5f4717ccd724165b90636f257bd25a7feb547c0`.
+
+Twenty-three targeted print/sample unit tests, build and lint passed before
+the pause. On September 29, six production case/engine combinations passed
+at that same source: launch-art geometry/page seams and the crypt's real
+A4/Letter export journey on Chromium, Firefox and WebKit. The existing pixel
+thresholds and audience assertions were unchanged. Retained evidence:
+`files/stairs-final-{chromium,firefox,webkit}` in the same session. This refresh
+applies to the stair artwork and affected print appearances, not unrelated
+storage, input or participant campaigns. The approval is digital artwork only;
+physical-paper acceptance and hosted qualification remain open. No hosted
+triggers or remote mutations were initiated.
+
+**Access-symbol approval, September 29, 2026:** The owner approved the
+secret-door S, portcullis, archway, barricade and start/entrance symbols on
+`companions-stairs-v1.2.0.png`, retained at `f503fd9` from source `cdba235`.
+The review explicitly distinguished the DM secret-door symbol from the
+undiscovered wall appearance in player output. This approves these five
+artworks without changing visibility rules or inferring paper acceptance.
+
+**Feature-marker approval, September 29, 2026:** The owner approved the round
+pillar, triangular trap warning and treasure chest on that same print key.
+This decision concerns those three monochrome designs, not encounter rules
+or physical-printer readability.
+
+**Legacy-token approval, September 29, 2026:** The owner approved the legacy
+player shield, NPC circle and monster hexagon with the older character glyph,
+shown at the bottom right of that same sheet. The already-approved Folio
+designs served as context and were not changed or reopened for approval.
+
+These explicit decisions complete the remaining on-screen ART-08 review.
+The tile key and token examples remain bound to the sheet/source identities
+above. No code changed for the access, feature-marker or legacy-token approvals,
+so no redundant rendering campaign was run. The initial-release digital-art
+approval is complete; physical-paper acceptance and exact-head hosted evidence
+are not. The zero-minute budget remains unchanged.
+
+**Crypt sample approval, September 28, 2026:** The owner approved The Lantern
+Crypt's overall visual composition and readability after the furnishing
+revision. The reviewed sheet is `launch-lantern-crypt-outlined.png`, retained
+at `6c23cda`, rendered from artwork source `68d1bf2`. This accepts the sample
+artwork, not participant playtesting or physical-print qualification.
+
+**Crossing review, September 28, 2026:** The owner requested clearer bridge
+boundaries in monochrome and chose a preview of thin floor-material transition
+contours throughout print mode. After reviewing the equal-scale before/after
+map and bridge detail, the owner explicitly approved the thin boundary
+treatment. Print companion 1.1.0 / render version 2 draws each wood/earth/
+flagstone seam once, at 1.2 frame units, lighter than a wall. Matching floor
+tiles, existing wall/water contours, doors, color art and map behavior are
+unchanged. Approved source SHA-256:
+`513b9e1d3727f7873ec9b80c0cd01392e36510e9828258bae0aee696e60a6e02`.
+The comparison is retained as `files/floor-boundary-preview.html` in session
+`20233d90-7a79-4423-a564-f75af5b08662`. This approves the styling, not Alder
+Crossing's full sample composition or physical-paper qualification.
+
+The approved treatment is implemented at `d200237bb7c4275f20bef0796d704275adc679bf`.
+The [revised Crossing sheet](./media/launch-art/launch-alder-crossing-boundaries.png)
+is retained beside its original, with SHA-256
+`66e6994c030f288a6bf686ed8ac074dec6f9c803c5feac6bb4ff5286cc9cc589`.
+Twenty targeted print/sample unit tests passed, including single-edge ownership,
+same/fallback-material behavior and no duplicate non-floor boundaries. Six
+production case/engine combinations passed: launch-art geometry/seams and
+Crossing's safe creation/copy/A4/Letter journey on Chromium, Firefox and WebKit.
+Existing bounds and assertions are unchanged. Build and lint passed.
+Results are retained in the same session under
+`files/terrain-boundaries-final-{chromium,firefox,webkit}`; the first Chromium
+working-tree preview remains in `files/terrain-boundaries-first-chromium`.
+Only print-material appearance and related evidence changed, not color,
+storage, map geometry or previous owner decisions. No physical printing or
+hosted run occurred, and digital results do not qualify paper output.
+
+**Crossing sample approval, September 28, 2026:** The owner approved Alder
+Crossing's overall visual composition and readability after the boundary
+revision. The approved sheet is `launch-alder-crossing-boundaries.png`,
+retained at `0a29f67` from artwork source `d200237`. This is sample artwork
+acceptance, not participant playtesting or physical-print qualification.
+
+**Kestrel purpose review, September 28, 2026:** The owner accepted readability
+but asked for an explicit purpose before overall sample approval. They selected
+rescuing the stranded engineer and approved a visibly locked crew-room entrance
+with control-room release and cargo-tool bypass approaches. One doorway is
+changed to a locked symbol; public/private notes define the goal, return to the
+aft airlock, solutions and optional security complication. The coolant core is
+context, not a countdown. There are no automated locks, alarms or combat rules.
+New sample copies receive this authored content; existing saved maps are not
+rewritten.
+
+**Kestrel approval, September 28, 2026:** The owner approved the rescue
+encounter and layout at `92104bcaa951d0670a8d1730b1a79a9b7406b48b` after
+reviewing the objective, two approaches, role of each area and revised
+[map sheet](./media/launch-art/launch-kestrel-rescue.png). The purpose brief is
+retained in session `20233d90-7a79-4423-a564-f75af5b08662`,
+`files/kestrel-rescue-review.html`. This is authored-content/layout acceptance,
+not participant playtesting, combat balancing or physical-print approval.
+The owner also requested explicit purpose for all samples; the scope of that
+follow-up was explicitly confirmed as every bundled sample, with guidance
+suited to its role rather than turning all references into encounters.
+
+Twenty-two targeted sample/print unit tests passed, including the stated
+objective, public/private notes, both solutions reachable outside the sealed
+room, and an extraction path after release. Six production case/engine
+combinations passed on Chromium, Firefox and WebKit: launch geometry/page seams
+and Kestrel's safe preview, independent copies, reload and real A4/Letter
+downloads. Build and lint passed. Evidence is retained under
+`files/kestrel-rescue-final-{chromium,firefox,webkit}`. The original ship sheet
+and all earlier decisions remain retained; this refresh changes only Kestrel's
+authored content and its affected appearance, not shared art, storage schemas,
+movement rules or hosted qualification. Hosted triggers remain zero.
+
+**Catalog-purpose follow-up, September 28, 2026:** Role-specific purpose and
+usage guidance now covers all 35 samples: 26 generated examples, six art
+references and three launch encounters. Both the guided sample picker and
+Generate Hub display the same guide. The misleading blanket "Ready to play"
+choice is now "Choose a sample". Generated examples explain the preparation
+still needed; art references explain what to inspect or reuse; launch encounters
+state an objective, approaches and outcome.
+
+Each new sample copy keeps this guide at the start of the first note's private
+description on every level, followed by the original note text. Existing note
+IDs, locations, public fields, geometry, actors, artwork and saved projects are
+unchanged. The guide round-trips in private JSON but is absent from player
+projection. This implements the requested guidance, not an inferred owner
+approval of all newly authored text or participant playtesting.
+
+Implementation: `11a6189987cbf6188487b27955fdcb9d6e3182d7`. Guidance source
+`src/utils/sampleGuides.ts` has SHA-256
+`64b34f035ba86f2979df98e78180b5b12752344bb5e8bfbeb02cdb6c591a423c`.
+The review page is generated from the actual catalog, not separately authored
+copy: `files/sample-guide-review.html` in session
+`20233d90-7a79-4423-a564-f75af5b08662`. It includes all 35 entries and their
+three roles; the generator is retained alongside it.
+
+Targeted unit/component evidence covers all guide IDs with no orphan entries,
+each level's private JSON round-trip, player exclusion, independent copies
+and both picker components. The new gallery test initially left its remembered
+tab selected for the next test; scoping preference reset to that test group
+fixed the test isolation without changing product behavior. Six production
+case/engine combinations passed on Chromium, Firefox and WebKit: guided
+creation/Library continuity, including the art-reference guide at phone width,
+and Kestrel's safe preview/copy/print journey with the persisted guide. Results
+are retained under `files/sample-guides-final-{chromium,firefox,webkit}`.
+Build and lint passed. Shared artwork and geometry are unchanged, so their
+unrelated renderer campaigns were not repeated. No hosted receipt, physical
+printing or participant qualification is inferred; the prior real-version
+update pair remains evidence for its original source revisions.
+
+**Acceptance still open:** Physical A4/Letter printing, participant/device/
+screen-reader qualification, reference performance and exact-head hosted
+qualification. Initial-release digital-art decisions are now closed as recorded
+above. Earlier "ART-06/08 remain open" entries are historical, not a claim that
+these owner reviews must be repeated. ART-05/09 remain separate work.
 
 **Deliverables:** ART-01 through ART-04, ART-06 through ART-08 for the initial release, plus asset manifest/provenance, pack/version selection, previews, deterministic variants, caching, and fallbacks. ART-05/09 extend after the dungeon slice is approved.
 
@@ -1209,13 +1582,13 @@ and review sheets before commissioning further artwork.
 
 | Scope | Implementation | Automated evidence | Owner acceptance / remaining gate |
 | --- | --- | --- | --- |
-| ART-01 interface icons | 32 icons integrated in #180 | Component, render and workflow coverage recorded in the icon milestone | Family and 31 unchanged designs approved; final player-display P revision still awaits approval |
+| ART-01 interface icons | 32 icons integrated in #180 | Component, render and workflow coverage recorded in the icon milestone | Family and 31 unchanged designs previously approved; final player-display P revision approved September 28 against the retained 16/20/24-pixel sheet at `1b16e68`. Artwork closeout complete; no device/print acceptance inferred |
 | ART-02 dungeon/material kit | Foundation and wood/earth materials merged in #167/#168 | Determinism, renderer parity, material persistence and cache coverage recorded above | Foundation and material direction approved |
 | ART-03 furnishings | 24-piece catalog integrated in #177 | Placement, transform, persistence and player-export coverage | Catalog approved |
 | ART-04 tokens | Twelve silhouettes and affiliation frames integrated in #178 | Catalog placement, persistence and color/grayscale/print coverage | Catalog approved |
-| ART-06 launch samples | Three authored encounters integrated in #181 | Sample integrity, fresh copies, projection and render coverage | Sample sheets await owner approval |
+| ART-06 launch samples | Three authored encounters integrated in #181; Kestrel rescue revision at `92104bc`; all 35 catalog entries now have role-specific guides | Sample integrity, fresh copies, projection and render coverage; guide coverage/private round-trip and picker assertions added | Lantern Crypt and Alder Crossing visual composition approved; Kestrel rescue purpose/layout approved September 28. Catalog-wide guidance implemented at owner request, not blanket approval of new text or participant acceptance |
 | ART-07 first-use illustrations | Revised three-scene set integrated in #180 | Component and browser art/workflow coverage | Revised set approved |
-| ART-08 print companions | Semantic monochrome set integrated in #181 | Shared rendering, bounded pages, scale metadata and overlap coverage | Six doors approved; remaining companion sheets and physical paper acceptance still required |
+| ART-08 print companions | Semantic set plus furnishing/floor boundaries; integrated stair arrows at `cdba235` | Stair-dependent geometry/page seams and crypt A4/Letter evidence refreshed locally on three engines | Digital artwork approved: surfaces, doors/access symbols, stairs, pillar/trap/treasure, furnishings, floor boundaries and legacy tokens. Owner closeout September 29; physical paper acceptance remains open |
 | ART-05/09 additional kits and adaptations | Outside initial-release scope | Not assessed for release | Deferred; not an early-access dependency |
 
 The evidence column summarizes existing scoped coverage, not blanket
@@ -1345,13 +1718,13 @@ successful bounded milestones.
 | Gate | Remaining work and acceptance | Evidence / environment | Current disposition and reference |
 | --- | --- | --- | --- |
 | A-DATA | Preserve source records and newer work, prevent resurrection and partial commits, and retain a usable recovery path through legacy migration, deletion tombstones and failed-startup recovery/races. | Copilot review; production UI and native IndexedDB on macOS 26.6.2, locked Chromium/Firefox/WebKit, legacy/rich/failure fixtures | Passed for the ten bounded cases at `ca0dedb`; [revision-linked evidence and startup-conflict fix](./UX-09-HANDOFF.md#a-data-production-preservation-milestone). Exact-head required Linux CI remains the landing gate; physical storage failure is not qualified |
-| A-UPDATE | Exercise an actual supported prior application version upgrading to the candidate with existing projects and sessions. Rehearse safe rollback or documented recovery without lossy writes. Do not invent a schema change merely to exercise migration. | Agent-led; production application/worker versions, isolated persistent browser profiles and retained backups | Not assessed; [UX-08](./UX-08-HANDOFF.md#qualification) currently changes worker bytes without changing the application bundle |
-| A-EDIT | Bring critical `ux04Editing.browser.mjs` object-editing paths into the required runner; cover keyboard access, apply/cancel, undo, failure states, visible focus, contrast and reflow across supported workflows. Preserve player projection/display/export sentinel coverage. | Agent-led; existing production runner and section 8 fixtures; distinguish interface text scaling from native browser zoom | Not assessed for complete critical-workflow coverage; existing keyboard and audience milestones remain scoped evidence |
-| A-PERF | Profile before another bounded optimization. Establish a measured desktop workload/hardware/DPR scope, loading behavior, and F05 export allocation/cancellation behavior. Meet the existing desktop targets or obtain an explicit, evidence-backed early-access scope exception before release. | Agent-led where hardware is available; repeated production measurements and retained long-stall/memory observations | Not assessed for reference acceptance; [current F05 diagnostics](./UX-09-HANDOFF.md#bounded-folio-floor-path-milestone) remain above the paint target in Chromium/Firefox |
-| A-DOCS | Reconcile README, Features, Sharing, help/demo guidance and release notes with Your maps -> Create/open -> Edit -> Prepare -> Run -> Player display. State local-only display, project-backup versus session scope, offline readiness and supported limits accurately. | Agent-led; published entry paths and current UI, not historical screenshots or shortcut assumptions | Not assessed; review at `06d20e8` found the README's fresh-load G/Present instructions describe the old entry path |
-| A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | Not assessed for remaining approvals; [art closeout ledger](#initial-release-art-closeout) |
+| A-UPDATE | Exercise an actual supported prior application version upgrading to the candidate with existing projects and sessions. Rehearse safe rollback or documented recovery without lossy writes. Do not invent a schema change merely to exercise migration. | Copilot; source-pinned production rebuilds, isolated synthetic persistent profiles and real recovery downloads on macOS 26.7 | Passed locally for `72f32e1 -> d9036c5 -> 72f32e1` on three engines with harness `db024ac`; [evidence and limits](./UX-09-HANDOFF.md#local-documentation-and-real-version-update-milestone). Supported-version scope and final release candidate remain unaccepted; manual rehearsal is not a new required CI check |
+| A-EDIT | Bring critical `ux04Editing.browser.mjs` object-editing paths into the required runner; cover keyboard access, apply/cancel, undo, failure states, visible focus, contrast and reflow across supported workflows. Preserve player projection/display/export sentinel coverage. | Copilot; production UI and native storage; platform/revision-specific evidence in the handoff | Failed Linux Firefox at `dbba27f`: 200% inspector focus is clipped; aggregate correctly failed. Correction at `aa40a14`, strengthened assertions at `0d0e0bb`, affected local three-engine cases passed. [Fresh exact-head hosted evidence is blocked by zero budget](./UX-09-HANDOFF.md#zero-actions-roadmap-disposition-and-resume-checklist). Earlier macOS results are retained, not relabeled as Linux acceptance |
+| A-PERF | Profile before another bounded optimization. Establish a measured desktop workload/hardware/DPR scope, loading behavior, and F05 export allocation/cancellation behavior. Meet the existing desktop targets or obtain an explicit, evidence-backed early-access scope exception before release. | Agent-led local diagnostics; representative hardware/support decisions remain separate | Owner withdrew the `e55bc1e` token-preview fast path after hosted Linux WebKit pixel failure; [full redraw restoration](./UX-09-HANDOFF.md#owner-approved-full-token-redraw-restoration) is local pending fresh hosted qualification. [Dense-export lifecycle gap checked](./UX-09-HANDOFF.md#dense-f05-export-and-cancellation-milestone). Preview/paint/commit now all redraw fully when needed; earlier Chromium/Firefox paint proxies exceed 100 ms. Reference/loading acceptance, native/GPU memory and natural WebKit cancellation timing remain open |
+| A-DOCS | Reconcile README, Features, Sharing, help/demo guidance and release notes with Your maps -> Create/open -> Edit -> Prepare -> Run -> Player display. State local-only display, project-backup versus session scope, offline readiness and supported limits accurately. | Copilot; actual UI source, UX-02/05/06/08 contracts and targeted help/action component assertions | Completed locally September 28: public guides, help text and action labels corrected; historical GIFs labeled, support/release gaps explicit. Not yet published, no support-scope exception or release approval |
+| A-ART | Close the outstanding owner decisions in the art ledger without expanding ART-05/09. Retain provenance, semantic meaning, approved geometry and renderer/export parity. | Agent visual/render evidence plus explicit owner decisions tied to sheets/revisions | Passed for the outstanding initial-release digital-art owner decisions, completed September 29. Local technical evidence retained; new sample-guide text is not blanket copy/playtest acceptance. A-PRINT and exact-head hosted qualification remain separate open gates; [art closeout ledger](#initial-release-art-closeout) |
 | A-PRINT | Complete the physical-printing launch gate below, including both paper sizes, overview/miniature scale, assembled overlaps and monochrome readability. | Agents prepare exports; a person prints/measures/reviews and supplies evidence from documented printer/app setups | Not assessed on physical paper; digital layout and DPI evidence do not close this gate |
-| A-RELEASE | Require successful qualification of the exact revision before Pages publication; retain strict merge protection. Publish a versioned evidence/limitations summary and rehearse documented rollback/recovery. Preserve release evidence beyond the current 14-day CI artifact window. | Agent-led; GitHub workflow/run/release revisions and synthetic fixture artifacts | Not assessed; current Pages push workflow runs independently of that revision's CI |
+| A-RELEASE | Require successful qualification of the exact revision before Pages publication; retain strict merge protection. Publish a versioned evidence/limitations summary and rehearse documented rollback/recovery. Preserve release evidence beyond the current 14-day CI artifact window. | Approved local workflow implementation, synthetic verifier tests and artifact-consumer evidence; remote baseline unchanged | Core gating implemented locally at `96b1b70`; [evidence and resume requirements](./UX-09-HANDOFF.md#local-exact-artifact-deployment-implementation). [Portable evidence archive](./UX-09-HANDOFF.md#portable-local-evidence-archive) staged locally, not retained off-device. No hosted enforcement/deployment receipt. Zero budget blocks publication; durable destination and formal release approval remain open |
 | B-DEVICE | Complete the broader hardware, native zoom, mobile/input, assistive-technology and device-performance matrix without implying that emulation is physical qualification. | Appropriate devices/OS tools plus human nonvisual/input task observations | Deferred from early access, not waived for full release; supported claims must reflect the gap |
 | C-USERS | Apply the unchanged section 8 participant criteria and retain sample sizes, failures and preference/recognition results separately. | Real DM/player sessions; agents may prepare tasks and analyze observations | Deferred from early access; UX-00 records zero participants, not a simulated success rate |
 
@@ -1387,11 +1760,26 @@ or AI visual review alone is not physical-print acceptance.
 
 #### Bounded execution order
 
-A-DATA's bounded implementation and local production qualification are recorded
-above. Continue with A-EDIT using the existing scenarios, then A-UPDATE and
-A-RELEASE for a real candidate. A-DOCS and owner art/physical-print preparation
-can progress independently. A-PERF begins with a bounded profile and evidence
-handoff; a larger renderer rewrite or performance-scope exception requires an
+A-DATA and A-EDIT's bounded implementations and local production qualification
+are recorded above; A-EDIT's later Linux failure is corrected locally but still
+awaits hosted qualification. A-DOCS is locally completed, and the bounded
+A-UPDATE pair passes the manual local rehearsal. Do not repeat either campaign
+without a changed claim or implementation. A-RELEASE's core gating is now
+approved and locally implemented; no further
+implementation approval is needed for that completed scope. Next decisions
+are legacy-deployment cutover handling, durable release-evidence retention,
+any additional human deployment approval, and reference hardware/workload for
+A-PERF. Physical-print
+work can progress independently; the digital-art owner decisions are complete.
+Actual hosted qualification/publication waits
+for a numeric budget and refreshed remote state.
+Supported-version scope and a final candidate must still be identified before
+A-UPDATE can serve as release evidence. A-PERF's local baseline, rejected
+floor-batch trial, historical token-preview improvement and its owner-approved
+correctness withdrawal are recorded;
+reuse those results rather than repeating either campaign without a changed
+claim or implementation.
+A larger renderer rewrite or performance-scope exception requires an
 explicit decision, not an unattended expansion.
 
 Deliver each slice with concrete acceptance, retained evidence and a stop
@@ -1410,6 +1798,62 @@ because its human work moved to a later milestone.
 **Acceptance:** Separate threat-model review and operational ownership before launch. Do not promise a secure share URL using the full project JSON in a client-only route.
 
 **Handoff:** Approved operating budget, permission model, incident/recovery runbook, and explicit support scope. Not a blocker for local-first release.
+
+### UX-11: Optional GitHub publishing and map reuse
+
+**Priority:** P2. **Status:** Local task execution authorized September 30, 2026;
+GH-N01 through GH-N04 and selected GH-N10 work completed locally: reviewed
+creator ZIPs, directory intake and independent Library import are available.
+GH-N06 also retains original import receipts and compares a supplied local
+package without overwriting edits.
+No GitHub connection/upload or hosted qualification. Remote operations remain unauthorized.
+GH-N07's separate publisher origin and portable Node prototype directions are
+approved. The bounded GH-N08 authentication shell uses only a local simulated
+provider. GH-N09 preparation adds browser-local ZIP inspection, metadata-only
+simulated destination plans and separately consented loopback ZIP validation
+in an independent native Node process. A separate fake-publication engine now
+exercises create-only branch writes, exact readback and metadata-only SQLite
+restart receipts. Authenticated browser confirmation/status/recovery is now
+connected to that local simulation only when an explicit receipt journal is
+configured, never to GitHub. Hosting, real
+credentials, package publication and operations remain
+separately gated. See the [publisher design](./GITHUB-PUBLISHER-DESIGN.md).
+**Depends on:** UX-01 preservation,
+UX-05 audience boundaries and UX-08 portability. Independent of UX-10 live
+collaboration; applicable qualification is required before a selected slice ships.
+
+**Outcome:** Creators can deliberately share editable, licensed maps in their
+own repositories; recipients can preview, import an independent copy and remix
+with attribution. Keep local editing and private backups account-free/offline.
+Do not upload a private backup under a player-safe or public-safe label.
+
+The [GitHub integration roadmap](./GITHUB-INTEGRATION-ROADMAP.md) defines format,
+rights/privacy, authentication/service, conflict/recovery and operational
+contracts with individually scoped tasks:
+
+| Track | Task IDs | Boundary |
+| --- | --- | --- |
+| Non-Actions, local | GH-N01 through GH-N12 | Package contracts, deterministic export, safe import, review UX, mocked public-link/auth/publish paths, provenance, qualification preparation, evidence review and optional validator design |
+| Non-Actions, remote permission needed | GH-R01 through GH-R05 | App/service setup, controlled real auth/read/write exercises and optional evidence transfer; remote writes may still trigger Actions and require budget approval |
+| Actions / hosted qualification | GH-A00 through GH-A05 | Numeric budget gate, existing exact-revision app pipeline, optional service/map validation/release automation and supported rollout |
+
+**First useful milestone:** GH-N01 through GH-N04 plus the selected slice's
+GH-N10: review and download a GitHub-ready creator package, then inspect/import
+it independently without any account connection. Public-link import/provenance
+can follow. A connected publisher needs a separately approved minimal service;
+secrets must never be embedded in the static Pages app.
+
+**Acceptance:** Existing private backup/player projection behavior is unchanged;
+every published field/asset is intentional and licensed for the declared use;
+imports cannot overwrite local work; remote writes respect exact content,
+repository permissions, concurrent edits and required checks. Preserve real
+versus mocked evidence and offline fallback. No mandatory sync, marketplace,
+new live-player service or speculative catalog backend.
+
+**Handoff:** Record approved scope, package/source versions, permission and
+hosting decisions, actual receipts, limitations and aggregate budget accounting.
+The current budget is zero. Separate evidence-archive retention from community
+map publication; initial release gates, including physical printing, remain open.
 
 ## 8. Test and acceptance plan
 
@@ -1543,13 +1987,14 @@ Retain procedural/minimal art fallbacks when optional packs fail. Do not delete 
 | UX-04 | Merged in #163 | [Focused editing, input matrix and device evidence](./UX-04-HANDOFF.md); later physical-device/research gates remain |
 | UX-05 | Merged in #165; current production journey passes Chromium, Firefox and WebKit in UX-09 | [Original policy and evidence](./UX-05-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
 | UX-06 | Merged in #166; current two-window journey passes Chromium, Firefox and WebKit in UX-09 | [Session lifecycle and isolation](./UX-06-HANDOFF.md); [cross-browser follow-up and limits](./UX-09-HANDOFF.md); later release gates remain |
-| UX-07 | Initial-release art implemented; automated evidence and owner acceptance tracked separately | [Art closeout ledger](#initial-release-art-closeout): remaining icon/sample/companion approvals and A-PRINT block launch closeout; ART-05/09 are deferred, not initial-release dependencies |
+| UX-07 | Initial-release digital art implemented and owner-approved; technical and paper qualification remain distinct | [Art closeout ledger](#initial-release-art-closeout): digital decisions closed September 29; A-PRINT and exact-head qualification still block launch closeout. ART-05/09 are deferred, not initial-release dependencies |
 | UX-08 | Merged in #170; production-browser qualified | [Export/offline contract, browser limits and release policy](./UX-08-HANDOFF.md). Remaining UX-07 and UX-09 gates are not waived |
 | UX-09 | In progress; umbrella for A/B/C, not an early-access completion label | Full acceptance requires all three milestones and the retained section 8 criteria |
-| UX-09A | Early-access closure in progress; desktop-first with physical printing | [Release gate ledger](#release-gate-ledger): bounded A-DATA cases pass locally; critical editing coverage, real-version upgrade, performance scope, docs, owner art, physical print and release handling remain open |
+| UX-09A | Early-access closure in progress; desktop-first with physical printing | [Release gate ledger](#release-gate-ledger): A-DOCS complete locally, digital-art owner decisions closed, bounded A-UPDATE pair passed locally. Exact-head hosted receipt blocked by zero budget; final-candidate/version scope, performance, physical print and release handling remain open |
 | UX-09B | Deferred from early access; not accepted | Broader physical-device, native zoom, assistive-technology and remaining device-performance qualification; printing stays in A |
 | UX-09C | Deferred from early access; no participant acceptance | Existing first-use, routine-play, comprehension and aesthetic/readability criteria require real participants |
 | UX-10 | Deferred | Explicit approval of remote scope |
+| UX-11 | Account-free package/comparison work complete locally; separate publisher auth, planning and independent ZIP validation use loopback/local fakes only | [GitHub tasks](./GITHUB-INTEGRATION-ROADMAP.md), [creator contract](./CREATOR-PACKAGE-CONTRACT.md) and [publisher design](./GITHUB-PUBLISHER-DESIGN.md). No live account connection, package publication or GitHub update checks. Production operating decisions, hosted qualification and original release gates remain open |
 
 ## 10. Relationship to the previous roadmap
 

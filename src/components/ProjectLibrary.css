@@ -65,7 +65,16 @@
 .library-import button { margin: 12px 12px 0 0; }
 .library-error { background: #42232c; color: #ffadad; padding: 16px; border: 1px solid #ffadad; border-radius: 7px; }
 .project-library .library-danger { color: #ffadad; }
+.library-package-comparison { border-left: 4px solid #ff9569; padding: 4px 18px 12px; margin: 20px 0; background: #161322; }
+.library-package-comparison dl { display: grid; grid-template-columns: minmax(120px, auto) 1fr; gap: 8px 18px; }
+.library-package-comparison dt { color: var(--library-muted); }
+.library-package-comparison dd { margin: 0; overflow-wrap: anywhere; }
+.library-package-comparison li { margin: 10px 0; overflow-wrap: anywhere; }
+.library-package-comparison li span { display: block; color: var(--library-muted); }
+.library-package-warning { color: #ffd0b5; }
 @media (max-width: 700px) {
+  .library-package-comparison dl { grid-template-columns: 1fr; gap: 4px; }
+  .library-package-comparison dd { margin-bottom: 8px; }
   .library-empty { flex-direction: column; align-items: flex-start; gap: 12px; }
   .library-empty .first-use-illustration { width: 140px; }
   .library-intro, .library-filters { flex-direction: column; align-items: stretch; }

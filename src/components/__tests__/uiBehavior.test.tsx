@@ -121,6 +121,21 @@ describe('CommandPalette behavior', () => {
 });
 
 describe('GenerateHub behavior', () => {
+  beforeEach(() => window.localStorage.clear());
+
+  it('shows purpose and usage guidance in the sample gallery without loading a project', () => {
+    const onLoadProject = vi.fn();
+    render(<GenerateHub themeId="dungeon" initialWidth={16} initialHeight={16}
+      hasExistingContent={false} onCancel={vi.fn()} onGenerate={vi.fn()} onLoadProject={onLoadProject} />);
+    fireEvent.click(screen.getByRole('tab', { name: 'Sample Maps' }));
+    const guide = screen.getByRole('region', { name: 'Sample purpose and use' });
+    expect(guide).toHaveTextContent('Generated example');
+    expect(guide).toHaveTextContent('Purpose:');
+    expect(guide).toHaveTextContent('How to use:');
+    expect(guide).toHaveTextContent('flooded-crypt exploration');
+    expect(onLoadProject).not.toHaveBeenCalled();
+  });
+
   it('generates into a usable selection target', () => {
     const image = vi.spyOn(HTMLCanvasElement.prototype, 'toDataURL').mockReturnValue('data:image/png;base64,preview');
     const onGenerate = vi.fn();

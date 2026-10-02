@@ -5,6 +5,10 @@ import { expect } from 'playwright/test';
 // Do not focus() or click() to stand in for keyboard reachability. File input
 // setup below is the only non-keyboard action, replacing the native OS picker.
 const fullKeyboardPages = new WeakSet();
+export function configureKeyboard(page, engine) {
+  if (engine === 'webkit' && process.platform === 'darwin') fullKeyboardPages.add(page);
+}
+export { pressTab, tabTo, activate, typeIn, command, panelContrast };
 const pressTab = (page, reverse = false) => page.keyboard.press(
   [fullKeyboardPages.has(page) ? 'Alt' : '', reverse ? 'Shift' : '', 'Tab'].filter(Boolean).join('+'),
 );
@@ -76,7 +80,7 @@ async function panelContrast(page, selector) {
 }
 
 export default async function keyboard(page, { output, engine }) {
-  if (engine === 'webkit' && process.platform === 'darwin') fullKeyboardPages.add(page);
+  configureKeyboard(page, engine);
   await page.waitForLoadState('networkidle');
   const button = name => page.getByRole('button', { name, exact: true });
   const saved = () => expect(page.getByRole('status').filter({ hasText: 'Saved on this device' })).toBeVisible();

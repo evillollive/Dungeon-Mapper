@@ -3,25 +3,29 @@ import type { PremadeMapSummary } from './premadeMaps';
 import { FOLIO_THEME_ID } from '../themes/folio-v1/art';
 import { furnishingPlacer } from './folioFurnishingReference';
 import { createFogGrid } from './mapUtils';
+import { sampleGuide } from './sampleGuides';
 
 export const LAUNCH_SAMPLES: readonly PremadeMapSummary[] = [
   {
     id: 'launch-lantern-crypt', name: 'The Lantern Crypt', themeId: FOLIO_THEME_ID,
     themeLabel: 'Dungeon Folio v1', archetype: 'Launch encounter / Crypt',
     sizeLabel: '24 x 24', levelCount: 1,
+    guide: sampleGuide('launch-lantern-crypt'),
     description: 'Follow the lantern stair to a flooded memorial, a keeper study and a sealed burial chamber. Includes a public arrival and private encounter notes.',
   },
   {
     id: 'launch-alder-crossing', name: 'Alder Crossing', themeId: 'wilderness',
     themeLabel: 'Wilderness', archetype: 'Launch encounter / Woodland crossing',
     sizeLabel: '24 x 24', levelCount: 1,
+    guide: sampleGuide('launch-alder-crossing'),
     description: 'A timber bridge spans a woodland stream between a sheltered camp and a rocky lookout. Clear approaches leave room for an encounter.',
   },
   {
     id: 'launch-kestrel-bay', name: 'Kestrel Docking Bay', themeId: 'starship',
     themeLabel: 'Starship', archetype: 'Launch encounter / Ship compartment',
     sizeLabel: '24 x 24', levelCount: 1,
-    description: 'Board through the aft airlock, cross the cargo deck and reach the coolant core. Crew quarters and a maintenance route offer alternate approaches.',
+    guide: sampleGuide('launch-kestrel-bay'),
+    description: 'Rescue a stranded engineer from sealed crew quarters and escort them to the aft airlock. Release the interlock from port control or recover cargo tools for a manual bypass.',
   },
 ];
 
@@ -139,7 +143,7 @@ function ship(summary: PremadeMapSummary): DungeonMap {
   fill(9, 8, 6, 1, { type: 'wall' });
   fill(11, 8, 2, 1, { type: 'archway' });
   fill(8, 7, 1, 1, { type: 'door-v' }); fill(15, 7, 1, 1, { type: 'door-v' });
-  fill(8, 15, 1, 1, { type: 'door-v' }); fill(15, 15, 1, 1, { type: 'door-v' });
+  fill(8, 15, 1, 1, { type: 'door-v' }); fill(15, 15, 1, 1, { type: 'locked-door-v' });
   fill(6, 10, 1, 1, { type: 'door-h' }); fill(18, 10, 1, 1, { type: 'locked-door-h' });
   fill(11, 20, 2, 1, { type: 'door-h' });
   fill(11, 21, 2, 2, { type: 'floor' }); fill(11, 22, 1, 1, { type: 'start' });
@@ -155,12 +159,14 @@ function ship(summary: PremadeMapSummary): DungeonMap {
   place('table', 18, 17); place('stool', 18, 18.2);
   place('desk', 5.5, 5); place('chair', 5.5, 6.3);
   place('crate', 17, 5);
-  note(12, 18, 'Aft airlock', 'The bay has pressure and breathable air. The cargo deck is clear enough to stage a rescue.',
-    'Docking airlock', 'The airlock opens onto a long cargo deck. Doors lead to port and starboard compartments.');
-  note(12, 7, 'Coolant core', 'The core is stable for now. The console in port control can shut it down safely.',
+  note(12, 18, 'Rescue objective', 'Start at the aft airlock. A failed interlock has sealed the flight engineer in the starboard crew quarters. Success: release the engineer and escort them back through this airlock. The bay has breathable air and the engineer can walk once freed. Resolve obstacles using your chosen rules; this map does not automate locks, alarms, timers or combat.',
+    'Docking airlock', 'A distress call comes from the sealed starboard crew quarters. Bring the stranded flight engineer back to this airlock.');
+  note(12, 7, 'Coolant core', 'The coolant core is stable and does not impose a countdown. Its maintenance fault caused the crew-room interlock to engage. Repairing the core is optional; the rescue can succeed without touching it.',
     'Coolant core', 'Two coolant channels surround a raised data core at the bow.');
-  note(5, 8, 'Port control', 'The western service hatch bypasses the airlock. The control console disables the security unit.');
-  note(18, 8, 'Security unit', 'The unit waits behind the locked maintenance door. Crew credentials keep it passive.');
+  note(5, 8, 'Port control: quiet release', 'The console can release the locked crew-room entrance from the cargo deck and place security in standby. A successful interaction here provides the quiet rescue route; use your chosen rules rather than requiring a particular skill or class. The concealed western service hatch is an optional access route into this control room.');
+  note(5, 15, 'Cargo tools: manual bypass', 'The marked cargo crates contain a portable door jack and an insulated tool kit. Carry them across the deck to bypass the locked crew-room entrance without visiting port control. A noisy or failed attempt can alert the security unit; warn the players before they commit. No tool or alarm behavior is automated.');
+  note(18, 18, 'Stranded engineer', 'The engineer is trapped by the crew-room interlock: the door to the cargo deck and the northern maintenance door are locked, and local controls have failed. Once either route is opened, the engineer can follow the party to the aft airlock. They can identify the port-control console and request standby rather than a fight.');
+  note(18, 8, 'Security complication', 'The security unit begins hidden and inactive in the maintenance compartment. Crew credentials keep it passive. Port control can place it in standby; a noisy manual bypass may bring it onto the cargo deck if the DM chooses. Give a warning before escalation and allow explanation or retreat. Combat is not required for rescue.');
   token(10, 18, 'player', 'Vera', 'warrior');
   token(13, 18, 'player', 'Nix', 'rogue');
   token(18, 16, 'npc', 'Flight engineer', 'lightning');
@@ -174,5 +180,14 @@ export function buildLaunchSample(id: string): DungeonProject {
   if (!summary) throw new Error(`Unknown launch sample: ${id}`);
   const map = id === 'launch-lantern-crypt' ? crypt(summary)
     : id === 'launch-alder-crossing' ? crossing(summary) : ship(summary);
+  map.creatorProvenance = {
+      version: 1,
+      mapSources: [{
+        title: summary.name, author: 'Dungeon Mapper contributors', license: 'AGPL-3.0-or-later',
+        url: 'https://github.com/evillollive/Dungeon-Mapper/blob/main/src/utils/launchSamples.ts',
+        notice: 'Original launch encounter composition and text. Preserve its inherited license when adapting it.',
+      }],
+      assetCredits: [],
+  };
   return { name: summary.name, activeLevelIndex: 0, stairLinks: [], levels: [map] };
 }

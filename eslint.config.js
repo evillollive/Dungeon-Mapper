@@ -6,15 +6,38 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist', 'publisher/dist', 'publisher/validator/dist']),
+  {
+    files: ['publisher/validator/*.mjs'],
+    extends: [js.configs.recommended],
+    languageOptions: { globals: globals.node },
+  },
+  {
+    files: ['scripts/**/*.mjs'],
+    extends: [js.configs.recommended],
+    languageOptions: { globals: globals.node },
+  },
+  {
+    files: ['publisher/client/**/*.mjs'],
+    extends: [js.configs.recommended],
+    languageOptions: { globals: globals.browser },
+  },
+  {
+    files: ['publisher/test/*.browser.mjs'],
+    extends: [js.configs.recommended],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
   {
     files: [
       'playwright.config.mjs',
       'src/test/ux09.spec.mjs',
+      'src/test/tokenRepaint.spec.mjs',
       'src/test/interfaceIcons.spec.mjs',
       'src/test/firstUseIllustrations.spec.mjs',
       'src/test/ux09Keyboard.browser.mjs',
       'src/test/ux09Library.browser.mjs',
+      'src/test/ux09DenseExport.browser.mjs',
+      'src/test/creatorSharing.browser.mjs',
       'src/test/ux09Performance.spec.mjs',
       'src/test/ux09EdgeBlend.spec.mjs',
       'src/test/ux09FolioTiles.spec.mjs',
@@ -52,5 +75,9 @@ export default defineConfig([
     languageOptions: {
       globals: { ...globals.browser },
     },
+  },
+  {
+    files: ['publisher/**/*.ts'],
+    languageOptions: { globals: globals.node },
   },
 ])

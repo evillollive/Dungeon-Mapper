@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState, useEffect } from 'react';
+import { lazy, Suspense, useMemo, useRef, useState, useEffect } from 'react';
 import type { CustomThemeDefinition, DungeonMap, DungeonProject, StampDef, ViewMode } from '../types/map';
 import { useFocusTrap } from '../hooks/useFocusTrap';
 import { exportHighResPNG, exportMapSVG, exportProjectJSON } from '../utils/export';
@@ -10,6 +10,7 @@ import ExportPreview from './ExportPreview';
 import Icon, { type IconName } from './Icon';
 import FirstUseIllustration from './FirstUseIllustration';
 import './ExportDialog.css';
+const CreatorShareDialog = lazy(() => import('./CreatorShareDialog'));
 
 export type ExportChoice = 'share' | 'share-svg' | 'backup' | 'print' | 'image' | 'image-svg';
 type Intent = 'share' | 'backup' | 'print' | 'image';
@@ -52,8 +53,10 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
   const [scaleBar, setScaleBar] = useState(false);
   const [pageIndex, setPageIndex] = useState(0);
   const [progress, setProgress] = useState<{ completed: number; total: number } | null>(null);
+  const [cancelling, setCancelling] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
+  const [creatorSharing, setCreatorSharing] = useState(false);
   const controller = useRef<AbortController | null>(null);
   const isPrint = intent === 'print';
   const isBackup = intent === 'backup';
@@ -72,6 +75,11 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
   const { plan } = planning;
   const selectedPage = Math.min(pageIndex, (plan?.pages ?? 1) - 1);
   const busy = progress !== null;
+  const requestCancellation = () => {
+    if (!controller.current) return;
+    controller.current.abort();
+    setCancelling(true);
+  };
   const close = () => { controller.current?.abort(); onClose(); };
   useEffect(() => () => controller.current?.abort(), []);
 
@@ -81,6 +89,7 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
     controller.current = job;
     setError('');
     setMessage('');
+    setCancelling(false);
     setProgress({ completed: 0, total: 1 });
     try {
       if (isBackup) {
@@ -106,9 +115,13 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
     } finally {
       controller.current = null;
       setProgress(null);
+      setCancelling(false);
     }
   }
 
+  if (creatorSharing && project) return <Suspense fallback={<div className="export-backdrop"><p role="status">Opening creator sharing...</p></div>}>
+    <CreatorShareDialog project={project} onClose={onClose} />
+  </Suspense>;
   return <div className="export-backdrop" onClick={event => { if (event.target === event.currentTarget) close(); }}>
     <div ref={focusTrap} className="export-dialog" role="dialog" aria-modal="true" aria-label="Export"
       onKeyDown={event => { if (event.key === 'Escape') { event.stopPropagation(); close(); } }}>
@@ -124,6 +137,9 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
           <strong>{item.title}</strong><span>{item.detail}</span>
         </button>)}
       </fieldset>
+      {project && <p>Sharing editable work with other map authors?
+        {' '}<button type="button" disabled={busy} onClick={() => setCreatorSharing(true)}>Share a creator copy</button>
+        {' '}Review spoilers, licenses and source notices separately from player exports.</p>}
       <div className="export-layout">
         <div>
           <p className={isBackup || exportView === 'gm' ? 'export-warning' : 'export-audience'}>
@@ -205,8 +221,10 @@ export default function ExportDialog({ map, project, themeId, printMode, viewMod
       {error && <p className="export-warning" role="alert">{error}</p>}
       {message && <p role="status">{message}</p>}
       <footer className="export-footer">
-        {busy ? <><p role="status">Rendering {progress.completed} of {progress.total} images...</p>
-          <button type="button" onClick={() => controller.current?.abort()}>Cancel export</button></>
+        {busy ? <><p role="status">{cancelling ? 'Cancelling export. Waiting for the current operation to finish.'
+          : `Rendering ${progress.completed} of ${progress.total} images...`}</p>
+          <button type="button" disabled={cancelling} onClick={requestCancellation}>
+            {cancelling ? 'Cancellation requested' : 'Cancel export'}</button></>
           : <><button type="button" onClick={close}>Cancel</button>
             {isPrint && plan && plan.pages > 1 && <button type="button" onClick={() => void download(true)}>Download all {plan.pages} pages</button>}
             <button type="button" className="export-primary" disabled={isBackup ? !project : !plan} onClick={() => void download(false)}>

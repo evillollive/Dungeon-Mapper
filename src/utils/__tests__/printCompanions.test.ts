@@ -52,6 +52,52 @@ describe('ART-08 print companion', () => {
     }))).toHaveLength(3);
   });
 
+  it('draws one thin contour per floor-material transition in every direction', () => {
+    const materials = [undefined, 'folio-earth-v1', 'folio-worn-wood-v1'];
+    const directions = [[0, -1], [1, 0], [0, 1], [-1, 0]];
+    const edges = [
+      [[0, 1], [32, 1]], [[31, 0], [31, 32]],
+      [[0, 31], [32, 31]], [[1, 0], [1, 32]],
+    ];
+    const contours = (shapes: ReturnType<typeof printTileShapes>) =>
+      shapes.filter(shape => shape.kind === 'line' && shape.width === 1.2);
+    for (let lower = 0; lower < materials.length; lower++) {
+      for (let higher = lower + 1; higher < materials.length; higher++) {
+        for (const [index, [dx, dy]] of directions.entries()) {
+          const context = {
+            getTileBaseType: () => 'floor' as const,
+            getFloorMaterial: (x: number, y: number) => x === 7 && y === 9 ? materials[higher] : materials[lower],
+          };
+          expect(contours(printTileShapes('floor', 7, 9, context))).toHaveLength(4);
+          expect(contours(printTileShapes('floor', 7, 9, context))).toContainEqual({
+            kind: 'line', points: edges[index], width: 1.2, stroke: '#000000',
+          });
+          expect(contours(printTileShapes('floor', 7 + dx, 9 + dy, context))).toEqual([]);
+        }
+      }
+    }
+  });
+
+  it('does not outline matching or fallback materials, or duplicate non-floor boundaries', () => {
+    const contours = (shapes: ReturnType<typeof printTileShapes>) =>
+      shapes.filter(shape => shape.kind === 'line' && shape.width === 1.2);
+    for (const material of [undefined, ...FLOOR_MATERIAL_IDS]) {
+      expect(contours(printTileShapes('floor', 0, 0, {
+        getTileBaseType: () => 'floor', getFloorMaterial: () => material,
+      }))).toEqual([]);
+    }
+    expect(contours(printTileShapes('floor', 0, 0, {
+      getTileBaseType: () => 'floor',
+      getFloorMaterial: (x, y) => x === 0 && y === 0 ? 'unavailable-v2' : undefined,
+    }))).toEqual([]);
+    for (const neighbor of ['water', 'wall', 'secret-door', 'door-h', 'archway', 'background', 'empty', undefined] as const) {
+      expect(contours(printTileShapes('floor', 0, 0, {
+        getTileBaseType: () => neighbor,
+        getFloorMaterial: (x, y) => x === 0 && y === 0 ? 'folio-worn-wood-v1' : undefined,
+      }))).toEqual([]);
+    }
+  });
+
   it('distinguishes all five surfaces and keeps page-independent material marks', () => {
     const floors = [undefined, ...FLOOR_MATERIAL_IDS].map(material =>
       printTileShapes('floor', 7, 9, { getTileBaseType: () => 'floor', getFloorMaterial: () => material }));
@@ -70,6 +116,28 @@ describe('ART-08 print companion', () => {
     const types = ['door-h', 'door-v', 'locked-door-h', 'locked-door-v',
       'trapped-door-h', 'trapped-door-v', 'stairs-up', 'stairs-down', 'archway'] as const;
     expect(new Set(types.map(type => JSON.stringify(printTileShapes(type, 0, 0)))).size).toBe(types.length);
+  });
+
+  it('joins stair treads to both arrow sides and mirrors the complete up/down geometry', () => {
+    const up = printTileShapes('stairs-up', 0, 0);
+    const down = printTileShapes('stairs-down', 0, 0);
+    expect(up).toHaveLength(8);
+    expect(down).toEqual(up.map(shape => shape.kind === 'line'
+      ? { ...shape, points: shape.points.map(([x, y]) => [x, 32 - y]) }
+      : shape));
+    expect(up).toContainEqual({ kind: 'line', points: [[16, 2], [16, 30]], width: 2.2, stroke: '#000000' });
+    expect(up).toContainEqual({ kind: 'line', points: [[3, 28], [16, 2], [29, 28]], width: 2.2, stroke: '#000000' });
+    const treads = up.filter(shape => shape.kind === 'line' && shape.width === 1.4);
+    expect(treads).toHaveLength(5);
+    for (const tread of treads) {
+      expect(tread.points).toHaveLength(2);
+      const [[left, y], [right, rightY]] = tread.points;
+      expect(y).toBe(rightY);
+      expect(left).toBe(16 - (y - 2) / 2);
+      expect(right).toBe(16 + (y - 2) / 2);
+      expect(tread.stroke).toBe('#000000');
+    }
+    expect(up.some(shape => shape.kind === 'line' && shape.stroke === '#ffffff')).toBe(false);
   });
 
   it('overlays vector H/V on plain doors without center lines and keeps only posts behind lock/trap symbols', () => {

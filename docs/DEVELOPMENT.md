@@ -76,6 +76,60 @@ bundle. It is an activation and data-continuity test, not a cross-schema upgrade
 test. Historical UX-01 scenario scripts remain baseline-specific; use the
 current UX-08 runner for export and update behavior.
 
+### Manual real-version upgrade and rollback rehearsal
+
+`npm run test:upgrade:run` uses `playwright.upgrade.config.mjs` and
+`ux09Upgrade.spec.mjs`. It inherits the locked engines, one-worker/no-retry
+settings, timeouts and reporting from the existing runner, but owns its
+switchable Vite preview server. It is **not** registered in required CI or the
+default `test:browser` suite. Test discovery is not execution evidence.
+
+Build an actual prior application revision and the intended candidate into
+separate retained directories. Record the full source SHA of each build; do
+not point both inputs at the same `dist` or identify a dirty build as clean
+HEAD. Use task-owned archives or build directories, not another session's or
+the main checkout. The recorded rehearsal rebuilt the source of the latest
+successful Pages deployment, rather than downloading its original artifact.
+Identical lockfiles allowed reuse of existing dependencies without an install.
+If lockfiles differ, inspect compatibility before attempting a build.
+
+```bash
+QA_OUTPUT=/absolute/path/to/new-rehearsal \
+QA_PRIOR_DIST=/absolute/path/to/retained-prior/dist \
+QA_PRIOR_SHA=72f32e16c30be85e92f48e13fccb1576f36ed35e \
+QA_CANDIDATE_DIST=/absolute/path/to/retained-candidate/dist \
+QA_CANDIDATE_SHA=d9036c503c833ca44061bef86283c13440e4d6b4 \
+QA_SOURCE_SHA="$(git rev-parse HEAD)" \
+npm run test:upgrade:run
+# Append -- --project=firefox for a bounded investigation.
+```
+
+The example SHAs identify the recorded pair. Change them only when the
+corresponding retained build comes from that different revision.
+
+`QA_PORT` has the existing 5309 default and must be free. The test restarts
+the sole loopback origin with each build; it does not alter worker bytes or
+application data to fake a version change. It verifies different real App
+and worker hashes, the document module URL and the loaded App resource.
+Each engine owns a synthetic persistent profile, which is closed on teardown.
+Use a new `QA_OUTPUT` to retain prior runs because the normal runner replaces
+its browser-results/report subdirectories.
+
+The fixture reuses the existing rich Library project: two levels, embedded
+art, custom libraries, unknown extension fields, a project recovery copy and
+a separately saved session with a named checkpoint. Assertions cover an
+update blocked by a pending native write; exact durable records and real
+backup downloads across activation; candidate session-checkpoint recovery;
+rollback preserving newer project/session work; subsequent writes by the
+older application; private project-backup reimport as a separate identity;
+and offline reload with the sole origin stopped.
+
+Results retain source/build hashes, native storage snapshots, actual private
+synthetic downloads and profiles. These are one pair's compatibility evidence,
+not generic downgrade support, a new schema migration, physical storage
+failure, browser/OS restart qualification or a release receipt. See the
+[recorded version pair and limitations](./UX-09-HANDOFF.md#local-documentation-and-real-version-update-milestone).
+
 ## Blocking production browser journeys (UX-09)
 
 The locked `playwright` package also provides `playwright/test`; no external SDK,
@@ -141,8 +195,58 @@ reuse `dist`. Only the latter uses `QA_ENGINES` and defaults to port 5308.
 The UX-08 runner owns its server so it can stop the sole origin and control
 worker updates. Do not run both suites concurrently on the same custom port.
 
+### Local creator-package qualification
+
+The registered `Creator sharing reviewed ZIP and independent Library import`
+journey reuses the required production runner:
+
+```bash
+npm run build
+QA_OUTPUT=/absolute/fresh/creator-evidence \
+  npm run test:browser:run -- src/test/ux09.spec.mjs --grep="Creator sharing"
+```
+
+It covers explicit profile/content/license selection, custom image rights,
+actual ZIP member hashes and disclosure sentinels, short-viewport review,
+native downloads, independent IndexedDB import, cancellation/error preservation,
+inherited-license choices from the editor entry point and native directory
+selection on all three engines. Existing required suites/timeouts are unchanged.
+Future Actions budgets must include these three additional cases.
+
+Core tests are `creatorProject`, `creatorProvenance`, `creatorAssets`,
+`creatorPackageFormat`, `creatorZipIntake` and `creatorPackage` under
+`src/utils/__tests__`, plus the provenance hook and sharing component tests.
+They distinguish mocked native codecs/previews from the actual browser evidence.
+Untrusted intake uses bounded ZIP directory/stream checks, actual output lengths
+and CRC, full member hashes, content/profile/rights validation and independent
+storage confirmation; do not replace it with unrestricted `unzipSync`.
+`fflate` is the only added runtime dependency.
+
+The retained manual offline campaign reuses this exact production journey with
+its sole preview origin stopped after cache readiness, before opening creator
+sharing. It verifies cached lazy modules and worker-based compression, not just
+an already-open dialog. Source/build identities and artifacts are recorded in
+the [creator contract](./CREATOR-PACKAGE-CONTRACT.md). Neither local campaign is
+a hosted receipt or a total-memory, legal, screen-reader or physical-device
+certification.
+
+The same creator journey also covers **Manage > Compare creator package**:
+an identical package against a locally renamed copy, a changed package with
+reviewed file differences, focus/scrollport visibility at 390 pixels, and a
+second independent import while both original records stay unchanged.
+`creatorPackageOrigin.test.ts` and `creatorPackageComparison.test.tsx` cover
+receipt bounds, private backup preservation, malformed/future receipts,
+different IDs, unchanged labels with changed bytes, cancellation and focus
+return. The receipt is created from validated imported files, not accepted
+from an incoming package or inferred from local edits.
+
 CI runs every registered journey plus UX-08 for Chromium, Firefox and WebKit, with
 independent engine jobs, no fail-fast cancellation and fourteen-day artifacts.
+The checked-in workflow now creates the production distribution once in Build
+and test and materializes that canonical artifact in each engine job. Engines
+still install their own test/browser dependencies. Artifact identity and every
+file hash are verified before use and again after the suites. Diagnostic
+renderer bundles remain in-memory builds, not replacements for `dist`.
 It also runs the F05 diagnostic, its delayed-draw probe, and the two edge-cache
 pixel/allocation cases described below. Their behavior assertions block CI, but their latency values do not
 certify a release or impose machine-dependent timing thresholds.
@@ -162,6 +266,58 @@ generation changes, so callbacks retained from a previous project are rejected.
 See [UX-09 qualification status](./UX-09-HANDOFF.md) for actual coverage and
 remaining human/device/performance gates. Passing these jobs is not an
 accessibility conformance or full-release certification.
+
+### Canonical build and Pages gating
+
+Local implementation is in `.github/workflows/ci.yml` and
+`scripts/qualification-artifact.mjs`; the independent `deploy.yml` is removed.
+Remote workflows are unchanged until this branch is budgeted, published and
+merged. Local validation does not prove GitHub job dependencies, permissions,
+artifact service behavior, environment enforcement or Pages delivery.
+
+The helper's `create`, `materialize` and `verify` commands bind a distribution
+to repository/source/event/ref/run/attempt, lockfile and an externally supplied
+manifest hash. They reject missing/extra/changed files, unsafe paths, links,
+stale checkout content and mixed-attempt evidence. A target distribution must
+not already exist. CI downloads by immutable artifact ID with explicit root
+extraction, rather than looking up a "latest" artifact.
+
+Only a successful full main push/dispatch in this repository can reach packaging
+and deployment. Both required check names remain unchanged. Build/browser jobs
+cancel superseded work; the Pages job is serialized without workflow-wide
+cancellation. Its preflight rechecks main and the Pages artifact's run/source
+inside the deployment slot. A stale candidate fails without publishing.
+
+Canonical builds and qualification/receipt artifacts retain the existing
+fourteen-day evidence window. The intermediate Pages archive retains the
+previous one-day lifetime. None of these is the durable release archive still
+requiring owner approval. Production file bytes, not the archive wrapper, are
+the identity contract. Playwright report metadata, the copied manifest and
+UX-08 results carry the canonical identity.
+
+The deployment receipt distinguishes ready-to-submit, not-published,
+deployment-outcome-unknown, verified and published-but-unverified. Public HTTP
+smoke checks have at most three rounds, a two-minute request deadline,
+per-request timeouts and qualified-size response bounds. Pages submission has
+a six-minute action limit inside a ten-minute job, leaving time for smoke
+checks and receipts. There is no automatic redeployment or rollback.
+Manual cancellation can prevent final receipt upload; retain the pre-submission
+intent and resolve server-side status before further publication.
+
+```bash
+npm test -- src/utils/__tests__/qualificationArtifact.test.ts
+actionlint .github/workflows/ci.yml
+```
+
+The tests use synthetic metadata, temporary repositories and mocked public
+responses. They do not contact Pages or submit deployments. `actionlint` is a
+local validation tool, not a new CI job or npm dependency. A missing local
+installation should be handled explicitly rather than claiming the check ran.
+Whole-workflow reruns are required for attempt-consistent publication evidence;
+diagnose first and obtain a numeric budget before any hosted trigger.
+
+See the [design and approved scope](./RELEASE-DEPLOYMENT-DESIGN.md) and
+[local implementation evidence](./UX-09-HANDOFF.md#local-exact-artifact-deployment-implementation).
 
 ## Launch art and print companion review
 
@@ -214,6 +370,49 @@ creation/export unit cases, the existing furnishing/token renderer matrices,
 the guided creation journey and UX-08 production export/offline coverage.
 This evidence does not constitute owner artwork approval, physical printing,
 participant acceptance or performance qualification.
+
+### Critical editing regression journeys
+
+`ux09Editing.browser.mjs` registers thirteen independent production cases in
+the required three-engine runner, replacing external-SDK invocation for the
+critical object paths from `ux04Editing.browser.mjs`. The older standalone
+script remains historical input/device evidence, not the current CI entry
+point.
+
+```bash
+QA_OUTPUT=/absolute/path/to/editing npm run test:browser -- --grep='Editing:'
+# Include related keyboard, shell, publication and two-window display cases:
+QA_OUTPUT=/absolute/path/to/editing npm run test:browser -- \
+  --grep='Editing:|keyboard critical|editor navigation|publication and|session recovery'
+```
+
+Coverage includes six object variants, atomic history, invalid/cancelled
+drafts, failed-save backup/retry, favorite persistence/failure, overlapping
+regions, mouse cancellation, viewport/selection scope and inspector
+keyboard/reflow checks. The keyboard helper follows actual Tab navigation,
+including macOS WebKit Option+Tab, and native select typeahead. Fixtures and
+secondary property setup can use pointer controls; keyboard access is asserted
+for each primary property and Apply/Cancel, plus the complete note inspector
+layout matrix. Numeric input preserves fractional precision without relying
+on Firefox's rounding `valueAsNumber`.
+
+Each text-scale case records eight viewport sizes at 100% or 200% interface
+text, with screenshots, measured focus/clipping/hit targets and sampled text
+contrast. This is not native page zoom, physical keyboard/device acceptance,
+screen-reader qualification or full WCAG conformance. Quota and preference
+faults are page-scoped native-method injections restored in `finally`, not
+physical disk failures. Negative persistence assertions wait beyond the
+production save debounce and compare raw native records; content/history
+equality ignores absent-versus-undefined optional keys through the portable
+JSON contract.
+
+The added 390x440 case retains the local reproduction of Firefox's partially
+clipped focus at short heights. Every viewport uses a distinct draft and
+requires an enabled Apply action, including adjacent reduced-height cases.
+The application focus trap scrolls keyboard destinations fully into view;
+the test does not call `scrollIntoView` to manufacture a passing result.
+
+See [A-EDIT scope, evidence and remaining gates](./UX-09-HANDOFF.md#a-edit-production-editing-milestone).
 
 ### Library and recovery regression journeys
 
@@ -396,6 +595,71 @@ The template approval and subsequent six-artwork revision request are recorded
 in the UX roadmap. Screenshots in `docs/media/ux07-tokens` preserve the original
 reference; `docs/media/ux07-token-catalog` contains the current complete kit.
 
+## Local publisher authentication, planning and validation prototype
+
+The optional publisher's test composition is isolated under `publisher/`.
+It requires Node 24.16+ for native TypeScript execution; the editor's existing
+runtime/build and hosted checks are unchanged. The publisher-only native
+validator uses pinned Sharp and jsdom dependencies in its own lockfile.
+No external database, container engine, GitHub App or real credentials are
+needed. The separate fake-publication engine uses Node's built-in SQLite for
+owner-approved local metadata-only recovery receipts.
+
+```bash
+npm ci --prefix publisher
+npm run publisher:dev
+npm run build:publisher
+npm run check:publisher
+npm run test:publisher
+npm run test:publisher:validation
+QA_OUTPUT=/absolute/fresh/publication-evidence npm run test:publisher:publication
+QA_OUTPUT=/absolute/fresh/publisher-evidence npm run test:publisher:browser
+QA_OUTPUT=/absolute/fresh/simulation-evidence npm run test:publisher:simulation
+```
+
+The dev command prints a loopback URL and runs a clearly labeled simulated
+provider. Set `PUBLISHER_RECEIPTS=/absolute/private/directory/operations.sqlite`
+to enable authenticated fake publication and durable receipt recovery; the
+directory must already exist. Without that setting the validation-only
+composition creates no journal. Stop with Ctrl+C. The native browser runner owns and stops its local
+servers. The protocol tests include a real ten-second deadline case; do not
+mistake test duration for an authentication performance target.
+Dev and publisher-test scripts build the separate `publisher/dist` client and
+`publisher/validator/dist` Node inspector first. The editor's `npm run build`,
+dependencies and service worker remain separate.
+
+This shell exercises sign-in state/PKCE, first-party session/CSRF behavior,
+rotation, denial, expiry, revocation, stale callbacks and bounded repository
+responses. It also inspects selected creator ZIPs locally with the existing
+browser validator and creates explicit metadata-only simulated destination
+plans. Rechecks reject changed permission/visibility/base snapshots. Planning
+does not post file contents; separate consent sends the exact ZIP to the local
+server for independent native validation. The child receives no provider
+credentials, has an enforced deadline and is awaited through cancellation/exit.
+Its V8 heap ceiling is not a native-memory cap or OS sandbox. Uploaded bodies
+are not saved or returned by the HTTP validator. Explicitly confirmed simulation
+resubmits the ZIP and writes only to the fake provider's memory. There is no real branch writer, production startup
+composition or real GitHub adapter. HTTP loopback cookies are not production
+TLS/Secure-cookie evidence, and all session state is ephemeral.
+
+The focused publication command exercises the fake Git provider, SQLite
+operation journal and authenticated HTTP routes. It verifies exact
+package readback, unrelated-file preservation, create-only refs, duplicate
+prevention, lost/delayed responses, cancellation, bounded admission and
+read-only restart reconciliation. Test database files are retained under
+`QA_OUTPUT`, contain metadata only, and should not be confused with production
+credential/session persistence. The simulation browser command adds explicit
+confirmation, progress, lost responses, conflicts, account isolation and
+read-only reload/restart recovery on three engines. The real GitHub button
+remains disabled. See the
+[engine boundary](../publisher/README.md#fake-publication-engine-and-restart-receipts).
+
+These dedicated tests are manual/local commands, not newly required hosted
+checks. Root lint includes the prototype sources; a production service pipeline
+needs separate GH-A02 scope and budget approval. See the
+[prototype README](../publisher/README.md) and
+[publisher design](./GITHUB-PUBLISHER-DESIGN.md#15-authenticated-simulation-and-browser-recovery).
+
 ## Dense-map performance diagnostics (F05)
 
 `src/test/denseMapFixture.mjs` builds a deterministic 128 x 128 dungeon with
@@ -427,15 +691,17 @@ hosts. No sample counts or behavior assertions are reduced.
 Each repetition samples 24 hovers, 24 paint-drag updates, twelve token-drag
 updates, 24 keyboard pans, and separate paint/token start or commit events.
 It checks coordinate feedback, imported density/art, persisted edits and
-single-action undo before accepting the run. Together with the delayed-draw
-probe, F05 now contributes four tests per engine to the required browser jobs.
+single-action undo before accepting the run. Together with the delayed full-
+and partial-draw probes, F05 contributes five tests per engine.
 
 Timing begins at a trusted browser event's timestamp. Painting and token edits
-must reach the existing main-canvas render (backing-width assignment), finish
+must reach a main-canvas width reset or regional clear, finish
 its synchronous drawing stack, and reach two subsequent animation frames.
 Hover and pan use the frame opportunity without requiring a map redraw.
-The separate probe regression deliberately delays drawing by 100 ms to ensure
-an earlier animation frame cannot prematurely end an edit measurement.
+The two probe regressions deliberately delay drawing by 100 ms and reject
+context-only or unrelated-canvas operations, so an earlier frame cannot
+prematurely end an edit measurement. Synchronous clears are coalesced per
+canvas; the v2 probe records `drawKind` and its source Git blob identity.
 This is an event-to-render/frame **proxy**, not physical input-to-paint or INP.
 Browser scheduling and headless frame cadence differ between engines.
 
@@ -456,11 +722,100 @@ report, never a zero-latency sample. Chromium's first repetition additionally pr
 `f05-chromium-trace.json` and `f05-chromium.cpuprofile`, and is explicitly
 marked profiled. Compare profiled and unprofiled runs separately. Timelines
 contain the `f05:` input/frame marks. Later repetitions do not use CDP profiling.
+Compare builds with the same probe version/blob; a measurement based only on
+width assignment cannot qualify an implementation that paints without resizing.
 
 There are deliberately no 100 ms/2-second CI assertions before representative
 hardware and measurement methodology are agreed. Do not lower the roadmap
 targets or interpret a green diagnostic as performance acceptance.
 See [actual local results and remaining bottleneck](./UX-09-HANDOFF.md#dense-map-diagnostic-milestone).
+
+### Dense-map export lifecycle
+
+`ux09DenseExport.browser.mjs` adds one F05 journey per engine through the
+existing production runner:
+
+```bash
+QA_OUTPUT=/absolute/path/to/dense-export npm run test:browser -- src/test/ux09.spec.mjs --grep="F05 dense export"
+```
+
+It reuses the unchanged dense fixture for a color DM 300-DPI Letter batch,
+selected last-page error/retry and a player PNG. The case caps batch download
+requests at three and holds the second real encoding callback to make
+cancellation deterministic. It never claims to export all 252 pages. Browser
+encoding is real; the hold and null-result fault injection are recorded
+explicitly in the retained audit.
+
+Per-surface checks retain the 16 MP / 8192-side limits. Known page/content
+surfaces must stay within the two-surface capacity and be explicitly zeroed
+after normal completion, error and cancellation. PNG URLs must be revoked.
+Completed downloads are browser-decoded and checked for dimensions, DPI,
+nonblank content and unchanged backup/IndexedDB data. These observations do
+not measure native/GPU/decoder memory or establish physical-print quality.
+
+ExportDialog shows cancellation requested as soon as the input is handled, but waits for the current
+operation to settle before enabling another export. Native encoding cannot be
+preempted by AbortSignal. The unit regression holds an operation pending to
+verify feedback and locking without adding a cancellation race.
+
+Use a fresh `QA_OUTPUT` for each attempt. Failures retain their audit and any
+unverified received PNGs before restoring instrumentation and aborting the
+owned export. See [results and natural-timing limitations](./UX-09-HANDOFF.md#dense-f05-export-and-cancellation-milestone).
+
+### Bounded editor token repaint
+
+**Current behavior, October 1, 2026:** MapCanvas always resets and redraws the
+complete main canvas for a required frame, including token-drag previews.
+The owner withdrew the regional path after Linux WebKit exceeded the unchanged
+pixel tolerance. There is no browser/OS exception, hidden toggle or partial
+production branch. Last-frame/damage bookkeeping and region clipping were
+removed; tile, bank, edge and lighting traversal again covers the complete map.
+
+`tokenRepaint.ts` and `tokenSceneBounds.ts` retain their pure planning helpers
+and unit tests as historical experimental logic, not an enabled renderer.
+Only the existing `sameRepaintInputs` comparer remains imported by MapCanvas.
+Ordinary input comparison, coordinate-only hover suppression, bounded edge
+strips and floor-path caches remain. No second canvas, new bitmap cache,
+export/player renderer change, map schema change or art-detail reduction is
+introduced.
+
+```bash
+npm test -- src/utils/__tests__/tokenRepaint.test.ts \
+  src/utils/__tests__/tokenSceneBounds.test.ts \
+  src/components/__tests__/MapCanvas.performance.test.tsx
+QA_OUTPUT=/absolute/path/to/token-repaint npm run test:browser -- src/test/tokenRepaint.spec.mjs
+```
+
+The source-bundled browser harness compares the actual editor with its full-
+render path. It compares complete images across six DPRs and 20/24/32-pixel
+tiles, overlapping artwork, token footprints, movement/cancel/commit and
+former fallback scenes. Every observation must now increase the candidate's
+complete-draw counter and keep its partial-draw counter at zero. This replaces
+the former optimization-activation assertion.
+
+The owner subsequently approved removing only this retired optimization
+test's single-pixel RGB maximum gate. Alpha must still match exactly and
+whole-image mean difference must remain at most 0.01 byte levels per channel
+(0.01/255 normalized). Maximum RGB and worst-pixel details are still recorded,
+but isolated color-byte differences are not a release blocker in this one
+full-vs-full comparison. Boundary controls explicitly reject any alpha
+difference or mean above 0.01. No other rendering test, scenario, movement,
+cancellation, commit, redraw or allocation assertion changes.
+It uses synthetic events for differential pixels, while
+existing production journeys and F05 retain genuine input/persistence checks.
+An eighty-move case observes no new DOM canvas allocations; this is not a
+total browser-memory ceiling or physical-device soak test.
+
+The case remains in the required runner under its existing name, without a new
+job, dependency, timeout or retry. Source-linked evidence, expected loss of the
+preview speedup, and the Linux-first gate for any reintroduction are recorded
+in the [correctness restoration handoff](./UX-09-HANDOFF.md#owner-approved-full-token-redraw-restoration).
+The later [owner-approved policy change](./UX-09-HANDOFF.md#owner-approved-release-candidate-comparison-policy)
+is an explicit acceptance decision, not a claim that the native discrepancy
+was diagnosed or fixed.
+The earlier optimization measurements remain historical and must not be
+reported as current performance. This rollback does not close A-PERF or
+replace exact-head hosted qualification. The App chunk-size advisory remains.
 
 ### Bounded edge-cache regressions
 
@@ -491,7 +846,7 @@ the test rejects new rasterization/page allocation on an unchanged second
 traversal. Unit/component tests also cover semantic/color invalidation,
 settings, disposal and populating pages before sampling them.
 
-Keep the performance probe's four cases, these two renderer cases and the five
+Keep the performance probe's five cases, these two renderer cases and the
 workflow journeys in every engine job. Read
 [the cache milestone](./UX-09-HANDOFF.md#bounded-edge-strip-cache-milestone)
 for final measurements, startup costs, memory exclusions and remaining gates.

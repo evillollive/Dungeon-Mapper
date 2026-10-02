@@ -26,6 +26,12 @@ describe('ShortcutsHelp', () => {
     expect(screen.getByText('Erase tool')).toBeInTheDocument();
   });
 
+  it('explains current file controls and the local session boundary', () => {
+    render(<ShortcutsHelp bindings={mockBindings} onClose={vi.fn()} />);
+    expect(screen.getByText(/Use Project menu, Export or the listed alternates/)).toBeVisible();
+    expect(screen.getByText(/not a remote share link/)).toHaveTextContent('not separate session records');
+  });
+
   it('calls onClose when close button clicked', () => {
     const onClose = vi.fn();
     render(<ShortcutsHelp bindings={mockBindings} onClose={onClose} />);

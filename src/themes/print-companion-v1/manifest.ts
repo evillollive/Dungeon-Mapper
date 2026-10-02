@@ -2,13 +2,13 @@ import { ALL_TILE_TYPES, FLOOR_MATERIAL_IDS } from '../../types/map';
 
 export const PRINT_COMPANION_MANIFEST = {
   packId: 'map-print-companion',
-  version: '1.0.0',
-  renderVersion: 1,
+  version: '1.2.0',
+  renderVersion: 3,
   author: 'Dungeon Mapper contributors',
   license: 'AGPL-3.0-or-later',
   attribution: 'Original procedural vector artwork for Dungeon Mapper, 2026.',
   source: 'src/themes/print-companion-v1/art.ts',
-  sourceHash: 'sha256:5e40c19a72ca66431645d99662698b82bc1a6d07c870b9820dc254a765f32bac',
+  sourceHash: 'sha256:93fe45870d8d2e7054a02cb1f5f4717ccd724165b90636f257bd25a7feb547c0',
   delivery: 'bundled-procedural-vector',
   previewSampleIds: ['launch-lantern-crypt', 'launch-alder-crossing', 'launch-kestrel-bay'],
   assets: ['empty', ...ALL_TILE_TYPES, ...FLOOR_MATERIAL_IDS].map(id => ({
@@ -23,5 +23,5 @@ export const PRINT_COMPANION_MANIFEST = {
   legacyTokens: 'src/utils/printTokenRender.ts',
   legacyTokenSourceHash: 'sha256:5950aca9bf17c696eae80fed7ed5392229abe2f2b075d693af79f03f02079fff',
   sampleSource: 'src/utils/launchSamples.ts',
-  sampleSourceHash: 'sha256:5a01942bfae19efc34ffc030680f8e0de820786066e04d0f2582e5e3e339ec0e',
+  sampleSourceHash: 'sha256:88dd81c171c83ad7ab5cf374a30940b4d50e8c0621a3dc0fe9c87b3393eb9190',
 } as const;

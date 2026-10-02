@@ -1,6 +1,18 @@
 # Architecture
 
-Dungeon Mapper is a client-only React + TypeScript + Vite application.
+The Dungeon Mapper editor remains a client-only React + TypeScript + Vite application.
+The planned [optional GitHub publisher](./GITHUB-PUBLISHER-DESIGN.md) is a separate
+first-party publishing page/service, not a move of this editor or its local
+storage. A loopback-only Node authentication and metadata-planning simulation
+now lives under `publisher/`, outside the Pages build. Its separate browser
+bundle reuses creator ZIP inspection. Planning sends scalar metadata only;
+a separately consented loopback ZIP submission is independently checked by a
+Node child with publisher-only DOM/native-image dependencies.
+A fake-publication engine and local SQLite metadata journal exercise
+branch writing/readback and restart reconciliation. With an explicit journal
+path, authenticated simulation endpoints and browser confirmation/recovery
+connect only to the in-memory test provider. No backend or real account connection has
+been deployed.
 
 ## High-level layers
 

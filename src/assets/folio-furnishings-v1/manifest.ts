@@ -30,8 +30,8 @@ const SOURCE_HASHES: Record<string, string> = {
 export const FOLIO_FURNISHING_MANIFEST = {
   schemaVersion: 1,
   packId: 'dungeon-folio-furnishings',
-  version: '1.1.0',
-  renderVersion: 1,
+  version: '1.1.1',
+  renderVersion: 2,
   author: 'Dungeon Mapper contributors',
   attribution: 'Original top-down SVG artwork for Dungeon Mapper, 2026.',
   license: 'AGPL-3.0-or-later',

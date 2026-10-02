@@ -1,4 +1,5 @@
 import type { River, RiverBankType, RiverEndpointMarker, RiverType, Tile } from '../types/map';
+import type { TileBounds } from './canvasGeometry';
 
 interface BankPalette {
   sand: string;
@@ -70,10 +71,11 @@ export function drawRiverBanks(
   tileSize: number,
   themeId?: string,
   printMode = false,
+  bounds?: TileBounds,
 ): void {
   ctx.save();
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
+  for (let y = bounds?.minY ?? 0; y < (bounds?.maxY ?? height); y++) {
+    for (let x = bounds?.minX ?? 0; x < (bounds?.maxX ?? width); x++) {
       const tile = tiles[y]?.[x];
       if (!tile?.riverBank) continue;
       const inset = Math.max(1, tileSize * 0.14);

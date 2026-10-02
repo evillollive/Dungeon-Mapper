@@ -16,6 +16,7 @@ import { useAudienceEditing } from './useAudienceEditing';
 import { clearDerivedDiscovery } from '../utils/secretDiscovery';
 import { getStampDef } from '../utils/stampCatalog';
 import { getFolioFurnishing } from '../assets/folio-furnishings-v1/catalog';
+import { combineCreatorProvenance } from '../utils/creatorProvenance';
 
 export { getClipboard } from './useMapClipboard';
 
@@ -93,6 +94,7 @@ export function useMapState() {
   const clipboardHook = useMapClipboard(
     map, setProject, debouncedSave, activeLevelIndex,
     pushHistory, setNextNoteId,
+    project.creatorProvenance,
   );
   const { copySelection, cutSelection, pasteClipboard, moveRegion } = clipboardHook;
 
@@ -1199,6 +1201,8 @@ export function useMapState() {
 
     setProject(prev => {
       const existing = prev.sceneTemplates ?? [];
+      const provenance = combineCreatorProvenance(map.creatorProvenance, prev.creatorProvenance);
+      if (provenance !== undefined) template.creatorProvenance = provenance;
       const updated: DungeonProject = {
         ...prev,
         sceneTemplates: [...existing, template],
@@ -1282,12 +1286,16 @@ export function useMapState() {
         const validStamps = remappedStamps.filter(
           s => s.x >= 0 && s.x < m.meta.width && s.y >= 0 && s.y < m.meta.height
         );
+        const intersects = ox < m.meta.width && oy < m.meta.height && ox + template.width > 0 && oy + template.height > 0;
+        const provenance = intersects || validNotes.length || validStamps.length
+          ? combineCreatorProvenance(m.creatorProvenance, template.creatorProvenance) : m.creatorProvenance;
 
         return {
           ...m,
           tiles: newTiles,
           notes: [...m.notes, ...validNotes],
           stamps: [...(m.stamps ?? []), ...validStamps],
+          ...(provenance === undefined ? {} : { creatorProvenance: provenance }),
         };
       });
       debouncedSave(updated);

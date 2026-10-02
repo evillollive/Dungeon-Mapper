@@ -14,6 +14,7 @@ import type { TileTheme } from '../themes';
 import { tileHash } from '../themes/artUtils';
 import { getSemanticTileType } from './customThemes';
 import type { CustomThemeDefinition } from '../types/map';
+import type { TileBounds } from './canvasGeometry';
 
 // ── Helpers ────────────────────────────────────────────────────────────
 
@@ -431,6 +432,7 @@ export function drawEdgeBlending(
   theme: TileTheme,
   customThemes: readonly CustomThemeDefinition[],
   cache?: EdgeBlendCache,
+  bounds?: TileBounds,
 ): void {
   if (!settings.enabled) {
     cache?.clear();
@@ -445,8 +447,8 @@ export function drawEdgeBlending(
   const dirs: Dir[] = ['N', 'S', 'E', 'W'];
 
   const drawEdges = (populateOnly: boolean) => {
-    for (let y = 0; y < height; y++) {
-      for (let x = 0; x < width; x++) {
+    for (let y = bounds?.minY ?? 0; y < (bounds?.maxY ?? height); y++) {
+      for (let x = bounds?.minX ?? 0; x < (bounds?.maxX ?? width); x++) {
         const tile = tiles[y]?.[x];
         if (!tile || tile.type === 'empty') continue;
 

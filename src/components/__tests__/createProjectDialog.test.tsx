@@ -37,7 +37,7 @@ describe('guided creation', () => {
   it('uses a player-safe launch preview but passes the complete independent encounter on acceptance', async () => {
     const onCreate = vi.fn(() => true);
     render(<CreateProjectDialog onCancel={vi.fn()} onCreate={onCreate} />);
-    fireEvent.change(screen.getByLabelText('Ready-to-play sample'), { target: { value: 'launch-lantern-crypt' } });
+    fireEvent.change(screen.getByLabelText('Sample map'), { target: { value: 'launch-lantern-crypt' } });
     await preview();
     const [candidate, , audience] = vi.mocked(renderCreationPreviews).mock.calls[0];
     expect(audience).toBe('player');
@@ -53,8 +53,8 @@ describe('guided creation', () => {
   it('accepts the explicit sample entry point without opening or creating a project', () => {
     const onCreate = vi.fn();
     render(<CreateProjectDialog initialPath="sample" onCancel={vi.fn()} onCreate={onCreate} />);
-    expect(screen.getByRole('button', { name: 'Ready to play' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByLabelText('Ready-to-play sample')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Choose a sample' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('Sample map')).toBeInTheDocument();
     expect(onCreate).not.toHaveBeenCalled();
   });
 
@@ -63,17 +63,17 @@ describe('guided creation', () => {
     const { rerender } = render(<CreateProjectDialog {...props} initialPath="blank" />);
     expect(screen.getByRole('button', { name: 'Start blank' })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByLabelText('Width (tiles)')).toBeInTheDocument();
-    choose('Ready to play');
+    choose('Choose a sample');
     rerender(<CreateProjectDialog {...props} initialPath="trace" />);
-    expect(screen.getByRole('button', { name: 'Ready to play' })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByLabelText('Ready-to-play sample')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Choose a sample' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByLabelText('Sample map')).toBeInTheDocument();
   });
 
   it('previews every sample level without touching the editor, then passes distinct content only on confirmation', async () => {
     const onCreate = vi.fn(() => true);
     render(<CreateProjectDialog onCancel={vi.fn()} onCreate={onCreate} />);
     const sample = PREMADE_MAP_SUMMARIES.find(item => item.levelCount > 1)!;
-    fireEvent.change(screen.getByLabelText('Ready-to-play sample'), { target: { value: sample.id } });
+    fireEvent.change(screen.getByLabelText('Sample map'), { target: { value: sample.id } });
     await preview();
     expect(onCreate).not.toHaveBeenCalled();
     const candidate = vi.mocked(renderCreationPreviews).mock.calls[0][0];
@@ -105,6 +105,18 @@ describe('guided creation', () => {
     await preview();
     expect(vi.mocked(renderCreationPreviews).mock.calls[1][0]).toEqual(first);
     expect(onCreate).not.toHaveBeenCalled();
+  });
+
+  it.each(['sunken-crypt', 'folio-crooked-company', 'launch-kestrel-bay'])('shows the role and purpose of %s without claiming every sample is ready to play', id => {
+    const sample = PREMADE_MAP_SUMMARIES.find(sample => sample.id === id)!;
+    render(<CreateProjectDialog onCancel={vi.fn()} onCreate={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Sample map'), { target: { value: id } });
+    const guide = screen.getByRole('region', { name: 'Sample purpose and use' });
+    expect(guide).toHaveTextContent(sample.guide.role);
+    expect(guide).toHaveTextContent(sample.guide.purpose);
+    expect(guide).toHaveTextContent(sample.guide.use);
+    expect(screen.queryByText(/Includes encounter content/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ready to play' })).not.toBeInTheDocument();
   });
 
   it('creates an adjustable blank map with cloned asset libraries', async () => {
