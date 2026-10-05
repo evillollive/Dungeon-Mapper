@@ -1024,8 +1024,9 @@ function App() {
 
   if (showLibrary && saveState.phase !== 'restoring' && !saveState.restorationBlocked) {
     return <div className="app">
-      <SaveHealth key={projectId} projectId={projectId} onRefreshCheckpoints={refreshCheckpoints} state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
       <ProjectLibrary projectId={projectId} disabled={!['saved', 'unsaved', 'restore-failed'].includes(saveState.phase)}
+        saveHealth={<SaveHealth key={projectId} projectId={projectId} onRefreshCheckpoints={refreshCheckpoints} state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />}
+        saveNeedsAttention={['failed', 'conflict', 'restore-failed'].includes(saveState.phase)}
         onOpen={async id => { await switchProject(id); setLibraryView(false); }}
         onChangedActive={switchProject}
         onDeleted={id => {

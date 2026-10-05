@@ -14,8 +14,10 @@ import preservationJourneys from './ux09Preservation.browser.mjs';
 import editingJourneys from './ux09Editing.browser.mjs';
 import denseExport from './ux09DenseExport.browser.mjs';
 import creatorSharing from './creatorSharing.browser.mjs';
+import libraryOverview from './libraryOverview.browser.mjs';
 
 const journeys = [
+  ['Library overview and remembered entry preference', libraryOverview],
   ['guided creation and library continuity', creation],
   ['editor navigation, focus and responsive layout', shell],
   ['publication and player-safe preview', audience],

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import type { DungeonProject } from '../types/map';
 import { changeLibraryProject, duplicateLibraryProject, listProjects, recordProjectOpened, type LibraryChange, type ProjectStatus, type ProjectSummary } from '../utils/projectRepository';
 import { decodeProject } from '../utils/projectSchema';
@@ -9,6 +9,7 @@ import './ProjectLibrary.css';
 import OfflineStatus from './OfflineStatus';
 import Icon from './Icon';
 import FirstUseIllustration from './FirstUseIllustration';
+import LibraryOverview from './LibraryOverview';
 import type { ImportedCreatorPackage } from '../utils/creatorPackageImport';
 import { CREATOR_PACKAGE_LIMITS } from '../utils/creatorProject';
 import { compareCreatorPackageOrigins, readCreatorPackageOrigin,
@@ -54,6 +55,8 @@ export function ProjectThumbnail({ item }: { item: ProjectSummary }) {
 }
 
 interface Props {
+  saveHealth?: ReactNode;
+  saveNeedsAttention?: boolean;
   projectId?: string;
   disabled: boolean;
   onOpen: (id: string) => Promise<void>;
@@ -64,7 +67,7 @@ interface Props {
 }
 interface ComparisonTarget { name: string; origin: CreatorPackageOrigin }
 
-export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, onImport, onChangedActive, onDeleted }: Props) {
+export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, onImport, onChangedActive, onDeleted, saveHealth, saveNeedsAttention }: Props) {
   const [projects, setProjects] = useState<ProjectSummary[]>([]);
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState<ProjectStatus>('active');
@@ -86,13 +89,14 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
   const comparisonReturnFocus = useRef<HTMLButtonElement | null>(null);
   const invalidateImport = useCallback(() => { importEpoch.current++; creatorImportController.current?.abort(); }, []);
   const heading = useRef<HTMLHeadingElement>(null);
+  const entryHeading = useRef<HTMLHeadingElement>(null);
   const refresh = async () => { setProjects(await listProjects()); };
   useEffect(() => {
     let cancelled = false;
     listProjects().then(items => { if (!cancelled) setProjects(items); })
       .catch(error => { if (!cancelled) setError(error instanceof Error ? error.message : 'Could not read Your maps.'); })
       .finally(() => { if (!cancelled) setBusy(false); });
-    heading.current?.focus();
+    entryHeading.current?.focus({ preventScroll: true });
     return () => { cancelled = true; invalidateImport(); };
   }, [invalidateImport]);
   const run = async (action: () => Promise<void>) => {
@@ -145,17 +149,21 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
         event.target.value = ''; comparisonTarget.current = null;
         if (file && target) void readCreator([file], false, target);
       }} />
-    <header className="library-masthead"><span>DUNGEON MAPPER / LOCAL COLLECTION</span>
+    <header className="library-masthead"><h1 ref={entryHeading} tabIndex={-1}>Dungeon Mapper</h1>
+      {recent && <div className="library-continue"><button className="library-primary" disabled={locked} aria-describedby="library-recent-name"
+        onClick={() => void run(async () => { await recordProjectOpened(recent.id); await onOpen(recent.id); })}><Icon name="play" /> Continue last map</button>
+        <span id="library-recent-name">{recent.name}</span></div>}
       <OfflineStatus blocked={locked} />
       <button disabled={locked} onClick={() => void run(refresh)}>Refresh library</button></header>
-    <section className="library-intro">
-      <div><p className="library-eyebrow">NEXT ADVENTURE, SAME TABLE</p><h1 ref={heading} tabIndex={-1}>Your maps</h1>
+    <div className="library-entry">
+      <LibraryOverview disabled={locked} onCreate={onCreate} />
+      {saveHealth && <div className={saveNeedsAttention ? 'library-save-attention' : 'library-save'}>{saveHealth}</div>}
+    </div>
+    <section className="library-intro" id="your-maps" tabIndex={-1}>
+      <div><p className="library-eyebrow">NEXT ADVENTURE, SAME TABLE</p><h2 ref={heading} tabIndex={-1}>Your maps</h2>
         <p>Stored on this device. Export a backup to keep another copy.</p>
         <p className="library-muted">No account needed. Library search and saved projects work locally. Backups and previews include DM-only content.</p></div>
       <div className="library-actions">
-        {recent && <div className="library-continue"><button className="library-primary" disabled={locked} aria-describedby="library-recent-name"
-          onClick={() => void run(async () => { await recordProjectOpened(recent.id); await onOpen(recent.id); })}><Icon name="play" /> Continue last map</button>
-          <span id="library-recent-name">{recent.name}</span></div>}
         <button className="library-primary" disabled={locked} onClick={() => onCreate()}><Icon name="create" /> Create map</button>
         <button disabled={locked} onClick={() => onCreate(true)}><Icon name="image" /> Open a sample</button>
         <label className={`library-file ${locked ? 'disabled' : ''}`}><span className="icon-label"><Icon name="import" />Import project</span>
