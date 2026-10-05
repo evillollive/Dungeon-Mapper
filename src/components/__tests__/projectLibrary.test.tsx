@@ -20,6 +20,7 @@ const props = () => ({ projectId: 'a', disabled: false, onOpen: vi.fn().mockReso
 describe('Your maps library', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.clear();
     vi.mocked(listProjects).mockResolvedValue([item('a', 'Crypt', ['undead']), item('b', 'Forest', ['travel'])]);
     vi.mocked(renderMapToCanvas).mockReturnValue({ toDataURL: () => 'data:image/png;base64,test' } as HTMLCanvasElement);
   });
@@ -60,6 +61,20 @@ describe('Your maps library', () => {
     fireEvent.click(await screen.findByRole('button', { name: 'Continue last map', exact: true }));
     await waitFor(() => expect(handlers.onOpen).toHaveBeenCalledWith('a'));
     expect(recordProjectOpened).toHaveBeenCalledWith('a');
+  });
+  it('keeps routine save controls below the overview and prioritizes failures without remounting them', async () => {
+    const handlers = props();
+    const saveHealth = <div role="region" aria-label="Save controls"><input aria-label="Recovery choice" /></div>;
+    const { rerender } = render(<ProjectLibrary {...handlers} saveHealth={saveHealth} />);
+    await screen.findByRole('article', { name: 'Crypt' });
+    expect(screen.getByRole('heading', { name: 'Dungeon Mapper', exact: true })).toHaveFocus();
+    expect(screen.getByRole('heading', { name: 'Make battle maps that look great fast.' })).toBeVisible();
+    const controls = screen.getByRole('region', { name: 'Save controls' });
+    expect(controls.parentElement).toHaveClass('library-save');
+    fireEvent.change(screen.getByLabelText('Recovery choice'), { target: { value: 'selected checkpoint' } });
+    rerender(<ProjectLibrary {...handlers} saveHealth={saveHealth} saveNeedsAttention />);
+    expect(controls.parentElement).toHaveClass('library-save-attention');
+    expect(screen.getByLabelText('Recovery choice')).toHaveValue('selected checkpoint');
   });
 
   it('duplicates portable content without using its local identity', async () => {
