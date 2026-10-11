@@ -234,6 +234,13 @@ describe('ExportDialog behavior', () => {
     exportHighResPNG.mockResolvedValue(undefined);
   });
 
+  it.each(['print', 'image'] as const)('defaults %s exports to the player audience', async initialChoice => {
+    render(<ExportDialog map={createDefaultMap('Export', 8, 8)} themeId="dungeon" printMode={false}
+      initialChoice={initialChoice} onClose={vi.fn()} />);
+    expect(screen.getByLabelText('Audience')).toHaveValue('player');
+    expect(screen.queryByText(/Includes DM-only content/)).not.toBeInTheDocument();
+  });
+
   it('passes selected print/export options to high-res export', async () => {
     const map = createDefaultMap('Export', 8, 8);
     render(
@@ -241,7 +248,6 @@ describe('ExportDialog behavior', () => {
         map={map}
         themeId="dungeon"
         printMode={false}
-        viewMode="gm"
         initialChoice="print"
         feetPerCell={5}
         onClose={vi.fn()}

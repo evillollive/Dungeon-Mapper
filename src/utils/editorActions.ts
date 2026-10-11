@@ -2,7 +2,8 @@ import type { BindingId, KeyBinding } from '../hooks/keyBindings';
 import type { ToolType, ViewMode } from '../types/map';
 import type { IconName } from '../assets/interfaceIcons';
 
-export type EditorPanel = 'build' | 'decorate' | 'look' | 'levels' | 'tactical' | 'notes' | 'encounter' | 'info';
+export const EDITOR_PANELS = ['build', 'decorate', 'look', 'levels', 'tactical', 'notes', 'encounter', 'info'] as const;
+export type EditorPanel = typeof EDITOR_PANELS[number];
 export type ActionId = BindingId | `panel.${EditorPanel}` | `theme.${string}`
   | 'tool.stamp' | 'tool.move-stamp' | 'tool.remove-stamp'
   | 'tool.wall-erase' | 'tool.path-erase' | 'tool.river-erase'

@@ -50,7 +50,6 @@ describe('ExportDialog', () => {
         map={map}
         themeId="dungeon"
         printMode={false}
-        viewMode="gm"
         onClose={onClose}
       />
     );
@@ -65,7 +64,6 @@ describe('ExportDialog', () => {
         map={map}
         themeId="dungeon"
         printMode={false}
-        viewMode="gm"
         onClose={onClose}
       />
     );
@@ -82,7 +80,6 @@ describe('ExportDialog', () => {
         map={map}
         themeId="dungeon"
         printMode={false}
-        viewMode="gm"
         onClose={onClose}
       />
     );

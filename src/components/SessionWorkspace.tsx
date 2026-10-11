@@ -74,14 +74,22 @@ export default function SessionWorkspace({ sessionId, sourceId }: { sessionId: s
             <p>Start from the saved revision of {map.meta.name}. Session actions save separately. Your authored geometry stays untouched.</p></div>
         </div>
         <ul className="prepare-checklist">
-          <li><strong>Starting visibility:</strong> {projection.map.fog?.every(row => row.every(Boolean)) ? 'No known starting area. Reveal in Run before sharing.' : 'A starting area is visible.'}</li>
+          <li><strong>Starting visibility:</strong> {!map.fogEnabled ? 'Whole level visible. Fog is off.'
+            : projection.map.fog?.every(row => row.every(Boolean)) ? 'No known starting area. Reveal in Run before sharing.' : 'A starting area is visible.'}</li>
           <li><strong>Party sight:</strong> {(map.tokens ?? []).some(t => t.kind === 'player' && !t.hidden) ? 'Party sight source present.' : 'No visible party sight source. Manual reveal is available.'}</li>
           <li><strong>Fog policy:</strong> {!map.fogEnabled ? 'Fog is off. All geography is visible.' : map.dynamicFogEnabled ? 'Dynamic sight and exploration.' : 'Manual reveal only.'}</li>
           <li><strong>Content:</strong> {projection.map.notes.length} public notes; {projection.map.tokens?.length ?? 0} visible tokens. Review Audience & secrets in Edit for publication changes.</li>
           <li><strong>Player window:</strong> Starts blank. Only Show this level publishes. Local trusted browser, not remote multiplayer.</li>
         </ul>
+        {!map.fogEnabled && <div className="session-fog-warning" role="note" aria-labelledby="session-fog-warning-title">
+          <p id="session-fog-warning-title"><strong>Fog is off for this level.</strong></p>
+          <p>When you choose Show this level, players see every room and corridor at once. Private notes and hidden tokens stay hidden. To reveal the map as players explore, turn on fog in Edit before starting.</p>
+          <button onClick={() => navigate({ project: sourceId ?? '', panel: 'tactical' })}><Icon name="tactical" /> Turn on fog in Edit</button>
+        </div>}
         <button onClick={() => setPreview(p => !p)}><Icon name={preview ? 'close' : 'display'} /> {preview ? 'Close player preview' : 'Player preview'}</button>
-        <label className="session-confirm"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />I reviewed visibility and public content. Manual-fog play is intentional if no sight source exists.</label>
+        <label className="session-confirm"><input type="checkbox" checked={confirmed} onChange={e => setConfirmed(e.target.checked)} />{map.fogEnabled
+          ? 'I reviewed visibility and public content. Manual-fog play is intentional if no sight source exists.'
+          : 'I reviewed public content and understand players will see the whole level when I show it.'}</label>
         <button className="session-primary" disabled={!confirmed || busy || !!error} onClick={async () => {
           if (startLock.current || !source?.projectId || !source.revision) return;
           startLock.current = true;

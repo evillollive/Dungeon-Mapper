@@ -20,7 +20,7 @@ describe('export cancellation feedback', () => {
       return new Promise((_resolve, reject) => { finish = reject; });
     }).mockResolvedValue(undefined);
     render(<ExportDialog map={createDefaultMap()} themeId="dungeon" printMode={false}
-      viewMode="gm" initialChoice="print" onClose={vi.fn()} />);
+      initialChoice="print" onClose={vi.fn()} />);
     fireEvent.click(screen.getByRole('button', { name: 'Download page 1', exact: true }));
     fireEvent.click(screen.getByRole('button', { name: 'Cancel export', exact: true }));
     expect(signal?.aborted).toBe(true);

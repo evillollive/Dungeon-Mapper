@@ -70,6 +70,9 @@
 .prepare-checklist li { margin: 12px 0; }
 .session-card .session-confirm { display: flex; align-items: center; margin: 24px 0; }
 .session-confirm input { flex-shrink: 0; width: 24px; }
+.session-fog-warning { border: 2px solid var(--danger); border-left-width: 6px; padding: 12px 16px; background: var(--surface-error); margin: 0 0 20px; }
+.session-fog-warning p { margin: 0 0 8px; }
+.session-fog-warning button { margin-top: 4px; display: inline-flex; align-items: center; gap: 8px; }
 .display-neutral { display: flex; flex-direction: column; justify-content: safe center; align-items: center; gap: 20px; text-align: center; }
 .display-neutral h1 { font-size: clamp(2rem, 5vw, 4rem); letter-spacing: -.04em; }
 .display-neutral p { max-width: 48ch; color: var(--text-secondary); }
