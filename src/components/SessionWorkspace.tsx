@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
 import type { DungeonMap } from '../types/map';
 import { loadProject } from '../utils/projectRepository';
 import { downloadRecoveryData, readRecord, type LoadedProject } from '../utils/storage';
@@ -128,6 +128,7 @@ function RunSession({ initial }: { initial: SessionRecord }) {
   const [tokenId, setTokenId] = useState<number | null>(null);
   const [cell, setCell] = useState({ x: 0, y: 0 });
   const [measureFrom, setMeasureFrom] = useState<{ x: number; y: number } | null>(null);
+  const [area, setArea] = useState<{ from: { x: number; y: number }; to: { x: number; y: number } } | null>(null);
   const [notice, setNotice] = useState('');
   const [checkpointName, setCheckpointName] = useState('');
   const [preview, setPreview] = useState(false);
@@ -251,6 +252,29 @@ function RunSession({ initial }: { initial: SessionRecord }) {
       setNotice(`Ping sent at ${x}, ${y}. Clear ping removes it from the display.`);
     }
   };
+  const applyArea = (from: { x: number; y: number }, to: { x: number; y: number }) => {
+    if (from.x === to.x && from.y === to.y) { apply(to.x, to.y); return; }
+    if (disabled || locked.current || (tool !== 'reveal' && tool !== 'hide')) return;
+    const left = Math.max(0, Math.min(from.x, to.x)), right = Math.min(map.meta.width - 1, Math.max(from.x, to.x));
+    const top = Math.max(0, Math.min(from.y, to.y)), bottom = Math.min(map.meta.height - 1, Math.max(from.y, to.y));
+    const fog = (map.fog ?? map.tiles.map(row => row.map(() => true))).map(row => [...row]);
+    for (let y = top; y <= bottom; y++) for (let x = left; x <= right; x++) fog[y][x] = tool === 'hide';
+    setCell({ x: to.x, y: to.y });
+    changeMap({ ...map, fog, fogEnabled: true });
+    const count = (right - left + 1) * (bottom - top + 1);
+    setNotice(`${tool === 'hide' ? 'Manual fog restored on' : 'Revealed'} ${count} cells from ${left}, ${top} to ${right}, ${bottom}. Undo session map action reverses it.`);
+  };
+  const cellAt = (event: ReactPointerEvent<HTMLCanvasElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    return {
+      x: Math.min(map.meta.width - 1, Math.max(0, Math.floor((event.clientX - rect.left) / rect.width * map.meta.width))),
+      y: Math.min(map.meta.height - 1, Math.max(0, Math.floor((event.clientY - rect.top) / rect.height * map.meta.height))),
+    };
+  };
+  const areaBox = area && {
+    left: Math.min(area.from.x, area.to.x), top: Math.min(area.from.y, area.to.y),
+    width: Math.abs(area.to.x - area.from.x) + 1, height: Math.abs(area.to.y - area.from.y) + 1,
+  };
   return <main className="session-workspace" aria-label="DM Run workspace">
     <header className="session-heading">
       <div><p className="session-eyebrow">RUN / TRUSTED DM WORKSPACE</p><h1>{project.name}</h1></div>
@@ -295,12 +319,12 @@ function RunSession({ initial }: { initial: SessionRecord }) {
             <h2>At the table</h2>
             <div className="session-tool-buttons">{(['reveal', 'hide', 'move', 'measure', 'ping'] as const).map(value =>
               <button key={value} aria-pressed={tool === value} disabled={disabled} onClick={() => { setTool(value); setMeasureFrom(null); }}>
-                {{ reveal: 'Reveal cell', hide: 'Hide cell', move: 'Move token', measure: 'Measure', ping: 'Ping' }[value]}
+                {{ reveal: 'Reveal', hide: 'Hide', move: 'Move token', measure: 'Measure', ping: 'Ping' }[value]}
               </button>)}</div>
             {tool === 'move' && <label>Token <select aria-label="Session token" value={tokenId ?? ''} onChange={e => setTokenId(Number(e.target.value))}>
               <option value="" disabled>Choose token</option>{(map.tokens ?? []).map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
             </select></label>}
-            <p>Click a cell or enter a destination. Coordinates start at zero.</p>
+            <p>{tool === 'reveal' || tool === 'hide' ? 'Click a cell, or drag across an area to change it all at once.' : 'Click a cell or enter a destination.'} Coordinates start at zero.</p>
             <form onSubmit={event => { event.preventDefault(); apply(cell.x, cell.y); }}>
               <label>Cell X <input type="number" min={0} max={map.meta.width - 1} required value={cell.x} onChange={e => setCell(c => ({ ...c, x: Number(e.target.value) }))} /></label>
               <label>Cell Y <input type="number" min={0} max={map.meta.height - 1} required value={cell.y} onChange={e => setCell(c => ({ ...c, y: Number(e.target.value) }))} /></label>
@@ -316,12 +340,36 @@ function RunSession({ initial }: { initial: SessionRecord }) {
           <section className="session-map-panel" aria-label="Private DM map">
             <div className="session-map-caption"><strong>{map.meta.name}</strong><span>DM ONLY / {map.meta.width} x {map.meta.height}</span></div>
             <div className="session-map-scroll" tabIndex={0} role="region" aria-label="DM map viewport">
-              <canvas ref={canvas} aria-label={`Private DM map: ${map.meta.name}. Use cell controls for keyboard actions.`} role="img"
-                onClick={event => {
-                  const rect = event.currentTarget.getBoundingClientRect();
-                  apply(Math.floor((event.clientX - rect.left) / rect.width * map.meta.width),
-                    Math.floor((event.clientY - rect.top) / rect.height * map.meta.height));
-                }} />
+              <div className="session-map-surface">
+                <canvas ref={canvas} aria-label={`Private DM map: ${map.meta.name}. Use cell controls for keyboard actions.`} role="img"
+                  onPointerDown={event => {
+                    if (event.button !== 0 || disabled || (tool !== 'reveal' && tool !== 'hide')) return;
+                    event.currentTarget.setPointerCapture?.(event.pointerId);
+                    const at = cellAt(event);
+                    setArea({ from: at, to: at });
+                  }}
+                  onPointerMove={event => {
+                    if (!area) return;
+                    const at = cellAt(event);
+                    if (at.x !== area.to.x || at.y !== area.to.y) setArea({ ...area, to: at });
+                  }}
+                  onPointerUp={event => {
+                    if (!area) return;
+                    setArea(null);
+                    applyArea(area.from, cellAt(event));
+                  }}
+                  onPointerCancel={() => setArea(null)}
+                  onClick={event => {
+                    if (tool === 'reveal' || tool === 'hide') return;
+                    const rect = event.currentTarget.getBoundingClientRect();
+                    apply(Math.floor((event.clientX - rect.left) / rect.width * map.meta.width),
+                      Math.floor((event.clientY - rect.top) / rect.height * map.meta.height));
+                  }} />
+                {areaBox && <div className={`session-area-preview is-${tool}`} aria-hidden="true" style={{
+                  left: `${areaBox.left / map.meta.width * 100}%`, top: `${areaBox.top / map.meta.height * 100}%`,
+                  width: `${areaBox.width / map.meta.width * 100}%`, height: `${areaBox.height / map.meta.height * 100}%`,
+                }} />}
+              </div>
             </div>
           </section>
           <section className="session-card session-encounter" aria-label="Session encounter">

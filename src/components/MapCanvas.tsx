@@ -20,7 +20,7 @@ import type { TileDrawContext } from '../themes';
 import { folioTheme } from '../themes/folio-v1/theme';
 import { FolioTileCache } from '../themes/folio-v1/tileCache';
 import { bresenhamLine, pointNearPolyline, rectCells, rectOutline, snapToGridIntersection } from '../utils/canvasGeometry';
-import { polygonBoundingBox } from '../utils/roomRasterizer';
+import { polygonBoundingBox, roomFillFor } from '../utils/roomRasterizer';
 import { useCanvasEditingDraft } from '../hooks/useCanvasDraft';
 import type { RegionSelection } from '../hooks/useEditorSelection';
 import { readEditorViewport, writeEditorViewport } from '../utils/editorViewport';
@@ -2099,7 +2099,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
 
     for (let y = 0; y < meta.height; y++) {
       for (let x = 0; x < meta.width; x++) {
-        const tile = tiles[y]?.[x];
+        const tile = renderTiles[y]?.[x];
         if (tile && tile.type !== 'empty') {
           ctx.fillStyle = printMode ? '#000000' : (theme.tileColors[tile.type] ?? '#777777');
           ctx.fillRect(x * mTile, y * mTile, mTile, mTile);
@@ -2119,7 +2119,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
       ctx.lineWidth = 1;
       ctx.strokeRect(vx, vy, vw * mTile, vh * mTile);
     }
-  }, [map, tiles, meta, tileSize, themeId, customThemes, printMode, zoom, pan]);
+  }, [map, renderTiles, meta, tileSize, themeId, customThemes, printMode, zoom, pan]);
 
   // Selection keyboard handler
   useEffect(() => {
@@ -2661,7 +2661,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         y: bb.y,
         width: Math.max(1, bb.width),
         height: Math.max(1, bb.height),
-        fillTile: activeTile,
+        fillTile: roomFillFor(activeTile),
       });
       setPolyVertices([]);
       return;
@@ -2961,7 +2961,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         setRoomEditPreview(null);
       } else if (!edit && isMouseDownRef.current && isDragging && dragStart && dragEnd) {
         const shape = normalizeRectRoomShape(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
-        shape.fillTile = activeTile;
+        shape.fillTile = roomFillFor(activeTile);
         if (activeTool === 'room-cut') {
           shape.mode = 'subtractive';
         } else if (activeTool === 'room-circle') {
@@ -3299,7 +3299,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         {activeTool === 'room-poly' && <button type="button" disabled={polyVertices.length < 3} onClick={() => {
           const bounds = polygonBoundingBox(polyVertices);
           onAddRoomShape?.({ shapeType: 'polygon', vertices: polyVertices, ...bounds,
-            width: Math.max(1, bounds.width), height: Math.max(1, bounds.height), fillTile: activeTile });
+            width: Math.max(1, bounds.width), height: Math.max(1, bounds.height), fillTile: roomFillFor(activeTile) });
           setPolyVertices([]);
         }}>Finish polygon</button>}
         <button type="button" onClick={handlePointerCancel}>Cancel gesture</button>

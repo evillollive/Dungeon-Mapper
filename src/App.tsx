@@ -26,6 +26,7 @@ import ContextPanel from './components/ContextPanel';
 import { useVisualViewport } from './hooks/useVisualViewport';
 import CommandPalette from './components/CommandPalette';
 import { buildKeyBindings } from './hooks/keyBindings';
+import { roomFillFor } from './utils/roomRasterizer';
 import { buildEditorActions, EDITOR_PANELS, TOOL_ACTIONS, type EditorPanel, type ExtraAction } from './utils/editorActions';
 import { EditorActionsContext } from './contexts/EditorActionsContext';
 import ActionButton from './components/ActionButton';
@@ -267,7 +268,7 @@ function App() {
     const params = new URL(window.location.href).searchParams;
     return !params.has('project') || params.get('view') === 'library';
   });
-  const [showCreateProject, setShowCreateProject] = useState(false);
+  const [showCreateProject, setShowCreateProject] = useState<false | 'sample' | 'blank'>(false);
   const setLibraryView = useCallback((visible: boolean) => {
     setShowLibrary(visible);
     const url = new URL(window.location.href);
@@ -896,7 +897,7 @@ function App() {
       id: TOOL_ACTIONS[tool], label: tool.replaceAll('-', ' '), action: () => handleSetActiveTool(tool),
     })),
     { id: 'file.library', label: 'Your maps', action: () => setLibraryView(true) },
-    { id: 'file.samples', label: 'Open a sample', action: () => setShowCreateProject(true) },
+    { id: 'file.samples', label: 'Open a sample', action: () => setShowCreateProject('sample') },
     { id: 'file.clear', label: 'Clear current level', action: () => {
       if (window.confirm('Clear the current level? Other levels are unchanged. The saved project will be retained as a local recovery copy.')) clearMap();
     } },
@@ -1040,9 +1041,9 @@ function App() {
             window.history.replaceState(null, '', url);
           }
         }}
-        onCreate={() => setShowCreateProject(true)}
+        onCreate={sampleFirst => setShowCreateProject(sampleFirst ? 'sample' : 'blank')}
         onImport={createProject} />
-      {showCreateProject && <CreateProjectDialog sourceProject={project} onCancel={() => setShowCreateProject(false)}
+      {showCreateProject && <CreateProjectDialog sourceProject={project} initialPath={showCreateProject} onCancel={() => setShowCreateProject(false)}
         onCreate={createProject} />}
     </div>;
   }
@@ -1085,7 +1086,7 @@ function App() {
         onSetName={setMapName}
         onResize={resizeMap}
         onSetTileSize={setTileSize}
-        onNew={() => setShowCreateProject(true)}
+        onNew={() => setShowCreateProject('blank')}
         onLoadProject={createProject}
         uiScale={uiScale}
         uiScaleOptions={UI_SCALE_OPTIONS}
@@ -1148,7 +1149,7 @@ function App() {
                     flowDirection: Math.atan2(height, width) * 180 / Math.PI,
                   }));
                   else if (kind === 'room' || kind === 'polygon') setSelectedRoomShapeId(addRoomShape({
-                    x, y, width, height, fillTile: activeTile, shapeType: kind === 'polygon' ? 'polygon' : 'rect',
+                    x, y, width, height, fillTile: roomFillFor(activeTile), shapeType: kind === 'polygon' ? 'polygon' : 'rect',
                     ...(kind === 'polygon' ? { vertices: [{ x, y }, { x: x + width, y }, { x: x + width, y: y + height }, { x, y: y + height }] } : {}),
                   }));
                 }} />}
@@ -1538,7 +1539,7 @@ function App() {
           }}
         />
       )}
-      {showCreateProject && <CreateProjectDialog sourceProject={project} onCancel={() => setShowCreateProject(false)}
+      {showCreateProject && <CreateProjectDialog sourceProject={project} initialPath={showCreateProject} onCancel={() => setShowCreateProject(false)}
         onCreate={createProject} />}
       {showCustomThemeDialog && viewMode === 'gm' && (
         <CustomThemeDialog

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { rasterizeRoomShapes, polygonBoundingBox } from '../roomRasterizer';
+import { roomFillFor, rasterizeRoomShapes, polygonBoundingBox } from '../roomRasterizer';
 import type { RoomShape, Tile } from '../../types/map';
 
 /** Create a width×height grid filled with 'empty' tiles. */
@@ -362,6 +362,60 @@ describe('rasterizeRoomShapes', () => {
     // x=4 is A's east perimeter and B's interior
     // → dissolved because A's perimeter is inside B
     expect(result[2][4].type).toBe('floor');
+  });
+
+  it('keeps the outer wall closed where a shared wall meets it', () => {
+    const tiles = emptyGrid(8, 5);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 3, height: 3 },
+      { id: 2, x: 3, y: 1, width: 3, height: 3 },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 8, 5);
+    expect(typeGrid(result)).toEqual([
+      ['empty', 'empty', 'empty', 'empty', 'empty', 'empty', 'empty', 'empty'],
+      ['empty', 'wall',  'wall',  'wall',  'wall',  'wall',  'empty', 'empty'],
+      ['empty', 'wall',  'floor', 'floor', 'floor', 'wall',  'empty', 'empty'],
+      ['empty', 'wall',  'wall',  'wall',  'wall',  'wall',  'empty', 'empty'],
+      ['empty', 'empty', 'empty', 'empty', 'empty', 'empty', 'empty', 'empty'],
+    ]);
+  });
+
+  it('keeps top and bottom walls closed across a partial overlap', () => {
+    const tiles = emptyGrid(10, 8);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 4, height: 4 },
+      { id: 2, x: 3, y: 1, width: 4, height: 4 },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 10, 8);
+    for (let x = 1; x <= 6; x++) {
+      expect(result[1][x].type).toBe('wall');
+      expect(result[4][x].type).toBe('wall');
+    }
+  });
+
+  it('keeps the inner corner of an L-shaped merge as wall', () => {
+    const tiles = emptyGrid(10, 10);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 3, height: 3 },
+      { id: 2, x: 3, y: 1, width: 3, height: 3 },
+      { id: 3, x: 1, y: 3, width: 3, height: 3 },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 10, 10);
+    expect(result[3][3].type).toBe('wall');
+    expect(result[1][3].type).toBe('wall');
+    expect(result[3][1].type).toBe('wall');
+  });
+
+  it('edgeMergeOverride door does not put doors on the outer wall', () => {
+    const tiles = emptyGrid(8, 5);
+    const shapes: RoomShape[] = [
+      { id: 1, x: 1, y: 1, width: 3, height: 3, edgeMergeOverrides: [{ edge: 'e', mode: 'door' }] },
+      { id: 2, x: 3, y: 1, width: 3, height: 3 },
+    ];
+    const result = rasterizeRoomShapes(tiles, shapes, 8, 5);
+    expect(result[1][3].type).toBe('wall');
+    expect(result[2][3].type).toBe('door-v');
+    expect(result[3][3].type).toBe('wall');
   });
 
   it('edgeMergeOverride wall keeps the wall even at shared boundary', () => {
@@ -801,5 +855,18 @@ describe('polygonBoundingBox', () => {
   it('returns zero-size box for empty array', () => {
     const bb = polygonBoundingBox([]);
     expect(bb).toEqual({ x: 0, y: 0, width: 0, height: 0 });
+  });
+});
+
+describe('roomFillFor', () => {
+  it('falls back to floor for wall, door and empty selections', () => {
+    for (const tile of ['wall', 'empty', 'door-h', 'locked-door-v', 'secret-door', 'archway', 'pillar'] as const) {
+      expect(roomFillFor(tile)).toBe('floor');
+    }
+  });
+  it('keeps ground fills such as water and custom tiles', () => {
+    expect(roomFillFor('floor')).toBe('floor');
+    expect(roomFillFor('water')).toBe('water');
+    expect(roomFillFor('custom:moss')).toBe('custom:moss');
   });
 });

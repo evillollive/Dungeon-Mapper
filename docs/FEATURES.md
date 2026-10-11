@@ -8,7 +8,8 @@ See the [release gate ledger](./USER-EXPERIENCE-ROADMAP.md#release-gate-ledger).
 
 Start in **Your maps** to create, import, search, duplicate or reopen a project.
 **Create map** offers a sample, generation, blank map or image-tracing starting
-point with a preview before **Use this map**. Imports and samples create
+point with a preview before **Use this map**. It opens on **Start blank**;
+**Explore a sample** and **Open a sample** open on the sample list. Imports and samples create
 separate projects, keeping the current saved project. Library names, tags,
 Archive and Trash are local to this browser and origin, not an online account.
 Permanent deletion is explicit and cannot be undone.
@@ -182,7 +183,9 @@ shows a warning and offers **Turn on fog in Edit**, which opens **Fog & sight**.
 The acknowledgement then confirms that players will see the whole level.
 
 **Run** has reveal/hide, token movement, measurement, pings, encounter turns and
-session checkpoints. Changes save in a separate session record; the authored
+session checkpoints. With **Reveal** or **Hide**, click one cell or drag across
+an area to change it in one undoable action; the cell fields apply one cell
+from the keyboard. Changes save in a separate session record; the authored
 source map stays unchanged. **Inspect DM level** does not change the published
 level. **Show this level** does. **Pause / blank now** blanks the local display.
 
@@ -525,7 +528,7 @@ Once you spend a few minutes with Dungeon Mapper, shortcuts start doing a lot of
 | `M` | Measure / Distance tool - click and drag to measure distances |
 | `I` | Light Source tool - click a cell to place a light source (Illuminate) |
 | `D` | GM Draw tool - private freehand annotations, excluded from player outputs |
-| `Q` / `Shift+C` / `Shift+P` | Rectangle / ellipse / polygon room tools |
+| `Q` / `Shift+C` / `Shift+P` | Rectangle / ellipse / polygon room tools. Touching or overlapping rooms merge and keep their outer walls closed; a wall, door or empty material falls back to floor for the room fill. |
 | `W` | Wall drawing tool - draw walls along grid edges |
 | `Shift+W` | Path/road drawing tool - draw free-form paths |
 | `U` | River tool - drag to draw flowing water |
