@@ -176,7 +176,10 @@ not automate locks, movement restrictions, alarms or combat.
 **Prepare session** reads the saved source project. Review public content,
 starting visibility and sight sources, acknowledge the readiness checklist,
 then choose **Start session**. Manual-fog play remains possible without sight
-sources; do not assume a newly created or imported map starts hidden.
+sources; do not assume a newly created or imported map starts hidden. New maps
+start with fog off. When fog is off, Prepare says the whole level is visible,
+shows a warning and offers **Turn on fog in Edit**, which opens **Fog & sight**.
+The acknowledgement then confirms that players will see the whole level.
 
 **Run** has reveal/hide, token movement, measurement, pings, encounter turns and
 session checkpoints. Changes save in a separate session record; the authored
@@ -687,8 +690,8 @@ players** rather than assuming every image export is public.
 | --- | --- |
 | Share with players | PNG or SVG of the current level using Player preview publication and fog rules, with a public filename and audience preview. |
 | Back up project | Editable JSON of every level and project asset. Includes DM-only content. Separate session records and device checkpoint history are not included. |
-| Print for the table | Current-level PNG pages with DM/player audience, 72/150/300 DPI, physical grid scale, Letter/A4, configurable margins and overlap, page preview, and optional scale bar. Download one page or all pages with progress and cancellation. |
-| Use in another map tool | Current-level PNG/SVG with grid dimensions and pixels per cell shown. No claim of native VTT integration. |
+| Print for the table | Current-level PNG pages with player (default) or DM audience, 72/150/300 DPI, physical grid scale, Letter/A4, configurable margins and overlap, page preview, and optional scale bar. Download one page or all pages with progress and cancellation. |
+| Use in another map tool | Current-level PNG/SVG with player (default) or DM audience, and grid dimensions and pixels per cell shown. No claim of native VTT integration. |
 
 PNG uses a dedicated export renderer, never the editor canvas or selection handles.
 Single images are limited to 16 megapixels and 8192 pixels per side. Larger maps

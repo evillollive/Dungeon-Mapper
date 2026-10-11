@@ -32,7 +32,7 @@ describe('first-use illustration contract', () => {
   it('keeps the private backup warning and download action alongside artwork', () => {
     const project = createDefaultProject();
     const { container } = render(<ExportDialog map={project.levels[0]} project={project}
-      themeId="dungeon" printMode={false} viewMode="gm" initialChoice="backup" onClose={vi.fn()} />);
+      themeId="dungeon" printMode={false} initialChoice="backup" onClose={vi.fn()} />);
     expect(container.querySelector('[data-scene="backup"]')).not.toBeNull();
     expect(screen.getByText(/Never send this backup to players/)).toBeInTheDocument();
     expect(screen.getByText(/Keep this file outside browser storage/)).toBeInTheDocument();

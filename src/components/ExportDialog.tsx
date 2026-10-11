@@ -28,7 +28,6 @@ interface ExportDialogProps {
   project?: DungeonProject;
   themeId: string;
   printMode: boolean;
-  viewMode: ViewMode;
   initialChoice?: ExportChoice;
   onClose: () => void;
   feetPerCell?: number;
@@ -36,13 +35,13 @@ interface ExportDialogProps {
   customStamps?: readonly StampDef[];
 }
 
-export default function ExportDialog({ map, project, themeId, printMode, viewMode,
+export default function ExportDialog({ map, project, themeId, printMode,
   initialChoice = 'share', onClose, feetPerCell = 0, customThemes = NO_THEMES, customStamps = NO_STAMPS }: ExportDialogProps) {
   const focusTrap = useFocusTrap<HTMLDivElement>();
   const [intent, setIntent] = useState<Intent>(initialChoice.startsWith('share') ? 'share'
     : initialChoice.startsWith('image') ? 'image' : initialChoice === 'backup' ? 'backup' : 'print');
   const [format, setFormat] = useState(initialChoice.endsWith('svg') ? 'svg' : 'png');
-  const [audience, setAudience] = useState<ViewMode>(viewMode);
+  const [audience, setAudience] = useState<ViewMode>('player');
   const [dpi, setDpi] = useState(150);
   const [pixels, setPixels] = useState(64);
   const [pageSize, setPageSize] = useState('letter');

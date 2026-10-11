@@ -26,7 +26,7 @@ import ContextPanel from './components/ContextPanel';
 import { useVisualViewport } from './hooks/useVisualViewport';
 import CommandPalette from './components/CommandPalette';
 import { buildKeyBindings } from './hooks/keyBindings';
-import { buildEditorActions, TOOL_ACTIONS, type EditorPanel, type ExtraAction } from './utils/editorActions';
+import { buildEditorActions, EDITOR_PANELS, TOOL_ACTIONS, type EditorPanel, type ExtraAction } from './utils/editorActions';
 import { EditorActionsContext } from './contexts/EditorActionsContext';
 import ActionButton from './components/ActionButton';
 import Icon from './components/Icon';
@@ -252,7 +252,10 @@ function App() {
   const playerProjection = useMemo(() => showPlayerPreview ? projectForAudience(map, customThemes, customStamps) : null,
     [showPlayerPreview, map, customThemes, customStamps]);
   const [uiScale, setUIScale] = useState<number>(loadInitialUIScale);
-  const [activePanel, setActivePanel] = useState<EditorPanel>('build');
+  const [activePanel, setActivePanel] = useState<EditorPanel>(() => {
+    const requested = new URL(window.location.href).searchParams.get('panel');
+    return EDITOR_PANELS.find(panel => panel === requested) ?? 'build';
+  });
   const [showSettings, setShowSettings] = useState(false);
   const [showSaveDetails, setShowSaveDetails] = useState(false);
   const [preserveOnThemeSwitch, setPreserveOnThemeSwitch] = useState<boolean>(
@@ -881,7 +884,7 @@ function App() {
     setRightPanelOpen(['notes', 'encounter', 'info'].includes(panel));
   };
   const extraActions: ExtraAction[] = [
-    ...(['build', 'decorate', 'look', 'levels', 'tactical', 'notes', 'encounter', 'info'] as const).map(panel => ({
+    ...EDITOR_PANELS.map(panel => ({
       id: `panel.${panel}` as const, label: `Open ${panel === 'tactical' ? 'Fog & sight' : panel}`,
       action: () => openPanel(panel),
     })),
@@ -1565,7 +1568,6 @@ function App() {
           customThemes={customThemes}
           customStamps={customStamps}
           printMode={printMode}
-          viewMode={viewMode}
           onClose={() => setExportChoice(null)}
           feetPerCell={measureFeetPerCell}
         />
