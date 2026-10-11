@@ -53,6 +53,9 @@
 .session-map-caption span { font-size: .75rem; color: var(--text-secondary); }
 .session-map-scroll { overflow: auto; max-height: 70vh; }
 .session-map-scroll canvas { display: block; width: 100%; height: auto; cursor: crosshair; }
+.session-map-surface { position: relative; }
+.session-area-preview { position: absolute; pointer-events: none; border: 2px dashed #ff9569; background: rgb(255 149 105 / 18%); }
+.session-area-preview.is-hide { border-color: #9aa4ff; background: rgb(154 164 255 / 22%); }
 .session-encounter ol { padding-left: 24px; margin: 16px 0; }
 .session-encounter [aria-current="step"] { color: var(--action-primary); font-weight: bold; }
 .session-workspace summary { cursor: pointer; min-height: 44px; padding: 8px 0; }

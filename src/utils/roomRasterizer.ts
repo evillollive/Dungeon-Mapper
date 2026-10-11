@@ -159,6 +159,16 @@ function cellInteriorPolygon(cellX: number, cellY: number, vertices: { x: number
  * **Coexistence:** The returned grid is a fresh copy; the caller can
  * composite it with manually-painted tiles as needed.
  */
+const BOUNDARY_TILES: ReadonlySet<TileType> = new Set<TileType>([
+  'empty', 'wall', 'door-h', 'door-v', 'secret-door', 'locked-door-h', 'locked-door-v',
+  'trapped-door-h', 'trapped-door-v', 'portcullis', 'archway', 'barricade', 'pillar',
+]);
+
+/** Room tools draw walls themselves; a wall, door or empty selection would fill the room solid or blank. */
+export function roomFillFor(activeTile: TileType): TileType {
+  return BOUNDARY_TILES.has(activeTile) ? 'floor' : activeTile;
+}
+
 export function rasterizeRoomShapes(
   baseTiles: Tile[][],
   roomShapes: RoomShape[],
@@ -337,6 +347,8 @@ function mergeSharedWalls(
     const perimeterCells = getPerimeterCells(shapeA, gridWidth, gridHeight);
 
     for (const { cx, cy, edge } of perimeterCells) {
+      // Cells on the outer boundary of the merged rooms stay walls (and never become doors).
+      if (onUnionBoundary(cx, cy, roomShapes, gridWidth, gridHeight)) continue;
       // Check if this perimeter cell falls inside any other shape.
       for (let j = 0; j < roomShapes.length; j++) {
         if (i === j) continue;
@@ -371,6 +383,25 @@ function mergeSharedWalls(
       }
     }
   }
+}
+
+function onUnionBoundary(
+  cx: number,
+  cy: number,
+  roomShapes: RoomShape[],
+  gridWidth: number,
+  gridHeight: number,
+): boolean {
+  for (let dy = -1; dy <= 1; dy++) {
+    for (let dx = -1; dx <= 1; dx++) {
+      if (dx === 0 && dy === 0) continue;
+      const nx = cx + dx;
+      const ny = cy + dy;
+      if (nx < 0 || ny < 0 || nx >= gridWidth || ny >= gridHeight) return true;
+      if (!roomShapes.some(shape => cellInsideShape(nx, ny, shape))) return true;
+    }
+  }
+  return false;
 }
 
 /**
