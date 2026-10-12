@@ -113,7 +113,7 @@ export function useMapState() {
 
   // ── Tile operations ───────────────────────────────────────────────────
 
-  const { setTile, setTiles, fillTiles, getTileType, activeFloorMaterial, setActiveFloorMaterial } =
+  const { setTile, setTiles, fillTiles, placeDoorAt, getTileType, activeFloorMaterial, setActiveFloorMaterial } =
     useTileEditing(map, setProject, debouncedSave, activeLevelIndex, pushHistory);
 
   const setMapName = useCallback((name: string) => {
@@ -1312,7 +1312,7 @@ export function useMapState() {
     projectGeneration: coordinator.getGeneration(),
     forgetDeletedProject: coordinator.forgetDeletedProject,
     selectedNoteId, setSelectedNoteId,
-    setTile, fillTiles, setTiles, getTileType, activeFloorMaterial, setActiveFloorMaterial,
+    setTile, fillTiles, setTiles, placeDoorAt, getTileType, activeFloorMaterial, setActiveFloorMaterial,
     setMapName, setPublicName, setSecretDiscovered, resizeMap, clearMap, newMap,
     loadMapData, loadProjectData,
     generateMap, applyGeneratedRegion,

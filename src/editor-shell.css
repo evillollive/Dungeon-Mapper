@@ -106,6 +106,7 @@
 .editor-shell .tool-btn { font-size: var(--text-small); flex-wrap: wrap; }
 .focused-tool-material { position: sticky; top: -16px; z-index: 2; background: var(--surface-panel); padding: 12px 0; border-bottom: 1px solid var(--border); margin-bottom: 12px; }
 .focused-tool-material .active-material { margin-bottom: 8px; }
+.focused-tool-material .tool-hint { margin: 0 0 4px; font-size: 0.85rem; line-height: 1.35; color: var(--text-secondary, inherit); }
 .tool-discovery summary, .editing-objects summary { padding: 12px 0; min-height: 44px; cursor: pointer; font-size: var(--text-small); }
 .editing-objects { margin-bottom: 16px; }
 .editing-objects label, .asset-search { display: grid; gap: 8px; font-size: var(--text-small); margin-bottom: 12px; }

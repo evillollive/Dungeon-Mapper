@@ -165,6 +165,7 @@ interface MapCanvasProps {
   onSetTile: (x: number, y: number, type: TileType) => void;
   onSetTiles: (tiles: { x: number; y: number; type: TileType }[]) => void;
   onFillTile: (x: number, y: number, type: TileType) => void;
+  onPlaceDoor?: (x: number, y: number) => void;
   onAddNote: (x: number, y: number) => void;
   onSelectNote: (id: number | null) => void;
   onEraseTiles: (tiles: { x: number; y: number }[]) => void;
@@ -313,6 +314,8 @@ interface MapCanvasProps {
   onRemoveRoomShape?: (id: number) => void;
   /** Called when a room shape is selected or deselected for edge override editing. */
   onSelectRoomShape?: (id: number | null) => void;
+  /** Room whose resize handles respond without Alt. */
+  selectedRoomShapeId?: number | null;
 }
 
 export interface MapCanvasHandle {
@@ -1023,6 +1026,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
     onSetTile: commitTile,
     onSetTiles,
     onFillTile,
+    onPlaceDoor,
     onAddNote,
     onSelectNote,
     onEraseTiles,
@@ -1086,6 +1090,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
     onUpdateRoomShape,
     onRemoveRoomShape,
     onSelectRoomShape,
+    selectedRoomShapeId = null,
   } = props;
   const { map, cancel: cancelDraft, finish: finishDraft, paintCells, onSetTile, onMoveToken, onMoveStamp, onUpdateRiver } =
     useCanvasEditingDraft(sourceMap, { commitTile, onSetTiles, commitMoveToken, commitMoveStamp, commitUpdateRiver });
@@ -1118,6 +1123,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
   const [roomHoverId, setRoomHoverId] = useState<number | null>(null);
   // Polygon tool: accumulated vertices for the in-progress polygon.
   const [polyVertices, setPolyVertices] = useState<{ x: number; y: number }[]>([]);
+  const roomClickRef = useRef<number | null>(null);
   const roomEditSessionRef = useRef<{
     id: number;
     mode: RoomEditMode;
@@ -1475,8 +1481,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
       }
       drawRiverEndpointMarkers(ctx, rivers, tileSize, printMode);
 
-      if (!isPlayerView && roomShapes.length > 0 && isRoomTool(activeTool)) {
+      if (!isPlayerView && roomShapes.length > 0 && (isRoomTool(activeTool) || activeTool === 'door')) {
         const previewId = roomEditPreview?.id ?? null;
+        const doorTool = activeTool === 'door';
         const activeMode = activeTool === 'room-cut' ? 'subtractive' : 'additive';
         for (const shape of roomShapes) {
           if (shape.id === previewId) continue;
@@ -1487,9 +1494,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
             stroke: shape.id === roomHoverId
               ? (isSub ? '#f97316' : '#22d3ee')
               : (isSub ? '#ef4444' : '#38bdf8'),
-            fill: isSub ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
+            fill: doorTool ? 'rgba(0, 0, 0, 0)' : isSub ? 'rgba(239, 68, 68, 0.15)' : 'rgba(56, 189, 248, 0.15)',
             dashed: true,
-            showHandles: isActive,
+            showHandles: isActive && !doorTool,
           });
         }
         if (roomEditPreview) {
@@ -2366,9 +2373,11 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         const hit = findRiverAt(rivers, fc.x, fc.y);
         if (hit) onRemoveRiver?.(hit.id);
       }
+    } else if (activeTool === 'door') {
+      onPlaceDoor?.(x, y);
     }
   }, [
-    activeTool, activeTile, getTileCoords, onSetTile, onFillTile, onAddNote, onSelectNote,
+    activeTool, activeTile, getTileCoords, onSetTile, onFillTile, onPlaceDoor, onAddNote, onSelectNote,
     notes, selectedNoteId, isPlayerView, fogActive, fog, tokens, annotations,
     onAddToken, onRemoveToken, onRemoveAnnotation, meta.width, meta.height,
     onAddMarker, onRemoveMarker, markerShape, markerColor, markerSize, markers,
@@ -2587,8 +2596,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
       }
 
       if (coords && fc) {
+        // A plain drag always draws; Alt+drag moves any room. Handles resize the selected room.
         const handleHit = findRoomHandleAt(roomShapes, fc.x, fc.y, 0.35, activeMode);
-        if (handleHit) {
+        if (handleHit && (e.altKey || handleHit.shape.id === selectedRoomShapeId)) {
           pendingSelectionRef.current = () => onSelectRoomShape?.(handleHit.shape.id);
           roomEditSessionRef.current = {
             id: handleHit.shape.id,
@@ -2600,7 +2610,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
           return;
         }
         const hit = findRoomShapeAt(roomShapes, fc.x, fc.y, activeMode);
-        if (hit) {
+        roomClickRef.current = hit && !e.altKey ? hit.id : null;
+        if (hit && e.altKey) {
           pendingSelectionRef.current = () => onSelectRoomShape?.(hit.id);
           roomEditSessionRef.current = {
             id: hit.id,
@@ -2611,8 +2622,8 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
           setRoomEditPreview({ ...hit });
           return;
         }
-        // Clicked empty space — deselect.
-        onSelectRoomShape?.(null);
+        // Clicked empty space: deselect.
+        if (!hit) onSelectRoomShape?.(null);
       }
     }
 
@@ -2648,7 +2659,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         pendingActionRef.current = () => handleCanvasAction(point);
       }
     }
-  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens, notes, stamps, roomShapes, rivers, zoom, onSelectPlacedStamp, onSelectRoomShape, onSelectToken, onSelectNote, onSelectRiver, cancelGesture]);
+  }, [activeTool, getTileCoords, getFractionalCoords, handleCanvasAction, isFogDragTool, isPlayerView, tokens, notes, stamps, roomShapes, rivers, zoom, onSelectPlacedStamp, onSelectRoomShape, selectedRoomShapeId, onSelectToken, onSelectNote, onSelectRiver, cancelGesture]);
 
   const handleDoubleClick = useCallback((e: React.MouseEvent<HTMLCanvasElement>) => {
     // Polygon tool: double-click closes the polygon and creates the shape.
@@ -2959,6 +2970,10 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         });
         roomEditSessionRef.current = null;
         setRoomEditPreview(null);
+      } else if (!edit && roomClickRef.current !== null && dragStart && dragEnd &&
+        dragStart.x === dragEnd.x && dragStart.y === dragEnd.y) {
+        // A click without a drag on an existing room selects it instead of drawing a 1x1 room.
+        onSelectRoomShape?.(roomClickRef.current);
       } else if (!edit && isMouseDownRef.current && isDragging && dragStart && dragEnd) {
         const shape = normalizeRectRoomShape(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
         shape.fillTile = roomFillFor(activeTile);
@@ -2970,6 +2985,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         onAddRoomShape?.(shape);
       }
       roomEditSessionRef.current = null;
+      roomClickRef.current = null;
       setRoomEditPreview(null);
       isMouseDownRef.current = false;
       setIsDragging(false);
@@ -3079,7 +3095,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
     setIsDragging(false);
     setDragStart(null);
     setDragEnd(null);
-  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, roomEditPreview, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType, onAddWallSegment, onAddPathSegment, onAddRiver, onAddRoomShape, onUpdateRoomShape, cancelGesture, finishDraft, setSelection, paintCells]);
+  }, [activeTool, isDragging, dragStart, dragEnd, activeTile, onSetTiles, onSetFogCells, isFogDragTool, isPlayerView, activeStroke, defogStroke, roomEditPreview, onSelectRoomShape, onAddAnnotation, drawColor, drawWidth, gmDrawColor, gmDrawWidth, onUndo, onRedo, wallColor, wallThickness, pathColor, pathWidth, riverColor, riverWidth, riverType, onAddWallSegment, onAddPathSegment, onAddRiver, onAddRoomShape, onUpdateRoomShape, cancelGesture, finishDraft, setSelection, paintCells]);
 
   const handlePointerLeave = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (e.currentTarget.hasPointerCapture(e.pointerId)) return;
@@ -3218,6 +3234,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
     : activeTool === 'path-erase' ? 'not-allowed'
     : activeTool === 'river' ? 'crosshair'
     : activeTool === 'river-erase' ? 'not-allowed'
+    : activeTool === 'door' ? 'cell'
     : activeTool === 'room-rect' ? (roomEditPreview ? 'move' : 'crosshair')
     : activeTool === 'room-circle' ? (roomEditPreview ? 'move' : 'crosshair')
     : activeTool === 'room-poly' ? 'crosshair'

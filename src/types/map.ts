@@ -872,6 +872,8 @@ export type ToolType =
   | 'room-poly'
   // Subtractive room shape tool — drag to carve out additive room geometry.
   | 'room-cut'
+  // Door tool: click a wall cell to turn it into one door.
+  | 'door'
   // GM fog tools — reveal/hide drag-rectangles of cells.
   | 'reveal' | 'hide'
   // Freehand "wipe away the fog" brush — clears fog cell-by-cell as the

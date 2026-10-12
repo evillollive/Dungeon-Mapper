@@ -190,6 +190,12 @@ function RunSession({ initial }: { initial: SessionRecord }) {
       const context = target.getContext('2d');
       context?.drawImage(rendered, 0, 0);
       if (context) {
+        // Shade what players cannot see, using the same projection the player display gets.
+        const unknown = previewProjection.map.fog;
+        if (unknown) {
+          context.fillStyle = 'rgba(8, 6, 20, 0.62)';
+          unknown.forEach((row, y) => row.forEach((hidden, x) => { if (hidden) context.fillRect(x * size, y * size, size, size); }));
+        }
         context.strokeStyle = '#ff9569';
         context.lineWidth = Math.max(2, size / 16);
         context.strokeRect(cell.x * size, cell.y * size, size, size);
@@ -199,7 +205,7 @@ function RunSession({ initial }: { initial: SessionRecord }) {
     const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(draw);
     if (viewport) observer?.observe(viewport);
     return () => observer?.disconnect();
-  }, [map, project.customThemes, project.customStamps, cell, preview]);
+  }, [map, project.customThemes, project.customStamps, cell, preview, previewProjection]);
 
   const changeMap = (next: DungeonMap, retainHistory = true) => {
     if (disabled || locked.current) return;
@@ -338,7 +344,7 @@ function RunSession({ initial }: { initial: SessionRecord }) {
             <p role="status">{notice}</p>
           </section>
           <section className="session-map-panel" aria-label="Private DM map">
-            <div className="session-map-caption"><strong>{map.meta.name}</strong><span>DM ONLY / {map.meta.width} x {map.meta.height}</span></div>
+            <div className="session-map-caption"><strong>{map.meta.name}</strong><span>DM ONLY / {map.meta.width} x {map.meta.height} / Shaded cells are hidden from players</span></div>
             <div className="session-map-scroll" tabIndex={0} role="region" aria-label="DM map viewport">
               <div className="session-map-surface">
                 <canvas ref={canvas} aria-label={`Private DM map: ${map.meta.name}. Use cell controls for keyboard actions.`} role="img"

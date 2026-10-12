@@ -332,6 +332,47 @@ async function gestures(page) {
   return { mouseStroke: true, syntheticCancellation: ['pointercancel', 'blur'], keyboardEscape: true, polygonCompletion: true, firstTokenDrag: true };
 }
 
+async function drag(page, from, to, alt = false) {
+  const a = await point(page, ...from), b = await point(page, ...to);
+  if (alt) await page.keyboard.down('Alt');
+  await page.mouse.move(a.x, a.y);
+  await page.mouse.down();
+  await page.mouse.move(b.x, b.y, { steps: 8 });
+  await page.mouse.up();
+  if (alt) await page.keyboard.up('Alt');
+}
+
+async function roomsAndDoors(page) {
+  await create(page);
+  await closePanel(page);
+  await page.getByLabel('Active building tool').selectOption('room-rect');
+  await drag(page, [2, 2], [6, 7]);
+  await drag(page, [6, 2], [10, 7]);
+  let map = await currentMap(page);
+  assert.equal(map.roomShapes.length, 2, 'A drag starting on an existing room draws a new room');
+  assert.deepEqual(map.roomShapes.map(({ x, y }) => [x, y]), [[2, 2], [6, 2]]);
+  const second = await point(page, 8, 4);
+  await page.mouse.click(second.x, second.y);
+  assert.equal((await currentMap(page)).roomShapes.length, 2, 'A click on a room selects it instead of drawing');
+  await drag(page, [8, 4], [9, 4], true);
+  map = await currentMap(page);
+  assert.deepEqual(map.roomShapes.map(({ x }) => x), [2, 7], 'Alt+drag moves the room under the pointer');
+  await action(page, 'edit.undo').click();
+  await page.getByLabel('Active building tool').selectOption('door');
+  const wall = await point(page, 6, 4);
+  await page.mouse.click(wall.x, wall.y);
+  await page.getByText('Door placed at 6, 4.', { exact: true }).waitFor();
+  map = await currentMap(page);
+  assert.equal(map.tiles[4][6].type, 'door-v');
+  assert(map.roomShapes.some(shape => shape.edgeMergeOverrides?.some(o => o.mode === 'wall')), 'Shared wall is kept around the door');
+  const floor = await point(page, 4, 4);
+  await page.mouse.click(floor.x, floor.y);
+  await page.getByText('Click a wall to place a door there.', { exact: true }).waitFor();
+  await action(page, 'edit.undo').click();
+  assert.notEqual((await currentMap(page)).tiles[4][6].type, 'door-v', 'One undo removes the door');
+  return { plainDragDraws: true, clickSelects: true, altDragMoves: true, doorOnSharedWall: true, nonWallRejected: true };
+}
+
 async function viewportAndScope(page) {
   await create(page);
   await place(page, 'note');
@@ -526,6 +567,7 @@ export default [
   ['Editing: favorite persistence and isolated preference failure', favorites],
   ['Editing: overlapping region movement fill erase and bounds', regions],
   ['Editing: mouse cancellation polygon completion and first token drag', gestures],
+  ['Editing: room drag, Alt+drag move and door tool', roomsAndDoors],
   ['Editing: viewport continuity and selection draft scope', viewportAndScope],
   ['Editing: invalid fields and failed-save backup retry undo', failures],
   ...[1, 2].map(scale => [`Editing: keyboard inspector focus contrast and reflow at ${scale * 100}% text`,
