@@ -185,7 +185,8 @@ The acknowledgement then confirms that players will see the whole level.
 **Run** has reveal/hide, token movement, measurement, pings, encounter turns and
 session checkpoints. With **Reveal** or **Hide**, click one cell or drag across
 an area to change it in one undoable action; the cell fields apply one cell
-from the keyboard. Changes save in a separate session record; the authored
+from the keyboard. The private Run map shades cells that players cannot see,
+using the same projection as the player display. Changes save in a separate session record; the authored
 source map stays unchanged. **Inspect DM level** does not change the published
 level. **Show this level** does. **Pause / blank now** blanks the local display.
 
@@ -528,7 +529,8 @@ Once you spend a few minutes with Dungeon Mapper, shortcuts start doing a lot of
 | `M` | Measure / Distance tool - click and drag to measure distances |
 | `I` | Light Source tool - click a cell to place a light source (Illuminate) |
 | `D` | GM Draw tool - private freehand annotations, excluded from player outputs |
-| `Q` / `Shift+C` / `Shift+P` | Rectangle / ellipse / polygon room tools. Touching or overlapping rooms merge and keep their outer walls closed; a wall, door or empty material falls back to floor for the room fill. |
+| `Q` / `Shift+C` / `Shift+P` | Rectangle / ellipse / polygon room tools. A plain drag always draws a new room, even when it starts on an existing room; Alt (Option) + drag moves a room, and handles resize the selected room. Touching or overlapping rooms merge and keep their outer walls closed; a wall, door or empty material falls back to floor for the room fill. |
+| Door tool (Build > Tool) | Click a wall, or the line where two rooms meet, to place one door. Where rooms meet, that room edge becomes a wall again around the door. The selected door material sets locked, trapped or secret styles; orientation follows the wall. |
 | `W` | Wall drawing tool - draw walls along grid edges |
 | `Shift+W` | Path/road drawing tool - draw free-form paths |
 | `U` | River tool - drag to draw flowing water |

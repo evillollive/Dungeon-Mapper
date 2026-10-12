@@ -6,6 +6,8 @@ import { floodFill } from '../utils/mapUtils';
 import { updateActiveLevel } from './mapStateUtils';
 import { FOLIO_THEME_ID } from '../themes/folio-v1/art';
 import { isConnectedFloorGround } from '../utils/floorMaterials';
+import { placeDoor } from '../utils/doorPlacement';
+import { clearDerivedDiscovery } from '../utils/secretDiscovery';
 
 export function useTileEditing(
   map: DungeonMap,
@@ -54,8 +56,28 @@ export function useTileEditing(
     });
   }, [activeFloorMaterial, setProject, debouncedSave, activeLevelIndex, pushHistory]);
 
+  /** Returns null when a door was placed, otherwise a reason to show the user. */
+  const placeDoorAt = useCallback((x: number, y: number, activeTile: TileType): string | null => {
+    const preview = placeDoor(map, x, y, activeTile);
+    if (!preview.ok) return preview.reason;
+    setProject(prev => {
+      const previous = prev.levels[activeLevelIndex];
+      const result = placeDoor(previous, x, y, activeTile);
+      if (!result.ok) return prev;
+      pushHistory(previous, activeLevelIndex);
+      const updated = updateActiveLevel(prev, activeLevelIndex, level => ({
+        ...level,
+        tiles: result.roomShapes ? clearDerivedDiscovery(result.tiles) : result.tiles,
+        ...(result.roomShapes ? { roomShapes: result.roomShapes } : {}),
+      }));
+      debouncedSave(updated);
+      return updated;
+    });
+    return null;
+  }, [map, setProject, debouncedSave, activeLevelIndex, pushHistory]);
+
   const getTileType = useCallback((x: number, y: number): TileType | null =>
     map.tiles[y]?.[x]?.type ?? null, [map.tiles]);
 
-  return { setTile, setTiles, fillTiles, getTileType, activeFloorMaterial, setActiveFloorMaterial };
+  return { setTile, setTiles, fillTiles, placeDoorAt, getTileType, activeFloorMaterial, setActiveFloorMaterial };
 }

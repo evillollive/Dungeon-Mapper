@@ -95,11 +95,19 @@ const TOOLS: { id: ToolType; label: string; shortcut: string; icon: string }[] =
   { id: 'room-circle', label: 'Room Circle', shortcut: 'Shift+C', icon: '⭕' },
   { id: 'room-poly', label: 'Room Poly',  shortcut: 'Shift+P', icon: '🔷' },
   { id: 'room-cut',   label: 'Room Cut',    shortcut: 'Shift+Q', icon: '✂️' },
+  { id: 'door',       label: 'Door',        shortcut: '', icon: '🚪' },
   { id: 'select',     label: 'Select',      shortcut: 'S', icon: '⬜' },
   { id: 'wall',       label: 'Wall',        shortcut: 'W', icon: '🧱' },
   { id: 'path',       label: 'Path',        shortcut: 'Shift+W', icon: '🛤️' },
   { id: 'river',      label: 'River',       shortcut: 'U', icon: '🌊' },
 ];
+
+const ROOM_HINT = 'Drag to draw a room. Rooms that touch merge into one space. Alt (Option) + drag moves a room.';
+const TOOL_HINTS: Partial<Record<ToolType, string>> = {
+  'room-rect': `${ROOM_HINT} To divide touching rooms, use the Door tool where they meet.`,
+  'room-circle': ROOM_HINT,
+  door: 'Click a wall, or the line where two rooms meet, to place one door. The wall around it stays. Choose a door material for locked, trapped or secret doors.',
+};
 
 function TilePreview({
   type,
@@ -187,7 +195,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
       <label className="active-material">Tool
         <select aria-label="Active building tool" value={TOOLS.some(t => t.id === activeTool) ? activeTool : ''} onChange={e => onSetTool(e.target.value as ToolType)}>
           <option value="" disabled>Choose a building tool</option>
-          {TOOLS.filter(t => t.id !== 'note').map(t => <option key={t.id} value={t.id}>{t.label} ({t.shortcut})</option>)}
+          {TOOLS.filter(t => t.id !== 'note').map(t => <option key={t.id} value={t.id}>{t.shortcut ? `${t.label} (${t.shortcut})` : t.label}</option>)}
         </select>
       </label>
       <label className="active-material">Material
@@ -195,6 +203,7 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
           {paletteTiles.map(tile => <option key={tile} value={tile}>{tileLabel(tile)}</option>)}
         </select>
       </label>
+      {TOOL_HINTS[activeTool] && <p className="tool-hint" role="note">{TOOL_HINTS[activeTool]}</p>}
       </div>
       {themeId === FOLIO_MANIFEST.themeId && activeTile === 'floor' && onSetFloorMaterial &&
         <FloorMaterialPicker value={activeFloorMaterial} onChange={onSetFloorMaterial} />}
@@ -209,13 +218,15 @@ const DrawToolsTab: React.FC<DrawToolsTabProps> = ({
             type="button"
             className={`tool-btn ${activeTool === tool.id ? 'active' : ''}`}
             onClick={() => onSetTool(tool.id)}
-            title={`${tool.label} [${tool.shortcut}]`}
+            title={tool.id === 'door' ? 'Door: click a wall to place one door. Uses the selected door style.'
+              : tool.id === 'room-rect' ? 'Room Rect [Q]: drag to draw. Alt (Option) + drag moves a room.'
+              : `${tool.label} [${tool.shortcut}]`}
             aria-label={`${tool.label} tool`}
             aria-pressed={activeTool === tool.id}
-            aria-keyshortcuts={tool.shortcut}
+            aria-keyshortcuts={tool.shortcut || undefined}
           >
             <span className="tool-name">{tool.label}</span>
-            <span className="tool-shortcut" aria-hidden="true">[{tool.shortcut}]</span>
+            {tool.shortcut && <span className="tool-shortcut" aria-hidden="true">[{tool.shortcut}]</span>}
           </button>
         ))}
       </div>

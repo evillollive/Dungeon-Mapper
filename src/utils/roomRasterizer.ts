@@ -622,6 +622,25 @@ function getOpposingEdge(cx: number, cy: number, shape: RoomShape): RoomEdge | n
 }
 
 /**
+ * Find an additive room whose perimeter passes through a cell that lies inside another
+ * additive room, i.e. a wall position the merge pass may dissolve.
+ */
+export function sharedBoundaryAt(
+  cx: number,
+  cy: number,
+  roomShapes: readonly RoomShape[],
+): { shapeId: number; edge: RoomEdge } | null {
+  const additive = roomShapes.filter(s => (s.mode ?? 'additive') === 'additive');
+  for (const shape of additive) {
+    if (!cellInsideShape(cx, cy, shape) || cellInteriorShape(cx, cy, shape)) continue;
+    const edge = getOpposingEdge(cx, cy, shape);
+    if (!edge) continue;
+    if (additive.some(other => other !== shape && cellInsideShape(cx, cy, other))) return { shapeId: shape.id, edge };
+  }
+  return null;
+}
+
+/**
  * Get the merge mode for a specific edge of a shape.
  */
 function getEdgeMergeMode(shape: RoomShape, edge: RoomEdge): EdgeMergeMode {

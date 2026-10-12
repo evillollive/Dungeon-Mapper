@@ -6,7 +6,7 @@ export const EDITOR_PANELS = ['build', 'decorate', 'look', 'levels', 'tactical',
 export type EditorPanel = typeof EDITOR_PANELS[number];
 export type ActionId = BindingId | `panel.${EditorPanel}` | `theme.${string}`
   | 'tool.stamp' | 'tool.move-stamp' | 'tool.remove-stamp'
-  | 'tool.wall-erase' | 'tool.path-erase' | 'tool.river-erase'
+  | 'tool.wall-erase' | 'tool.path-erase' | 'tool.river-erase' | 'tool.door'
   | 'file.library' | 'file.samples' | 'file.clear' | 'file.recovery'
   | 'dialog.settings' | 'dialog.templates' | 'dialog.customTheme' | 'dialog.export'
   | 'dialog.audience' | 'view.playerPreview' | 'file.playerPng' | 'file.playerSvg' | 'session.prepare';
@@ -25,7 +25,7 @@ export const TOOL_ACTIONS: Record<ToolType, ActionId> = {
   'remove-light': 'tool.removeLight', pdraw: 'tool.pdraw', perase: 'tool.perase',
   defog: 'tool.defog', stamp: 'tool.stamp', 'move-stamp': 'tool.move-stamp',
   'remove-stamp': 'tool.remove-stamp', 'wall-erase': 'tool.wall-erase',
-  'path-erase': 'tool.path-erase', 'river-erase': 'tool.river-erase',
+  'path-erase': 'tool.path-erase', 'river-erase': 'tool.river-erase', door: 'tool.door',
 };
 
 const DM_ONLY = new Set<ActionId>(['tool.pdraw', 'tool.perase', 'tool.defog']);

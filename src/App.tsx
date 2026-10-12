@@ -131,6 +131,7 @@ function App() {
     activeLevelIndex,
     setTile,
     fillTiles,
+    placeDoorAt,
     setTiles,
     activeFloorMaterial, setActiveFloorMaterial,
     setMapName,
@@ -893,7 +894,7 @@ function App() {
       id: `theme.${theme.id}` as const, label: `Theme: ${theme.name}`,
       action: () => handleSetTheme(theme.id, preserveOnThemeSwitch),
     })),
-    ...(['stamp', 'move-stamp', 'remove-stamp', 'wall-erase', 'path-erase', 'river-erase'] as const).map(tool => ({
+    ...(['stamp', 'move-stamp', 'remove-stamp', 'wall-erase', 'path-erase', 'river-erase', 'door'] as const).map(tool => ({
       id: TOOL_ACTIONS[tool], label: tool.replaceAll('-', ' '), action: () => handleSetActiveTool(tool),
     })),
     { id: 'file.library', label: 'Your maps', action: () => setLibraryView(true) },
@@ -1323,6 +1324,10 @@ function App() {
             onSetTile={setTile}
             onSetTiles={setTiles}
             onFillTile={fillTiles}
+            onPlaceDoor={(x, y) => {
+              const problem = placeDoorAt(x, y, activeTile);
+              announce(problem ?? `Door placed at ${x}, ${y}.`);
+            }}
             onAddNote={(x, y) => setSelectedNoteId(addNote(x, y))}
             onSelectNote={setSelectedNoteId}
             onEraseTiles={handleEraseTiles}
@@ -1378,6 +1383,7 @@ function App() {
             onUpdateRoomShape={updateRoomShape}
             onRemoveRoomShape={removeRoomShape}
             onSelectRoomShape={setSelectedRoomShapeId}
+            selectedRoomShapeId={selectedRoomShapeId}
             stairLinks={activeStairLinks}
             stairLinkSource={activeTool === 'link-stair' ? stairLinkSource : null}
             onStairLinkClick={handleStairLinkClick}
