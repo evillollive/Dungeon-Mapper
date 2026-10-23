@@ -6,6 +6,8 @@
 
 **Status, updated September 29, 2026:** UX-00 prototype accepted with participant research deferred. UX-01 through UX-06 and UX-08 are merged. UX-07's initial-release digital artwork is implemented and owner-approved, with technical evidence and physical-paper acceptance tracked separately in the [art closeout ledger](#initial-release-art-closeout). UX-09 is split into [early-access closure, device qualification and observed usability](#release-milestones-and-ownership). Desktop-first early access includes physical printing; its release gates remain open. Full release qualification and participant usability acceptance are not claimed.
 
+**Update, October 22, 2026:** Editing-workflow changes landed after the ledger below was last revised (#187 safer print/image audience defaults and fog-off warning, #188 room merge walls, fill guard, Run drag reveal and blank Create map, #189 door tool, Alt+drag room move and Run fog shading); their effect on A-EDIT and A-DOCS has not been re-assessed. Hosted CI is no longer assumed to be budget-blocked: October usage was 1,443 of 2,000 included Linux minutes on October 22, and each CI run uses about 40-45 job minutes, so the "zero budget" wording in the ledger rows below is stale. Hosted CI runs for #187-#189 passed on `main`. Any exact-head hosted receipt still describes only that revision; A-PRINT, A-PERF, final-candidate scope and release approval remain open.
+
 **Audience:** Future product, design, development, art, and QA sessions.
 
 **Immediate release focus, October 1, 2026:** Prioritize an updated desktop
