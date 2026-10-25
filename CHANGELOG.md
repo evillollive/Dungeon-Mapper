@@ -4,6 +4,12 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [Version 0.5 alpha] - 2026-10-24
+
+Early-access alpha. Physical-paper print qualification, hosted device/browser qualification and the UX-09 items remain open (see the README and UX-09 handoff); known low-impact issues are documented there.
+
+Highlights: original token, icon, stair and first-use artwork; authored launch encounters; creator-sharing packages (local only, no GitHub upload); safer export cancellation and failed-startup recovery; reliable token placement and drag previews.
+
 ### Added
 - A local fake-publication engine with create-only branches, exact package readback, unrelated-file preservation and SQLite metadata-only restart receipts. With an explicit local journal, authenticated browser simulation adds confirmation, account-bound progress, cancellation and read-only recovery. Lost responses never trigger automatic repeat writes. Real GitHub publication remains disabled.
 - Browser-local creator ZIP review, destination planning and separately consented loopback server validation in the publisher prototype. A bounded native Node child independently checks package contents and images, with session/digest/base binding and cancellation. No remote upload, real GitHub access or branch writes.
