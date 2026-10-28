@@ -70,6 +70,35 @@ describe('MapCanvas render performance', () => {
     expect(getContextSpy).toHaveBeenCalledTimes(2);
   });
 
+  it('batches adjacent dynamic fog cells into horizontal fills', () => {
+    const props = mapCanvasProps();
+    const width = 4;
+    const height = 3;
+    const tileSize = 32;
+    props.map.meta = { ...props.map.meta, width, height, tileSize };
+    props.map.tiles = Array.from({ length: height }, () =>
+      Array.from({ length: width }, () => ({ type: 'empty' as const })));
+    props.map.fog = Array.from({ length: height }, () => Array.from({ length: width }, () => true));
+    props.explored = [
+      [true, true, true, true],
+      [true, true, false, false],
+      [false, false, false, false],
+    ];
+    props.dynamicFogEnabled = true;
+    props.playerVisible = new Set();
+    const context = document.createElement('canvas').getContext('2d');
+    expect(context).not.toBeNull();
+    const fillRect = vi.spyOn(context!, 'fillRect');
+
+    render(<MapCanvas {...props} />);
+
+    const fogRuns = fillRect.mock.calls.filter(([, , fillWidth, fillHeight]) =>
+      fillHeight === tileSize && fillWidth > 0 && fillWidth <= width * tileSize &&
+      fillWidth % tileSize === 0);
+    expect(fogRuns).toHaveLength(4);
+    expect(fogRuns.map(([, , fillWidth]) => fillWidth / tileSize)).toEqual([4, 2, 2, 4]);
+  });
+
   it('resets the complete main canvas for token edits in the formerly eligible Folio scene', () => {
     const width = vi.spyOn(HTMLCanvasElement.prototype, 'width', 'set');
     const props = mapCanvasProps();
