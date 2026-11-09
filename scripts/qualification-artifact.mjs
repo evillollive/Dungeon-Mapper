@@ -30,7 +30,7 @@ export function environmentIdentity(env = process.env) {
   return identity({
     repository: env.GITHUB_REPOSITORY, repositoryId: env.GITHUB_REPOSITORY_ID,
     source: env.GITHUB_SHA, event: env.GITHUB_EVENT_NAME, ref: env.GITHUB_REF,
-    runId: env.GITHUB_RUN_ID, runAttempt: env.GITHUB_RUN_ATTEMPT,
+    runId: env.GITHUB_RUN_ID, runAttempt: env.QUALIFICATION_RUN_ATTEMPT ?? env.GITHUB_RUN_ATTEMPT,
   });
 }
 
@@ -217,7 +217,7 @@ async function main() {
     });
     assert(process.env.GITHUB_OUTPUT, 'Missing GitHub step output path');
     await appendFile(process.env.GITHUB_OUTPUT,
-      `source-sha=${expected.source}\nmanifest-sha256=${result.manifestSha256}\n`);
+      `source-sha=${expected.source}\nrun-attempt=${expected.runAttempt}\nmanifest-sha256=${result.manifestSha256}\n`);
   } else if (command === 'materialize') {
     assert(bundleOrSource && destination, 'Usage: materialize BUNDLE NEW_DIST_DIRECTORY');
     await materialize(bundleOrSource, destination, expected, expectedHash, lockfile);

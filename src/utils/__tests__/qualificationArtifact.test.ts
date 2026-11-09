@@ -123,6 +123,18 @@ describe('canonical qualification artifacts', () => {
       GITHUB_RUN_ID: identity.runId, GITHUB_RUN_ATTEMPT: identity.runAttempt,
     })).toEqual(identity);
   });
+
+  it('uses the canonical build attempt when a rerun consumes its artifact', async () => {
+    const f = await built();
+    const rerunIdentity = environmentIdentity({
+      GITHUB_REPOSITORY: identity.repository, GITHUB_REPOSITORY_ID: identity.repositoryId,
+      GITHUB_SHA: identity.source, GITHUB_EVENT_NAME: identity.event, GITHUB_REF: identity.ref,
+      GITHUB_RUN_ID: identity.runId, GITHUB_RUN_ATTEMPT: '2',
+      QUALIFICATION_RUN_ATTEMPT: identity.runAttempt,
+    });
+    expect(rerunIdentity).toEqual(identity);
+    await expect(verifyBundle(f.bundle, rerunIdentity, f.manifestSha256, f.lockfile)).resolves.toEqual(f.manifest);
+  });
 });
 
 describe('publication admission and smoke outcomes', () => {
@@ -229,6 +241,7 @@ describe('qualification CLI', () => {
     expect(create.status, create.stderr).toBe(0);
     const outputs = await readFile(output, 'utf8');
     const manifestHash = outputs.match(/manifest-sha256=([a-f0-9]+)/)![1];
+    expect(outputs).toContain(`run-attempt=${identity.runAttempt}`);
     const verifyEnv = { ...env, EXPECTED_MANIFEST_SHA256: manifestHash };
     const run = (...args: string[]) => spawnSync(process.execPath, [script, ...args], { cwd: f.root, env: verifyEnv, encoding: 'utf8' });
     expect(run('verify', f.bundle).status).toBe(0);

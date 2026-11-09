@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+- Batch adjacent dynamic-fog cells into horizontal canvas fills to reduce draw calls on dense maps.
+
 ## [Version 0.5 alpha] - 2026-10-24
 
 Early-access alpha. Physical-paper print qualification, hosted device/browser qualification and the UX-09 items remain open (see the README and UX-09 handoff); known low-impact issues are documented there.

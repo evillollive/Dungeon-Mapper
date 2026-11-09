@@ -1605,35 +1605,27 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
           const exploredFill = printMode ? printFogFill(isPlayerView ? 'player' : 'gm', true) : isPlayerView ? EXPLORED_PLAYER_FILL : EXPLORED_GM_FILL;
           const hiddenFill = printMode ? printFogFill(isPlayerView ? 'player' : 'gm') : isPlayerView ? FOG_PLAYER_FILL : FOG_GM_FILL;
 
-          // Pass 1: explored (dimmed) cells.
           ctx.save();
-          ctx.fillStyle = exploredFill;
           for (let y = 0; y < meta.height; y++) {
+            let runStart: number | null = null;
+            let runIsExplored: boolean | null = null;
+            const flushRun = (endX: number) => {
+              if (runStart === null || runIsExplored === null) return;
+              ctx.fillStyle = runIsExplored ? exploredFill : hiddenFill;
+              ctx.fillRect(runStart * tileSize, y * tileSize, (endX - runStart) * tileSize, tileSize);
+            };
             for (let x = 0; x < meta.width; x++) {
-              if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
-              if (!fog[y]?.[x]) continue;
-              if (playerVisible.has(`${x},${y}`)) continue;
-              if (lightVisible?.has(`${x},${y}`)) continue;
-              if (explored?.[y]?.[x]) {
-                ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
+              const key = `${x},${y}`;
+              const isFogged = fog[y]?.[x] && !defogSkip?.has(key) &&
+                !playerVisible.has(key) && !lightVisible?.has(key);
+              const isExplored = isFogged ? !!explored?.[y]?.[x] : null;
+              if (isExplored !== runIsExplored) {
+                flushRun(x);
+                runStart = isExplored === null ? null : x;
+                runIsExplored = isExplored;
               }
             }
-          }
-          ctx.restore();
-
-          // Pass 2: fully hidden (never-seen) cells.
-          ctx.save();
-          ctx.fillStyle = hiddenFill;
-          for (let y = 0; y < meta.height; y++) {
-            for (let x = 0; x < meta.width; x++) {
-              if (defogSkip && defogSkip.has(`${x},${y}`)) continue;
-              if (!fog[y]?.[x]) continue;
-              if (playerVisible.has(`${x},${y}`)) continue;
-              if (lightVisible?.has(`${x},${y}`)) continue;
-              if (!(explored?.[y]?.[x])) {
-                ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-              }
-            }
+            flushRun(meta.width);
           }
           ctx.restore();
         } else {
