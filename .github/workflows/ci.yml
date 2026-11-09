@@ -20,6 +20,7 @@ jobs:
       cancel-in-progress: true
     outputs:
       source-sha: ${{ steps.bundle.outputs.source-sha }}
+      run-attempt: ${{ steps.bundle.outputs.run-attempt }}
       manifest-sha256: ${{ steps.bundle.outputs.manifest-sha256 }}
       artifact-id: ${{ steps.upload.outputs.artifact-id }}
     steps:
@@ -63,6 +64,7 @@ jobs:
       QA_ENGINES: ${{ matrix.engine }}
       EXPECTED_MANIFEST_SHA256: ${{ needs.build-and-test.outputs.manifest-sha256 }}
       CANONICAL_ARTIFACT_ID: ${{ needs.build-and-test.outputs.artifact-id }}
+      QUALIFICATION_RUN_ATTEMPT: ${{ needs.build-and-test.outputs.run-attempt }}
     steps:
       - uses: actions/checkout@v5
         with:
