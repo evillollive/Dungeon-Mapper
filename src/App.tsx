@@ -571,7 +571,7 @@ function App() {
     setViewMode(prev => {
       const next: ViewMode = prev === 'gm' ? 'player' : 'gm';
       handleSetActiveTool(next === 'player' ? 'pdraw' : 'paint');
-      announce(next === 'player' ? 'DM view. Fog-aware local view, not a player-safe display.' : 'Switched to Edit mode');
+      announce(next === 'player' ? 'Fog setup. Fog changes here are saved to the map, and this is not a player-safe display.' : 'Switched to Edit mode');
       try {
         window.localStorage.setItem(VIEW_MODE_STORAGE_KEY, next);
       } catch {
@@ -1103,7 +1103,7 @@ function App() {
         <SaveHealth key={projectId} projectId={projectId} onRefreshCheckpoints={refreshCheckpoints} state={saveState} project={project} onRetry={retrySave} original={originalStoredData} onRecover={recoverProjectData} />
         {showSaveDetails && <button type="button" onClick={() => { setShowSaveDetails(false); document.querySelector<HTMLElement>('[data-action="file.recovery"]')?.focus(); }}>Close save details</button>}
       </div>}
-      {viewMode === 'player' && <p className="mode-notice">DM view: fog-aware local controls. Not a player-safe display. Notes and exports may contain private content.</p>}
+      {viewMode === 'player' && <p className="mode-notice">Fog setup: choose what players start out seeing. Changes here are saved to the map itself; to play, use Prepare session and Run. Not a player-safe display. Notes and exports may contain private content.</p>}
       <LevelTabs
         levels={project.levels}
         activeIndex={activeLevelIndex}
@@ -1266,7 +1266,7 @@ function App() {
             )}
           </nav>
         ) : (
-          <nav aria-label="DM view tools" className={toolbarCollapsed ? 'nav-collapsed' : ''}>
+          <nav aria-label="Fog setup tools" className={toolbarCollapsed ? 'nav-collapsed' : ''}>
             <button
               type="button"
               className="panel-toggle toolbar-toggle"
@@ -1463,7 +1463,7 @@ function App() {
           </ContextPanel>
         )}
         {viewMode === 'player' && rightPanelOpen && (
-          <aside className="right-panel context-panel" aria-label="DM view information">
+          <aside className="right-panel context-panel" aria-label="Fog setup information">
             <button type="button" onClick={() => { setRightPanelOpen(false); document.getElementById('dm-canvas-area')?.focus(); }}>Close panel</button>
             {activePanel === 'encounter' && <InitiativePanel
               // Hide tokens whose footprint touches any fogged cell from
@@ -1515,7 +1515,7 @@ function App() {
         )}
       </div>
       <footer className="editor-statusbar">
-        <span><strong>{viewMode === 'gm' ? 'Edit' : 'DM view'}</strong> / {activeTool.replaceAll('-', ' ')}</span>
+        <span><strong>{viewMode === 'gm' ? 'Edit' : 'Fog setup'}</strong> / {activeTool.replaceAll('-', ' ')}</span>
         <span>{map.meta.width} x {map.meta.height} tiles</span>
         <ActionButton id="edit.undo" icon="undo">Undo</ActionButton>
         <ActionButton id="edit.redo" icon="redo">Redo</ActionButton>

@@ -75,7 +75,7 @@ export default async function shell(page, { output, engine }) {
   await page.keyboard.press('Shift+V');
   assert(await page.getByText(/Not a player-safe display/).isVisible());
   await page.keyboard.press('p');
-  assert(await page.locator('.editor-statusbar').innerText().then(text => text.includes('DM view / pdraw')));
+  assert(await page.locator('.editor-statusbar').innerText().then(text => text.includes('Fog setup / pdraw')));
   await page.keyboard.press('b');
   await command('help.commandPalette').click();
   await page.getByRole('combobox', { name: 'Search commands' }).fill('Paint tool');

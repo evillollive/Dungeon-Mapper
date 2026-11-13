@@ -91,7 +91,7 @@ export interface ActionState {
 export type ExtraAction = Pick<EditorAction, 'id' | 'label' | 'action'>;
 
 const LABELS: Partial<Record<ActionId, string>> = {
-  'view.viewMode': 'Toggle Edit / DM view',
+  'view.viewMode': 'Toggle Edit / Fog setup',
   'file.new': 'Create map',
   'file.open': 'Import project JSON',
   'file.exportJson': 'Export editable backup (includes DM content)',
@@ -133,7 +133,7 @@ export function buildEditorActions(bindings: KeyBinding[], extras: ExtraAction[]
   return inputs.map(item => {
     const mode = actionMode(item.id);
     let unavailableReason = mode !== 'both' && mode !== state.viewMode
-      ? `Available in ${mode === 'gm' ? 'Edit' : 'DM view'}` : undefined;
+      ? `Available in ${mode === 'gm' ? 'Edit' : 'Fog setup'}` : undefined;
     if (item.id === 'edit.undo' && !state.canUndo) unavailableReason = 'No action to undo';
     if (item.id === 'edit.redo' && !state.canRedo) unavailableReason = 'No action to redo';
     if (['edit.copy', 'edit.cut'].includes(item.id) && !state.hasSelection) unavailableReason = 'Select a region first';

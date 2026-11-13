@@ -37,7 +37,7 @@ Use the hosted app if you just want to make a map:
 1. Open the [app](https://evilolive.com/Dungeon-Mapper/). The overview introduces **Create > Prepare > Run or export**. Choose **Explore a sample** to open the sample chooser, or use **Your maps** to create, import or continue a project. Collapse the overview when you no longer need it; this browser remembers your choice, and **Overview** brings it back.
 2. Choose a starting point, preview it, then select **Use this map**. Samples and imports become separate editable projects.
 3. Use **Build**, **Decorate** and **Look** to edit. Open **Project menu > Project settings** for dimensions and interface text size. Wait for **Saved on this device**.
-4. Review **Player preview**, including public note fields, hidden tokens and fog. The editor and legacy **DM view** are trusted DM surfaces, not player displays.
+4. Review **Player preview**, including public note fields, hidden tokens and fog. The editor and **Fog setup** are trusted DM surfaces, not player displays.
 5. Choose **Prepare session**, review visibility and acknowledge the checklist, then **Start session**. Run saves progress separately from the source project.
 6. Choose **Open player display** for a second window in the same browser, then **Show this level**. Use **Pause / blank now** to blank it. This is not a remote share link.
 7. Use **Export > Back up project** for private editable JSON or **Share with players** for an audience-filtered PNG/SVG. Before leaving Run, save/end or leave the session for later resumption.
