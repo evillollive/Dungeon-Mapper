@@ -82,6 +82,66 @@ describe('canvas gesture commit boundaries', () => {
     expect(first).not.toHaveBeenCalled();
     expect(latest).toHaveBeenCalledExactlyOnceWith(null);
   });
+  describe('select tool over objects', () => {
+    const objects = () => {
+      const p = {
+        ...props(), activeTool: 'select' as const, onSelectionChange: vi.fn(), onSelectToken: vi.fn(),
+        onSelectPlacedStamp: vi.fn(), onSelectRiver: vi.fn(), onSelectRoomShape: vi.fn(),
+      };
+      p.map.roomShapes = [{ id: 7, x: 2, y: 2, width: 4, height: 3 }];
+      p.map.tokens = [{ id: 3, x: 10, y: 2, kind: 'player', label: 'A' }];
+      p.map.notes = [{ id: 4, x: 12, y: 2, label: 'Note', description: '' }];
+      p.map.stamps = [{ id: 5, stampId: 'unknown-test', x: 14, y: 2, rotation: 0, scale: 1, opacity: 1, flipX: false, flipY: false }];
+      p.map.rivers = [{ id: 6, controlPoints: [{ x: 16.25, y: 2.25 }, { x: 16.25, y: 8 }], width: 1, type: 'water', flowDirection: 90 }];
+      return p;
+    };
+    const objectCallbacks = (p: ReturnType<typeof objects>) =>
+      [p.onSelectRoomShape, p.onSelectToken, p.onSelectNote, p.onSelectPlacedStamp, p.onSelectRiver];
+    it.each([
+      ['room', 2, 2], ['token', 10, 2], ['note', 12, 2], ['stamp', 14, 2], ['river', 16, 2],
+    ] as const)('selects a tile region when a drag starts on a %s', (_kind, x, y) => {
+      const p = objects();
+      render(<MapCanvas {...p} />);
+      const canvas = screen.getByRole('application');
+      pointer(canvas, 'pointerdown', x, y);
+      pointer(canvas, 'pointermove', x + 3, y + 2);
+      pointer(canvas, 'pointerup', x + 3, y + 2);
+      expect(p.onSelectionChange).toHaveBeenCalledExactlyOnceWith({ x, y, w: 4, h: 3 });
+      for (const callback of objectCallbacks(p)) expect(callback).not.toHaveBeenCalled();
+    });
+    it('selects a region that covers a whole room when the drag starts outside it', () => {
+      const p = objects();
+      render(<MapCanvas {...p} />);
+      const canvas = screen.getByRole('application');
+      pointer(canvas, 'pointerdown', 1, 1);
+      pointer(canvas, 'pointermove', 6, 5);
+      pointer(canvas, 'pointerup', 6, 5);
+      expect(p.onSelectionChange).toHaveBeenCalledExactlyOnceWith({ x: 1, y: 1, w: 6, h: 5 });
+      expect(p.onSelectRoomShape).not.toHaveBeenCalled();
+    });
+    it.each([
+      ['room', 3, 3, 7, 0], ['token', 10, 2, 3, 1], ['note', 12, 2, 4, 2], ['stamp', 14, 2, 5, 3], ['river', 16, 2, 6, 4],
+    ] as const)('still selects a %s on a click without a drag', (_kind, x, y, id, index) => {
+      const p = objects();
+      render(<MapCanvas {...p} />);
+      const canvas = screen.getByRole('application');
+      pointer(canvas, 'pointerdown', x, y);
+      pointer(canvas, 'pointermove', x + 0.2, y + 0.2);
+      pointer(canvas, 'pointerup', x + 0.2, y + 0.2);
+      expect(objectCallbacks(p)[index]).toHaveBeenCalledExactlyOnceWith(id);
+      expect(p.onSelectionChange).not.toHaveBeenCalled();
+    });
+    it('does not select an object when the gesture is cancelled', () => {
+      const p = objects();
+      render(<MapCanvas {...p} />);
+      const canvas = screen.getByRole('application');
+      pointer(canvas, 'pointerdown', 3, 3);
+      pointer(canvas, 'pointercancel', 3, 3);
+      pointer(canvas, 'pointerup', 3, 3);
+      expect(p.onSelectRoomShape).not.toHaveBeenCalled();
+      expect(p.onSelectionChange).not.toHaveBeenCalled();
+    });
+  });
   it.each(['mouse', 'touch', 'pen'])('groups a %s paint stroke and interpolates skipped cells', type => {
     const p = props();
     render(<MapCanvas {...p} />);

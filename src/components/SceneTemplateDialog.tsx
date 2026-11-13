@@ -94,7 +94,7 @@ const SceneTemplateDialog: React.FC<SceneTemplateDialogProps> = ({
             </div>
           ) : (
             <div style={{ fontSize: '0.75rem', opacity: 0.65 }}>
-              Use the Select tool to choose a region, then open this dialog to save it as a template.
+              Drag across the map with the Select tool to choose a region, then open this dialog to save it as a template.
             </div>
           )}
         </div>
