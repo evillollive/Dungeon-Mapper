@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+- Run now has measure shapes (circle, cone, line), line of sight, area markers, a defog brush and a dynamic fog switch, so a GM no longer leaves the session for them. Measurements and line of sight stay on the private Run map; markers and fog changes are undoable session actions that go through the player projection. DM view is unchanged (#194).
 - Batch adjacent dynamic-fog cells into horizontal canvas fills to reduce draw calls on dense maps.
 
 ## [Version 0.5 alpha] - 2026-10-24

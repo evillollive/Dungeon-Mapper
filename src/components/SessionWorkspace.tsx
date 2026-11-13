@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from 'react';
-import type { DungeonMap } from '../types/map';
+import { MARKER_COLORS, MARKER_SHAPES, MARKER_SHAPE_LABELS, MEASURE_SHAPES, MEASURE_SHAPE_LABELS,
+  type DungeonMap, type MarkerShape, type MeasureShape } from '../types/map';
 import { loadProject } from '../utils/projectRepository';
 import { downloadRecoveryData, readRecord, type LoadedProject } from '../utils/storage';
 import { endSession, listSessions, loadSession, MAX_SESSION_CHECKPOINTS, newSession, saveSession,
@@ -10,6 +11,8 @@ import { useLocalDisplay } from '../hooks/useLocalDisplay';
 import { deriveRenderableTiles } from '../utils/derivedRenderMap';
 import { computePlayerFOV, mergeExplored } from '../utils/dynamicFog';
 import { computeLightVisible } from '../utils/lightSources';
+import { computeFOV } from '../utils/fov';
+import { cellsPath, extendStroke, key, markerAtCell, measureBetween, measurePath } from '../utils/sessionTableTools';
 import PlayerPreview from './PlayerPreview';
 import Icon from './Icon';
 import FirstUseIllustration from './FirstUseIllustration';
@@ -21,6 +24,26 @@ function navigate(params: Record<string, string>) {
   url.search = new URLSearchParams(params).toString();
   window.location.assign(url);
 }
+type Cell = { x: number; y: number };
+const RUN_TOOLS = ['reveal', 'hide', 'brush', 'move', 'measure', 'sight', 'marker', 'unmark', 'ping'] as const;
+type RunTool = typeof RUN_TOOLS[number];
+const RUN_TOOL_LABELS: Record<RunTool, string> = {
+  reveal: 'Reveal', hide: 'Hide', brush: 'Defog brush', move: 'Move token', measure: 'Measure',
+  sight: 'Line of sight', marker: 'Place marker', unmark: 'Remove marker', ping: 'Ping',
+};
+const RUN_TOOL_HINTS: Record<RunTool, string> = {
+  reveal: 'Click a cell, or drag across an area to change it all at once.',
+  hide: 'Click a cell, or drag across an area to change it all at once.',
+  brush: 'Drag across the map to wipe fog off cell by cell.',
+  move: 'Click a cell or enter a destination.',
+  measure: 'Click a start cell and an end cell, or drag between them. Only you see measurements.',
+  sight: 'Click a cell to see what is visible from it. Click it again to clear. Only you see this.',
+  marker: 'Click a cell to place a marker. Players see a marker once its whole area is known to them.',
+  unmark: 'Click a marker to remove it.',
+  ping: 'Click a cell or enter a destination.',
+};
+const MARKER_COLOR_NAMES = ['Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Purple', 'Pink', 'Charcoal'];
+const sameCell = (a: Cell, b: Cell) => a.x === b.x && a.y === b.y;
 const errorMessage = (error: unknown) => error instanceof Error ? error.message : 'The operation failed. Download recovery before leaving.';
 
 export default function SessionWorkspace({ sessionId, sourceId }: { sessionId: string | null; sourceId: string | null }) {
@@ -124,11 +147,21 @@ function RunSession({ initial }: { initial: SessionRecord }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [level, setLevel] = useState(initial.progress.project.activeLevelIndex);
-  const [tool, setTool] = useState<'reveal' | 'hide' | 'move' | 'measure' | 'ping'>('reveal');
+  const [tool, setTool] = useState<RunTool>('reveal');
   const [tokenId, setTokenId] = useState<number | null>(null);
   const [cell, setCell] = useState({ x: 0, y: 0 });
-  const [measureFrom, setMeasureFrom] = useState<{ x: number; y: number } | null>(null);
-  const [area, setArea] = useState<{ from: { x: number; y: number }; to: { x: number; y: number } } | null>(null);
+  const [measureFrom, setMeasureFrom] = useState<Cell | null>(null);
+  const [area, setArea] = useState<{ from: Cell; to: Cell } | null>(null);
+  // Private DM overlays. None of these are saved or sent to the player display.
+  const [measureShape, setMeasureShape] = useState<MeasureShape>('ruler');
+  const [feetPerCell, setFeetPerCell] = useState(5);
+  const [measured, setMeasured] = useState<{ from: Cell; to: Cell } | null>(null);
+  const [sight, setSight] = useState<Cell | null>(null);
+  const [stroke, setStroke] = useState<Cell[] | null>(null);
+  const [markerShape, setMarkerShape] = useState<MarkerShape>('circle');
+  const [markerColor, setMarkerColor] = useState(MARKER_COLORS[0]);
+  const [markerSize, setMarkerSize] = useState(1);
+  const dragged = useRef(false);
   const [notice, setNotice] = useState('');
   const [checkpointName, setCheckpointName] = useState('');
   const [preview, setPreview] = useState(false);
@@ -144,6 +177,10 @@ function RunSession({ initial }: { initial: SessionRecord }) {
   const previewProjection = useMemo(() => projectForAudience(map, project.customThemes, project.customStamps), [map, project.customThemes, project.customStamps]);
   const disabled = busy || !!error || record.status !== 'active';
   const canvas = useRef<HTMLCanvasElement>(null);
+  const dynamic = !!map.fogEnabled && !!map.dynamicFogEnabled;
+  const sightCells = useMemo(() => sight && computeFOV(deriveRenderableTiles(map), sight.x, sight.y, 0, project.customThemes),
+    [sight, map, project.customThemes]);
+  const clearOverlays = () => { setMeasureFrom(null); setMeasured(null); setSight(null); setStroke(null); setArea(null); };
 
   const persist = useCallback(async (next: SessionRecord) => {
     locked.current = true;
@@ -227,7 +264,7 @@ function RunSession({ initial }: { initial: SessionRecord }) {
       return;
     }
     setCell({ x, y });
-    if (tool === 'reveal' || tool === 'hide') {
+    if (tool === 'reveal' || tool === 'hide' || tool === 'brush') {
       const fog = (map.fog ?? map.tiles.map(row => row.map(() => true))).map(row => [...row]);
       fog[y][x] = tool === 'hide';
       changeMap({ ...map, fog, fogEnabled: true });
@@ -241,11 +278,22 @@ function RunSession({ initial }: { initial: SessionRecord }) {
       changeMap({ ...map, tokens: map.tokens?.map(t => t.id === selected.id ? { ...t, x, y } : t) });
       setNotice(`Moved ${selected.label} to ${x}, ${y}.`);
     } else if (tool === 'measure') {
-      if (!measureFrom) { setMeasureFrom({ x, y }); setNotice(`Measure start: ${x}, ${y}. Choose the end cell.`); }
-      else {
-        setNotice(`Distance: ${Math.hypot(x - measureFrom.x, y - measureFrom.y).toFixed(2)} cells. No game-system movement rules applied.`);
-        setMeasureFrom(null);
-      }
+      if (!measureFrom) { setMeasureFrom({ x, y }); setMeasured(null); setNotice(`Measure start: ${x}, ${y}. Choose the end cell.`); }
+      else measure(measureFrom, { x, y });
+    } else if (tool === 'sight') {
+      if (sight && sameCell(sight, { x, y })) { setSight(null); setNotice('Line of sight cleared.'); return; }
+      const visible = computeFOV(deriveRenderableTiles(map), x, y, 0, project.customThemes).size;
+      setSight({ x, y });
+      setNotice(`Line of sight from ${x}, ${y}: ${visible} of ${map.meta.width * map.meta.height} cells highlighted. Walls, pillars and secret doors block sight. Only you see this.`);
+    } else if (tool === 'marker') {
+      changeMap({ ...map, markers: [...(map.markers ?? []),
+        { id: Math.max(0, ...(map.markers ?? []).map(m => m.id)) + 1, x, y, shape: markerShape, color: markerColor, size: markerSize }] });
+      setNotice(`Marker placed at ${x}, ${y}. Players see it on the shown level once its whole area is known to them.`);
+    } else if (tool === 'unmark') {
+      const hit = markerAtCell(map.markers, { x, y });
+      if (!hit) { setNotice(`No marker covers ${x}, ${y}.`); return; }
+      changeMap({ ...map, markers: (map.markers ?? []).filter(m => m.id !== hit.id) });
+      setNotice(`Marker removed at ${hit.x}, ${hit.y}.`);
     } else {
       if (!live || published !== level) { setNotice('Show this level in the connected display before pinging.'); return; }
       const pinged = projectForAudience({ ...map, markers: [...(map.markers ?? []),
@@ -257,6 +305,23 @@ function RunSession({ initial }: { initial: SessionRecord }) {
       publish(pinged);
       setNotice(`Ping sent at ${x}, ${y}. Clear ping removes it from the display.`);
     }
+  };
+  const measure = (from: Cell, to: Cell) => {
+    const { straight, squares, feet } = measureBetween(from, to, feetPerCell);
+    setMeasureFrom(null);
+    setMeasured({ from, to });
+    setCell(to);
+    setNotice(measureShape === 'ruler'
+      ? `Distance: ${straight.toFixed(2)} cells in a straight line, or ${squares} squares (${feet} ft) counting a diagonal step as one. No game-system movement rules applied.`
+      : `${MEASURE_SHAPE_LABELS[measureShape]} template from ${from.x}, ${from.y}: ${squares} squares (${feet} ft) ${measureShape === 'circle' ? 'in radius' : 'long'}. Only you see it.`);
+  };
+  const applyStroke = (cells: Cell[]) => {
+    if (disabled || locked.current || cells.length === 0) return;
+    const fog = (map.fog ?? map.tiles.map(row => row.map(() => true))).map(row => [...row]);
+    for (const at of cells) fog[at.y][at.x] = false;
+    setCell(cells[cells.length - 1]);
+    changeMap({ ...map, fog, fogEnabled: true });
+    setNotice(`Brushed fog off ${cells.length} ${cells.length === 1 ? 'cell' : 'cells'}. Undo session map action reverses it.`);
   };
   const applyArea = (from: { x: number; y: number }, to: { x: number; y: number }) => {
     if (from.x === to.x && from.y === to.y) { apply(to.x, to.y); return; }
@@ -277,10 +342,12 @@ function RunSession({ initial }: { initial: SessionRecord }) {
       y: Math.min(map.meta.height - 1, Math.max(0, Math.floor((event.clientY - rect.top) / rect.height * map.meta.height))),
     };
   };
-  const areaBox = area && {
+  const areaBox = area && tool !== 'measure' && {
     left: Math.min(area.from.x, area.to.x), top: Math.min(area.from.y, area.to.y),
     width: Math.abs(area.to.x - area.from.x) + 1, height: Math.abs(area.to.y - area.from.y) + 1,
   };
+  const shown = tool === 'measure' && area && !sameCell(area.from, area.to) ? area : measured;
+  const shownMeasure = shown && measureBetween(shown.from, shown.to, feetPerCell);
   return <main className="session-workspace" aria-label="DM Run workspace">
     <header className="session-heading">
       <div><p className="session-eyebrow">RUN / TRUSTED DM WORKSPACE</p><h1>{project.name}</h1></div>
@@ -314,7 +381,7 @@ function RunSession({ initial }: { initial: SessionRecord }) {
     </section> : <>
       <section className="session-inspection">
         <label>Inspect DM level <select aria-label="Inspect DM level" value={level} disabled={busy} onChange={e => {
-          setLevel(Number(e.target.value)); setCell({ x: 0, y: 0 }); setTokenId(null); setMeasureFrom(null);
+          setLevel(Number(e.target.value)); setCell({ x: 0, y: 0 }); setTokenId(null); clearOverlays();
           setNotice('Inspecting another level does not change the player display.');
         }}>{project.levels.map((item, index) => <option key={index} value={index}>{item.meta.name}</option>)}</select></label>
         <p>Inspection is private. Use Show this level to change the player view.</p>
@@ -323,14 +390,37 @@ function RunSession({ initial }: { initial: SessionRecord }) {
         <div className="session-run-grid">
           <section className="session-card session-tools" aria-label="Routine play actions">
             <h2>At the table</h2>
-            <div className="session-tool-buttons">{(['reveal', 'hide', 'move', 'measure', 'ping'] as const).map(value =>
-              <button key={value} aria-pressed={tool === value} disabled={disabled} onClick={() => { setTool(value); setMeasureFrom(null); }}>
-                {{ reveal: 'Reveal', hide: 'Hide', move: 'Move token', measure: 'Measure', ping: 'Ping' }[value]}
+            <div className="session-tool-buttons">{RUN_TOOLS.map(value =>
+              <button key={value} aria-pressed={tool === value} disabled={disabled} onClick={() => { setTool(value); clearOverlays(); }}>
+                {RUN_TOOL_LABELS[value]}
               </button>)}</div>
             {tool === 'move' && <label>Token <select aria-label="Session token" value={tokenId ?? ''} onChange={e => setTokenId(Number(e.target.value))}>
               <option value="" disabled>Choose token</option>{(map.tokens ?? []).map(t => <option key={t.id} value={t.id}>{t.label}</option>)}
             </select></label>}
-            <p>{tool === 'reveal' || tool === 'hide' ? 'Click a cell, or drag across an area to change it all at once.' : 'Click a cell or enter a destination.'} Coordinates start at zero.</p>
+            {tool === 'measure' && <>
+              <label>Measure shape <select aria-label="Measure shape" value={measureShape} onChange={e => {
+                setMeasureShape(e.target.value as MeasureShape); setMeasureFrom(null); setMeasured(null);
+              }}>{MEASURE_SHAPES.map(shape => <option key={shape} value={shape}>{shape === 'ruler' ? 'Distance' : MEASURE_SHAPE_LABELS[shape]}</option>)}</select></label>
+              <label>Feet per cell <input type="number" min={1} max={100} value={feetPerCell} onChange={e => {
+                const value = Number(e.target.value);
+                if (value >= 1 && value <= 100) setFeetPerCell(value);
+              }} /></label>
+            </>}
+            {tool === 'marker' && <>
+              <label>Marker shape <select aria-label="Marker shape" value={markerShape} onChange={e => setMarkerShape(e.target.value as MarkerShape)}>
+                {MARKER_SHAPES.map(shape => <option key={shape} value={shape}>{MARKER_SHAPE_LABELS[shape]}</option>)}</select></label>
+              <label>Marker color <select aria-label="Marker color" value={markerColor} onChange={e => setMarkerColor(e.target.value)}>
+                {MARKER_COLORS.map((color, index) => <option key={color} value={color}>{MARKER_COLOR_NAMES[index] ?? color}</option>)}</select></label>
+              <label>Marker radius <input type="number" min={1} max={10} value={markerSize} onChange={e => {
+                const value = Number(e.target.value);
+                if (Number.isInteger(value) && value >= 1 && value <= 10) setMarkerSize(value);
+              }} /></label>
+            </>}
+            {(tool === 'marker' || tool === 'unmark') && <button disabled={disabled || !map.markers?.length} onClick={() => {
+              changeMap({ ...map, markers: [] });
+              setNotice('All markers removed from this level. Undo session map action reverses it.');
+            }}>Clear all markers</button>}
+            <p>{RUN_TOOL_HINTS[tool]} Coordinates start at zero.</p>
             <form onSubmit={event => { event.preventDefault(); apply(cell.x, cell.y); }}>
               <label>Cell X <input type="number" min={0} max={map.meta.width - 1} required value={cell.x} onChange={e => setCell(c => ({ ...c, x: Number(e.target.value) }))} /></label>
               <label>Cell Y <input type="number" min={0} max={map.meta.height - 1} required value={cell.y} onChange={e => setCell(c => ({ ...c, y: Number(e.target.value) }))} /></label>
@@ -341,6 +431,16 @@ function RunSession({ initial }: { initial: SessionRecord }) {
               if (prior) changeMap(prior, false);
             }}>Undo session map action</button>
             <button disabled={!live} onClick={() => { if (projection) publish(projection); }}>Clear ping</button>
+            <label className="session-check"><input type="checkbox" checked={dynamic} disabled={disabled || !map.fogEnabled} onChange={() => {
+              changeMap({ ...map, dynamicFogEnabled: !dynamic });
+              setNotice(dynamic ? 'Dynamic fog off. Players now see only manually revealed cells.'
+                : 'Dynamic fog on. Party tokens and lights reveal what they can see, and explored areas stay known.');
+            }} />Dynamic fog: party sight reveals the map</label>
+            {!map.fogEnabled && <p>Fog is off for this level, so there is nothing for sight to reveal.</p>}
+            {dynamic && <button disabled={disabled} onClick={() => {
+              changeMap({ ...map, explored: map.tiles.map(row => row.map(() => false)) });
+              setNotice('Explored areas forgotten. Players keep what the party and lights see now, plus manually revealed cells.');
+            }}>Forget explored areas</button>}
             <p role="status">{notice}</p>
           </section>
           <section className="session-map-panel" aria-label="Private DM map">
@@ -349,24 +449,35 @@ function RunSession({ initial }: { initial: SessionRecord }) {
               <div className="session-map-surface">
                 <canvas ref={canvas} aria-label={`Private DM map: ${map.meta.name}. Use cell controls for keyboard actions.`} role="img"
                   onPointerDown={event => {
-                    if (event.button !== 0 || disabled || (tool !== 'reveal' && tool !== 'hide')) return;
+                    dragged.current = false;
+                    if (event.button !== 0 || disabled || !['reveal', 'hide', 'brush', 'measure'].includes(tool)) return;
                     event.currentTarget.setPointerCapture?.(event.pointerId);
                     const at = cellAt(event);
-                    setArea({ from: at, to: at });
+                    if (tool === 'brush') setStroke([at]);
+                    else setArea({ from: at, to: at });
                   }}
                   onPointerMove={event => {
-                    if (!area) return;
+                    if (!stroke && !area) return;
                     const at = cellAt(event);
-                    if (at.x !== area.to.x || at.y !== area.to.y) setArea({ ...area, to: at });
+                    if (stroke) setStroke(extendStroke(stroke, at));
+                    else if (area && !sameCell(at, area.to)) setArea({ ...area, to: at });
                   }}
                   onPointerUp={event => {
-                    if (!area) return;
-                    setArea(null);
-                    applyArea(area.from, cellAt(event));
+                    const at = cellAt(event);
+                    if (stroke) {
+                      setStroke(null);
+                      applyStroke(extendStroke(stroke, at));
+                    } else if (area) {
+                      setArea(null);
+                      if (tool !== 'measure') applyArea(area.from, at);
+                      // A measure drag finishes here. A plain click falls through to the two-click flow.
+                      else if (!sameCell(area.from, at)) { dragged.current = true; measure(area.from, at); }
+                    }
                   }}
-                  onPointerCancel={() => setArea(null)}
+                  onPointerCancel={() => { setArea(null); setStroke(null); }}
                   onClick={event => {
-                    if (tool === 'reveal' || tool === 'hide') return;
+                    if (tool === 'reveal' || tool === 'hide' || tool === 'brush') return;
+                    if (dragged.current) { dragged.current = false; return; }
                     const rect = event.currentTarget.getBoundingClientRect();
                     apply(Math.floor((event.clientX - rect.left) / rect.width * map.meta.width),
                       Math.floor((event.clientY - rect.top) / rect.height * map.meta.height));
@@ -375,6 +486,22 @@ function RunSession({ initial }: { initial: SessionRecord }) {
                   left: `${areaBox.left / map.meta.width * 100}%`, top: `${areaBox.top / map.meta.height * 100}%`,
                   width: `${areaBox.width / map.meta.width * 100}%`, height: `${areaBox.height / map.meta.height * 100}%`,
                 }} />}
+                <svg className="session-overlay" aria-hidden="true" viewBox={`0 0 ${map.meta.width} ${map.meta.height}`} preserveAspectRatio="none">
+                  {sight && sightCells && <>
+                    <path data-overlay="sight" d={cellsPath(sightCells, map.meta.width, map.meta.height)} />
+                    <circle data-overlay="sight-origin" cx={sight.x + 0.5} cy={sight.y + 0.5} r={0.32} />
+                  </>}
+                  {stroke && <path data-overlay="brush" d={cellsPath(stroke.map(key), map.meta.width, map.meta.height)} />}
+                  {tool === 'measure' && measureFrom && <circle className="session-measure-end" cx={measureFrom.x + 0.5} cy={measureFrom.y + 0.5} r={0.2} />}
+                  {shown && shownMeasure && <>
+                    <path data-overlay="measure" className={`is-${measureShape}`} d={measurePath(measureShape, shown.from, shown.to)} />
+                    <circle className="session-measure-end" cx={shown.from.x + 0.5} cy={shown.from.y + 0.5} r={0.2} />
+                    {measureShape !== 'circle' && measureShape !== 'cone' && <circle className="session-measure-end" cx={shown.to.x + 0.5} cy={shown.to.y + 0.5} r={0.2} />}
+                    <text x={(shown.from.x + shown.to.x) / 2 + 0.5} y={(shown.from.y + shown.to.y) / 2 + 0.5}
+                      fontSize={Math.max(0.6, map.meta.width / 40)} strokeWidth={Math.max(0.12, map.meta.width / 200)}>
+                      {shownMeasure.squares} sq / {shownMeasure.feet} ft</text>
+                  </>}
+                </svg>
               </div>
             </div>
           </section>
@@ -411,7 +538,7 @@ function RunSession({ initial }: { initial: SessionRecord }) {
           <strong>{checkpoint.label}</strong>
           <button disabled={disabled} onClick={() => {
             if (!window.confirm(`Restore "${checkpoint.label}"? Current progress will be retained as the last recovery checkpoint.`)) return;
-            pause(); history.clear(); setLevel(checkpoint.progress.project.activeLevelIndex); setCell({ x: 0, y: 0 }); setTokenId(null);
+            pause(); history.clear(); setLevel(checkpoint.progress.project.activeLevelIndex); setCell({ x: 0, y: 0 }); setTokenId(null); clearOverlays();
             commit({ ...record, endCheckpoint: structuredClone(record.progress), progress: structuredClone(checkpoint.progress) });
           }}>Restore checkpoint</button>
           <button onClick={() => downloadRecoveryData(checkpoint, 'session-checkpoint.json')}>Download checkpoint</button>
