@@ -125,6 +125,50 @@ export default async function session(page) {
   await cell(2, 2);
   await page.getByRole('status').filter({ hasText: 'Ping sent' }).waitFor();
   await page.getByRole('button', { name: 'Clear ping', exact: true }).click();
+  // Table tools: brush and markers are saved session actions; measure shapes and line of sight stay on the DM screen.
+  const snapshotCount = () => page.evaluate(() => window.__ux06Packets.filter(p => p.data.type === 'snapshot').length);
+  const nextSnapshot = async after => {
+    await page.waitForFunction(count => window.__ux06Packets.filter(p => p.data.type === 'snapshot').length > count, after);
+    return page.evaluate(() => window.__ux06Packets.filter(p => p.data.type === 'snapshot').at(-1).data.projection.map);
+  };
+  const dmCanvas = page.getByRole('img', { name: /^Private DM map/ });
+  await dmCanvas.scrollIntoViewIfNeeded();
+  const dragCells = async (from, to) => {
+    const box = await dmCanvas.boundingBox();
+    const at = ([x, y]) => [box.x + (x + 0.5) * box.width / 8, box.y + (y + 0.5) * box.height / 8];
+    await page.mouse.move(...at(from));
+    await page.mouse.down();
+    await page.mouse.move(...at(to), { steps: 4 });
+    await page.mouse.up();
+  };
+  await page.getByRole('button', { name: 'Defog brush', exact: true }).click();
+  await dragCells([5, 3], [6, 3]);
+  await page.getByRole('status').filter({ hasText: 'Brushed fog off 2 cells' }).waitFor();
+  await saved();
+  const brushed = (await read(`session:${sessionId}`)).progress.project.levels[0].fog;
+  assert(brushed[3][5] === false && brushed[3][6] === false && brushed[3][7] === true && brushed[4][5] === true, 'Defog brush missed or exceeded its stroke');
+  const beforePrivateTools = JSON.stringify(await read(`session:${sessionId}`));
+  const snapshotsBeforePrivateTools = await snapshotCount();
+  await page.getByRole('button', { name: 'Measure', exact: true }).click();
+  await page.getByLabel('Measure shape', { exact: true }).selectOption('cone');
+  await dragCells([1, 1], [4, 1]);
+  await page.getByRole('status').filter({ hasText: 'Cone template from 1, 1: 3 squares (15 ft)' }).waitFor();
+  assert(await page.locator('.session-overlay [data-overlay="measure"].is-cone').count() === 1, 'Cone template was not drawn');
+  await page.getByRole('button', { name: 'Line of sight', exact: true }).click();
+  await cell(2, 2);
+  await page.getByRole('status').filter({ hasText: 'Line of sight from 2, 2' }).waitFor();
+  assert(await page.locator('.session-overlay [data-overlay="sight"]').count() === 1, 'Line of sight was not drawn');
+  assert(JSON.stringify(await read(`session:${sessionId}`)) === beforePrivateTools, 'A private overlay changed the saved session');
+  assert(await snapshotCount() === snapshotsBeforePrivateTools, 'A private overlay was sent to the display');
+  await page.getByRole('button', { name: 'Place marker', exact: true }).click();
+  await cell(2, 3);
+  assert((await nextSnapshot(snapshotsBeforePrivateTools)).markers.length === 1, 'A marker on known ground did not reach the display');
+  const snapshotsBeforeHiddenMarker = await snapshotCount();
+  await cell(6, 6);
+  assert((await read(`session:${sessionId}`)).progress.project.levels[0].markers.length === 2, 'Markers did not persist');
+  assert((await nextSnapshot(snapshotsBeforeHiddenMarker)).markers.length === 1, 'A marker over unknown ground crossed transport');
+  await page.getByRole('button', { name: 'Clear all markers', exact: true }).click();
+  await saved();
   await page.getByLabel('Checkpoint name').fill('At the gate');
   await page.getByRole('button', { name: 'Save checkpoint', exact: true }).click();
   await saved();
@@ -254,7 +298,7 @@ export default async function session(page) {
   assert(JSON.stringify(await read(`project:${sourceId}`)) === sourceBefore, 'Session changed authored source bytes');
   await player.close();
   const result = { browser: page.context().browser().version(), sourceId, sessionId, sessionUrl, layouts, snapshotCount: snapshots.length,
-    passed: ['prepare/start', 'blank handshake', 'reveal/move', 'turn/round', 'measure/ping', 'checkpoint',
+    passed: ['prepare/start', 'blank handshake', 'reveal/move', 'turn/round', 'measure/ping', 'brush/shapes/sight/markers', 'checkpoint',
       'private inspection vs publish', 'pause and stale epoch', 'player reload', 'transport loss/reconnect', 'DM reload/reopen',
       'popup blocked and preview fallback', 'DOM/accessibility/transport sentinels', 'no player storage writer',
       'checkpoint restore/history reset', 'storage failure/download/retry', 'concurrent session CAS conflict',
