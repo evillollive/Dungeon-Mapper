@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+- The published app address is now `https://evilolive.com/Dungeon-Mapper/`. The post-deploy check expects that address and reads the published files over HTTPS.
 - Fixed: dragging with the Select tool now selects a tile region even when the drag starts on a room, token, note, stamp or river, so Copy, Cut and Scene templates work on finished rooms. A click without a drag still picks the object (#195).
 - Run now has measure shapes (circle, cone, line), line of sight, area markers, a defog brush and a dynamic fog switch, so a GM no longer leaves the session for them. Measurements and line of sight stay on the private Run map; markers and fog changes are undoable session actions that go through the player projection. DM view is unchanged (#194).
 - Batch adjacent dynamic-fog cells into horizontal canvas fills to reduce draw calls on dense maps.

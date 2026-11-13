@@ -6,7 +6,11 @@ import { dirname, isAbsolute, join, posix, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export const MANIFEST = 'build-manifest.json';
-export const PAGES_URL = 'https://evillollive.github.io/Dungeon-Mapper/';
+export const PAGES_URL = 'https://evilolive.com/Dungeon-Mapper/';
+// GitHub reports a custom-domain site as http:// until Enforce HTTPS is on for
+// that domain. Accept that spelling of the same address, but always read the
+// published bytes over HTTPS.
+const REPORTED_PAGES_URLS = [PAGES_URL, PAGES_URL.replace(/^https:/, 'http:')];
 const SHA = /^[a-f0-9]{40}$/;
 const HASH = /^[a-f0-9]{64}$/;
 const NUMBER = /^[1-9][0-9]*$/;
@@ -155,7 +159,7 @@ export function assertPublication(manifest, currentMain, pagesArtifact, pagesArt
 export async function checkPublished(manifest, url, {
   fetchImpl = fetch, attempts = 3, pause = () => new Promise(resolve => setTimeout(resolve, 5000)),
 } = {}) {
-  assert.equal(url, PAGES_URL, 'Unexpected Pages destination');
+  assert(REPORTED_PAGES_URLS.includes(url), `Unexpected Pages destination: ${url}`);
   validateManifest(manifest);
   assert(Number.isInteger(attempts) && attempts >= 1 && attempts <= 3, 'Smoke attempts must stay between one and three');
   const rounds = [];
@@ -163,7 +167,7 @@ export async function checkPublished(manifest, url, {
   for (let attempt = 1; attempt <= attempts; attempt++) {
     const failures = [];
     for (const file of manifest.files) {
-      const target = new URL(file.path.split('/').map(encodeURIComponent).join('/'), url);
+      const target = new URL(file.path.split('/').map(encodeURIComponent).join('/'), PAGES_URL);
       try {
         const response = await fetchImpl(target, {
           cache: 'no-store', redirect: 'error',
