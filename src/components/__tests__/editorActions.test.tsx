@@ -176,7 +176,7 @@ describe('UX-03 shared action parity', () => {
     expect(call).toHaveBeenCalledWith('tool', 'pdraw');
   });
 
-  it('returns focus after palette cancellation and hides no-op note editing in DM view', async () => {
+  it('returns focus after palette cancellation and hides no-op note editing in Fog setup', async () => {
     Element.prototype.scrollIntoView = vi.fn();
     const { rerender } = render(<button>Open commands</button>);
     screen.getByRole('button').focus();

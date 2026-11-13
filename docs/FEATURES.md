@@ -50,7 +50,7 @@ If you want the full tour in one place, this is it. Dungeon Mapper starts fast, 
 - **GM drawing tools** - private freehand annotations with dashed rendering; excluded from player projections and player-audience exports (`D` shortcut)
 - **Copy / Paste / Cut** - drag a region with the Select tool (a drag always selects tiles, even across rooms, tokens and stamps; a click picks the object under the pointer), then `Ctrl+C` to copy, `Ctrl+X` to cut, `Ctrl+V` to paste tiles and notes at the selection origin with a live preview overlay
 - **Procedural map generation** - the **Generate Hub** (`G`) opens a unified window with four algorithms (Rooms & Corridors, Open Terrain, Cavern, Village), a deterministic seed, a density slider, per-generator tile-mix sliders, corridor strategy and shape controls, optional theme room labels with procedural names, and an opt-in **Generate into selection** mode that stamps a generated map into an active selection rectangle without disturbing the rest of the map (see [Map Generation](#map-generation) below)
-- **Prepare / Run / player display** - separately saved play progress and a read-only second window in the same browser. Legacy DM view is not a player-safe surface (see [sessions and player display](#sessions-and-player-display))
+- **Prepare / Run / player display** - separately saved play progress and a read-only second window in the same browser. Fog setup (formerly DM view) is where you set a map's starting fog; it is not a player-safe surface (see [sessions and player display](#sessions-and-player-display))
 - **Fog of war** - per-cell hidden / revealed flags with a Defog brush, Reveal `V` / Hide `H` drag-rectangles, Reset Fog (re-cover the map), Clear Fog (reveal everything), an optional GM **🌫 Show Fog** preview overlay, fog edge feathering, and **Dynamic Fog** mode that auto-reveals cells visible from player tokens with 3-state rendering (hidden / explored / visible)
 - **Tokens with icon library** - drop Player, NPC, and Monster tokens (small 1×1, medium 2×2, large 3×3) onto the map with a searchable icon picker (legacy icons plus twelve opt-in Folio silhouettes); Move Token to drag, Remove Token to delete
 - **Initiative panel** - a turn-order list with selectable entries, visible Up/Down controls, Alt+Arrow and drag reordering, inline renaming and Clear (see [Initiative](#initiative) below)
@@ -221,8 +221,8 @@ Both end choices retain the pre-end state in a last recovery slot.
 **Player preview** and player-audience images filter geography, discovery,
 hidden tokens and explicitly published public note fields. DM note labels and
 descriptions are private even when a note is published. Review custom artwork
-for secrets baked into images. The editor, Library thumbnails and legacy
-**DM view** are trusted DM surfaces; do not share their whole browser window.
+for secrets baked into images. The editor, Library thumbnails and
+**Fog setup** are trusted DM surfaces; do not share their whole browser window.
 
 ### Fog of war
 
@@ -243,7 +243,7 @@ boundary. Revealing geography alone does not publish a note's private text.
 
 ### Drawing pen
 
-The legacy **DM view** includes a player-annotation pen operated by the DM.
+**Fog setup** includes a player-annotation pen operated by the DM.
 The separate player display is read-only and does not expose drawing controls.
 
 - **Draw** / **Erase** - sketch over the map with the pen, or click an individual stroke to remove it.
@@ -275,7 +275,7 @@ In **Edit mode** the panel is fully editable:
 - **Rename** an entry inline. `Enter` saves, `Escape` cancels, and focus returns to Rename. Leaving the field also saves a nonblank name.
 - **Clear** wipes the initiative list (tokens themselves stay on the map).
 
-The legacy **DM view** list is read-only, but that local fog-aware view is not
+The **Fog setup** list is read-only, but that local fog-aware view is not
 a player-safe display. Use **Player preview** or the separate local player
 display for audience-filtered information.
 
@@ -561,7 +561,7 @@ Once you spend a few minutes with Dungeon Mapper, shortcuts start doing a lot of
 | Shortcut | Action |
 | --- | --- |
 | `Ctrl+B` | Toggle Print / B&W map styling |
-| `Shift+V` | Toggle Edit / trusted DM view, not the player display |
+| `Shift+V` | Toggle Edit / Fog setup (a trusted DM screen, not the player display) |
 | `T` / `Shift+T` | Cycle to next / previous theme (Edit mode) |
 | `[` / `]` | Cycle to previous / next tile in the palette (Edit mode) |
 | `Ctrl+=` *or* `Ctrl++` | Increase UI scale |
@@ -845,7 +845,7 @@ Touch support is built around the gestures people already expect. Zooming, panni
 On smaller screens, the toolbar changes shape so the app stays usable with thumbs. The essentials stay close, and the deeper tools are still there when you need them.
 
 - **Edit** - Paint, Select, Undo and All actions.
-- **Legacy DM view** - Draw, Defog, Undo and All actions.
+- **Fog setup** - Draw, Defog, Undo and All actions.
 - **Tools** - expands the shared navigation and coordinate/object controls.
 - **Run/player display** - separate workspaces, not the editor's bottom toolbar.
 

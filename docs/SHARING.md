@@ -33,7 +33,7 @@ Keep these distinctions in every demo or announcement:
 
 - **Local display is not remote multiplayer.** It uses a second window in the
   same browser, not accounts, authentication or a join link for other devices.
-- **The editor is private.** Edit, legacy DM view, Library previews and project
+- **The editor is private.** Edit, Fog setup, Library previews and project
   backups can contain secrets. Use Player preview, the local player display or
   player-audience image export for sharing, and inspect secrets embedded in art.
 - **A project backup is not a session backup.** Run saves separately. Its

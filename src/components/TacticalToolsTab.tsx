@@ -47,7 +47,7 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
   return (
     <>
       {section !== 'decorate' && <>
-      {section === 'tactical' && <ActionButton id="view.viewMode">Open DM view for fog controls</ActionButton>}
+      {section === 'tactical' && <ActionButton id="view.viewMode">Open Fog setup</ActionButton>}
       <div className="toolbar-section">
         <div className="toolbar-label">FOG OF WAR</div>
         {section === 'tactical' && <label
@@ -55,8 +55,8 @@ const TacticalToolsTab: React.FC<TacticalToolsTabProps> = ({
           style={{ cursor: 'pointer' }}
           title={
             fogEnabled
-              ? 'Show Fog previews hidden cells with a translucent overlay. The map stays visible to you. Fog controls are in DM view.'
-              : 'Show Fog has no effect until fog-of-war is enabled. Switch to DM view to enable fog and reveal/hide cells.'
+              ? 'Show Fog previews hidden cells with a translucent overlay. The map stays visible to you. Fog controls are in Fog setup.'
+              : 'Show Fog has no effect until fog-of-war is enabled. Open Fog setup to turn fog on and reveal or hide cells.'
           }
         >
           <span className="tool-icon" aria-hidden="true">🌫</span>

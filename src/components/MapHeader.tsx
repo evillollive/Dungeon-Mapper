@@ -72,7 +72,7 @@ const MapHeader = forwardRef<MapHeaderHandle, MapHeaderProps>((props, ref) => {
       </button>
       <ActionButton id="file.recovery" icon={SAVE_PHASE_ICONS[props.savePhase]}><span role="status">{props.saveLabel}</span></ActionButton>
       <OfflineStatus />
-      <ActionButton id="view.viewMode" icon="look">{props.viewMode === 'gm' ? 'Edit' : 'DM view'}</ActionButton>
+      <ActionButton id="view.viewMode" icon="look">{props.viewMode === 'gm' ? 'Edit' : 'Fog setup'}</ActionButton>
       <ActionButton id="view.playerPreview">Player preview</ActionButton>
       <ActionButton id="session.prepare">Prepare session</ActionButton>
       <ActionButton id="help.commandPalette" icon="search">Commands</ActionButton>

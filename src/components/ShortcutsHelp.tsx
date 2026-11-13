@@ -86,7 +86,7 @@ const ShortcutsHelp: React.FC<ShortcutsHelpProps> = ({ bindings, onClose }) => {
             Start or open a project from Your maps. Prepare session opens
             separately saved play progress; Open player display in Run opens
             a read-only window in this browser, not a remote share link.
-            Edit and DM view remain private workspaces. Project backups include
+            Edit and Fog setup remain private workspaces. Project backups include
             DM content but not separate session records.
           </p>
         </div>
