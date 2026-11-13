@@ -1,5 +1,5 @@
 .creator-backdrop { position: fixed; inset: 0; z-index: 1200; background: #08060bd9; display: grid; place-items: center; padding: 18px; }
-.creator-dialog { color: #f6f3ff; background: #1e1930; border: 1px solid #817696; border-radius: 12px; box-shadow: 0 24px 80px #0009; width: min(100%, 960px); max-height: calc(100dvh - 36px); overflow: auto; padding: clamp(16px, 3vw, 32px); font: 16px/1.5 "Avenir Next", Avenir, sans-serif; scroll-padding: 8px; }
+.creator-dialog { color: #f6f3ff; background: #1e1930; border: 1px solid #817696; border-radius: 12px; box-shadow: 0 24px 80px #0009; width: min(100%, 960px); max-height: calc(100dvh - 36px); overflow: auto; padding: clamp(16px, 3vw, 32px); font: 16px/1.5 var(--font-ui); scroll-padding: 8px; }
 .creator-dialog * { box-sizing: border-box; }
 .creator-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; border-bottom: 1px solid #817696; padding-bottom: 18px; }
 .creator-heading h2 { font-size: clamp(24px, 4vw, 36px); margin: 4px 0; letter-spacing: -.025em; }

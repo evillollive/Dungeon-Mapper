@@ -1,6 +1,6 @@
 :root {
   color-scheme: dark;
-  --font-ui: 'Avenir Next', Avenir, sans-serif;
+  --font-ui: 'Nunito Sans', system-ui, sans-serif;
   --surface-base: #100d19;
   --surface-panel: #1e1930;
   --surface-raised: #272344;

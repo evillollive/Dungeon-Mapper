@@ -7,7 +7,7 @@
   padding: clamp(8px, 2vw, 28px);
   background: rgb(5 3 10 / 88%);
   color: #f6f3ff;
-  font: 16px/1.5 "Avenir Next", Avenir, sans-serif;
+  font: 16px/1.5 var(--font-ui);
 }
 .creation-dialog {
   width: min(1120px, 100%);
