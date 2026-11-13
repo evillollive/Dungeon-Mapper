@@ -2387,11 +2387,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
   const pinchStartZoomRef = useRef<number>(1);
   const pendingActionRef = useRef<(() => void) | null>(null);
   const pendingSelectionRef = useRef<(() => void) | null>(null);
+  /** Select tool: picks the object under the pointer if the gesture ends as a click. */
+  const selectClickRef = useRef<(() => void) | null>(null);
   const cancelGesture = useCallback(() => {
     cancelDraft();
     paintCells.current.clear();
     pendingActionRef.current = null;
     pendingSelectionRef.current = null;
+    selectClickRef.current = null;
     isMouseDownRef.current = false;
     isPanningRef.current = false;
     pinchStartDistRef.current = null;
@@ -2634,11 +2637,14 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
           const stamp = findStampAt(stamps, fc.x, fc.y);
           const river = findRiverAt(rivers, fc.x, fc.y);
           const room = findRoomShapeAt(roomShapes, fc.x, fc.y);
-          if (token) { onSelectToken?.(token.id); return; }
-          if (note) { onSelectNote(note.id); return; }
-          if (stamp) { onSelectPlacedStamp?.(stamp.id); return; }
-          if (river) { onSelectRiver?.(river.id); return; }
-          if (room) { onSelectRoomShape?.(room.id); return; }
+          // A click picks the object under the pointer; a drag that leaves the
+          // starting cell selects a tile region instead, even over an object.
+          selectClickRef.current = token ? () => onSelectToken?.(token.id)
+            : note ? () => onSelectNote(note.id)
+            : stamp ? () => onSelectPlacedStamp?.(stamp.id)
+            : river ? () => onSelectRiver?.(river.id)
+            : room ? () => onSelectRoomShape?.(room.id)
+            : null;
         }
         setDragStart(coords);
         setDragEnd(coords);
@@ -3074,7 +3080,9 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         const cells = rectCells(dragStart.x, dragStart.y, dragEnd.x, dragEnd.y);
         onSetFogCells(cells, activeTool === 'hide');
       } else if (activeTool === 'select' && isDragging && dragStart && dragEnd) {
-        setSelection({
+        const pickObject = selectClickRef.current;
+        if (pickObject && dragStart.x === dragEnd.x && dragStart.y === dragEnd.y) pickObject();
+        else setSelection({
           x: Math.min(dragStart.x, dragEnd.x),
           y: Math.min(dragStart.y, dragEnd.y),
           w: Math.abs(dragEnd.x - dragStart.x) + 1,
@@ -3082,6 +3090,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
         });
       }
     }
+    selectClickRef.current = null;
 
     isMouseDownRef.current = false;
     setIsDragging(false);

@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+- Fixed: dragging with the Select tool now selects a tile region even when the drag starts on a room, token, note, stamp or river, so Copy, Cut and Scene templates work on finished rooms. A click without a drag still picks the object (#195).
 - Batch adjacent dynamic-fog cells into horizontal canvas fills to reduce draw calls on dense maps.
 
 ## [Version 0.5 alpha] - 2026-10-24
