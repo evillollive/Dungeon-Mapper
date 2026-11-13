@@ -83,7 +83,7 @@ New recordings should follow the steps above.
 **Description:** Local-first TTRPG battle-map editor with generation, fog,
 tokens, private backups, image/print export and a local player display.
 
-**Homepage:** `https://evillollive.github.io/Dungeon-Mapper/`
+**Homepage:** `https://evilolive.com/Dungeon-Mapper/`
 
 **Topics:** `ttrpg`, `battlemap`, `map-editor`, `procedural-generation`, `react`,
 `typescript`, `vite`, `pwa`, `tabletop-rpg`
@@ -100,7 +100,7 @@ seeded generation, fog, tokens and project/image/print exports.
 The hosted build is available for exploration. Release qualification is still
 in progress, and device storage is not a backup.
 
-App: https://evillollive.github.io/Dungeon-Mapper/
+App: https://evilolive.com/Dungeon-Mapper/
 
 Source: https://github.com/evillollive/Dungeon-Mapper
 

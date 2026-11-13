@@ -180,6 +180,19 @@ describe('publication admission and smoke outcomes', () => {
     expect(result.status).toBe('verified');
     expect(fetchImpl).toHaveBeenCalledTimes(3);
     await expect(checkPublished(f.manifest, 'https://other.invalid/', { fetchImpl })).rejects.toThrow('Unexpected Pages');
+    await expect(checkPublished(f.manifest, 'https://evillollive.github.io/Dungeon-Mapper/', { fetchImpl })).rejects.toThrow('Unexpected Pages');
+    await expect(checkPublished(f.manifest, 'http://evilolive.com/Other/', { fetchImpl })).rejects.toThrow('Unexpected Pages');
+  });
+
+  it('accepts the http spelling GitHub reports for the custom domain but reads every byte over HTTPS', async () => {
+    const f = await built();
+    const fetchImpl = vi.fn(async (url: URL) => ({
+      ok: true, body: [await readFile(join(f.source, url.pathname.replace('/Dungeon-Mapper/', '')))],
+    }));
+    expect(PAGES_URL).toBe('https://evilolive.com/Dungeon-Mapper/');
+    const result = await checkPublished(f.manifest, 'http://evilolive.com/Dungeon-Mapper/', { fetchImpl, pause: async () => {} });
+    expect(result.status).toBe('verified');
+    expect(fetchImpl.mock.calls.every(([url]) => url.protocol === 'https:' && url.host === 'evilolive.com')).toBe(true);
   });
 
   it('bounds stale-CDN retries and reports published-but-unverified, never a fabricated pass', async () => {

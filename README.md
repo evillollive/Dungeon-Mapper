@@ -11,7 +11,7 @@
 
 Dungeon Mapper is a local-first grid map editor for tabletop RPG prep and play. Keep projects in **Your maps**, build an encounter, prepare its public content, then run a separately saved session with a read-only local player display. Export private editable backups, player images or print pages from the browser.
 
-**Try it now:** [evillollive.github.io/Dungeon-Mapper](https://evillollive.github.io/Dungeon-Mapper/)
+**Try it now:** [evilolive.com/Dungeon-Mapper](https://evilolive.com/Dungeon-Mapper/)
 
 The current workflow is documented below. The [release gates](./docs/USER-EXPERIENCE-ROADMAP.md#release-gate-ledger) remain open; the hosted app and passing individual checks are not full release or device qualification.
 
@@ -34,7 +34,7 @@ The current workflow is documented below. The [release gates](./docs/USER-EXPERI
 
 Use the hosted app if you just want to make a map:
 
-1. Open the [app](https://evillollive.github.io/Dungeon-Mapper/). The overview introduces **Create > Prepare > Run or export**. Choose **Explore a sample** to open the sample chooser, or use **Your maps** to create, import or continue a project. Collapse the overview when you no longer need it; this browser remembers your choice, and **Overview** brings it back.
+1. Open the [app](https://evilolive.com/Dungeon-Mapper/). The overview introduces **Create > Prepare > Run or export**. Choose **Explore a sample** to open the sample chooser, or use **Your maps** to create, import or continue a project. Collapse the overview when you no longer need it; this browser remembers your choice, and **Overview** brings it back.
 2. Choose a starting point, preview it, then select **Use this map**. Samples and imports become separate editable projects.
 3. Use **Build**, **Decorate** and **Look** to edit. Open **Project menu > Project settings** for dimensions and interface text size. Wait for **Saved on this device**.
 4. Review **Player preview**, including public note fields, hidden tokens and fog. The editor and **Fog setup** are trusted DM surfaces, not player displays.
