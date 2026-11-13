@@ -59,7 +59,7 @@ Open the local URL printed by Vite, usually `http://localhost:5173`.
 | --- | --- |
 | Map editing | 8×8 to 128×128 grids, 20 built-in tile types, custom themes/tiles, undo/redo, copy/cut/paste, background-image tracing, multi-level stair links. |
 | Generation | Rooms & Corridors, Open Terrain, Cavern, and Village generators with deterministic seeds, density controls, tile mixes, room labels, rivers, and generate-into-selection workflows. |
-| Table tools | Prepare/Run workflow, local read-only player display, explicit publication and blanking, fog, tokens, initiative, measurement and session checkpoints. |
+| Table tools | Prepare/Run workflow, local read-only player display, explicit publication and blanking, fog, tokens, initiative, measurement and spell templates, line of sight, area markers and session checkpoints. |
 | Art and themes | 13 legacy themes plus Dungeon Folio, monochrome print companions, paper textures, edge blending, hand-drawn rendering, lighting, stamps, vectors and scene templates. |
 | Portability | IndexedDB auto-save, JSON import/export, PNG/SVG export, high-DPI print export, installable PWA, and offline service-worker caching. |
 

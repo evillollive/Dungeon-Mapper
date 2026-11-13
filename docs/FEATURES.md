@@ -182,11 +182,28 @@ start with fog off. When fog is off, Prepare says the whole level is visible,
 shows a warning and offers **Turn on fog in Edit**, which opens **Fog & sight**.
 The acknowledgement then confirms that players will see the whole level.
 
-**Run** has reveal/hide, token movement, measurement, pings, encounter turns and
-session checkpoints. With **Reveal** or **Hide**, click one cell or drag across
+**Run** has reveal/hide, a defog brush, token movement, measurement, line of
+sight, area markers, pings, a dynamic fog switch, encounter turns and session
+checkpoints. With **Reveal** or **Hide**, click one cell or drag across
 an area to change it in one undoable action; the cell fields apply one cell
-from the keyboard. The private Run map shades cells that players cannot see,
-using the same projection as the player display. Changes save in a separate session record; the authored
+from the keyboard. **Defog brush** wipes fog off cell by cell along a drag, as
+one undoable action. The private Run map shades cells that players cannot see,
+using the same projection as the player display.
+
+**Measure** takes a start and an end cell (two clicks, a drag, or the cell
+fields). **Distance** reports the straight-line length and the count in squares
+and feet; **Circle**, **Cone** and **Line** draw a spell or ability template
+sized by that count, with a 90 degree cone and a one-cell-wide line. **Line of
+sight** highlights the cells visible from a chosen cell; walls, pillars and
+secret doors block it. Measurements and line of sight are drawn on the private
+Run map only. They are never saved or sent to the player display.
+
+**Place marker** and **Remove marker** add and remove circle, square or diamond
+area markers as undoable session actions. Players see a marker on the shown
+level once its whole area is known to them. **Dynamic fog** switches party
+sight on or off for the inspected level during play, and **Forget explored
+areas** clears what the party has already explored. Both need fog to be on for
+the level. Changes save in a separate session record; the authored
 source map stays unchanged. **Inspect DM level** does not change the published
 level. **Show this level** does. **Pause / blank now** blanks the local display.
 

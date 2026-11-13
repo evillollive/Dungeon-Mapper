@@ -44,7 +44,7 @@
 .session-card p { margin-bottom: 12px; color: var(--text-secondary); }
 .session-card label, .session-tools form { display: grid; gap: 8px; margin: 12px 0; }
 .session-run-grid { display: grid; grid-template-columns: 230px minmax(0, 1fr) 260px; gap: 20px; align-items: start; }
-.session-tool-buttons { display: grid; gap: 8px; }
+.session-tool-buttons { display: grid; gap: 8px; margin-bottom: 12px; }
 .session-tool-buttons [aria-pressed="true"] { background: var(--surface-active); border-color: var(--accent); box-shadow: inset 4px 0 var(--accent); }
 .session-tools button, .session-tools input, .session-tools select { width: 100%; }
 .session-tools > button { margin-top: 8px; }
@@ -56,6 +56,16 @@
 .session-map-surface { position: relative; }
 .session-area-preview { position: absolute; pointer-events: none; border: 2px dashed #ff9569; background: rgb(255 149 105 / 18%); }
 .session-area-preview.is-hide { border-color: #9aa4ff; background: rgb(154 164 255 / 22%); }
+.session-overlay { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.session-overlay [data-overlay="sight"] { fill: rgb(250 204 21 / 32%); }
+.session-overlay [data-overlay="sight-origin"] { fill: #facc15; stroke: #b45309; stroke-width: .08; }
+.session-overlay [data-overlay="brush"] { fill: rgb(255 149 105 / 45%); }
+.session-overlay [data-overlay="measure"] { fill: rgb(34 211 238 / 20%); stroke: #22d3ee; stroke-width: .12; stroke-dasharray: .3 .2; }
+.session-overlay [data-overlay="measure"].is-ruler { fill: none; }
+.session-overlay .session-measure-end { fill: #22d3ee; }
+.session-overlay text { fill: #22d3ee; stroke: #05060f; paint-order: stroke; font-weight: 700; text-anchor: middle; dominant-baseline: middle; }
+.session-tools .session-check { display: flex; align-items: center; gap: 8px; }
+.session-tools .session-check input { flex-shrink: 0; width: 24px; }
 .session-encounter ol { padding-left: 24px; margin: 16px 0; }
 .session-encounter [aria-current="step"] { color: var(--action-primary); font-weight: bold; }
 .session-workspace summary { cursor: pointer; min-height: 44px; padding: 8px 0; }
