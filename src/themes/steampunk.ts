@@ -1,6 +1,7 @@
 import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
 import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from '../utils/mapLabelFont';
 
 export const steampunkTheme: TileTheme = {
   id: 'steampunk',
@@ -139,7 +140,7 @@ export const steampunkTheme: TileTheme = {
           ctx.stroke();
         }
         const fontSize = Math.max(7, Math.floor(s * 0.5));
-        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#b87333';

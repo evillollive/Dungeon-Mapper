@@ -1,6 +1,7 @@
 import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
 import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from '../utils/mapLabelFont';
 
 export const wildernessTheme: TileTheme = {
   id: 'wilderness',
@@ -121,7 +122,7 @@ export const wildernessTheme: TileTheme = {
         ctx.arc(cx, cy - s * 0.1, s * 0.35, 0, Math.PI * 2);
         ctx.fill();
         const fontSize = Math.max(7, Math.floor(s * 0.5));
-        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#c8a84b';

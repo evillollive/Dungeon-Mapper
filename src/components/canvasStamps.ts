@@ -1,6 +1,7 @@
 import type { PlacedStamp, StampDef } from '../types/map';
 import { getStampDef } from '../utils/stampCatalog';
 import { drawFolioStampShadow, stampPath, stampPaths } from '../utils/folioFurnishingRender';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from '../utils/mapLabelFont';
 
 export function drawPlacedStamp(
   ctx: CanvasRenderingContext2D,
@@ -69,7 +70,7 @@ export function drawPlacedStamp(
     ctx.arc(bx, by, badgeSize * 0.5, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = '#ffd400';
-    ctx.font = `bold ${badgeSize * 0.7}px sans-serif`;
+    ctx.font = `${MAP_LABEL_WEIGHT} ${badgeSize * 0.7}px ${MAP_LABEL_FAMILY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText('\u{1f512}', bx, by);

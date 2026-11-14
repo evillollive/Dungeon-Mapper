@@ -1,6 +1,7 @@
 import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
 import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from '../utils/mapLabelFont';
 
 export const moderncityTheme: TileTheme = {
   id: 'moderncity',
@@ -122,7 +123,7 @@ export const moderncityTheme: TileTheme = {
         ctx.lineWidth = 0.5;
         ctx.strokeRect(px + 1, py + 1, s - 2, s - 2);
         const fontSize = Math.max(7, Math.floor(s * 0.6));
-        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#4a90c2';
@@ -517,7 +518,7 @@ export const moderncityTheme: TileTheme = {
         // "B" on sign
         ctx.fillStyle = '#ffffff';
         const fontSize = Math.max(6, Math.floor(s * 0.14));
-        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('B', cx, py + s * 0.2);

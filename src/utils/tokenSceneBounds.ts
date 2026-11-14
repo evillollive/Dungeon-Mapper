@@ -2,6 +2,7 @@ import type { LightSource, StairLink } from '../types/map';
 import { getFolioFurnishing } from '../assets/folio-furnishings-v1/catalog';
 import { getStampDef } from './stampCatalog';
 import { MAX_TOKEN_PAINT_BOXES, tokenPaintBounds, type PaintBox, type TokenPaintFrame } from './tokenRepaint';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from './mapLabelFont';
 
 interface SceneOptions {
   lightSources?: readonly LightSource[];
@@ -57,7 +58,7 @@ export function tokenSceneBounds(ctx: CanvasRenderingContext2D, frame: TokenPain
     for (const note of map.notes) {
       const x = (note.x + 0.5) * size, y = (note.y + 0.5) * size;
       circle(x, y, size * 0.38 + 1);
-      text(String(note.id), x, y + 0.5, `bold ${Math.max(8, size * 0.45)}px "Courier New", monospace`);
+      text(String(note.id), x, y + 0.5, `${MAP_LABEL_WEIGHT} ${Math.max(8, size * 0.45)}px ${MAP_LABEL_FAMILY}`);
     }
     for (const stamp of map.stamps ?? []) {
       const def = getFolioFurnishing(getStampDef(stamp.stampId));
@@ -76,7 +77,7 @@ export function tokenSceneBounds(ctx: CanvasRenderingContext2D, frame: TokenPain
         const badge = Math.max(10, size * 0.25);
         const bx = x + drawSize / 2 - badge * 0.4, by = y - drawSize / 2 - badge * 0.1;
         circle(bx, by, badge / 2);
-        text('\u{1f512}', bx, by, `bold ${badge * 0.7}px sans-serif`);
+        text('\u{1f512}', bx, by, `${MAP_LABEL_WEIGHT} ${badge * 0.7}px ${MAP_LABEL_FAMILY}`);
       }
     }
     for (const segment of map.wallSegments ?? []) line(segment.points, Math.max(1, segment.thickness * size / 2));
@@ -103,7 +104,7 @@ export function tokenSceneBounds(ctx: CanvasRenderingContext2D, frame: TokenPain
       for (const end of ends) {
         const x = (end.x + 1) * size - radius - 1, y = end.y * size + radius + 1;
         circle(x, y, radius + 0.6);
-        text(`L${end.level + 1}`, x, y, `bold ${Math.max(8, radius * 0.9)}px sans-serif`);
+        text(`L${end.level + 1}`, x, y, `${MAP_LABEL_WEIGHT} ${Math.max(8, radius * 0.9)}px ${MAP_LABEL_FAMILY}`);
       }
     }
     if (options.selection) {

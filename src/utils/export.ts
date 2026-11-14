@@ -18,6 +18,8 @@ import { isTokenFogged } from './tokenVisibility';
 import { deriveRenderableTiles } from './derivedRenderMap';
 import { getRiverBankColor, getRiverEndpointMarker } from './riverPolish';
 import { projectForAudience } from './audienceProjection';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from './mapLabelFont';
+import mapLabelFontData from '../assets/fonts/nunito-sans-latin-600-normal.woff2?inline';
 import { findCustomTile, getSemanticTileType, getThemeWithCustom } from './customThemes';
 import { assertExportSurface, planExport, MAX_TEXTURE_SIDE, type ExportPlanOptions } from './exportPlan';
 import { withPNGResolution } from './pngResolution';
@@ -237,7 +239,7 @@ export function buildMapSVG(
     const ncy = note.y * tileSize + tileSize / 2;
     const r = tileSize * 0.38;
     svg += `<circle cx="${ncx}" cy="${ncy}" r="${r}" fill="#f0c040" stroke="#8b6914" stroke-width="1"/>`;
-    svg += `<text x="${ncx}" y="${ncy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * 0.45)}" font-family="monospace" fill="#1a1a2e" font-weight="bold">${note.id}</text>`;
+    svg += `<text x="${ncx}" y="${ncy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * 0.45)}" font-family="${MAP_LABEL_FAMILY}" fill="#1a1a2e" font-weight="${MAP_LABEL_WEIGHT}">${note.id}</text>`;
   });
 
   // Wall segments: rendered as solid polylines along grid edges.
@@ -305,7 +307,7 @@ export function buildMapSVG(
       } else {
         svg += `<rect x="${cx - r}" y="${cy - r}" width="${r * 2}" height="${r * 2}" fill="${fill}" stroke="${stroke}" stroke-width="${Math.max(1, tileSize * 0.06)}"/>`;
       }
-      svg += `<text x="${cx}" y="${cy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(7, tileSize * 0.28)}" font-family="monospace" fill="#0f172a" font-weight="bold">${label}</text>`;
+      svg += `<text x="${cx}" y="${cy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(7, tileSize * 0.28)}" font-family="${MAP_LABEL_FAMILY}" fill="#0f172a" font-weight="${MAP_LABEL_WEIGHT}">${label}</text>`;
     }
   }
 
@@ -420,7 +422,7 @@ export function buildMapSVG(
       svg += `<g transform="translate(${ox},${oy}) scale(${scale})"><path d="${iconDef.path}" fill="#ffffff"/></g>`;
     } else {
       const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
-      svg += `<text x="${tcx}" y="${tcy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * sz * 0.5)}" font-family="monospace" fill="#ffffff" font-weight="bold">${escapeXML(glyph)}</text>`;
+      svg += `<text x="${tcx}" y="${tcy + 1}" text-anchor="middle" dominant-baseline="middle" font-size="${Math.max(8, tileSize * sz * 0.5)}" font-family="${MAP_LABEL_FAMILY}" fill="#ffffff" font-weight="${MAP_LABEL_WEIGHT}">${escapeXML(glyph)}</text>`;
     }
   }
 
@@ -460,6 +462,11 @@ export function buildMapSVG(
     }
   }
 
+  // Embed the label font so a downloaded SVG shows the same labels without the app.
+  if (svg.includes('<text ')) {
+    const open = svg.indexOf('>') + 1;
+    svg = svg.slice(0, open) + `<defs><style>@font-face{font-family:'Nunito Sans';font-weight:${MAP_LABEL_WEIGHT};src:url(${mapLabelFontData}) format('woff2')}</style></defs>` + svg.slice(open);
+  }
   svg += `</svg>`;
 
   return svg;

@@ -1,6 +1,7 @@
 import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
 import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from '../utils/mapLabelFont';
 
 // Starship theme: the interior of a deep-space vessel — riveted bulkheads,
 // metal deck plating, neon blast doors, and humming data cores. This carries
@@ -147,7 +148,7 @@ export const starshipTheme: TileTheme = {
         ctx.fillStyle = '#0a1520';
         ctx.fillRect(px + 3, py + 3, s - 6, s - 6);
         const fontSize = Math.max(7, Math.floor(s * 0.6));
-        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#00c8ff';

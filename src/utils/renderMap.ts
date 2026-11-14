@@ -28,6 +28,7 @@ import { deriveRenderableTiles } from './derivedRenderMap';
 import { drawRiverBanks, drawRiverEndpointMarkers } from './riverPolish';
 import { projectForAudience, type PlayerProjection } from './audienceProjection';
 import { assertExportSurface, MAX_TEXTURE_SIDE } from './exportPlan';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from './mapLabelFont';
 
 // Screen-mode canvas styling (mirrored from MapCanvas.tsx).
 const SCREEN_BG = '#f4f1e4';
@@ -312,7 +313,7 @@ function renderMapDataToCanvas(
       ctx.stroke();
       ctx.fillStyle = '#1a1a2e';
     }
-    ctx.font = `bold ${Math.max(8, tileSize * 0.45)}px "Courier New", monospace`;
+    ctx.font = `${MAP_LABEL_WEIGHT} ${Math.max(8, tileSize * 0.45)}px ${MAP_LABEL_FAMILY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(String(note.id), px, py + 0.5);
@@ -472,7 +473,7 @@ function renderMapDataToCanvas(
     ctx.fillRect(barX, barY - (tickH - barHeight) / 2, Math.max(1, tileSize * 0.03), tickH);
     ctx.fillRect(barX + barPx - Math.max(1, tileSize * 0.03), barY - (tickH - barHeight) / 2, Math.max(1, tileSize * 0.03), tickH);
     // Label above bar
-    ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+    ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
     // Shadow for readability
@@ -528,7 +529,7 @@ function renderToken(
   } else {
     const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
     ctx.fillStyle = '#ffffff';
-    ctx.font = `bold ${Math.max(8, tileSize * size * 0.5)}px "Courier New", monospace`;
+    ctx.font = `${MAP_LABEL_WEIGHT} ${Math.max(8, tileSize * size * 0.5)}px ${MAP_LABEL_FAMILY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(glyph, px, py + 0.5);

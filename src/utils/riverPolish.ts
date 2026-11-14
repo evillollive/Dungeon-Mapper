@@ -1,5 +1,6 @@
 import type { River, RiverBankType, RiverEndpointMarker, RiverType, Tile } from '../types/map';
 import type { TileBounds } from './canvasGeometry';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from './mapLabelFont';
 
 interface BankPalette {
   sand: string;
@@ -127,7 +128,7 @@ function drawEndpoint(
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = printMode ? '#000000' : '#0f172a';
-  ctx.font = `bold ${Math.max(7, tileSize * 0.28)}px "Courier New", monospace`;
+  ctx.font = `${MAP_LABEL_WEIGHT} ${Math.max(7, tileSize * 0.28)}px ${MAP_LABEL_FAMILY}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(ENDPOINT_LABELS[marker], cx, cy + 0.5);

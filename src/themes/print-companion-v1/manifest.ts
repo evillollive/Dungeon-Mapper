@@ -21,7 +21,7 @@ export const PRINT_COMPANION_MANIFEST = {
   })),
   tokenFrames: 'src/utils/folioTokenRender.ts',
   legacyTokens: 'src/utils/printTokenRender.ts',
-  legacyTokenSourceHash: 'sha256:5950aca9bf17c696eae80fed7ed5392229abe2f2b075d693af79f03f02079fff',
+  legacyTokenSourceHash: 'sha256:dae81fa1ee8b16280cf7d4077e7c32bebcb95ddc16e9790fdc189d1559665bfc',
   sampleSource: 'src/utils/launchSamples.ts',
   sampleSourceHash: 'sha256:88dd81c171c83ad7ab5cf374a30940b4d50e8c0621a3dc0fe9c87b3393eb9190',
 } as const;

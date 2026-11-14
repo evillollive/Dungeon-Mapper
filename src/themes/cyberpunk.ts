@@ -1,6 +1,7 @@
 import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
 import { jitterColor, drawWallDepth, tileHash, drawWallAO } from './artUtils';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from '../utils/mapLabelFont';
 
 export const cyberpunkTheme: TileTheme = {
   id: 'cyberpunk',
@@ -131,7 +132,7 @@ export const cyberpunkTheme: TileTheme = {
         ctx.lineWidth = 3;
         ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
         const fontSize = Math.max(7, Math.floor(s * 0.6));
-        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#ff00ff';

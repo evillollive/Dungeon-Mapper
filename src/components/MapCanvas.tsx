@@ -25,6 +25,7 @@ import { useCanvasEditingDraft } from '../hooks/useCanvasDraft';
 import type { RegionSelection } from '../hooks/useEditorSelection';
 import { readEditorViewport, writeEditorViewport } from '../utils/editorViewport';
 import { sameRepaintInputs } from '../utils/tokenRepaint';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from '../utils/mapLabelFont';
 
 // Screen-mode canvas styling: light graph-paper background with cyan grid lines,
 // evoking traditional engineering / quad-ruled graph paper regardless of theme.
@@ -403,7 +404,7 @@ function drawToken(
   } else {
     const glyph = token.icon ?? (token.label?.[0] ?? token.kind[0] ?? '?').toUpperCase();
     ctx.fillStyle = '#ffffff';
-    ctx.font = `bold ${Math.max(8, tileSize * size * 0.5)}px "Courier New", monospace`;
+    ctx.font = `${MAP_LABEL_WEIGHT} ${Math.max(8, tileSize * size * 0.5)}px ${MAP_LABEL_FAMILY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(glyph, px, py + 0.5);
@@ -1446,7 +1447,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
           ctx.stroke();
           ctx.fillStyle = '#1a1a2e';
         }
-        ctx.font = `bold ${Math.max(8, tileSize * 0.45)}px "Courier New", monospace`;
+        ctx.font = `${MAP_LABEL_WEIGHT} ${Math.max(8, tileSize * 0.45)}px ${MAP_LABEL_FAMILY}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(String(note.id), px, py + 0.5);
@@ -1719,7 +1720,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
             // Level number label
             const label = `L${destLevel + 1}`;
             ctx.fillStyle = '#fff';
-            ctx.font = `bold ${Math.max(8, badgeR * 0.9)}px sans-serif`;
+            ctx.font = `${MAP_LABEL_WEIGHT} ${Math.max(8, badgeR * 0.9)}px ${MAP_LABEL_FAMILY}`;
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(label, px, py);
@@ -1867,7 +1868,7 @@ const MapCanvas = forwardRef<MapCanvasHandle, MapCanvasProps>((props, ref) => {
           const midY = (sy + ey) / 2;
           const labelText = `${distCells} sq · ${distFeet} ft`;
           const fontSize = Math.max(12, tileSize * 0.4);
-          ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+          ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
           const textWidth = ctx.measureText(labelText).width;
           const pad = fontSize * 0.35;
           // Background pill

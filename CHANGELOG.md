@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 ## [Unreleased]
 
 - New **Welcome** page for people with no maps yet: what the app does, that it's free, how it works in three steps, and two ways to start. Returning users go straight to **Your maps**, which has a **Welcome** button. Video slots for the trailer and explainer stay hidden until their YouTube IDs are set in `src/welcomeMedia.ts`. Replaces the collapsible overview.
-- The interface font is now Nunito Sans, bundled with the app so it works offline and looks the same on every device, in two weights (regular and semibold). Map art and export labels keep their own fonts for now.
+- The interface font is now Nunito Sans, bundled with the app so it works offline and looks the same on every device, in two weights (regular and semibold). Map labels use it too: door, trap and treasure letters, token letters and note numbers draw in Nunito Sans semibold on screen, in print and in exports, and SVG exports embed the font so they look the same anywhere (#202).
 - Renamed DM view to **Fog setup** and described it as map preparation: it sets the fog players start with and saves to the map, while Run is the screen for play. No controls moved or removed.
 - The published app address is now `https://evilolive.com/Dungeon-Mapper/`. The post-deploy check expects that address and reads the published files over HTTPS.
 - Fixed: dragging with the Select tool now selects a tile region even when the drag starts on a room, token, note, stamp or river, so Copy, Cut and Scene templates work on finished rooms. A click without a drag still picks the object (#195).

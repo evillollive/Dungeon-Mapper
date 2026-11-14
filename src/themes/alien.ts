@@ -1,6 +1,7 @@
 import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
 import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from '../utils/mapLabelFont';
 
 // Alien World theme: a strange, biological landscape — spongy spore beds,
 // fungal walls, glowing acid pools, towering crystal spires, and pulsing
@@ -153,7 +154,7 @@ export const alienTheme: TileTheme = {
         ctx.arc(px + s * 0.5, py + s * 0.7, s * 0.2, 0, Math.PI * 2);
         ctx.fill();
         const fontSize = Math.max(7, Math.floor(s * 0.6));
-        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#ff60d0';
