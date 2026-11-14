@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+- New logo: a map pin with a D-shaped dungeon door, standing on a map square. It replaces the default Vite icon in the browser tab and the installed-app icons, and adds an iPhone home screen icon and a separate Android icon. The installed app's name, description and the page title now use the Welcome page copy.
+- Rewrote the README as a landing page with the new logo, the Welcome page headline and intro, and shorter setup notes. Release and qualification detail stays in the linked docs.
 - New **Welcome** page for people with no maps yet: what the app does, that it's free, how it works in three steps, and two ways to start. Returning users go straight to **Your maps**, which has a **Welcome** button. Video slots for the trailer and explainer stay hidden until their YouTube IDs are set in `src/welcomeMedia.ts`. Replaces the collapsible overview.
 - The interface font is now Nunito Sans, bundled with the app so it works offline and looks the same on every device, in two weights (regular and semibold). Map labels use it too: door, trap and treasure letters, token letters and note numbers draw in Nunito Sans semibold on screen, in print and in exports, and SVG exports embed the font so they look the same anywhere (#202).
 - Renamed DM view to **Fog setup** and described it as map preparation: it sets the fog players start with and saves to the map, while Run is the screen for play. No controls moved or removed.

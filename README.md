@@ -1,122 +1,96 @@
-# ⚔ Dungeon Mapper
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/logo-dark.svg" />
+    <img alt="Dungeon Mapper" src="docs/assets/brand/logo.svg" width="420" />
+  </picture>
+</p>
 
-**Make battle maps that look great fast, then keep polishing until they feel like your table.**
+<p align="center">
+  <a href="https://evilolive.com/Dungeon-Mapper/"><img alt="Open the app" src="https://img.shields.io/badge/web_app-open-ff9569?logo=googlechrome&logoColor=white" /></a>
+  <a href="https://github.com/evillollive/Dungeon-Mapper/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/evillollive/Dungeon-Mapper/actions/workflows/ci.yml/badge.svg" /></a>
+  <a href="LICENSE"><img alt="License: AGPL v3" src="https://img.shields.io/badge/license-AGPL_v3-blue.svg" /></a>
+  <img alt="Works offline" src="https://img.shields.io/badge/PWA-works_offline-5A0FC8" />
+</p>
 
-[![CI](https://github.com/evillollive/Dungeon-Mapper/actions/workflows/ci.yml/badge.svg)](https://github.com/evillollive/Dungeon-Mapper/actions/workflows/ci.yml)
-![TypeScript](https://img.shields.io/badge/TypeScript-6.x-3178C6?logo=typescript&logoColor=white)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=111827)
-![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
-![PWA](https://img.shields.io/badge/PWA-offline_capable-5A0FC8)
-![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)
+<h3 align="center">Make the map tonight, and run it tomorrow.</h3>
 
-Dungeon Mapper is a local-first grid map editor for tabletop RPG prep and play. Keep projects in **Your maps**, build an encounter, prepare its public content, then run a separately saved session with a read-only local player display. Export private editable backups, player images or print pages from the browser.
+Dungeon Mapper is a free map builder for tabletop RPGs that runs in your browser, no account needed and nothing to install. Draw or generate a map, hide what your players shouldn't see, and bring it to your table.
 
-**Try it now:** [evilolive.com/Dungeon-Mapper](https://evilolive.com/Dungeon-Mapper/)
+<p align="center"><a href="https://evilolive.com/Dungeon-Mapper/"><b>Open Dungeon Mapper</b></a></p>
 
-The current workflow is documented below. The [release gates](./docs/USER-EXPERIENCE-ROADMAP.md#release-gate-ledger) remain open; the hosted app and passing individual checks are not full release or device qualification.
+![A finished dungeon map in Dungeon Mapper](docs/assets/brand/hero.webp)
 
-## Who it's for
+## Why GMs use it
 
-| Audience | What Dungeon Mapper helps with |
+- **A first draft in minutes.** Start from a sample, one of four map generators, or a blank grid, then keep polishing with furniture, tokens, notes, themes, and art layers.
+- **Prep and play stay separate.** Set up fog and private notes ahead of time, then run the session on its own save without touching the map you built.
+- **A second screen for players.** Open the player display, reveal rooms as the party explores, and blank it with one click.
+- **One map, many looks.** The same layout can be a dungeon, castle, starship, cyberpunk street, pirate ship, or desert ruin, plus a black and white version for printing.
+- **Free, and yours.** There's no paid tier and no account. Maps are saved in your browser, it works offline, and you can export a backup file whenever you want another copy.
+
+## How it works
+
+1. **Build the map.** Start from a sample, a generator, or a blank grid, then paint rooms, place furniture and tokens, and add notes only you can see.
+2. **Decide what players see.** Turn on fog and pick the starting area: hidden tokens and private notes stay on your side.
+3. **Show it at the table.** Open the player display on a second screen, and reveal rooms as the party explores.
+
+Export a private backup, an image for players, or print pages whenever you need them. The [feature reference](docs/FEATURES.md) covers every tool.
+
+## Features
+
+| Area | What's included |
 | --- | --- |
-| Game masters | Prep battle maps, reveal them safely at the table, and keep notes/tokens nearby. |
-| Solo designers | Rapidly explore room layouts, terrain, rivers, villages, and theme variants. |
-| TTRPG hackers | Study a compact React + TypeScript canvas app with procedural generation, FOV, fog, export, PWA, and accessibility work. |
+| Map editing | Grids from 8×8 to 128×128, 20 tile types, custom themes and tiles, undo and redo, copy and paste, background image tracing, and multi-level maps linked by stairs. |
+| Generators | Rooms and corridors, open terrain, caverns, and villages, with repeatable seeds, density controls, rivers, and room labels. |
+| At the table | Prepare and Run modes, a read-only player display, fog, tokens, initiative, measuring shapes, line of sight, area markers, and session checkpoints. |
+| Art and themes | 13 themes plus Dungeon Folio, black and white print versions, paper textures, hand-drawn rendering, lighting, stamps, and scene templates. |
+| Saving and export | Automatic saving in the browser, JSON backups, PNG and SVG export, high-resolution print pages, and offline use as an installed app. |
 
-## Why it's interesting
+![The Lantern Crypt sample in color and in black and white](docs/media/launch-art/launch-lantern-crypt-outlined.png)
 
-- **Fast first draft, deep polish later.** Start from a blank grid, a sample project, or one of four deterministic generators, then keep refining with stamps, vectors, notes, themes, art layers, and exports.
-- **Separate prep from play.** Prepare visibility and public notes in Edit, then reveal cells, move tokens and advance turns in Run without overwriting the authored map.
-- **Themeable without losing structure.** The same map data can become a dungeon, castle, starship, cyberpunk street, wilderness trail, pirate ship, desert site, and more.
-- **Local-first and portable.** Projects auto-save to this browser's IndexedDB. Private JSON backups keep a separate copy; verified app caching enables offline use. Neither device storage nor the cache is a backup.
+## Good to know
 
-## Quick start
+- Maps live in this browser on this device. Export a backup (**Export > Back up project**) before clearing browser data or switching computers.
+- Backups don't include session records. In Run, **Download session recovery** keeps a private copy of a session in progress.
+- PNG, SVG, and print pages are for sharing and printing; only JSON backups can be imported again.
+- To use it offline, open **Offline & updates** while online and wait for **App and built-in art cached.**
+- Print at actual size (100%) on A4 or Letter.
 
-Use the hosted app if you just want to make a map:
+## Run it locally
 
-1. Open the [app](https://evilolive.com/Dungeon-Mapper/). If you have no maps yet, the **Welcome** page explains the app. Choose **Explore a sample map** to open the sample chooser, or **Your maps** to create, import or continue a project. Once you have a map, the app opens on **Your maps**, and its **Welcome** button brings the page back.
-2. Choose a starting point, preview it, then select **Use this map**. Samples and imports become separate editable projects.
-3. Use **Build**, **Decorate** and **Look** to edit. Open **Project menu > Project settings** for dimensions and interface text size. Wait for **Saved on this device**.
-4. Review **Player preview**, including public note fields, hidden tokens and fog. The editor and **Fog setup** are trusted DM surfaces, not player displays.
-5. Choose **Prepare session**, review visibility and acknowledge the checklist, then **Start session**. Run saves progress separately from the source project.
-6. Choose **Open player display** for a second window in the same browser, then **Show this level**. Use **Pause / blank now** to blank it. This is not a remote share link.
-7. Use **Export > Back up project** for private editable JSON or **Share with players** for an audience-filtered PNG/SVG. Before leaving Run, save/end or leave the session for later resumption.
-
-Project backups do **not** include separate session records. In Run, **Download session recovery** retains private session data; there is no dedicated importer for that file. See [saving and recovery](./docs/FEATURES.md#saving-exporting--importing).
-
-Run it locally when you want to hack on the project:
+You need Node.js 20 or newer.
 
 ```bash
+git clone https://github.com/evillollive/Dungeon-Mapper.git
+cd Dungeon-Mapper
 npm install
-npm run dev
+npm run dev       # open the local address Vite prints, usually http://localhost:5173
 ```
 
-Open the local URL printed by Vite, usually `http://localhost:5173`.
+Other commands:
 
-## Feature highlights
+```bash
+npm run build     # type-check and build for production
+npm run preview   # preview the production build
+npm run lint      # run ESLint
+npm test          # run the unit tests once
+```
 
-| Area | Highlights |
-| --- | --- |
-| Map editing | 8×8 to 128×128 grids, 20 built-in tile types, custom themes/tiles, undo/redo, copy/cut/paste, background-image tracing, multi-level stair links. |
-| Generation | Rooms & Corridors, Open Terrain, Cavern, and Village generators with deterministic seeds, density controls, tile mixes, room labels, rivers, and generate-into-selection workflows. |
-| Table tools | Prepare/Run workflow, local read-only player display, explicit publication and blanking, fog, tokens, initiative, measurement and spell templates, line of sight, area markers and session checkpoints. |
-| Art and themes | 13 legacy themes plus Dungeon Folio, monochrome print companions, paper textures, edge blending, hand-drawn rendering, lighting, stamps, vectors and scene templates. |
-| Portability | IndexedDB auto-save, JSON import/export, PNG/SVG export, high-DPI print export, installable PWA, and offline service-worker caching. |
+Pull requests run the unit tests plus browser tests in Chromium, Firefox, and WebKit, and the app deploys only after those pass. The [development guide](docs/DEVELOPMENT.md) covers project structure and tests.
 
-## Visual tour
-
-**One map, two looks.** The Lantern Crypt is an included sample, shown here in color and with its monochrome print companion.
-
-![The Lantern Crypt sample in color and monochrome](./docs/media/launch-art/launch-lantern-crypt-outlined.png)
-
-These retained clips show earlier editor layouts, not the current first-use or session flow.
-
-| Generate maps | Draw rivers | Shape rooms |
-| --- | --- | --- |
-| ![Generate Hub demo](./docs/media/generate-hub.gif) | ![River tool demo](./docs/media/river-tool.gif) | ![Room shapes demo](./docs/media/room-shapes.gif) |
-
-## Documentation map
-
-The README is intentionally a landing page. The detailed reference material is preserved in focused docs:
+## Documentation
 
 | Need | Start here |
 | --- | --- |
-| Full feature tour and tool reference | [Feature Reference](./docs/FEATURES.md) |
-| Project architecture | [Architecture](./docs/ARCHITECTURE.md) |
-| Setup, scripts, and test structure | [Development Guide](./docs/DEVELOPMENT.md) |
-| DM/player workflow and visual redesign plan | [End-user Experience Roadmap](./docs/USER-EXPERIENCE-ROADMAP.md) |
-| Roadmap and competitive analysis | [Roadmap](./docs/ROADMAP.md) |
-| Sharing and launch copy | [Sharing Guide](./docs/SHARING.md) |
-| Release notes | [Changelog](./CHANGELOG.md) |
-| Contribution expectations | [Contributing](./CONTRIBUTING.md) |
-
-## Commands
-
-```bash
-npm install       # install dependencies
-npm run dev       # start Vite dev server
-npm run build     # type-check and build production assets
-npm run preview   # preview the production build
-npm run lint      # run ESLint
-npm test          # run the Vitest suite once
-npm run test:watch
-```
-
-The project targets Node.js 20+ and npm 10+. CI requires build/test and three-engine browser qualification for pull requests and pushes to `main`. The checked-in workflow gates Pages packaging and deployment on those checks using one verified build artifact. This policy is locally implemented but still awaits hosted verification; see [release qualification](./docs/UX-09-HANDOFF.md#rollout-and-rollback) rather than treating deployment as approval.
-
-## Format notes and caveats
-
-- JSON is the editable project format and includes levels, tiles, notes, tokens, stair links, themes, fog, stamps, vectors, and metadata.
-- PNG, SVG, and print exports are share/print formats, not import formats.
-- The app is browser-based and client-only; there is no account system or hosted project sync.
-- Custom uploaded graphics are stored with the project export, so keep file-size limits in mind for portable maps.
-- Open **Offline & updates** while online and wait for **App and built-in art cached.** before relying on offline use. Updates wait for an explicit **Update saved workspace** request after saving and closing other app windows.
-- Printing supports A4/Letter PNG pages. Use actual size / 100%; physical scale, overlap and readability qualification remain open.
-- Responsive and keyboard workflows exist, but physical mobile/touch/pen, native zoom, screen-reader and participant acceptance are not established by automated browser results.
+| Every tool, explained | [Feature reference](docs/FEATURES.md) |
+| How the code fits together | [Architecture](docs/ARCHITECTURE.md) |
+| Setup, scripts, and tests | [Development guide](docs/DEVELOPMENT.md) |
+| Where it's headed | [Roadmap](docs/ROADMAP.md) and [user experience roadmap](docs/USER-EXPERIENCE-ROADMAP.md) |
+| What changed | [Changelog](CHANGELOG.md) |
 
 ## Contributing
 
-Found a bug, built a cool improvement, or have a quality-of-life tweak that would make prep smoother? Please read [CONTRIBUTING.md](./CONTRIBUTING.md) before opening a pull request.
+Found a bug or have an idea for a tool? [Open an issue](https://github.com/evillollive/Dungeon-Mapper/issues), or read [CONTRIBUTING.md](CONTRIBUTING.md) before sending a pull request.
 
 ## License
 
