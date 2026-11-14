@@ -13,7 +13,7 @@ export default defineConfig({
       filename: 'service-worker.ts',
       registerType: 'prompt',
       injectRegister: false,
-      includeAssets: ['favicon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
+      includeAssets: ['favicon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png', 'pwa-maskable-512x512.png'],
       manifest: false, // We provide public/manifest.webmanifest directly
       injectManifest: {
         globPatterns: ['**/*.{js,css,html,svg,png,webp,woff,woff2,webmanifest}'],

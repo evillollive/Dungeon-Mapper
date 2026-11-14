@@ -1,14 +1,17 @@
 {
-  "name": "Dungeon Mapper — Grid-based Map Editor",
+  "name": "Dungeon Mapper",
   "short_name": "Dungeon Mapper",
-  "description": "A retro-styled, interactive grid-based dungeon map editor for tabletop RPGs. Paint tiles, add fog of war, place tokens, and generate procedural maps.",
+  "description": "A free map builder for tabletop RPGs that runs in your browser, no account needed and nothing to install. Draw or generate a map, hide what your players shouldn't see, and bring it to your table.",
   "theme_color": "#f4f1ea",
   "background_color": "#f4f1ea",
   "display": "standalone",
   "orientation": "any",
   "start_url": "/Dungeon-Mapper/",
   "scope": "/Dungeon-Mapper/",
-  "categories": ["games", "utilities"],
+  "categories": [
+    "games",
+    "utilities"
+  ],
   "icons": [
     {
       "src": "pwa-192x192.png",
@@ -21,10 +24,10 @@
       "type": "image/png"
     },
     {
-      "src": "pwa-512x512.png",
+      "src": "pwa-maskable-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
     }
   ]
 }
