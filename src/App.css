@@ -27,7 +27,7 @@
   background: var(--surface-panel);
   color: var(--text-primary);
   font: inherit;
-  font-family: 'Avenir Next', Avenir, sans-serif;
+  font-family: var(--font-ui);
   border-bottom: 1px solid var(--border);
   max-height: 40vh;
   overflow: auto;
@@ -61,7 +61,7 @@
   padding: 8px 12px;
   color: #eee8ff;
   background: #141320;
-  font-family: 'Avenir Next', Avenir, sans-serif;
+  font-family: var(--font-ui);
   border-bottom: 1px solid #655475;
   max-height: 35vh;
   overflow: auto;

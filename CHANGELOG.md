@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+- The interface font is now Nunito Sans, bundled with the app so it works offline and looks the same on every device, in two weights (regular and semibold). Map art and export labels keep their own fonts for now.
 - Renamed DM view to **Fog setup** and described it as map preparation: it sets the fog players start with and saves to the map, while Run is the screen for play. No controls moved or removed.
 - The published app address is now `https://evilolive.com/Dungeon-Mapper/`. The post-deploy check expects that address and reads the published files over HTTPS.
 - Fixed: dragging with the Select tool now selects a tile region even when the drag starts on a room, token, note, stamp or river, so Copy, Cut and Scene templates work on finished rooms. A click without a drag still picks the object (#195).
