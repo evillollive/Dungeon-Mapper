@@ -68,6 +68,8 @@
 .library-error { background: #42232c; color: #ffadad; padding: 16px; border: 1px solid #ffadad; border-radius: 7px; }
 .project-library .library-danger { color: #ffadad; }
 .library-package-comparison { border-left: 4px solid #ff9569; padding: 4px 18px 12px; margin: 20px 0; background: #161322; }
+/* Keep the focused heading fully inside the scrollport when its position is fractional. */
+.library-package-comparison h3 { scroll-margin-block: 4px; }
 .library-package-comparison dl { display: grid; grid-template-columns: minmax(120px, auto) 1fr; gap: 8px 18px; }
 .library-package-comparison dt { color: var(--library-muted); }
 .library-package-comparison dd { margin: 0; overflow-wrap: anywhere; }
