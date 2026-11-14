@@ -1,6 +1,7 @@
 import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
 import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from '../utils/mapLabelFont';
 
 export const postapocalypseTheme: TileTheme = {
   id: 'postapocalypse',
@@ -149,7 +150,7 @@ export const postapocalypseTheme: TileTheme = {
         ctx.lineTo(px + s - 3, py + s - 3);
         ctx.stroke();
         const fontSize = Math.max(7, Math.floor(s * 0.55));
-        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#c09820';

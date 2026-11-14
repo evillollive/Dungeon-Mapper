@@ -13,6 +13,7 @@
 
 import type { TileType } from '../types/map';
 import { chooseReadableOverlayColor } from '../utils/accessibility';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from '../utils/mapLabelFont';
 
 /* -------------------------------------------------------------------------- */
 /*  Overlay drawing                                                           */
@@ -62,7 +63,7 @@ export function drawTileOverlay(
     case 'door-h':
     case 'door-v': {
       const fontSize = Math.max(6, Math.floor(s * 0.5));
-      ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+      ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = fg;
@@ -81,7 +82,7 @@ export function drawTileOverlay(
     case 'locked-door-h':
     case 'locked-door-v': {
       const fontSize = Math.max(6, Math.floor(s * 0.5));
-      ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+      ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = fg;
@@ -99,7 +100,7 @@ export function drawTileOverlay(
     case 'trapped-door-h':
     case 'trapped-door-v': {
       const fontSize = Math.max(6, Math.floor(s * 0.5));
-      ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+      ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = fg;
@@ -116,7 +117,7 @@ export function drawTileOverlay(
     /* ---- Portcullis: "#" grid symbol ---- */
     case 'portcullis': {
       const fontSize = Math.max(6, Math.floor(s * 0.55));
-      ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+      ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = fg;
@@ -153,7 +154,7 @@ export function drawTileOverlay(
     /* ---- Stairs Up: upward-pointing triangle ---- */
     case 'stairs-up': {
       const fontSize = Math.max(6, Math.floor(s * 0.55));
-      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = fg;
@@ -164,7 +165,7 @@ export function drawTileOverlay(
     /* ---- Stairs Down: downward-pointing triangle ---- */
     case 'stairs-down': {
       const fontSize = Math.max(6, Math.floor(s * 0.55));
-      ctx.font = `bold ${fontSize}px sans-serif`;
+      ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = fg;
@@ -175,7 +176,7 @@ export function drawTileOverlay(
     /* ---- Trap: "T" with a diagonal strikethrough ---- */
     case 'trap': {
       const fontSize = Math.max(6, Math.floor(s * 0.5));
-      ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+      ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = fg;
@@ -192,7 +193,7 @@ export function drawTileOverlay(
     /* ---- Treasure: "$" sign ---- */
     case 'treasure': {
       const fontSize = Math.max(6, Math.floor(s * 0.55));
-      ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+      ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillStyle = fg;

@@ -1,6 +1,7 @@
 import type { Token } from '../types/map';
 import { drawFolioToken, FOLIO_TOKEN_FRAMES } from './folioTokenRender';
 import { ICON_BY_ID } from './iconLibrary';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from './mapLabelFont';
 
 /** Keep approved Folio glyphs; give older tokens the same non-color affiliations. */
 export function drawPrintToken(ctx: CanvasRenderingContext2D, token: Token, tileSize: number): void {
@@ -28,7 +29,7 @@ export function drawPrintToken(ctx: CanvasRenderingContext2D, token: Token, tile
     // Color emoji fonts cannot promise monochrome ink. Keep a readable identifier.
     const initial = (token.icon?.match(/^[a-z0-9]$/i)?.[0] ??
       token.label.match(/[a-z0-9]/i)?.[0] ?? token.kind[0]).toUpperCase();
-    ctx.font = 'bold 240px "Courier New", monospace';
+    ctx.font = `${MAP_LABEL_WEIGHT} 240px ${MAP_LABEL_FAMILY}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillText(initial, 256, 274);

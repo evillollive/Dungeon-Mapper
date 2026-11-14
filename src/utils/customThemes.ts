@@ -2,6 +2,7 @@ import type { BuiltInTileType, CustomThemeDefinition, TileType } from '../types/
 import { isBuiltInTileType } from '../types/map';
 import type { TileTheme } from '../themes';
 import { getTheme, THEME_LIST } from '../themes';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from './mapLabelFont';
 
 const customImageCache = new Map<string, HTMLImageElement>();
 
@@ -140,7 +141,7 @@ export function createCustomTileTheme(
         }
       } else {
         ctx.fillStyle = 'rgba(255,255,255,0.75)';
-        ctx.font = `bold ${Math.max(8, size * 0.38)}px sans-serif`;
+        ctx.font = `${MAP_LABEL_WEIGHT} ${Math.max(8, size * 0.38)}px ${MAP_LABEL_FAMILY}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(customTileFallbackLabel(), px + size / 2, py + size / 2);

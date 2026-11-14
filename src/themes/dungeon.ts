@@ -1,6 +1,7 @@
 import type { TileDrawContext, TileTheme } from './index';
 import type { BuiltInTileType, TileType } from '../types/map';
 import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile, drawFloorCracks } from './artUtils';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from '../utils/mapLabelFont';
 
 const WALL_SEAM_HASH_OFFSET_X = 13;
 const WALL_SEAM_HASH_OFFSET_Y = 29;
@@ -250,7 +251,7 @@ export const dungeonTheme: TileTheme = {
       case 'secret-door': {
         drawDungeonWall(ctx, px, py, s, x, y, context);
         const fontSize = Math.max(7, Math.floor(s * 0.6));
-        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#c8a84b';

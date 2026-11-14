@@ -1,6 +1,7 @@
 import type { TileDrawContext, TileTheme } from './index';
 import type { TileType } from '../types/map';
 import { jitterColor, drawWallDepth, tileHash, drawWallAO, drawWaterTile } from './artUtils';
+import { MAP_LABEL_FAMILY, MAP_LABEL_WEIGHT } from '../utils/mapLabelFont';
 
 // Lost Civilization theme: a forgotten civilization's stone complex — sun-bleached
 // sandstone halls, carved hieroglyph-style walls, fluted pillars, toppled
@@ -144,7 +145,7 @@ export const ancientTheme: TileTheme = {
         ctx.fillRect(px + 2, py + 2, s - 4, 2);
         ctx.fillRect(px + 2, py + 2, 2, s - 4);
         const fontSize = Math.max(7, Math.floor(s * 0.6));
-        ctx.font = `bold ${fontSize}px "Courier New", monospace`;
+        ctx.font = `${MAP_LABEL_WEIGHT} ${fontSize}px ${MAP_LABEL_FAMILY}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#e0c060';
