@@ -38,6 +38,8 @@ function fillSelection() {
   fireEvent.click(screen.getByRole('button', { name: 'Review rights and assets' }));
 }
 beforeEach(() => {
+  // These tests work in Your maps, which an empty collection reaches with ?view=library.
+  window.history.replaceState(null, '', '/?view=library');
   vi.mocked(prepareCreatorPackage).mockResolvedValue(structuredClone(prepared));
   vi.mocked(encodeCreatorZip).mockResolvedValue(new Uint8Array([1, 2, 3]));
   vi.mocked(creatorSHA256).mockResolvedValue('a'.repeat(64));

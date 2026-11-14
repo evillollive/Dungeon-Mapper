@@ -9,7 +9,7 @@ import './ProjectLibrary.css';
 import OfflineStatus from './OfflineStatus';
 import Icon from './Icon';
 import FirstUseIllustration from './FirstUseIllustration';
-import LibraryOverview from './LibraryOverview';
+import WelcomePage from './WelcomePage';
 import type { ImportedCreatorPackage } from '../utils/creatorPackageImport';
 import { CREATOR_PACKAGE_LIMITS } from '../utils/creatorProject';
 import { compareCreatorPackageOrigins, readCreatorPackageOrigin,
@@ -90,15 +90,42 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
   const invalidateImport = useCallback(() => { importEpoch.current++; creatorImportController.current?.abort(); }, []);
   const heading = useRef<HTMLHeadingElement>(null);
   const entryHeading = useRef<HTMLHeadingElement>(null);
+  // Someone with no maps sees the Welcome page; everyone else sees Your maps.
+  // ?view=library (or #your-maps) always opens Your maps.
+  const [chosenMode, setMode] = useState<'pending' | 'welcome' | 'library'>(() => {
+    const url = new URL(window.location.href);
+    return url.searchParams.get('view') === 'library' || url.hash === '#your-maps' ? 'library' : 'pending';
+  });
+  const showLibrary = useCallback(() => {
+    const url = new URL(window.location.href);
+    url.searchParams.set('view', 'library');
+    if (url.hash.startsWith('#welcome')) url.hash = '';
+    window.history.replaceState(null, '', url);
+    setMode('library');
+  }, []);
+  const showWelcome = () => {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('view');
+    window.history.replaceState(null, '', url);
+    setMode('welcome');
+  };
   const refresh = async () => { setProjects(await listProjects()); };
   useEffect(() => {
     let cancelled = false;
-    listProjects().then(items => { if (!cancelled) setProjects(items); })
-      .catch(error => { if (!cancelled) setError(error instanceof Error ? error.message : 'Could not read Your maps.'); })
-      .finally(() => { if (!cancelled) setBusy(false); });
-    entryHeading.current?.focus({ preventScroll: true });
+    listProjects().then(items => {
+      if (cancelled) return;
+      setProjects(items);
+      setMode(current => current === 'pending' ? items.length ? 'library' : 'welcome' : current);
+    }).catch(error => {
+      if (cancelled) return;
+      setError(error instanceof Error ? error.message : 'Could not read Your maps.');
+      setMode('library');
+    }).finally(() => { if (!cancelled) setBusy(false); });
     return () => { cancelled = true; invalidateImport(); };
   }, [invalidateImport]);
+  // A save or recovery problem always shows Your maps, where its controls live.
+  const mode = saveNeedsAttention ? 'library' : chosenMode;
+  useEffect(() => { if (mode === 'library') entryHeading.current?.focus({ preventScroll: true }); }, [mode]);
   const run = async (action: () => Promise<void>) => {
     setBusy(true); setError('');
     try { await action(); }
@@ -142,6 +169,9 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
       if (epoch === importEpoch.current) { setReading(false); creatorImportController.current = null; }
     }
   };
+  if (mode === 'pending') return <main className="project-library"><p role="status">Opening Dungeon Mapper...</p></main>;
+  if (mode === 'welcome') return <WelcomePage disabled={locked} onCreate={onCreate} onShowLibrary={showLibrary}
+    offlineStatus={<OfflineStatus blocked={locked} />} />;
   return <main className="project-library">
     <input ref={comparisonInput} type="file" accept=".zip,application/zip" hidden aria-label="Compare creator package file"
       onChange={event => {
@@ -154,9 +184,9 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
         onClick={() => void run(async () => { await recordProjectOpened(recent.id); await onOpen(recent.id); })}><Icon name="play" /> Continue last map</button>
         <span id="library-recent-name">{recent.name}</span></div>}
       <OfflineStatus blocked={locked} />
+      <button onClick={showWelcome}>Welcome</button>
       <button disabled={locked} onClick={() => void run(refresh)}>Refresh library</button></header>
     <div className="library-entry">
-      <LibraryOverview disabled={locked} onCreate={onCreate} />
       {saveHealth && <div className={saveNeedsAttention ? 'library-save-attention' : 'library-save'}>{saveHealth}</div>}
     </div>
     <section className="library-intro" id="your-maps" tabIndex={-1}>

@@ -7,7 +7,7 @@ export default async function runMaterialJourney(page) {
   try {
     const tab = await context.newPage();
     tab.setDefaultTimeout(15000);
-    await tab.goto(base);
+    await tab.goto(`${base}?view=library`);
     await tab.getByRole('button', { name: 'Open a sample', exact: true }).click();
     await tab.getByRole('combobox').selectOption('folio-materials');
     await tab.getByRole('button', { name: 'Preview map', exact: true }).click();

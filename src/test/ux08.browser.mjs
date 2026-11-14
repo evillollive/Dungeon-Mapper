@@ -75,7 +75,7 @@ for (const engine of (process.env.QA_ENGINES ?? 'chromium,firefox,webkit').split
     page.setDefaultTimeout(20000);
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
-    await page.goto(base);
+    await page.goto(`${base}?view=library`);
     await page.waitForLoadState('networkidle');
     await page.locator('.offline-status summary').click();
     await page.getByRole('button', { name: 'Retry offline setup' }).click();
@@ -206,7 +206,7 @@ for (const engine of (process.env.QA_ENGINES ?? 'chromium,firefox,webkit').split
     await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration()).update(); });
     await page.getByRole('button', { name: 'Update saved workspace' }).waitFor();
     const extra = await context.newPage();
-    await extra.goto(base);
+    await extra.goto(`${base}?view=library`);
     await page.getByRole('button', { name: 'Update saved workspace' }).click();
     await page.getByText('Close other Dungeon Mapper tabs and player displays before updating.', { exact: true }).waitFor();
     await extra.close();

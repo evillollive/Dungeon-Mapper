@@ -16,7 +16,7 @@ export default defineConfig({
       includeAssets: ['favicon.svg', 'pwa-192x192.png', 'pwa-512x512.png'],
       manifest: false, // We provide public/manifest.webmanifest directly
       injectManifest: {
-        globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,woff,woff2,webmanifest}'],
       },
     }),
   ],

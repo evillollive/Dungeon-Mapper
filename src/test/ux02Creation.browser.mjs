@@ -33,7 +33,7 @@ export default async function creation(page, { output, engine }) {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   const result = { engine, version: browser.version(), source: process.env.QA_SOURCE_SHA ?? 'working tree' };
-  await page.goto(origin);
+  await page.goto(`${origin}?view=library`);
   await page.waitForLoadState('networkidle');
   await page.getByRole('heading', { name: 'Your maps', exact: true }).waitFor();
   const empty = await records(page);
