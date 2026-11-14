@@ -70,7 +70,7 @@ test('first-use illustrations accompany existing creation backup and local-displ
   const observe = tab => tab.on('pageerror', error => errors.push(error.message));
   context.on('page', observe);
   observe(page);
-  await page.goto(baseURL);
+  await page.goto(`${baseURL}?view=library`);
   await expect(page.getByRole('heading', { name: 'A new adventure starts here' })).toBeVisible();
   await expect(page.locator('.library-empty [data-scene="create"]')).toHaveCount(1);
   await page.screenshot({ path: info.outputPath('library-desktop.png'), fullPage: true });

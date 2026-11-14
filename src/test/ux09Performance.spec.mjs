@@ -149,7 +149,7 @@ for (const repetition of [1, 2, 3]) {
     const frame = () => page.evaluate(() => new Promise(resolve =>
       requestAnimationFrame(() => requestAnimationFrame(resolve))));
     try {
-      await page.goto(baseURL);
+      await page.goto(`${baseURL}?view=library`);
       await page.waitForLoadState('networkidle');
       await page.getByLabel('Import project', { exact: true }).setInputFiles({
         name: 'f05.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(denseMapFixture())),

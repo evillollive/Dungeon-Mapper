@@ -52,7 +52,7 @@ const samples = [
 for (const sample of samples) test(`launch art ${sample.name} safe preview, editable copies and A4/Letter print`, async ({ page, baseURL }, info) => {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  await page.goto(baseURL);
+  await page.goto(`${baseURL}?view=library`);
   await page.waitForLoadState('networkidle');
   const saved = () => page.getByText('Saved on this device', { exact: true }).waitFor();
   const openSample = async () => {

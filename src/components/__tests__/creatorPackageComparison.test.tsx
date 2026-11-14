@@ -60,6 +60,8 @@ async function selectComparison() {
   return trigger;
 }
 beforeEach(() => {
+  // These tests work in Your maps, which an empty collection reaches with ?view=library.
+  window.history.replaceState(null, '', '/?view=library');
   vi.mocked(listProjects).mockResolvedValue([source()]);
   vi.mocked(inspectCreatorZip).mockResolvedValue(incoming(revision()));
   vi.mocked(renderMapToCanvas).mockReturnValue({ toDataURL: () => 'data:image/png;base64,test' } as HTMLCanvasElement);

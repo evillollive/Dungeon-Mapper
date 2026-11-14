@@ -33,7 +33,7 @@ export default async function shell(page, { output, engine }) {
     localStorage.setItem('dungeon-mapper:toolbar-tab', 'advanced');
     localStorage.setItem('dungeon-mapper:rail-mode', 'tactical');
   });
-  await page.goto(origin);
+  await page.goto(`${origin}?view=library`);
   await page.waitForLoadState('networkidle');
   await page.getByRole('button', { name: 'Open a sample', exact: true }).click();
   await page.getByRole('button', { name: 'Preview map', exact: true }).click();

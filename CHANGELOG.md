@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+- New **Welcome** page for people with no maps yet: what the app does, that it's free, how it works in three steps, and two ways to start. Returning users go straight to **Your maps**, which has a **Welcome** button. Video slots for the trailer and explainer stay hidden until their YouTube IDs are set in `src/welcomeMedia.ts`. Replaces the collapsible overview.
 - The interface font is now Nunito Sans, bundled with the app so it works offline and looks the same on every device, in two weights (regular and semibold). Map art and export labels keep their own fonts for now.
 - Renamed DM view to **Fog setup** and described it as map preparation: it sets the fog players start with and saves to the map, while Run is the screen for play. No controls moved or removed.
 - The published app address is now `https://evilolive.com/Dungeon-Mapper/`. The post-deploy check expects that address and reads the published files over HTTPS.

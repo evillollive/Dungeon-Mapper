@@ -17,15 +17,81 @@ const item = (id: string, name: string, tags: string[] = []): ProjectSummary => 
 const props = () => ({ projectId: 'a', disabled: false, onOpen: vi.fn().mockResolvedValue(undefined),
   onCreate: vi.fn(), onImport: vi.fn().mockReturnValue(true), onChangedActive: vi.fn().mockResolvedValue(undefined), onDeleted: vi.fn() });
 
+describe('Welcome page', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    window.history.replaceState(null, '', '/');
+    vi.mocked(listProjects).mockResolvedValue([]);
+  });
+  it('greets someone with no maps and routes its start buttons without creating anything itself', async () => {
+    const handlers = props();
+    render(<ProjectLibrary {...handlers} />);
+    const title = await screen.findByRole('heading', { level: 1, name: 'Make the map tonight, and run it tomorrow.' });
+    expect(title).toHaveFocus();
+    expect(screen.getByText(/free map builder for tabletop RPGs/)).toBeVisible();
+    expect(screen.queryByRole('heading', { name: 'Your maps', exact: true })).not.toBeInTheDocument();
+    const [explore] = screen.getAllByRole('button', { name: 'Explore a sample map' });
+    fireEvent.click(explore);
+    expect(handlers.onCreate).toHaveBeenLastCalledWith(true);
+    fireEvent.click(screen.getAllByRole('button', { name: 'Create a map' })[1]);
+    expect(handlers.onCreate).toHaveBeenLastCalledWith();
+    expect(screen.getAllByRole('link', { name: 'Get started' })).toHaveLength(2);
+    screen.getAllByRole('link', { name: 'Get started' }).forEach(link => expect(link).toHaveAttribute('href', '#welcome-start'));
+    expect(screen.getByRole('link', { name: 'See how it works' })).toHaveAttribute('href', '#welcome-how');
+    expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', 'https://github.com/evillollive/Dungeon-Mapper');
+  });
+  it('shows a still map and no video players until the videos are published', async () => {
+    const { container } = render(<ProjectLibrary {...props()} />);
+    await screen.findByRole('heading', { level: 1 });
+    expect(container.querySelector('iframe')).toBeNull();
+    expect(screen.getByRole('img', { name: /an inn map included as a sample/ })).toBeVisible();
+    expect(screen.queryByText(/Watch the walkthrough/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'YouTube' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('listitem').map(item => item.querySelector('h3')?.textContent).filter(Boolean))
+      .toEqual(['Build the map', 'Decide what players see', 'Show it at the table', 'No paid tier', 'Your maps stay with you', 'Open source']);
+  });
+  it('moves between Welcome and Your maps, remembering the choice in the address', async () => {
+    render(<ProjectLibrary {...props()} />);
+    await screen.findByRole('heading', { level: 1, name: 'Make the map tonight, and run it tomorrow.' });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Your maps' })[0]);
+    expect(await screen.findByRole('heading', { name: 'Your maps', exact: true })).toBeVisible();
+    expect(new URL(window.location.href).searchParams.get('view')).toBe('library');
+    expect(screen.getByRole('heading', { name: 'Dungeon Mapper', exact: true })).toHaveFocus();
+    fireEvent.click(screen.getByRole('button', { name: 'Welcome', exact: true }));
+    expect(screen.getByRole('heading', { level: 1, name: 'Make the map tonight, and run it tomorrow.' })).toBeVisible();
+    expect(new URL(window.location.href).searchParams.has('view')).toBe(false);
+  });
+  it('opens Your maps for returning users, for ?view=library, and whenever saving needs attention', async () => {
+    vi.mocked(listProjects).mockResolvedValue([item('a', 'Crypt')]);
+    const first = render(<ProjectLibrary {...props()} />);
+    expect(await screen.findByRole('heading', { name: 'Your maps', exact: true })).toBeVisible();
+    first.unmount();
+    vi.mocked(listProjects).mockResolvedValue([]);
+    window.history.replaceState(null, '', '/?view=library');
+    const second = render(<ProjectLibrary {...props()} />);
+    expect(screen.getByRole('heading', { name: 'Your maps', exact: true })).toBeVisible();
+    second.unmount();
+    window.history.replaceState(null, '', '/');
+    const health = <div role="region" aria-label="Save controls" />;
+    const { rerender } = render(<ProjectLibrary {...props()} saveHealth={health} />);
+    await screen.findByRole('heading', { level: 1, name: 'Make the map tonight, and run it tomorrow.' });
+    rerender(<ProjectLibrary {...props()} saveHealth={health} saveNeedsAttention />);
+    expect(await screen.findByRole('region', { name: 'Save controls' })).toBeVisible();
+    expect(screen.getByRole('heading', { name: 'Your maps', exact: true })).toBeVisible();
+  });
+});
+
 describe('Your maps library', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    window.history.replaceState(null, '', '/');
     vi.mocked(listProjects).mockResolvedValue([item('a', 'Crypt', ['undead']), item('b', 'Forest', ['travel'])]);
     vi.mocked(renderMapToCanvas).mockReturnValue({ toDataURL: () => 'data:image/png;base64,test' } as HTMLCanvasElement);
   });
   it('shows creation artwork only for an empty active collection, not search or trash', async () => {
     vi.mocked(listProjects).mockResolvedValue([]);
+    window.history.replaceState(null, '', '/?view=library');
     const handlers = props();
     const { container } = render(<ProjectLibrary {...handlers} />);
     await screen.findByRole('heading', { name: 'A new adventure starts here' });
@@ -68,7 +134,6 @@ describe('Your maps library', () => {
     const { rerender } = render(<ProjectLibrary {...handlers} saveHealth={saveHealth} />);
     await screen.findByRole('article', { name: 'Crypt' });
     expect(screen.getByRole('heading', { name: 'Dungeon Mapper', exact: true })).toHaveFocus();
-    expect(screen.getByRole('heading', { name: 'Make battle maps that look great fast.' })).toBeVisible();
     const controls = screen.getByRole('region', { name: 'Save controls' });
     expect(controls.parentElement).toHaveClass('library-save');
     fireEvent.change(screen.getByLabelText('Recovery choice'), { target: { value: 'selected checkpoint' } });

@@ -160,7 +160,7 @@ test('real application upgrade and rollback preserve projects, sessions and reco
     return values;
   };
 
-  await page.goto(baseURL);
+  await page.goto(`${baseURL}?view=library`);
   await assertLoadedBuild(page, prior);
   await (await offlinePanel(page)).getByText('App and built-in art cached.', { exact: true }).waitFor();
   const source = await fixture(page, 'Real-version synthetic encounter');

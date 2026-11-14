@@ -34,7 +34,7 @@ The current workflow is documented below. The [release gates](./docs/USER-EXPERI
 
 Use the hosted app if you just want to make a map:
 
-1. Open the [app](https://evilolive.com/Dungeon-Mapper/). The overview introduces **Create > Prepare > Run or export**. Choose **Explore a sample** to open the sample chooser, or use **Your maps** to create, import or continue a project. Collapse the overview when you no longer need it; this browser remembers your choice, and **Overview** brings it back.
+1. Open the [app](https://evilolive.com/Dungeon-Mapper/). If you have no maps yet, the **Welcome** page explains the app. Choose **Explore a sample map** to open the sample chooser, or **Your maps** to create, import or continue a project. Once you have a map, the app opens on **Your maps**, and its **Welcome** button brings the page back.
 2. Choose a starting point, preview it, then select **Use this map**. Samples and imports become separate editable projects.
 3. Use **Build**, **Decorate** and **Look** to edit. Open **Project menu > Project settings** for dimensions and interface text size. Wait for **Saved on this device**.
 4. Review **Player preview**, including public note fields, hidden tokens and fog. The editor and **Fog setup** are trusted DM surfaces, not player displays.
@@ -65,7 +65,7 @@ Open the local URL printed by Vite, usually `http://localhost:5173`.
 
 ## Visual tour
 
-**One map, two looks.** The Lantern Crypt is an included sample, shown here in color and with its monochrome print companion. The app overview uses this same artwork and the headline above.
+**One map, two looks.** The Lantern Crypt is an included sample, shown here in color and with its monochrome print companion.
 
 ![The Lantern Crypt sample in color and monochrome](./docs/media/launch-art/launch-lantern-crypt-outlined.png)
 

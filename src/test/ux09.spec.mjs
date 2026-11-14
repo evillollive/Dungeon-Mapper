@@ -14,10 +14,10 @@ import preservationJourneys from './ux09Preservation.browser.mjs';
 import editingJourneys from './ux09Editing.browser.mjs';
 import denseExport from './ux09DenseExport.browser.mjs';
 import creatorSharing from './creatorSharing.browser.mjs';
-import libraryOverview from './libraryOverview.browser.mjs';
+import welcome from './welcome.browser.mjs';
 
 const journeys = [
-  ['Library overview and remembered entry preference', libraryOverview],
+  ['Welcome page for new visitors and Your maps for returning ones', welcome],
   ['guided creation and library continuity', creation],
   ['editor navigation, focus and responsive layout', shell],
   ['publication and player-safe preview', audience],
@@ -44,7 +44,8 @@ for (const [name, journey] of journeys) {
     const output = info.outputPath('evidence');
     await mkdir(output, { recursive: true });
     try {
-      await page.goto(baseURL);
+      // Journeys start in Your maps; the Welcome journey opens the bare address itself.
+      await page.goto(`${baseURL}?view=library`);
       const result = await journey(page, { output, engine: info.project.name });
       assert.deepEqual(errors, [], 'Unexpected browser errors, including player windows');
       await info.attach('journey-results', {
