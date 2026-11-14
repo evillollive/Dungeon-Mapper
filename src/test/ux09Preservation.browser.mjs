@@ -249,7 +249,11 @@ async function deletionTombstone(page) {
   await page.reload();
   await expect(page.getByRole('button', { name: 'Refresh library', exact: true })).toBeEnabled();
   await verify();
-  await landing(page, url);
+  // With every map deleted, the bare address opens the Welcome page; Your maps shows the empty collection.
+  await page.goto(url);
+  await page.getByRole('heading', { level: 1, name: 'Make the map tonight, and run it tomorrow.' }).waitFor();
+  await verify();
+  await landing(page, new URL('./?view=library', url).href);
   await page.getByRole('heading', { name: 'A new adventure starts here', exact: true }).waitFor();
   await verify();
   return { id, abortedDeletionsRolledBack: 3, tombstone: 'deleted', rootAndLibraryReloadPreserved: true };
