@@ -6,6 +6,9 @@ import { records } from './ux02Creation.browser.mjs';
 // The runner opens ?view=library for other journeys. This one starts where a new visitor does.
 export default async function welcome(page, { output, engine }) {
   const base = page.url().split('?')[0];
+  // The Welcome page embeds the trailer and walkthrough from YouTube. Keep the journey offline
+  // and deterministic: a streaming player would also keep 'networkidle' from ever settling.
+  await page.route(/(youtube\.com|youtube-nocookie\.com|ytimg\.com|googlevideo\.com)/, route => route.abort());
   await page.goto(base);
   await page.waitForLoadState('networkidle');
   const title = page.getByRole('heading', { level: 1, name: 'Make the map tonight, and run it tomorrow.' });
@@ -13,6 +16,8 @@ export default async function welcome(page, { output, engine }) {
   await expect(title).toBeFocused();
   await expect(page.getByText(/free map builder for tabletop RPGs/)).toBeVisible();
   await expect(page.locator('.welcome .offline-status')).toHaveCount(1);
+  assert.deepEqual(await page.locator('.welcome iframe').evaluateAll(frames => frames.map(frame => new URL(frame.src).pathname)),
+    ['/embed/3z4Ox1cGvMU', '/embed/ieW1ExdmjQs'], 'Trailer and walkthrough are embedded');
   for (const image of await page.locator('.welcome img').all()) {
     await image.scrollIntoViewIfNeeded();
     await expect.poll(() => image.evaluate(element => element.complete && element.naturalWidth > 0)).toBe(true);

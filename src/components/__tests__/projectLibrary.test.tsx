@@ -27,7 +27,8 @@ describe('Welcome page', () => {
     const handlers = props();
     render(<ProjectLibrary {...handlers} />);
     const title = await screen.findByRole('heading', { level: 1, name: 'Make the map tonight, and run it tomorrow.' });
-    expect(title).toHaveFocus();
+    // Focus moves in a passive effect, which React may run after the heading appears.
+    await waitFor(() => expect(title).toHaveFocus());
     expect(screen.getByText(/free map builder for tabletop RPGs/)).toBeVisible();
     expect(screen.queryByRole('heading', { name: 'Your maps', exact: true })).not.toBeInTheDocument();
     const [explore] = screen.getAllByRole('button', { name: 'Explore a sample map' });
@@ -40,13 +41,16 @@ describe('Welcome page', () => {
     expect(screen.getByRole('link', { name: 'See how it works' })).toHaveAttribute('href', '#welcome-how');
     expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', 'https://github.com/evillollive/Dungeon-Mapper');
   });
-  it('shows a still map and no video players until the videos are published', async () => {
+  it('plays the trailer muted at the top and embeds the walkthrough under See how it works', async () => {
     const { container } = render(<ProjectLibrary {...props()} />);
     await screen.findByRole('heading', { level: 1 });
-    expect(container.querySelector('iframe')).toBeNull();
-    expect(screen.getByRole('img', { name: /an inn map included as a sample/ })).toBeVisible();
-    expect(screen.queryByText(/Watch the walkthrough/)).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'YouTube' })).not.toBeInTheDocument();
+    const frames = [...container.querySelectorAll('iframe')].map(frame => frame.getAttribute('src'));
+    expect(frames).toEqual([
+      expect.stringMatching(/youtube\.com\/embed\/3z4Ox1cGvMU\?autoplay=1&mute=1/),
+      expect.stringMatching(/youtube\.com\/embed\/ieW1ExdmjQs/),
+    ]);
+    expect(screen.getByText(/Watch the walkthrough/)).toBeVisible();
+    expect(screen.getByRole('link', { name: 'YouTube' })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=3z4Ox1cGvMU');
     expect(screen.getAllByRole('listitem').map(item => item.querySelector('h3')?.textContent).filter(Boolean))
       .toEqual(['Build the map', 'Decide what players see', 'Show it at the table', 'No paid tier', 'Your maps stay with you', 'Open source']);
   });
@@ -133,7 +137,7 @@ describe('Your maps library', () => {
     const saveHealth = <div role="region" aria-label="Save controls"><input aria-label="Recovery choice" /></div>;
     const { rerender } = render(<ProjectLibrary {...handlers} saveHealth={saveHealth} />);
     await screen.findByRole('article', { name: 'Crypt' });
-    expect(screen.getByRole('heading', { name: 'Dungeon Mapper', exact: true })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Dungeon Mapper', exact: true })).toHaveFocus());
     const controls = screen.getByRole('region', { name: 'Save controls' });
     expect(controls.parentElement).toHaveClass('library-save');
     fireEvent.change(screen.getByLabelText('Recovery choice'), { target: { value: 'selected checkpoint' } });
