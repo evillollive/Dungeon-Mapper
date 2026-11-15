@@ -76,7 +76,8 @@ describe('explicit offline creator package comparison', () => {
     render(<ProjectLibrary {...props} />);
     await selectComparison();
     const comparison = await screen.findByRole('region', { name: 'Creator package comparison' });
-    expect(within(comparison).getByRole('heading', { name: 'Compare with Locally edited vault' })).toHaveFocus();
+    // The panel focuses its heading in a passive effect, which can run after the region appears.
+    await waitFor(() => expect(within(comparison).getByRole('heading', { name: 'Compare with Locally edited vault' })).toHaveFocus());
     expect(comparison).toHaveTextContent('original imported package, not your current edits');
     expect(comparison).toHaveTextContent('1.0.0');
     expect(comparison).toHaveTextContent('1.1.0');

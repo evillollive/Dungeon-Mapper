@@ -27,7 +27,8 @@ describe('Welcome page', () => {
     const handlers = props();
     render(<ProjectLibrary {...handlers} />);
     const title = await screen.findByRole('heading', { level: 1, name: 'Make the map tonight, and run it tomorrow.' });
-    expect(title).toHaveFocus();
+    // Focus moves in a passive effect, which React may run after the heading appears.
+    await waitFor(() => expect(title).toHaveFocus());
     expect(screen.getByText(/free map builder for tabletop RPGs/)).toBeVisible();
     expect(screen.queryByRole('heading', { name: 'Your maps', exact: true })).not.toBeInTheDocument();
     const [explore] = screen.getAllByRole('button', { name: 'Explore a sample map' });
@@ -136,7 +137,7 @@ describe('Your maps library', () => {
     const saveHealth = <div role="region" aria-label="Save controls"><input aria-label="Recovery choice" /></div>;
     const { rerender } = render(<ProjectLibrary {...handlers} saveHealth={saveHealth} />);
     await screen.findByRole('article', { name: 'Crypt' });
-    expect(screen.getByRole('heading', { name: 'Dungeon Mapper', exact: true })).toHaveFocus();
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Dungeon Mapper', exact: true })).toHaveFocus());
     const controls = screen.getByRole('region', { name: 'Save controls' });
     expect(controls.parentElement).toHaveClass('library-save');
     fireEvent.change(screen.getByLabelText('Recovery choice'), { target: { value: 'selected checkpoint' } });
