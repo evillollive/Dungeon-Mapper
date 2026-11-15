@@ -40,13 +40,16 @@ describe('Welcome page', () => {
     expect(screen.getByRole('link', { name: 'See how it works' })).toHaveAttribute('href', '#welcome-how');
     expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', 'https://github.com/evillollive/Dungeon-Mapper');
   });
-  it('shows a still map and no video players until the videos are published', async () => {
+  it('plays the trailer muted at the top and embeds the walkthrough under See how it works', async () => {
     const { container } = render(<ProjectLibrary {...props()} />);
     await screen.findByRole('heading', { level: 1 });
-    expect(container.querySelector('iframe')).toBeNull();
-    expect(screen.getByRole('img', { name: /an inn map included as a sample/ })).toBeVisible();
-    expect(screen.queryByText(/Watch the walkthrough/)).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'YouTube' })).not.toBeInTheDocument();
+    const frames = [...container.querySelectorAll('iframe')].map(frame => frame.getAttribute('src'));
+    expect(frames).toEqual([
+      expect.stringMatching(/youtube\.com\/embed\/3z4Ox1cGvMU\?autoplay=1&mute=1/),
+      expect.stringMatching(/youtube\.com\/embed\/ieW1ExdmjQs/),
+    ]);
+    expect(screen.getByText(/Watch the walkthrough/)).toBeVisible();
+    expect(screen.getByRole('link', { name: 'YouTube' })).toHaveAttribute('href', 'https://www.youtube.com/watch?v=3z4Ox1cGvMU');
     expect(screen.getAllByRole('listitem').map(item => item.querySelector('h3')?.textContent).filter(Boolean))
       .toEqual(['Build the map', 'Decide what players see', 'Show it at the table', 'No paid tier', 'Your maps stay with you', 'Open source']);
   });

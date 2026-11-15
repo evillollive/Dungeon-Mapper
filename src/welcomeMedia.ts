@@ -3,6 +3,6 @@
  * is published: the trailer slot then shows a still map, and the explainer
  * player is left out. Paste only the ID, such as "dQw4w9WgXcQ".
  */
-export const TRAILER_YOUTUBE_ID = '';
-export const EXPLAINER_YOUTUBE_ID = '';
+export const TRAILER_YOUTUBE_ID = '3z4Ox1cGvMU';
+export const EXPLAINER_YOUTUBE_ID = 'ieW1ExdmjQs';
 export const GITHUB_URL = 'https://github.com/evillollive/Dungeon-Mapper';
