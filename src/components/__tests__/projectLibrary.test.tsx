@@ -191,8 +191,10 @@ describe('Your maps library', () => {
     vi.mocked(listProjects).mockResolvedValue([trashed]);
     vi.spyOn(window, 'confirm').mockReturnValue(false);
     render(<ProjectLibrary {...props()} />);
-    await waitFor(() => expect(screen.queryByText('Reading local projects...')).not.toBeInTheDocument());
-    fireEvent.click(screen.getByRole('button', { name: 'Trash', exact: true }));
+    // Wait for Your maps itself: while the collection is still opening, the page shows
+    // "Opening Dungeon Mapper..." rather than "Reading local projects...", so waiting for the
+    // latter to disappear passed before the Trash button existed.
+    fireEvent.click(await screen.findByRole('button', { name: 'Trash', exact: true }));
     fireEvent.click(screen.getByRole('button', { name: 'Delete permanently' }));
     expect(changeLibraryProject).not.toHaveBeenCalled();
     vi.mocked(window.confirm).mockReturnValue(true);
