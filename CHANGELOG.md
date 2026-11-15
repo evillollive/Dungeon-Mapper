@@ -4,6 +4,8 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+## [Version 1] - 2026-11-14
+
 - The Welcome page now plays the trailer (muted, at the top) and embeds the walkthrough video under See how it works.
 - New logo: a map pin with a D-shaped dungeon door, standing on a map square. It replaces the default Vite icon in the browser tab and the installed-app icons, and adds an iPhone home screen icon and a separate Android icon. The installed app's name, description and the page title now use the Welcome page copy.
 - Rewrote the README as a landing page with the new logo, the Welcome page headline and intro, and shorter setup notes. Release and qualification detail stays in the linked docs.
