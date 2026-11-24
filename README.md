@@ -1,24 +1,26 @@
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/logo-dark.svg" />
-    <img alt="Dungeon Mapper" src="docs/assets/brand/logo.svg" width="420" />
+    <img alt="Mapper Keeper" src="docs/assets/brand/logo.svg" width="420" />
   </picture>
 </p>
 
 <p align="center">
-  <a href="https://evilolive.com/Dungeon-Mapper/"><img alt="Open the app" src="https://img.shields.io/badge/web_app-open-ff9569?logo=googlechrome&logoColor=white" /></a>
-  <a href="https://github.com/evillollive/Dungeon-Mapper/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/evillollive/Dungeon-Mapper/actions/workflows/ci.yml/badge.svg" /></a>
+  <a href="https://evilolive.com/Mapper-Keeper/"><img alt="Open the app" src="https://img.shields.io/badge/web_app-open-ff9569?logo=googlechrome&logoColor=white" /></a>
+  <a href="https://github.com/evillollive/Mapper-Keeper/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/evillollive/Mapper-Keeper/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="LICENSE"><img alt="License: AGPL v3" src="https://img.shields.io/badge/license-AGPL_v3-blue.svg" /></a>
   <img alt="Works offline" src="https://img.shields.io/badge/PWA-works_offline-5A0FC8" />
 </p>
 
 <h3 align="center">Make the map tonight, and run it tomorrow.</h3>
 
-Dungeon Mapper is a free map builder for tabletop RPGs that runs in your browser, no account needed and nothing to install. Draw or generate a map, hide what your players shouldn't see, and bring it to your table.
+Mapper Keeper is a free map builder for tabletop RPGs that runs in your browser, no account needed and nothing to install. Draw or generate a map, hide what your players shouldn't see, and bring it to your table.
 
-<p align="center"><a href="https://evilolive.com/Dungeon-Mapper/"><b>Open Dungeon Mapper</b></a></p>
+<sub>Formerly Dungeon Mapper. Your saved maps and shared map packages carry over unchanged.</sub>
 
-![A finished dungeon map in Dungeon Mapper](docs/assets/brand/hero.webp)
+<p align="center"><a href="https://evilolive.com/Mapper-Keeper/"><b>Open Mapper Keeper</b></a></p>
+
+![A finished dungeon map in Mapper Keeper](docs/assets/brand/hero.webp)
 
 ## Why GMs use it
 
@@ -61,8 +63,8 @@ Export a private backup, an image for players, or print pages whenever you need 
 You need Node.js 20 or newer.
 
 ```bash
-git clone https://github.com/evillollive/Dungeon-Mapper.git
-cd Dungeon-Mapper
+git clone https://github.com/evillollive/Mapper-Keeper.git
+cd Mapper-Keeper
 npm install
 npm run dev       # open the local address Vite prints, usually http://localhost:5173
 ```
@@ -90,7 +92,7 @@ Pull requests run the unit tests plus browser tests in Chromium, Firefox, and We
 
 ## Contributing
 
-Found a bug or have an idea for a tool? [Open an issue](https://github.com/evillollive/Dungeon-Mapper/issues), or read [CONTRIBUTING.md](CONTRIBUTING.md) before sending a pull request.
+Found a bug or have an idea for a tool? [Open an issue](https://github.com/evillollive/Mapper-Keeper/issues), or read [CONTRIBUTING.md](CONTRIBUTING.md) before sending a pull request.
 
 ## License
 

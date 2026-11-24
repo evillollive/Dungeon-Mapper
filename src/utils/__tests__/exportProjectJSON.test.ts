@@ -42,7 +42,7 @@ describe('project JSON import/export', () => {
 
   it('preserves future-version upgrade instructions', async () => {
     const file = new File([JSON.stringify({ schemaVersion: 99, project: {} })], 'future.json');
-    await expect(importProjectJSON(file)).rejects.toThrow(/version 99.*Update Dungeon Mapper/);
+    await expect(importProjectJSON(file)).rejects.toThrow(/version 99.*Update Mapper Keeper/);
   });
 
   it('preserves detailed validation errors rather than reporting invalid JSON', async () => {

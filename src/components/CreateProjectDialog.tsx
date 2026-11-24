@@ -176,7 +176,7 @@ export default function CreateProjectDialog({ onCancel, onCreate, sourceProject,
     <div className="creation-overlay">
       <div ref={dialog} role="dialog" aria-modal="true" aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`} className="creation-dialog">
         <header className="creation-header">
-          <div><p className="creation-eyebrow">Dungeon Mapper / New project</p><h2 id={`${id}-title`}>Make room for adventure.</h2>
+          <div><p className="creation-eyebrow">Mapper Keeper / New project</p><h2 id={`${id}-title`}>Make room for adventure.</h2>
             <p id={`${id}-description`}>Choose a starting point. Preview it here before opening a new project.</p></div>
           <button type="button" onClick={cancel}>Cancel</button>
         </header>

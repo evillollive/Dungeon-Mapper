@@ -263,7 +263,7 @@ function projectSource(data: unknown): { source: RecordValue; bareMap: boolean }
   if (Object.hasOwn(root, 'schemaVersion')) {
     number(1, Number.MAX_SAFE_INTEGER, true)(root.schemaVersion, 'schemaVersion');
     if (root.schemaVersion !== PROJECT_SCHEMA_VERSION) {
-      throw new Error(`This project uses schema version ${root.schemaVersion}; this app supports version ${PROJECT_SCHEMA_VERSION}. Update Dungeon Mapper to open it. Keep the original file; it has not been changed.`);
+      throw new Error(`This project uses schema version ${root.schemaVersion}; this app supports version ${PROJECT_SCHEMA_VERSION}. Update Mapper Keeper to open it. Keep the original file; it has not been changed.`);
     }
     source = record(root.project, 'project');
   } else if (!Object.hasOwn(root, 'levels')) {

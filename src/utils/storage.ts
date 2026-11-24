@@ -35,7 +35,7 @@ export function openDB(): Promise<IDBDatabase> {
     };
     req.onblocked = () => {
       blocked = true;
-      reject(new Error('Device storage is blocked by another tab. Close other Dungeon Mapper tabs and retry.'));
+      reject(new Error('Device storage is blocked by another tab. Close other Mapper Keeper tabs and retry.'));
     };
     req.onsuccess = () => {
       if (blocked) { req.result.close(); return; }

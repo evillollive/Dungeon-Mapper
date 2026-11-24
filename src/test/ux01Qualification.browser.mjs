@@ -10,7 +10,7 @@ import { execFileSync } from 'node:child_process';
 import { isDeepStrictEqual } from 'node:util';
 import { build } from 'esbuild';
 
-const origin = process.env.QA_ORIGIN ?? 'http://127.0.0.1:5297/Dungeon-Mapper/';
+const origin = process.env.QA_ORIGIN ?? 'http://127.0.0.1:5297/Mapper-Keeper/';
 const catalog = process.env.QA_CATALOG === '1';
 assert(['127.0.0.1', 'localhost'].includes(new URL(origin).hostname), 'Only isolated loopback servers are allowed');
 assert(process.env.QA_OUTPUT, 'QA_OUTPUT must designate a session artifact directory');

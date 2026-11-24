@@ -53,7 +53,7 @@ export function importProjectJSON(file: File): Promise<DungeonProject> {
         resolve(decodeProject(data));
       } catch (error) {
         reject(error instanceof SyntaxError
-          ? new Error('Invalid JSON file. Choose a Dungeon Mapper JSON backup.')
+          ? new Error('Invalid JSON file. Choose a Mapper Keeper JSON backup.')
           : error instanceof Error ? error : new Error('Could not import this project.'));
       }
     };

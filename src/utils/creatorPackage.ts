@@ -135,7 +135,7 @@ export async function prepareCreatorPackage(project: DungeonProject, options: Cr
         : 'Contains the full selected map layout, including secret passages and hazards.',
       '',
       'Inspect previews, LICENSE.txt and ATTRIBUTION.json before use or redistribution.',
-      'Import into a compatible Dungeon Mapper version as a new local project.',
+      'Import into a compatible Mapper Keeper version as a new local project.',
       'No local recovery history or separate live session is included.',
       '',
       'For GitHub, upload this map directory to a repository you control only after reviewing content, rights and visibility.',

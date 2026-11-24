@@ -2,15 +2,15 @@
 async (page) => {
   const context = await page.context().browser().newContext();
   const editor = await context.newPage();
-  const origin = 'http://127.0.0.1:5191/Dungeon-Mapper/';
+  const origin = 'http://127.0.0.1:5191/Mapper-Keeper/';
   const results = [];
   const saved = () => editor.getByRole('status').filter({ hasText: 'Saved on this device' }).waitFor();
   try {
     await editor.route('**/recovery-probe.html', route => route.fulfill({ contentType: 'text/html', body: '<title>Recovery probe</title>' }));
     await editor.goto(`${origin}recovery-probe.html`);
     const seedRevision = await editor.evaluate(async () => {
-      const { loadProject, saveProject } = await import('/Dungeon-Mapper/src/utils/storage.ts');
-      const { createDefaultProject, createDefaultMap } = await import('/Dungeon-Mapper/src/hooks/mapStateUtils.ts');
+      const { loadProject, saveProject } = await import('/Mapper-Keeper/src/utils/storage.ts');
+      const { createDefaultProject, createDefaultMap } = await import('/Mapper-Keeper/src/hooks/mapStateUtils.ts');
       await loadProject();
       const project = createDefaultProject();
       project.levels[0].tiles[0][0] = { type: 'treasure' };
@@ -25,7 +25,7 @@ async (page) => {
     editor.once('dialog', dialog => dialog.dismiss());
     await editor.getByRole('menuitem', { name: 'Clear current level' }).click();
     const cancelledRevision = await editor.evaluate(async () => {
-      const { loadProject } = await import('/Dungeon-Mapper/src/utils/storage.ts');
+      const { loadProject } = await import('/Mapper-Keeper/src/utils/storage.ts');
       return (await loadProject()).revision;
     });
     if (cancelledRevision !== seedRevision) throw new Error('Cancel clear changed storage');
@@ -38,7 +38,7 @@ async (page) => {
     await editor.reload();
     await saved();
     const clearRetained = await editor.evaluate(async () => {
-      const { loadProject, loadRecoveryRecords } = await import('/Dungeon-Mapper/src/utils/storage.ts');
+      const { loadProject, loadRecoveryRecords } = await import('/Mapper-Keeper/src/utils/storage.ts');
       const { project } = await loadProject();
       const records = await loadRecoveryRecords();
       return project.levels[0].tiles[0][0].type === 'empty' &&
@@ -51,7 +51,7 @@ async (page) => {
     results.push('clear cancellation is inert; named full-project checkpoint survives ordinary edits and reload');
 
     const original = await editor.evaluate(async () => {
-      const { loadProject, saveProject, loadRecoveryRecords } = await import('/Dungeon-Mapper/src/utils/storage.ts');
+      const { loadProject, saveProject, loadRecoveryRecords } = await import('/Mapper-Keeper/src/utils/storage.ts');
       let current = await loadProject();
       for (let i = 0; i < 7; i++) {
         const next = { ...current.project, name: `Version ${i}` };
@@ -81,7 +81,7 @@ async (page) => {
     await editor.getByRole('region', { name: 'Fog repair preview' }).waitFor();
     await editor.getByRole('button', { name: 'Cancel repair' }).click();
     const stillOriginal = await editor.evaluate(async () => {
-      const { loadProject } = await import('/Dungeon-Mapper/src/utils/storage.ts');
+      const { loadProject } = await import('/Mapper-Keeper/src/utils/storage.ts');
       try { await loadProject(); return null; } catch (error) { return JSON.stringify(error.original); }
     });
     if (stillOriginal !== original) throw new Error('Repair preview/cancellation mutated original');
@@ -105,7 +105,7 @@ async (page) => {
     await editor.reload();
     await saved();
     const repaired = await editor.evaluate(async expected => {
-      const { loadProject, loadRecoveryRecords } = await import('/Dungeon-Mapper/src/utils/storage.ts');
+      const { loadProject, loadRecoveryRecords } = await import('/Mapper-Keeper/src/utils/storage.ts');
       const { project } = await loadProject();
       const level = project.levels[0];
       const records = await loadRecoveryRecords();
@@ -130,7 +130,7 @@ async (page) => {
     await other.route('**/recovery-probe.html', route => route.fulfill({ contentType: 'text/html', body: '<title>Competing writer</title>' }));
     await other.goto(`${origin}recovery-probe.html`);
     await other.evaluate(async () => {
-      const { loadProject, saveProject } = await import('/Dungeon-Mapper/src/utils/storage.ts');
+      const { loadProject, saveProject } = await import('/Mapper-Keeper/src/utils/storage.ts');
       const current = await loadProject();
       await saveProject({ ...current.project, name: 'Concurrent winner' }, current.revision);
     });
@@ -139,7 +139,7 @@ async (page) => {
     await editor.getByRole('status').filter({ hasText: 'Save conflict' }).waitFor();
     await editor.getByRole('region', { name: 'Fog repair preview' }).waitFor();
     const winner = await editor.evaluate(async () => {
-      const { loadProject } = await import('/Dungeon-Mapper/src/utils/storage.ts');
+      const { loadProject } = await import('/Mapper-Keeper/src/utils/storage.ts');
       return (await loadProject()).project.name;
     });
     if (winner !== 'Concurrent winner') throw new Error('Repair confirmation overwrote a concurrent revision');

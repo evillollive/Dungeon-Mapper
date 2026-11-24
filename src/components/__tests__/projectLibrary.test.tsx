@@ -39,7 +39,7 @@ describe('Welcome page', () => {
     expect(screen.getAllByRole('link', { name: 'Get started' })).toHaveLength(2);
     screen.getAllByRole('link', { name: 'Get started' }).forEach(link => expect(link).toHaveAttribute('href', '#welcome-start'));
     expect(screen.getByRole('link', { name: 'See how it works' })).toHaveAttribute('href', '#welcome-how');
-    expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', 'https://github.com/evillollive/Dungeon-Mapper');
+    expect(screen.getByRole('link', { name: 'GitHub' })).toHaveAttribute('href', 'https://github.com/evillollive/Mapper-Keeper');
   });
   it('plays the trailer muted at the top and embeds the walkthrough under See how it works', async () => {
     const { container } = render(<ProjectLibrary {...props()} />);
@@ -60,7 +60,7 @@ describe('Welcome page', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Your maps' })[0]);
     expect(await screen.findByRole('heading', { name: 'Your maps', exact: true })).toBeVisible();
     expect(new URL(window.location.href).searchParams.get('view')).toBe('library');
-    expect(screen.getByRole('heading', { name: 'Dungeon Mapper', exact: true })).toHaveFocus();
+    expect(screen.getByRole('heading', { name: 'Mapper Keeper', exact: true })).toHaveFocus();
     fireEvent.click(screen.getByRole('button', { name: 'Welcome', exact: true }));
     expect(screen.getByRole('heading', { level: 1, name: 'Make the map tonight, and run it tomorrow.' })).toBeVisible();
     expect(new URL(window.location.href).searchParams.has('view')).toBe(false);
@@ -137,7 +137,7 @@ describe('Your maps library', () => {
     const saveHealth = <div role="region" aria-label="Save controls"><input aria-label="Recovery choice" /></div>;
     const { rerender } = render(<ProjectLibrary {...handlers} saveHealth={saveHealth} />);
     await screen.findByRole('article', { name: 'Crypt' });
-    await waitFor(() => expect(screen.getByRole('heading', { name: 'Dungeon Mapper', exact: true })).toHaveFocus());
+    await waitFor(() => expect(screen.getByRole('heading', { name: 'Mapper Keeper', exact: true })).toHaveFocus());
     const controls = screen.getByRole('region', { name: 'Save controls' });
     expect(controls.parentElement).toHaveClass('library-save');
     fireEvent.change(screen.getByLabelText('Recovery choice'), { target: { value: 'selected checkpoint' } });
@@ -192,7 +192,7 @@ describe('Your maps library', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false);
     render(<ProjectLibrary {...props()} />);
     // Wait for Your maps itself: while the collection is still opening, the page shows
-    // "Opening Dungeon Mapper..." rather than "Reading local projects...", so waiting for the
+    // "Opening Mapper Keeper..." rather than "Reading local projects...", so waiting for the
     // latter to disappear passed before the Trash button existed.
     fireEvent.click(await screen.findByRole('button', { name: 'Trash', exact: true }));
     fireEvent.click(screen.getByRole('button', { name: 'Delete permanently' }));

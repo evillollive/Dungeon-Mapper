@@ -169,7 +169,7 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
       if (epoch === importEpoch.current) { setReading(false); creatorImportController.current = null; }
     }
   };
-  if (mode === 'pending') return <main className="project-library"><p role="status">Opening Dungeon Mapper...</p></main>;
+  if (mode === 'pending') return <main className="project-library"><p role="status">Opening Mapper Keeper...</p></main>;
   if (mode === 'welcome') return <WelcomePage disabled={locked} onCreate={onCreate} onShowLibrary={showLibrary}
     offlineStatus={<OfflineStatus blocked={locked} />} />;
   return <main className="project-library">
@@ -179,7 +179,7 @@ export default function ProjectLibrary({ projectId, disabled, onOpen, onCreate, 
         event.target.value = ''; comparisonTarget.current = null;
         if (file && target) void readCreator([file], false, target);
       }} />
-    <header className="library-masthead"><h1 ref={entryHeading} tabIndex={-1}>Dungeon Mapper</h1>
+    <header className="library-masthead"><h1 ref={entryHeading} tabIndex={-1}>Mapper Keeper</h1>
       {recent && <div className="library-continue"><button className="library-primary" disabled={locked} aria-describedby="library-recent-name"
         onClick={() => void run(async () => { await recordProjectOpened(recent.id); await onOpen(recent.id); })}><Icon name="play" /> Continue last map</button>
         <span id="library-recent-name">{recent.name}</span></div>}

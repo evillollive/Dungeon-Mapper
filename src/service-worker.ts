@@ -27,7 +27,7 @@ self.addEventListener('message', event => {
         const windows = (await self.clients.matchAll({ type: 'window', includeUncontrolled: true }))
           .filter(client => client.url.startsWith(self.registration.scope));
         if (windows.length !== 1 || !event.source || !('id' in event.source) || windows[0].id !== event.source.id) {
-          port.postMessage({ error: 'Close other Dungeon Mapper tabs and player displays before updating.' });
+          port.postMessage({ error: 'Close other Mapper Keeper tabs and player displays before updating.' });
           return;
         }
         await self.skipWaiting();

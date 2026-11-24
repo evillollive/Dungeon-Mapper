@@ -27,7 +27,7 @@ const preview = async page => {
 };
 const commit = async page => { await page.getByRole('button', { name: 'Use this map', exact: true }).click(); await saved(page); };
 export default async function creation(page, { output, engine }) {
-  const origin = `${page.url().split('/Dungeon-Mapper/')[0]}/Dungeon-Mapper/`;
+  const origin = `${page.url().split('/Mapper-Keeper/')[0]}/Mapper-Keeper/`;
   const browser = page.context().browser();
   page.setDefaultTimeout(15000);
   const errors = [];

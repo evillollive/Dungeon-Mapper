@@ -5,4 +5,4 @@
  */
 export const TRAILER_YOUTUBE_ID = '3z4Ox1cGvMU';
 export const EXPLAINER_YOUTUBE_ID = 'ieW1ExdmjQs';
-export const GITHUB_URL = 'https://github.com/evillollive/Dungeon-Mapper';
+export const GITHUB_URL = 'https://github.com/evillollive/Mapper-Keeper';

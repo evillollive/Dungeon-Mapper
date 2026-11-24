@@ -2,7 +2,7 @@
 // context and the real sample, save, theme and preview controls.
 export default async function runArtJourney(page) {
   const assert = (condition, message) => { if (!condition) throw new Error(message); };
-  const base = `${page.url().split('/Dungeon-Mapper/')[0]}/Dungeon-Mapper/`;
+  const base = `${page.url().split('/Mapper-Keeper/')[0]}/Mapper-Keeper/`;
   const context = await page.context().browser().newContext({ viewport: { width: 1440, height: 1000 } });
   try {
     const tab = await context.newPage();

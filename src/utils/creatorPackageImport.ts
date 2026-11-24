@@ -79,7 +79,7 @@ export async function inspectCreatorPackage(input: readonly CreatorPackageFile[]
     'format', 'version', 'packageId', 'contentVersion', 'catalog', 'profile', 'title',
     'author', 'description', 'license', 'levelNames', 'members',
   ], 'manifest');
-  if (raw.format !== CREATOR_PACKAGE_FORMAT || raw.version !== 1) throw new Error('Unsupported creator package version. Keep the file and update Dungeon Mapper.');
+  if (raw.format !== CREATOR_PACKAGE_FORMAT || raw.version !== 1) throw new Error('Unsupported creator package version. Keep the file and update Mapper Keeper.');
   if (raw.catalog !== CREATOR_CATALOG_VERSION) throw new Error('This creator package requires a different built-in artwork catalog.');
   const packageId = string(raw.packageId, 'package ID');
   assertCreatorPackageId(packageId);

@@ -1,4 +1,4 @@
-# Dungeon Mapper engineering priorities
+# Mapper Keeper engineering priorities
 
 ## Value before perfection
 

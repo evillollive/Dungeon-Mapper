@@ -2,7 +2,7 @@
 export default async function session(page) {
   const assert = (condition, message) => { if (!condition) throw new Error(message); };
   page.setDefaultTimeout(15000);
-  const base = `${page.url().split('/Dungeon-Mapper/')[0]}/Dungeon-Mapper/`;
+  const base = `${page.url().split('/Mapper-Keeper/')[0]}/Mapper-Keeper/`;
   const context = page.context();
   const sentinel = 'PRIVATE_SENTINEL_UX06';
   const installObserver = () => {
