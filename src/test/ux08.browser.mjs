@@ -9,7 +9,7 @@ const output = process.env.QA_OUTPUT;
 await mkdir(output, { recursive: true });
 const worker = await readFile('dist/service-worker.js', 'utf8');
 const port = Number(process.env.QA_PORT ?? 5308);
-const base = `http://127.0.0.1:${port}/Mapper-Keeper/`;
+const base = `http://127.0.0.1:${port}/`;
 const results = [];
 function fixture(width = 16) {
   return { schemaVersion: 1, project: { name: 'UX08 private project', activeLevelIndex: 0, stairLinks: [], customThemes: [],
@@ -55,7 +55,7 @@ for (const engine of (process.env.QA_ENGINES ?? 'chromium,firefox,webkit').split
     server = await preview({ preview: { host: '127.0.0.1', port, strictPort: true },
       plugins: [{ name: 'ux08-controlled-worker-update', configurePreviewServer(server) {
         server.middlewares.use((request, response, next) => {
-          if (request.url !== '/Mapper-Keeper/service-worker.js') return next();
+          if (request.url !== '/service-worker.js') return next();
           if (rejectSetup) {
             rejectSetup = false;
             response.statusCode = 503;
@@ -200,7 +200,7 @@ for (const engine of (process.env.QA_ENGINES ?? 'chromium,firefox,webkit').split
     evidence.cache = 'Failed first-install retry and actual missing-cache readiness detection passed';
     evidence.exports = 'PNG/SVG privacy, full-project backup, physical PNG resolution, bounded 128x128 last page, cancellation, phone layout';
     const manifestHref = await page.locator('link[rel=manifest]').getAttribute('href');
-    assert.equal(manifestHref, '/Mapper-Keeper/manifest.webmanifest');
+    assert.equal(manifestHref, '/manifest.webmanifest');
     assert.equal((await fetch(new URL(manifestHref, base))).status, 200);
     epoch = 2;
     await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration()).update(); });

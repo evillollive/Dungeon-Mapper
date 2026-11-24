@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { join } from 'node:path';
 
 export default async function shell(page, { output, engine }) {
-  const origin = `${page.url().split('/Mapper-Keeper/')[0]}/Mapper-Keeper/`;
+  const origin = `${new URL(page.url()).origin}/`;
   const browser = page.context().browser();
   page.setDefaultTimeout(10000);
   const errors = [];

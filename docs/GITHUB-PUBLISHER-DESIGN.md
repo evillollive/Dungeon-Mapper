@@ -34,7 +34,7 @@ handoff would be a separate UX/security decision, not an implicit extension.
 
 The current implementation is a static React/Vite/PWA application:
 
-- `vite.config.ts` builds the Pages application under `/Mapper-Keeper/`.
+- `vite.config.ts` builds the Pages application under `/`.
 - `src/service-worker.ts` precaches the static distribution and serves
   application navigations from `index.html`.
 - Local projects and recovery are bound to the browser origin.

@@ -8,7 +8,7 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export async function runUx02Library(browser, origin = 'http://127.0.0.1:5192/Mapper-Keeper/') {
+export async function runUx02Library(browser, origin = 'http://127.0.0.1:5192/') {
   const results = [];
   const output = process.env.QA_OUTPUT;
   if (output) await mkdir(output, { recursive: true });

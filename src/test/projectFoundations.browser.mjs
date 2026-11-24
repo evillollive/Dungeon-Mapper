@@ -2,7 +2,7 @@
 // Every scenario owns a fresh context and never touches personal browser storage.
 import { Buffer } from 'node:buffer';
 
-export async function runProjectFoundations(browser, origin = 'http://127.0.0.1:5191/Mapper-Keeper/') {
+export async function runProjectFoundations(browser, origin = 'http://127.0.0.1:5191/') {
   const results = [];
   const scenario = async (name, run) => {
     const context = await browser.newContext();

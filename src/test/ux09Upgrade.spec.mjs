@@ -26,7 +26,7 @@ async function buildIdentity(directory, source) {
   await collect();
   const html = await readFile(join(root, 'index.html'), 'utf8');
   const entry = html.match(/<script[^>]+src="([^"]+)"/)?.[1];
-  assert(entry?.startsWith('/Mapper-Keeper/assets/'), 'Build must use the production Pages base');
+  assert(entry?.startsWith('/assets/'), 'Build must use the production Pages base');
   const app = Object.keys(files).find(name => /^assets\/App-[^.]+\.js$/.test(name));
   assert(app && files['service-worker.js'], 'Build must contain the real application and worker');
   return { root, source, entry, app, files };
@@ -64,7 +64,7 @@ const test = base.extend({
     const serve = async build => {
       await stop();
       server = await preview({
-        configFile: false, base: '/Mapper-Keeper/', build: { outDir: build.root },
+        configFile: false, base: '/', build: { outDir: build.root },
         preview: { host: '127.0.0.1', port: Number(new URL(baseURL).port), strictPort: true },
       });
       const response = await fetch(baseURL);
@@ -81,11 +81,11 @@ const test = base.extend({
 async function assertLoadedBuild(page, build) {
   await expect(page.locator('script[type="module"][src]')).toHaveAttribute('src', build.entry);
   await expect.poll(() => page.evaluate(app => performance.getEntriesByType('resource')
-    .some(resource => new URL(resource.name).pathname === `/Mapper-Keeper/${app}`), build.app)).toBe(true);
+    .some(resource => new URL(resource.name).pathname === `/${app}`), build.app)).toBe(true);
   const hashes = await page.evaluate(async paths => {
     const result = {};
     for (const path of paths) {
-      const response = await fetch(`/Mapper-Keeper/${path}`);
+      const response = await fetch(`/${path}`);
       if (!response.ok) throw new Error(`Loaded resource unavailable: ${path}`);
       const hash = await crypto.subtle.digest('SHA-256', await response.arrayBuffer());
       result[path] = [...new Uint8Array(hash)].map(value => value.toString(16).padStart(2, '0')).join('');

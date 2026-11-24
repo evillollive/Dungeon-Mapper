@@ -63,7 +63,7 @@ QA_OUTPUT=/absolute/path/to/artifacts npm run test:ux08
 `QA_ENGINES=chromium` selects one engine; the default runs all three sequentially.
 `QA_PORT` defaults to 5308. The runner owns a strict-port Vite preview server,
 disposable browser contexts, real file downloads and server shutdown.
-It runs against `/Mapper-Keeper/`, checks PNG dimensions and physical metadata,
+It runs against `/`, checks PNG dimensions and physical metadata,
 pixel-identical page overlaps, missing/corrupt artwork fallbacks, audience policy,
 cancellation, a bounded 128 x 128 / 300 DPI page, update blocking and offline
 reload/edit/save/reopen/export. The sole origin is stopped for every engine;
@@ -148,7 +148,7 @@ navigation/focus/layout, player publication/preview, session recovery with a
 real second window, critical keyboard workflows, and furnishing catalog
 placement/transforms/player export. Each test owns fresh browser storage, and the runner closes
 its pages and contexts on success, failure, or timeout. These use production
-assets under `/Mapper-Keeper/`, not a development-only fixture route.
+assets under `/`, not a development-only fixture route.
 `ux02Creation.browser.mjs`, `ux03Shell.browser.mjs`, `ux05Audience.browser.mjs`
 and `ux06Session.browser.mjs` now export Page-based journeys instead of being
 standalone scripts or function expressions for external evaluation.
@@ -589,7 +589,7 @@ results. These checks do not establish owner approval, physical-device
 readability, printer acceptance or dense-map responsiveness.
 
 For interactive visual review, run `npm run dev` and open
-`/Mapper-Keeper/docs/prototypes/ux07-tokens/index.html` on that server.
+`/docs/prototypes/ux07-tokens/index.html` on that server.
 This source-driven review is not a production application route.
 The template approval and subsequent six-artwork revision request are recorded
 in the UX roadmap. Screenshots in `docs/media/ux07-tokens` preserve the original

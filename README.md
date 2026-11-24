@@ -6,7 +6,7 @@
 </p>
 
 <p align="center">
-  <a href="https://evilolive.com/Mapper-Keeper/"><img alt="Open the app" src="https://img.shields.io/badge/web_app-open-ff9569?logo=googlechrome&logoColor=white" /></a>
+  <a href="https://mapperkeeper.com/"><img alt="Open the app" src="https://img.shields.io/badge/web_app-open-ff9569?logo=googlechrome&logoColor=white" /></a>
   <a href="https://github.com/evillollive/Mapper-Keeper/actions/workflows/ci.yml"><img alt="CI" src="https://github.com/evillollive/Mapper-Keeper/actions/workflows/ci.yml/badge.svg" /></a>
   <a href="LICENSE"><img alt="License: AGPL v3" src="https://img.shields.io/badge/license-AGPL_v3-blue.svg" /></a>
   <img alt="Works offline" src="https://img.shields.io/badge/PWA-works_offline-5A0FC8" />
@@ -18,7 +18,7 @@ Mapper Keeper is a free map builder for tabletop RPGs that runs in your browser,
 
 <sub>Formerly Dungeon Mapper. Your saved maps and shared map packages carry over unchanged.</sub>
 
-<p align="center"><a href="https://evilolive.com/Mapper-Keeper/"><b>Open Mapper Keeper</b></a></p>
+<p align="center"><a href="https://mapperkeeper.com/"><b>Open Mapper Keeper</b></a></p>
 
 ![A finished dungeon map in Mapper Keeper](docs/assets/brand/hero.webp)
 
