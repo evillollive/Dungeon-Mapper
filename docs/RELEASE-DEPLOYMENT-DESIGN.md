@@ -125,7 +125,7 @@ qualified artifact would be a separate, explicitly approved policy.
 
 Deployment eligibility is the conjunction of:
 
-- Repository is `evillollive/Dungeon-Mapper`, not a fork with a similarly named
+- Repository is `evillollive/Mapper-Keeper`, not a fork with a similarly named
   main branch.
 - Event is a push to `refs/heads/main`, or an explicitly requested full CI
   `workflow_dispatch` on `refs/heads/main`.

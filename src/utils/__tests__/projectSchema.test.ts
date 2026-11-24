@@ -170,7 +170,7 @@ describe('actionable schema failures', () => {
   });
 
   it('keeps future-version failures actionable', () => {
-    expect(() => decodeProject({ schemaVersion: 2, project: {} })).toThrow(/version 2.*supports version 1.*Update Dungeon Mapper/);
+    expect(() => decodeProject({ schemaVersion: 2, project: {} })).toThrow(/version 2.*supports version 1.*Update Mapper Keeper/);
     for (const schemaVersion of [0, -1, 1.5, '1', null, Infinity]) {
       expect(() => decodeProject({ schemaVersion, project: fullProject() })).toThrow('schemaVersion');
     }

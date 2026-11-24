@@ -11,7 +11,7 @@ import {
 
 const roots: string[] = [];
 const identity = {
-  repository: 'evillollive/Dungeon-Mapper', repositoryId: '1219366477',
+  repository: 'evillollive/Mapper-Keeper', repositoryId: '1219366477',
   source: 'a'.repeat(40), event: 'push', ref: 'refs/heads/main', runId: '1234', runAttempt: '1',
 };
 const tools = { node: 'v20.19.0', npm: '10.8.2' };
@@ -23,7 +23,7 @@ async function fixture() {
   roots.push(root);
   const source = join(root, 'source'), bundle = join(root, 'bundle'), lockfile = join(root, 'package-lock.json');
   await mkdir(join(source, 'assets'), { recursive: true });
-  await writeFile(join(source, 'index.html'), '<script src="/Dungeon-Mapper/assets/app.js"></script>');
+  await writeFile(join(source, 'index.html'), '<script src="/Mapper-Keeper/assets/app.js"></script>');
   await writeFile(join(source, 'service-worker.js'), '/* synthetic worker */');
   await writeFile(join(source, 'assets/app.js'), '/* synthetic application */');
   await writeFile(lockfile, '{"lockfileVersion":3}');
@@ -58,7 +58,7 @@ describe('canonical qualification artifacts', () => {
   it.each(['source', 'repository', 'repositoryId', 'event', 'ref', 'runId', 'runAttempt'])('rejects mismatched %s instead of reusing another receipt', async field => {
     const f = await built();
     const alternatives = {
-      source: 'b'.repeat(40), repository: 'fork/Dungeon-Mapper', repositoryId: '2',
+      source: 'b'.repeat(40), repository: 'fork/Mapper-Keeper', repositoryId: '2',
       event: 'workflow_dispatch', ref: 'refs/heads/elsewhere', runId: '99', runAttempt: '2',
     };
     await expect(verifyBundle(f.bundle, { ...identity, [field]: alternatives[field as keyof typeof alternatives] },
@@ -146,7 +146,7 @@ describe('publication admission and smoke outcomes', () => {
   });
 
   it.each([
-    { repository: 'fork/Dungeon-Mapper' },
+    { repository: 'fork/Mapper-Keeper' },
     { event: 'pull_request', ref: 'refs/pull/185/merge' },
     { event: 'workflow_dispatch', ref: 'refs/heads/feature' },
     { event: 'workflow_dispatch', ref: 'refs/tags/v1' },
@@ -174,23 +174,23 @@ describe('publication admission and smoke outcomes', () => {
   it('verifies every public byte without a real network request', async () => {
     const f = await built();
     const fetchImpl = vi.fn(async (url: URL) => ({
-      ok: true, body: [await readFile(join(f.source, url.pathname.replace('/Dungeon-Mapper/', '')))],
+      ok: true, body: [await readFile(join(f.source, url.pathname.replace('/Mapper-Keeper/', '')))],
     }));
     const result = await checkPublished(f.manifest, PAGES_URL, { fetchImpl, pause: async () => {} });
     expect(result.status).toBe('verified');
     expect(fetchImpl).toHaveBeenCalledTimes(3);
     await expect(checkPublished(f.manifest, 'https://other.invalid/', { fetchImpl })).rejects.toThrow('Unexpected Pages');
-    await expect(checkPublished(f.manifest, 'https://evillollive.github.io/Dungeon-Mapper/', { fetchImpl })).rejects.toThrow('Unexpected Pages');
+    await expect(checkPublished(f.manifest, 'https://evillollive.github.io/Mapper-Keeper/', { fetchImpl })).rejects.toThrow('Unexpected Pages');
     await expect(checkPublished(f.manifest, 'http://evilolive.com/Other/', { fetchImpl })).rejects.toThrow('Unexpected Pages');
   });
 
   it('accepts the http spelling GitHub reports for the custom domain but reads every byte over HTTPS', async () => {
     const f = await built();
     const fetchImpl = vi.fn(async (url: URL) => ({
-      ok: true, body: [await readFile(join(f.source, url.pathname.replace('/Dungeon-Mapper/', '')))],
+      ok: true, body: [await readFile(join(f.source, url.pathname.replace('/Mapper-Keeper/', '')))],
     }));
-    expect(PAGES_URL).toBe('https://evilolive.com/Dungeon-Mapper/');
-    const result = await checkPublished(f.manifest, 'http://evilolive.com/Dungeon-Mapper/', { fetchImpl, pause: async () => {} });
+    expect(PAGES_URL).toBe('https://evilolive.com/Mapper-Keeper/');
+    const result = await checkPublished(f.manifest, 'http://evilolive.com/Mapper-Keeper/', { fetchImpl, pause: async () => {} });
     expect(result.status).toBe('verified');
     expect(fetchImpl.mock.calls.every(([url]) => url.protocol === 'https:' && url.host === 'evilolive.com')).toBe(true);
   });

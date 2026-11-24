@@ -1,6 +1,6 @@
 # Sharing Guide
 
-Describe Dungeon Mapper as a local-first battle-map editor with a separate DM
+Describe Mapper Keeper as a local-first battle-map editor with a separate DM
 session workspace and read-only local player display. These are draft sharing
 materials, not authorization to announce a release. Outstanding owner,
 physical-print, performance and qualification gates remain in the
@@ -14,7 +14,7 @@ generation, fog, tokens, private project backups and a local player display.
 **One-liner:** Prepare a battle map, run the encounter and choose what appears
 on a second window at your table.
 
-**Longer pitch:** Dungeon Mapper keeps authored maps in a local Library.
+**Longer pitch:** Mapper Keeper keeps authored maps in a local Library.
 Start from a sample, generation, blank map or tracing image, then build and
 decorate the encounter. Prepare visibility and public notes before starting
 a separately saved session. Reveal geography, move tokens and advance turns
@@ -83,7 +83,7 @@ New recordings should follow the steps above.
 **Description:** Local-first TTRPG battle-map editor with generation, fog,
 tokens, private backups, image/print export and a local player display.
 
-**Homepage:** `https://evilolive.com/Dungeon-Mapper/`
+**Homepage:** `https://evilolive.com/Mapper-Keeper/`
 
 **Topics:** `ttrpg`, `battlemap`, `map-editor`, `procedural-generation`, `react`,
 `typescript`, `vite`, `pwa`, `tabletop-rpg`
@@ -92,7 +92,7 @@ These are suggestions only; this document does not change remote metadata.
 
 ## Announcement draft
 
-I'm building Dungeon Mapper, a local-first browser tool for TTRPG maps.
+I'm building Mapper Keeper, a local-first browser tool for TTRPG maps.
 Create and organize encounters, prepare public content, then run a separately
 saved session with a read-only player window in the same browser. It includes
 seeded generation, fog, tokens and project/image/print exports.
@@ -100,9 +100,9 @@ seeded generation, fog, tokens and project/image/print exports.
 The hosted build is available for exploration. Release qualification is still
 in progress, and device storage is not a backup.
 
-App: https://evilolive.com/Dungeon-Mapper/
+App: https://evilolive.com/Mapper-Keeper/
 
-Source: https://github.com/evillollive/Dungeon-Mapper
+Source: https://github.com/evillollive/Mapper-Keeper
 
 Use the [Feature Reference](./FEATURES.md) for current controls, recovery scope
 and limitations. Social images, new recordings and launch-channel publishing

@@ -26,10 +26,10 @@ export default function WelcomePage({ disabled, onCreate, onShowLibrary, offline
   const title = useRef<HTMLHeadingElement>(null);
   useEffect(() => { title.current?.focus({ preventScroll: true }); }, []);
   const getStarted = <a className="welcome-cta" href="#welcome-start">Get started</a>;
-  return <main className="welcome" aria-label="Welcome to Dungeon Mapper">
+  return <main className="welcome" aria-label="Welcome to Mapper Keeper">
     <div className="welcome-inner">
       <header className="welcome-bar">
-        <p className="welcome-strong">Dungeon Mapper</p>
+        <p className="welcome-strong">Mapper Keeper</p>
         <nav aria-label="Welcome">
           <a href="#welcome-how">See how it works</a>
           <button className="welcome-link" onClick={onShowLibrary}>Your maps</button>
@@ -40,14 +40,14 @@ export default function WelcomePage({ disabled, onCreate, onShowLibrary, offline
       <section className="welcome-hero">
         <div className="welcome-hero-copy">
           <h1 ref={title} tabIndex={-1}>Make the map tonight, and run it tomorrow.</h1>
-          <p className="welcome-muted">Dungeon Mapper is a free map builder for tabletop RPGs that runs in your browser, no account
+          <p className="welcome-muted">Mapper Keeper is a free map builder for tabletop RPGs that runs in your browser, no account
             needed and nothing to install. Draw or generate a map, hide what your players shouldn't see, and bring it to your table.</p>
           <StartButtons disabled={disabled} onCreate={onCreate} />
         </div>
         <div className="welcome-hero-media">
           {TRAILER_YOUTUBE_ID ? <>
             <div className="welcome-frame">
-              <iframe title="Dungeon Mapper trailer" loading="lazy" allowFullScreen
+              <iframe title="Mapper Keeper trailer" loading="lazy" allowFullScreen
                 allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
                 src={`https://www.youtube.com/embed/${TRAILER_YOUTUBE_ID}?autoplay=1&mute=1&playsinline=1&rel=0`} />
             </div>
@@ -78,7 +78,7 @@ export default function WelcomePage({ disabled, onCreate, onShowLibrary, offline
           {EXPLAINER_YOUTUBE_ID && <p className="welcome-muted">Watch the walkthrough, or read the short version below it.</p>}
         </div>
         {EXPLAINER_YOUTUBE_ID && <div className="welcome-frame">
-          <iframe title="How Dungeon Mapper works" loading="lazy" allowFullScreen
+          <iframe title="How Mapper Keeper works" loading="lazy" allowFullScreen
             allow="encrypted-media; picture-in-picture; fullscreen"
             src={`https://www.youtube.com/embed/${EXPLAINER_YOUTUBE_ID}?rel=0`} />
         </div>}
@@ -108,7 +108,7 @@ export default function WelcomePage({ disabled, onCreate, onShowLibrary, offline
       </section>
 
       <footer className="welcome-bar welcome-footer">
-        <p>Dungeon Mapper</p>
+        <p>Mapper Keeper</p>
         <nav aria-label="Footer">
           {offlineStatus}
           <button className="welcome-link" onClick={onShowLibrary}>Your maps</button>

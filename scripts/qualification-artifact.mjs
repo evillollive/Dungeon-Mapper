@@ -6,7 +6,7 @@ import { dirname, isAbsolute, join, posix, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export const MANIFEST = 'build-manifest.json';
-export const PAGES_URL = 'https://evilolive.com/Dungeon-Mapper/';
+export const PAGES_URL = 'https://evilolive.com/Mapper-Keeper/';
 // GitHub reports a custom-domain site as http:// until Enforce HTTPS is on for
 // that domain. Accept that spelling of the same address, but always read the
 // published bytes over HTTPS.
@@ -142,7 +142,7 @@ export async function materialize(bundle, destination, expected, expectedHash, l
 
 export function assertPublication(manifest, currentMain, pagesArtifact, pagesArtifactId) {
   const value = identity(manifest.identity);
-  assert.equal(value.repository, 'evillollive/Dungeon-Mapper', 'Fork publication is not allowed');
+  assert.equal(value.repository, 'evillollive/Mapper-Keeper', 'Fork publication is not allowed');
   assert(value.ref === 'refs/heads/main' && ['push', 'workflow_dispatch'].includes(value.event),
     'Only a qualified main push or full main dispatch may publish');
   assert(SHA.test(currentMain ?? ''), 'Missing current main SHA');

@@ -26,7 +26,7 @@ and [saving and recovery](#saving-exporting--importing).
 
 ## Everything you can do
 
-If you want the full tour in one place, this is it. Dungeon Mapper starts fast, then keeps unfolding as your map gets more ambitious. Every tool below is here to help you go from rough sketch to table-ready encounter without bouncing between five different apps.
+If you want the full tour in one place, this is it. Mapper Keeper starts fast, then keeps unfolding as your map gets more ambitious. Every tool below is here to help you go from rough sketch to table-ready encounter without bouncing between five different apps.
 
 - **Consistent interface icons** - 32 original SVG line icons accompany navigation, project actions, save/offline status, export choices and player-display controls. Icons scale with interface text, inherit control colors and do not replace accessible names. Map symbols and token artwork are separate.
 - **First-use illustrations** - small original Folio scenes accompany the empty map collection, private backup guidance, session preparation and blank local player display. These are decorative drawings, not project previews, storage status or interactive controls.
@@ -527,7 +527,7 @@ Each generator has a different personality. Some are great for structured spaces
 
 ## Keyboard Shortcuts
 
-Once you spend a few minutes with Dungeon Mapper, shortcuts start doing a lot of the heavy lifting. The in-app overlay is generated from the same registry as the bindings themselves, so the reference stays honest and up to date.
+Once you spend a few minutes with Mapper Keeper, shortcuts start doing a lot of the heavy lifting. The in-app overlay is generated from the same registry as the bindings themselves, so the reference stays honest and up to date.
 
 ### Tools
 
@@ -851,11 +851,11 @@ On smaller screens, the toolbar changes shape so the app stays usable with thumb
 
 ### Progressive Web App (PWA)
 
-If you want Dungeon Mapper to behave more like an installed tool than a browser tab, the PWA support is there for that. Install it, keep it offline, and treat it like part of your regular session kit.
+If you want Mapper Keeper to behave more like an installed tool than a browser tab, the PWA support is there for that. Install it, keep it offline, and treat it like part of your regular session kit.
 
 - **Install prompt** - browsers offer an "Add to Home Screen" or "Install" option for the app.
 - **Offline readiness** - open **Offline & updates** in the Library or editor. Wait for **App and built-in art cached** while online. All bundled art is included; no third-party fonts or remote images are needed. Browser storage eviction can remove caches or projects, so retain JSON backups.
-- **App updates** - updates wait without automatically reloading. **Update saved workspace** requires a saved project, closed dialogs, and no other Dungeon Mapper windows or player displays. Save/end a live session and return to the editor first. Failed, conflicted or pending saves block reload.
+- **App updates** - updates wait without automatically reloading. **Update saved workspace** requires a saved project, closed dialogs, and no other Mapper Keeper windows or player displays. Save/end a live session and return to the editor first. Failed, conflicted or pending saves block reload.
 - **Standalone mode** - installable where the browser provides it. Safe-area styling exists; physical notched-device and mobile interruption behavior remain unqualified.
 
 See [UX-08 export and offline contract](./UX-08-HANDOFF.md) for browser limits,

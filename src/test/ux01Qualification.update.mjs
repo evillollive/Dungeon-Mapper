@@ -10,7 +10,7 @@ await mkdir(output, { recursive: true });
 const playwright = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
 const workerSource = await readFile('dist/sw.js', 'utf8');
 const port = Number(process.env.QA_UPDATE_PORT ?? 5298);
-const origin = `http://127.0.0.1:${port}/Dungeon-Mapper/`;
+const origin = `http://127.0.0.1:${port}/Mapper-Keeper/`;
 const results = [];
 for (const engine of (process.env.QA_ENGINES ?? 'chromium,firefox,webkit').split(',')) {
   let epoch = 1;
@@ -20,7 +20,7 @@ for (const engine of (process.env.QA_ENGINES ?? 'chromium,firefox,webkit').split
       name: 'qa-worker-byte-update',
       configurePreviewServer(server) {
         server.middlewares.use((request, response, next) => {
-          if (request.url !== '/Dungeon-Mapper/sw.js') return next();
+          if (request.url !== '/Mapper-Keeper/sw.js') return next();
           response.setHeader('Content-Type', 'application/javascript');
           response.setHeader('Cache-Control', 'no-store');
           response.end(`${workerSource}\n// Isolated QA worker update ${epoch}\n`);

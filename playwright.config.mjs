@@ -6,7 +6,7 @@ assert(process.env.QA_OUTPUT, 'Set QA_OUTPUT to a dedicated qualification artifa
 const output = resolve(process.env.QA_OUTPUT);
 const port = Number(process.env.QA_PORT ?? 5309);
 assert(Number.isInteger(port) && port > 0 && port <= 65535, 'QA_PORT must be a valid TCP port.');
-const baseURL = `http://127.0.0.1:${port}/Dungeon-Mapper/`;
+const baseURL = `http://127.0.0.1:${port}/Mapper-Keeper/`;
 
 export default defineConfig({
   testDir: './src/test',
