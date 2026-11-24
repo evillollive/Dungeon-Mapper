@@ -4,14 +4,14 @@ async (page) => {
   const browser = page.context().browser();
   const context = await browser.newContext();
   const probe = await context.newPage();
-  const origin = 'http://127.0.0.1:5191/Mapper-Keeper/';
+  const origin = 'http://127.0.0.1:5191/';
   const results = [];
   try {
     await probe.route('**/storage-probe.html', route => route.fulfill({ contentType: 'text/html', body: '<title>Storage probe</title>' }));
     await probe.goto(`${origin}storage-probe.html`);
     results.push(...await probe.evaluate(async () => {
-      const { saveProject, loadProject, loadRecoveryRecords, StorageConflictError, RestoreError } = await import('/Mapper-Keeper/src/utils/storage.ts');
-      const { createDefaultProject } = await import('/Mapper-Keeper/src/hooks/mapStateUtils.ts');
+      const { saveProject, loadProject, loadRecoveryRecords, StorageConflictError, RestoreError } = await import('/src/utils/storage.ts');
+      const { createDefaultProject } = await import('/src/hooks/mapStateUtils.ts');
       const assert = (value, message) => { if (!value) throw new Error(message); };
       const results = [];
       const readRaw = () => new Promise((resolve, reject) => {
@@ -170,9 +170,9 @@ async (page) => {
       await broken.route('**/storage-probe.html', route => route.fulfill({ contentType: 'text/html', body: '<title>Recovery probe</title>' }));
       await broken.goto(`${origin}storage-probe.html`);
       const supported = await broken.evaluate(async () => {
-        const { loadProject } = await import('/Mapper-Keeper/src/utils/storage.ts');
-        const { createDefaultProject } = await import('/Mapper-Keeper/src/hooks/mapStateUtils.ts');
-        const { buildPremadeProject } = await import('/Mapper-Keeper/src/utils/premadeMaps.ts');
+        const { loadProject } = await import('/src/utils/storage.ts');
+        const { createDefaultProject } = await import('/src/hooks/mapStateUtils.ts');
+        const { buildPremadeProject } = await import('/src/utils/premadeMaps.ts');
         await loadProject();
         await new Promise((resolve, reject) => {
           const request = indexedDB.open('dungeon-mapper', 1);
@@ -213,7 +213,7 @@ async (page) => {
       await broken.reload();
       await broken.getByRole('status').filter({ hasText: 'Saved on this device' }).waitFor();
       const retained = await broken.evaluate(async () => {
-        const { loadRecoveryRecords } = await import('/Mapper-Keeper/src/utils/storage.ts');
+        const { loadRecoveryRecords } = await import('/src/utils/storage.ts');
         return (await loadRecoveryRecords()).some(record => record.data.futureSecret === 'Do not discard me');
       });
       if (!retained) throw new Error('Recovery import discarded unsupported original');

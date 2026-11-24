@@ -4,6 +4,7 @@ All notable changes to this project are documented in this file.
 
 ## [Unreleased]
 
+- The app now lives at its own address, `https://mapperkeeper.com/`, served from the site root instead of `/Mapper-Keeper/`.
 - Renamed the app from Dungeon Mapper to **Mapper Keeper**, because another map tool already uses the old name. The app now lives at `https://evilolive.com/Mapper-Keeper/` and the repository at `evillollive/Mapper-Keeper`. Maps saved in your browser carry over, and shared map packages from earlier versions still import, because their storage keys and package formats are unchanged.
 - New logo: the same map pin, now holding an orange key with a d20 bow in place of the D-shaped door. It replaces the browser tab icon, the installed-app and phone icons, and the README logo.
 

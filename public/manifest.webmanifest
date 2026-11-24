@@ -6,8 +6,8 @@
   "background_color": "#f4f1ea",
   "display": "standalone",
   "orientation": "any",
-  "start_url": "/Mapper-Keeper/",
-  "scope": "/Mapper-Keeper/",
+  "start_url": "/",
+  "scope": "/",
   "categories": [
     "games",
     "utilities"

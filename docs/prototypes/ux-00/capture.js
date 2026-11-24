@@ -1,7 +1,7 @@
 // Execute this function with Playwright MCP browser_run_code_unsafe(filename).
 // Start the repository Vite server on 5187 first. Uses only bundled sample data.
 async (page) => {
-  const base = 'http://127.0.0.1:5187/Mapper-Keeper/';
+  const base = 'http://127.0.0.1:5187/';
   const output = 'docs/media/ux-00/';
   const browser = page.context().browser();
   const context = await browser.newContext({ viewport: { width: 1440, height: 900 }, deviceScaleFactor: 1 });

@@ -12,7 +12,7 @@ await mkdir(output, { recursive: true });
 const playwright = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
 const results = [];
 const port = Number(process.env.QA_OFFLINE_PORT ?? 5298);
-const origin = `http://127.0.0.1:${port}/Mapper-Keeper/`;
+const origin = `http://127.0.0.1:${port}/`;
 for (const engine of (process.env.QA_ENGINES ?? 'chromium,firefox,webkit').split(',')) {
   const profile = await mkdtemp(join(tmpdir(), 'dungeon-offline-qa-'));
   let context;

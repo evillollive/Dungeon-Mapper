@@ -9,7 +9,7 @@ import { build } from 'esbuild';
 assert(process.env.QA_OUTPUT, 'Set QA_OUTPUT to a session artifact directory');
 const output = process.env.QA_OUTPUT;
 await mkdir(output, { recursive: true });
-const origin = process.env.QA_ORIGIN ?? 'http://127.0.0.1:5297/Mapper-Keeper/';
+const origin = process.env.QA_ORIGIN ?? 'http://127.0.0.1:5297/';
 assert.equal(new URL(origin).hostname, '127.0.0.1');
 const playwright = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
 const fixturePath = join(output, 'catalog-fixtures.mjs');

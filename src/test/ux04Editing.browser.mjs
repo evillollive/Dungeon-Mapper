@@ -4,7 +4,7 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const playwright = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
-const origin = process.env.QA_ORIGIN ?? 'http://127.0.0.1:5304/Mapper-Keeper/';
+const origin = process.env.QA_ORIGIN ?? 'http://127.0.0.1:5304/';
 const output = process.env.QA_OUTPUT;
 assert(output, 'Set QA_OUTPUT to a session artifact directory.');
 await mkdir(output, { recursive: true });

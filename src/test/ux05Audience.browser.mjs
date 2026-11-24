@@ -2,7 +2,7 @@
 export default async function audience(page) {
   const assert = (condition, message) => { if (!condition) throw new Error(message); };
   page.setDefaultTimeout(15000);
-  const origin = `${page.url().split('/Mapper-Keeper/')[0]}/Mapper-Keeper/`;
+  const origin = `${new URL(page.url()).origin}/`;
   await page.goto(`${origin}?view=library`);
   await page.waitForLoadState('networkidle');
   const sentinel = 'PRIVATE_SENTINEL_UX05';

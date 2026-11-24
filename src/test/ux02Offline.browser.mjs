@@ -11,7 +11,7 @@ const output = process.env.QA_OUTPUT;
 await mkdir(output, { recursive: true });
 const playwright = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright');
 const port = Number(process.env.QA_OFFLINE_PORT ?? 5299);
-const origin = `http://127.0.0.1:${port}/Mapper-Keeper/`;
+const origin = `http://127.0.0.1:${port}/`;
 const results = [];
 const fixture = name => ({
   schemaVersion: 1,

@@ -6,7 +6,7 @@ import { dirname, isAbsolute, join, posix, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 export const MANIFEST = 'build-manifest.json';
-export const PAGES_URL = 'https://evilolive.com/Mapper-Keeper/';
+export const PAGES_URL = 'https://mapperkeeper.com/';
 // GitHub reports a custom-domain site as http:// until Enforce HTTPS is on for
 // that domain. Accept that spelling of the same address, but always read the
 // published bytes over HTTPS.

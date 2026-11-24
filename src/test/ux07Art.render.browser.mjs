@@ -5,16 +5,16 @@ export default async function runArtRenderReview(page, { materials = false, furn
   const context = await page.context().browser().newContext({ viewport: { width: 1120, height: 1320 } });
   try {
     const tab = await context.newPage();
-    await tab.goto(`${page.url().split('/Mapper-Keeper/')[0]}/Mapper-Keeper/`);
+    await tab.goto(`${new URL(page.url()).origin}/`);
     await tab.waitForLoadState('networkidle');
     const measurements = await tab.evaluate(async ({ materials, furnishings }) => {
-      const { buildFolioReference, buildFolioMaterialsReference } = await import('/Mapper-Keeper/src/utils/folioReference.ts');
-      const { buildFolioFurnishingReference } = await import('/Mapper-Keeper/src/utils/folioFurnishingReference.ts');
-      const { renderMapToCanvas } = await import('/Mapper-Keeper/src/utils/renderMap.ts');
-      const { exportMapSVG } = await import('/Mapper-Keeper/src/utils/export.ts');
-      const { getTheme } = await import('/Mapper-Keeper/src/themes/index.ts');
-      const { folioCacheSize, clearFolioCache } = await import('/Mapper-Keeper/src/themes/folio-v1/art.ts');
-      const { floorMaterialCacheSize, clearFloorMaterialCache } = await import('/Mapper-Keeper/src/themes/folio-v1/materials.ts');
+      const { buildFolioReference, buildFolioMaterialsReference } = await import('/src/utils/folioReference.ts');
+      const { buildFolioFurnishingReference } = await import('/src/utils/folioFurnishingReference.ts');
+      const { renderMapToCanvas } = await import('/src/utils/renderMap.ts');
+      const { exportMapSVG } = await import('/src/utils/export.ts');
+      const { getTheme } = await import('/src/themes/index.ts');
+      const { folioCacheSize, clearFolioCache } = await import('/src/themes/folio-v1/art.ts');
+      const { floorMaterialCacheSize, clearFloorMaterialCache } = await import('/src/themes/folio-v1/materials.ts');
       const map = (furnishings ? buildFolioFurnishingReference() : materials ? buildFolioMaterialsReference() : buildFolioReference()).levels[0];
       const theme = getTheme(map.meta.theme);
       const images = [];
